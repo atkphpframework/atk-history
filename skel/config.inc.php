@@ -158,6 +158,14 @@
   // if you use "ldap" as authentication, these parameters are nessesary
   // $config_auth_ldap_host = "";
   // $config_auth_ldap_context = "";
+  //filter prefix default: "uid"
+  //$config_auth_ldap_search_filter = "uid";
+
+  // Sometimes we can't bind anomynous, so we have
+  // to use an  account to bind within the tree    
+  //$config_auth_ldap_bind_tree = false;   // default off
+  //$config_auth_ldap_bind_dn = "";
+  //$config_auth_ldap_bind_pw = "";
   
   // The application root
   // if you're using urlrewrites within your httpd or htaccess configuration i think this should be '/'
