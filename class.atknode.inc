@@ -2663,9 +2663,15 @@
 	        }
         }
 
-        $querystring = $query->buildUpdate();
-
-        $g_db->query($querystring);
+        if (count($query->m_fields) > 0) 
+        {
+          $querystring = $query->buildUpdate();
+          $g_db->query($querystring);
+        } 
+        else 
+        {
+          atkdebug("nothing to update in updateDb");
+        }
 
         // also store special storage attributes.
         for ($i=0;$i<count($storelist);$i++)
