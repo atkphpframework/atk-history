@@ -56,9 +56,19 @@
       $rows = $this->m_rows;
       
       if ($rows =="" || $rows == 0) $rows = 10;
-	    // watch out, $maxsize isn't supported for a textarea.
-      $result= '<textarea name="'.$fieldprefix.$this->formName().'" rows="'.$rows.'" cols="'.$cols.'" wrap="virtual"'.               
-               '>'.htmlspecialchars($record[$this->fieldName()]).'</textarea>';
+      
+      if ($rows==1)
+      {
+        // For single row boxes, we can use an ordinary input box.
+        $this->m_size = $cols;
+        return parent::edit($record, $fieldprefix);
+      }
+      else
+      {      
+	      // watch out, $maxsize isn't supported for a textarea.
+        $result= '<textarea name="'.$fieldprefix.$this->formName().'" rows="'.$rows.'" cols="'.$cols.'" wrap="virtual"'.               
+                 '>'.htmlspecialchars($record[$this->fieldName()]).'</textarea>';
+      }
       return $result;
     }
 

@@ -79,6 +79,8 @@
     {
       global $g_modules, $g_nodes, $config_atkroot, $g_layout, $g_moduleflags;
       global $g_user, $g_db;
+      
+      $grantall = $this->canGrantAll();
 
       $g_layout->register_script($config_atkroot."atk/javascript/class.atkprofileattribute.js.php");
       
@@ -144,7 +146,7 @@
               $action = $actionarr[$i]; 
               if (substr($action,0,1)=="*") $action=substr($action,1);             
               
-              if ((is_array($active_actions) && in_array($action, $active_actions)) || $g_user['name']=='administrator')
+              if ((is_array($active_actions) && in_array($action, $active_actions)) || $grantall)
               {              
                 $boxActive = true;
                 $showModule = true;
@@ -206,7 +208,7 @@
                 $action = $actionarr[$i];
                 if (substr($action,0,1)=="*") $action=substr($action,1);
 
-                if ((is_array($active_actions) && in_array($action, $active_actions)) || $g_user['name']=='administrator')
+                if ((is_array($active_actions) && in_array($action, $active_actions)) || $grantall)
                 {
                   $showModule=true;
                   $boxActive=true;
@@ -227,7 +229,7 @@
               }
               if($boxActive)  
               {
-                $mainHtml .="<b>".text(getNodeType($nodename))."</b><br>";
+                $mainHtml .="<b>".$this->getNodeSecurityName($nodename, $modname)."</b><br>";
                 $mainHtml .=$html;
                 $mainHtml .="<br><br>\n";
               }
@@ -260,6 +262,30 @@
         $label = text($action, $node, $modulename); // generic action text.        
       }
       return $label;
+    }
+    
+    function getNodeSecurityName($nodename, $modulename="")
+    {
+      $label = text("profile_".$nodename, $modulename);
+      if (strtolower(substr($label,0,7))=="profile")
+      {
+        // no suitable translation found
+        $label = text($nodename, $modulename); // Generic text.
+      }
+      return $label;
+    }
+    
+    function canGrantAll()
+    {
+      $privilege_setting = atkconfig("auth_grantall_privilege");
+      
+      if ($privilege_setting!="")
+      {
+        global $g_securityManager;
+        list($mod, $node, $priv) = explode(".", $privilege_setting);
+        return $g_securityManager->allowed($mod.".".$node, $priv);
+      }
+      return false;
     }
 
     function fetchValue($postvars)

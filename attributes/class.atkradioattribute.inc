@@ -111,7 +111,7 @@
         $labelID = $fieldprefix.$this->formName()."_".$this->m_values[$i];
         if($this->hasFlag(AF_DISPLAY_VERT)) $result.='<tr>';
         $result .= '<td><input id="'.$labelID.'" type="radio" name="'.$fieldprefix.$this->formName().'" value="'.$this->m_values[$i].'" '.$sel.'>
-        <label for="'.$labelID.'">'.text($this->m_options[$i]).'</label></td>';
+        <label for="'.$labelID.'">'.text($this->m_options[$i], $this->m_ownerInstance->m_type, $this->m_ownerInstance->m_module).'</label></td>';
         if($this->hasflag(AF_DISPLAY_VERT))
         {
           $tmp_items=$items;
@@ -137,7 +137,7 @@
             if($this->m_values[$j]!="")
             {
               $result .= '<td><input id="'.$labelID.'" type="radio" name="'.$fieldprefix.$this->formName().'" value="'.$this->m_values[$j].'" '.$sel.'>
-              <label for="'.$labelID.'">'.text($this->m_options[$j]).'</label></td>';
+              <label for="'.$labelID.'">'.text($this->m_options[$j], $this->m_ownerInstance->m_type, $this->m_ownerInstance->m_module).'</label></td>';
             }
             else
             {

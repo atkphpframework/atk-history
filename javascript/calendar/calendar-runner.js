@@ -27,6 +27,7 @@ function showCalendar(id, bindname, format, dateattr)
     // cal.weekNumbers = false;
     calendar = cal;                  // remember it in the global var
     cal.setRange(1900, 2070);        // min/max year allowed.
+    cal.mondayFirst = true;
     cal.create();
   }
   calendar.setDateFormat(format);    // set the specified date format

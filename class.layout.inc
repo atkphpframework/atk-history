@@ -320,6 +320,13 @@
       for ($i = 0; $i < count($this->m_stylesheets); $i++)
         $res.='  <link href="'.$this->m_stylesheets[$i].'" rel="stylesheet" type="text/css">'."\n";
 
+      $favico = atkconfig("defaultfavico");
+      if ($favico!="")
+      {
+        $res.= '<link rel="icon" href="'.$favico.'" type="image/x-icon">
+                <link rel="shortcut icon" href="'.$favico.'" type="image/x-icon">'."\n";
+      }
+
       $res.="</head>\n";
       return $res;
     }
@@ -399,7 +406,7 @@
         $this->output('<table border="0" cellpadding="0" cellspacing="0" width="98%" align="center" valign="top">
                         <tr>
                           <td width="100%">
-                            <table border="1" cellpadding="2" cellspacing="0">
+                            <table border="1" cellpadding="2" cellspacing="0" style="border-collapse: collapse;border-bottom:hidden;">
                               <tr>');
         $this->output($tabs);
         $this->output('</tr></table><table border="1" cellspacing="0" cellpadding="5" width="100%"><tr><td>');
@@ -697,10 +704,10 @@
           /* does the field have a label? */
           if ($field["label"] !== NULL)
           {
-            if ($field["label"] == "") 
-              $form .= $this->ret_td('&nbsp;');
-            elseif ($field["error"]) 
-              $form .= $this->ret_td('<span class="error">'.$field["label"].': </span>', 'valign="top"');
+            if ($field["label"] == "") $form .= $this->ret_td('&nbsp;');
+            elseif ($field["error"]) $form .= $this->ret_td('<span class="error">'.$field["label"].': </span>', 'valign="top"');
+            elseif (get_class($field["attribute"]) == "atkboolattribute")
+              $form .= $this->ret_td('<label for="'.$field["name"].'">'.$field["label"].'</label>: ', 'valign="top"');
             else 
               $form .= $this->ret_td($field["label"].': ','valign="top"');
           }
