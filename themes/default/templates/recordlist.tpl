@@ -39,8 +39,6 @@
             </tr>
             {/foreach}
             
-            {$listend}
-                            
             {if count($total)}
             <!-- totals row -->
               <tr>              
@@ -63,7 +61,7 @@
          <tr>
            <td valign="top"><img src="{$atkroot}atk/images/arrow.gif" border="0"></td>
            <td>
-             {$mra}        
+             {$mra} {$listend}
            </td>
          </tr>
        </table>

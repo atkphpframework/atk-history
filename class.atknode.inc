@@ -2016,14 +2016,14 @@
             $searchcols[] = array("content"=>$button);
           }
   
-          $seachend = '</form>';
+          $searchend = '</form>';
         }
   
         /*******************************************/
         /* MULTI-RECORD-(PRIORITY-)ACTIONS FORM DATA */
         /*******************************************/
         if (hasFlag($flags, RL_MRA) || hasFlag($flags, RL_MRPA))
-        {                    
+        {  
           $page->register_script(atkconfig("atkroot")."atk/javascript/formselect.js");          
   
           $listName = "atkrl_".getUniqueId("normalRecordList");
@@ -2216,13 +2216,12 @@
           /* one action -> only the submit button */
           else
           {
-            $mra .= '<input type="hidden" name="'.$listName.'_atkaction" value="'.$list["mra"][0].'">'.
+            $mra .= '&nbsp; <input type="hidden" name="'.$listName.'_atkaction" value="'.$list["mra"][0].'">'.
                        '<input type="button" class="btn" value="'.text($list["mra"][0]).'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\')">';
           }
   
           if (!hasFlag($flags, RL_EMBED)) $listend = '</form>';
         }
-
         $res = $ui->render("recordlist.tpl", array("vorientation"=>$vorientation,
                                                    "rows"=>$records,
                                                    "header"=>$headercols,
