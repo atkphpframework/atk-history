@@ -70,7 +70,6 @@ function AdjustDate(el, arr, format, str_min, str_max, emptyfield)
   var format_month, format_day, array_months;
   var frm = el.form;
 
-
   /* current date attribute inputs */
   input = Array();
   input["d"] = frm.elements[arr + "[day]"];
