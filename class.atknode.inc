@@ -38,6 +38,7 @@
   define("NF_MRPA",                 131072); // Multi-priority-selection of records is turned on.
 
   define("NF_LOCK",                 262144); // lock records
+  define("NF_EXT_SORT",             524288); // enable extended sorting
   
   define("NF_READONLY", NF_NO_ADD|NF_NO_DELETE|NF_NO_EDIT); // aggregate flag to quickly create readonly nodes.
 
@@ -48,6 +49,8 @@
   define("RL_MRA",                             8); // multi-record-actions enabled
   define("RL_MRPA",                           16); // multi-record-priority-actions enabled
   define("RL_LOCK",                           32); // records can be locked
+  define("RL_EXT_SORT",                       64); // extended sort feature
+  
 
   /*
    * action status flags
@@ -1352,9 +1355,11 @@
       if ($this->m_postvars['atklimit']=="") $this->m_postvars['atklimit']=atkconfig("recordsperpage");
 
       if ($this->m_postvars['atkstartat']=="") $this->m_postvars['atkstartat']=0;
+      
+      $columnConfig = &$this->getColumnConfig();
 
       $recordset = $this->selectDb($this->m_postvars['atkfilter'],
-                                   $this->m_postvars['atkorderby'],
+                                   $columnConfig->getOrderByStatement(),
                                    array("offset" => $this->m_postvars['atkstartat'], "limit" => $this->m_postvars['atklimit']),
                                    $this->m_listExcludes,
                                    "",
@@ -1411,7 +1416,7 @@
         $actions = $this->defaultActions("admin");
       }
 
-      $flags = ($this->hasFlag(NF_MRA) ? RL_MRA : 0) | ($this->hasFlag(NF_MRPA) ? RL_MRPA : 0) | ($this->hasFlag(NF_LOCK) ? RL_LOCK : 0);
+      $flags = ($this->hasFlag(NF_MRA) ? RL_MRA : 0) | ($this->hasFlag(NF_MRPA) ? RL_MRPA : 0) | ($this->hasFlag(NF_LOCK) ? RL_LOCK : 0) | ($this->hasFlag(NF_EXT_SORT) ? RL_EXT_SORT : 0);
       $g_layout->output($this->normalRecordList($recordset, $actions, $flags));
 
       if (!empty($nav)) $g_layout->output('<br>'.$nav);
@@ -1516,14 +1521,18 @@
 
       /* get the heading and search columns */
       if (!hasFlag($flags, RL_NO_SEARCH)) $this->setAttribSizes();
+      
+      $columnConfig = &$this->getColumnConfig();
+      
       foreach (array_keys($this->m_attribIndexList) as $r)
       {
         $name = $this->m_attribIndexList[$r]["name"];
         if (!in_array($name, $suppress))
         {
-          $attribute = &$this->m_attribList[$name];
+          $attribute = &$this->m_attribList[$name];                    
+          
           $attribute->addToListArrayHeader($this->m_action, $result, $prefix, $flags,
-                                           $this->m_postvars["atksearch"], $this->m_postvars["atkorderby"]);
+                                           $this->m_postvars["atksearch"], $columnConfig);
         }
       }
 
@@ -1535,19 +1544,21 @@
       }
       else
         $mra = $this->hasFlag(NF_NO_DELETE) ? array() : array("delete");
+        
+      $runningTotals = array();
 
       /* get the rows */
-      for ($i = 0, $_i = count($recordset); $i < $_i; $i++)
+      for ($i = 0, $_i = count($recordset), $r=0; $i < $_i; $i++, $r++)
       {
-        $result["rows"][$i] = array("columns" => array(), "actions" => $actions, "mra" => $mra, "record" => &$recordset[$i], "data" => array());
-        $result["rows"][$i]["selector"] = $this->primaryKey($recordset[$i]);
-        $row = &$result["rows"][$i];
+        $result["rows"][$r] = array("actions" => $actions, "mra" => $mra, "record" => &$recordset[$i], "data" => array());
+        $result["rows"][$r]["selector"] = $this->primaryKey($recordset[$i]);
+        $row = &$result["rows"][$r];
 
         /* locked */
         if (hasFlag($flags, RL_LOCK))
         {
-          $result["rows"][$i]["lock"] = $this->m_lock->isLocked($result["rows"][$i]["selector"], $this->m_table);
-          if (is_array($result["rows"][$i]["lock"]))
+          $result["rows"][$r]["lock"] = $this->m_lock->isLocked($result["rows"][$r]["selector"], $this->m_table);
+          if (is_array($result["rows"][$r]["lock"]))
           {
             unset($row["actions"]["edit"]);
             unset($row["actions"]["delete"]);
@@ -1583,15 +1594,15 @@
         }
 
         /* columns */
-        foreach (array_keys($this->m_attribIndexList) as $r)
+        foreach (array_keys($this->m_attribIndexList) as $idx)
         {
-          $name = $this->m_attribIndexList[$r]["name"];
+          $name = $this->m_attribIndexList[$idx]["name"];
           if (!in_array($name, $suppress))
           {
             $attribute = &$this->m_attribList[$name];
-            $attribute->addToListArrayRow($this->m_action, $result, $i, $prefix, $flags);
+            $attribute->addToListArrayRow($this->m_action, $result, $i, $prefix, $flags);                        
           }
-        }
+        }        
       }
 
       if (hasFlag($flags, RL_MRA))
@@ -1696,6 +1707,34 @@
         if ($orientation == "right" || $orientation == "both") $output .= $g_layout->ret_td_datatitle();
 
       $output.= "</tr>";
+      
+      /**************/
+      /* SORT   ROW */
+      /**************/
+      if (hasFlag($flags, RL_EXT_SORT))
+      {                
+        $button = '<input type="submit" value="'.text("sort").'">';       
+
+        $output .= '<tr>'.
+                     '<a name="sortform"></a>'.
+                     '<form action="'.$_SERVER["PHP_SELF"].'?'.SID.'" method="get">'.
+                     session_form().                       
+                       '<input type="hidden" name="atkstartat" value="0">'; // reset atkstartat to first page after a new sort
+
+          if (hasFlag($flags, RL_MRA) || hasFlag($flags, RL_MRPA)) $output .= $g_layout->ret_td_datatitle();
+          if (hasFlag($flags, RL_LOCK)) $output .= $g_layout->ret_td_datatitle();
+          if ($orientation == "left" || $orientation == "both") $output .= $g_layout->ret_td_datatitle($button);
+
+          foreach (array_keys($list["heading"]) as $key)
+            if (isset($list["sort"][$key])) $output .= $g_layout->ret_td_datatitle($list["sort"][$key]);
+            else $output.= $g_layout->ret_td_datatitle('&nbsp;');
+
+          if ($orientation == "right" || $orientation == "both") $output .= $g_layout->ret_td_datatitle($button);
+
+        $output .=   '</form>'.
+                   '</tr>';
+      }
+      
 
       /**************/
       /* SEARCH ROW */
@@ -2352,9 +2391,11 @@
       if ($this->m_postvars['atkstartat']=="") $this->m_postvars['atkstartat']=0;
 
       $filter = $this->validateFilter($this->m_postvars["atkfilter"]);
+      
+      $columnConfig = &$this->getColumnConfig();
 
       $recordset = $this->selectDb($filter,
-                                   $this->m_postvars['atkorderby'],
+                                   $columnConfig->getOrderByStatement(),
                                    array("offset" => $this->m_postvars['atkstartat'], "limit" => $this->m_postvars['atklimit']),
                                    $this->m_listExcludes,
                                    "",
@@ -4028,6 +4069,13 @@
         if (in_array($relation_new, array_keys($this->m_attribList))) return $filter;
       }
       return "";
+    }
+    
+    function &getColumnConfig()
+    {
+      include_once(atkconfig("atkroot")."atk/recordlist/class.atkcolumnconfig.inc");
+      $columnConfig = &atkColumnConfig::getConfig($this);
+      return $columnConfig;
     }
   }
 ?>
