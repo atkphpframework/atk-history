@@ -36,7 +36,7 @@
 			if($default_time=="") { $default_time = date("H:i"); }
 
 		  $this->m_time = new atkTimeattribute($name,0,23,$default_steps,$default_time);
-			$this->m_date = new atkDateattribute($name,$default_date, array(), array(), array(), AF_DATE_NO_CALENDAR);
+			$this->m_date = new atkDateattribute($name,$default_date);
       $this->atkAttribute($name,$flags); // base class constructor
     }
 
