@@ -1033,10 +1033,6 @@
               {
                 if (!$p_attrib->hasFlag(AF_NO_FILTER)) $p_attrib->m_flags |= AF_READONLY|AF_HIDE_ADD;
               }
-              else
-              {
-              	echo "PATTRIB:: ".$p_attrib->m_name;
-              }
             }
           }
         }
