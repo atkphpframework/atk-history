@@ -1352,7 +1352,7 @@
       // pages.
       if ($this->m_postvars['atklimit']=="") $this->m_postvars['atklimit']=atkconfig("recordsperpage");
 
-      if ($this->m_postvars['atkstartat']=="" || isset($this->m_postvars["atksearch"])) $this->m_postvars['atkstartat']=0;
+      if ($this->m_postvars['atkstartat']=="" || isset($this->m_postvars["_search_"])) $this->m_postvars['atkstartat']=0;
 
       $recordset = $this->selectDb($this->m_postvars['atkfilter'],
                                    $this->m_postvars['atkorderby'],
@@ -1711,7 +1711,7 @@
          */
         if (is_array($searchmode)) $searchmode = $searchmode[0];
 
-        $button = '<input type="submit" value="'.text("search").'">';
+        $button = '<input type="submit" name="_search_" value="'.text("search").'">';
         if (!$this->hasFlag(NF_NO_EXTENDED_SEARCH))
           $button .= '<br>'.href($_SERVER["PHP_SELF"]."?atknodetype=".$this->atknodetype()."&atkaction=search&atksearchmode=".
                                              $searchmode,"(".text("search_extended").")",SESSION_NESTED);
