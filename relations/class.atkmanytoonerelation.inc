@@ -25,6 +25,10 @@
                             // this to false only if you know what you're
                             // doing. When in doubt, 'true' is usually the
                             // best option.
+                            
+    var $m_hidewhenempty = false; // by default we don't hide the attribute if a relation is empty
+    
+    var $m_selectableRecords = array();
                
     /**
      * Constructor
@@ -71,6 +75,13 @@
      */
     function fetchValue($rec)
     {
+      // We must undo the obligatory flag, if we hide. And the fetchValue
+      // method is the designated place for that.      
+      if ($this->m_hidewhenempty && count($this->getSelectableRecords())==0)
+      {      
+        $this->m_flags ^= AF_OBLIGATORY;
+      }
+      
       // We must put the result of decodeKey into a variable first,
       // because PHP3 can't handle each() with a non-constant expression.
       $tmp = decodeKeyValuePair($rec[$this->fieldName()]);
@@ -134,7 +145,7 @@
           }
           else
           {
-            $title = "&nbsp;"; // no record
+            $title = ""; // no record
           }
         }
 
@@ -152,14 +163,26 @@
           else */
           
           // if we are allowed to edit, we're cerrtainly allowed to view.
-          if (($this->m_destInstance->allowed("view")||$this->m_destInstance->allowed("view"))&&!$this->m_destInstance->hasFlag(NF_NO_VIEW))
-          {
+          if ($title!=""&&$this->m_destInstance->allowed("view")&&!$this->m_destInstance->hasFlag(NF_NO_VIEW))
+          {            
             $result = href("dispatch.php?atknodetype=".$this->m_destination."&atkaction=view&atkselector=".rawurlencode($this->m_destInstance->primaryKey($record[$this->fieldName()])), $title, SESSION_NESTED);
           }
         }
         return $result;
       }
       return "";
+    }
+    
+    function getSelectableRecords()
+    {
+      if (!count($m_selectableRecords))
+      {
+        if ($this->createDestination())
+        {
+          $this->m_selectableRecords = $this->m_destInstance->selectDb("","","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
+        }
+      }
+      return $this->m_selectableRecords;
     }
 
     /**
@@ -188,7 +211,7 @@
           $filter = stringparse($this->m_destinationFilter,$record);
           $this->m_destInstance->addFilter($filter);
         }
-        $recordset = $this->m_destInstance->selectDb("","","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
+        $recordset = $this->getSelectableRecords();
 
         // autoselect if there is only one record (if obligatory is not set,
         // we don't autoselect, since user may wist to select 'none' instead
@@ -329,6 +352,16 @@
       }
       return "";
     }
+    
+    function getOrderByStatement()
+    {
+      if ($this->createDestination())
+      {
+        // In queries, relations are alias'd by their attribute name, so we use that for the sort prefix here.
+        return $this->fieldName().".".$this->m_destInstance->m_default_order;
+      }
+      return parent::getOrderByStatement();
+    }
 
     /**
      * Creates an search condition for a given search value
@@ -384,8 +417,8 @@
      * Dummy function
      */
     function validate(&$record, $mode)
-    {
-    }
+    {      
+    }      
 
     function equal($recA, $recB)
     {
@@ -424,6 +457,23 @@
         return $this->m_destInstance->m_attribList[$this->m_destInstance->primaryKeyField()]->dbFieldSize();
       }
       return 0;
+    }
+    
+    function setHideWhenEmpty($hidewhenempty)
+    {
+      $this->m_hidewhenempty = $hidewhenempty;                        
+    }    
+    
+    function addToEditArray($mode, &$arr, &$defaults, &$error, $fieldprefix)
+    {
+      global $g_db;
+      
+      // check if destination table is empty
+      // only check if hidewhenempty is set to true
+      if (!$this->m_hidewhenempty || count($this->getSelectableRecords())>0)
+      {                          
+        return parent::addToEditArray($mode, $arr, $defaults, $error, $fieldprefix);  
+      }      
     }
   }
 

@@ -215,6 +215,11 @@
     { 
       return "string";
     }
+  
+    function dbFieldSize()
+    {
+      return 7; // 7 is enough to store hex color codes including the leading #.
+    }
     
   } 
   

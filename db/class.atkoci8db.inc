@@ -23,70 +23,7 @@
       /* do nothing */
     }
     
-    /**
-     * Convert an ATK generic datatype to a database specific type.
-     * 
-     * This function will be overrided by the database specific subclasses of
-     * atkDb.
-     * Note: in all derived subclasses, the following types *must* be 
-     * supported: number, decimal, string, date, text, datetime, time, 
-     * boolean.
-     * If the database does not have a proper field type, consider using
-     * a varchar or number to store the value.
-     * 
-     * @param $generictype  The datatype to convert.
-     */
-    function getType($generictype)
-    {      
-      switch($generictype)
-      {
-        case "number": 
-          return "NUMBER";
-        case "decimal":
-          return "NUMBER";
-        case "string":
-          return "VARCHAR2";          
-        case "date":
-          return "DATE";
-        case "text":
-          return "CLOB";
-        case "datetime":
-          return "DATE";
-        case "time":
-          return "DATE";          
-        case "boolean":        
-          return "NUMBER(1,0)"; // size is added fixed. (because a boolean has no size of its own)          
-      }
-      return ""; // in case we have an unsupported type.      
-    }
     
-    /**
-     * Convert an database specific type to an ATK generic datatype.
-     * 
-     * This function will be overrided by the database specific subclasses of
-     * atkDb.     
-     * 
-     * @param $type  The database specific datatype to convert.
-     */
-    function getGenericType($type)
-    {      
-      $type = strtolower($type);
-      switch($type)
-      {
-        case "number": 
-          return "number";        
-        case "char":
-        case "varchar2":
-          return "string";          
-        case "date":
-          return "date";
-        case "clob":
-          return "text";
-        case "date":
-          return "date";                
-      }
-      return ""; // in case we have an unsupported type.      
-    }
 
     /**
      * Connect to the database
@@ -114,12 +51,15 @@
     }
     
     /**
-     * TODO FIXME: I don't know what errormessges oracle gives,
+     * @TODO FIXME: I don't know what errormessges oracle gives,
      * so this function only returns DB_UNKNOWNERROR for now.
+     * JvdW: to speedup debugging return DB_SUCCESS
      */
     function _translateError($error)
     {
-      return DB_UNKNOWNERROR;
+      atkdebug($error);
+//      return DB_UNKNOWNERROR;
+      return DB_SUCCESS;
     }
 
     /**
@@ -149,7 +89,6 @@
       
       /* query */
       atkdebug("atkoci8db.query(): ".$query);
-
       /* connect to database */
       if ($this->connect()==DB_SUCCESS)
       {
@@ -196,39 +135,25 @@
     {
       /* goto next record */
       $this->m_record = array();
-
       /* get record data */
-      if (@OCIFetchInto($this->m_query_id, $result, OCI_ASSOC|OCI_RETURN_NULLS|OCI_RETURN_LOBS))
+      /* @Function surpresses errors in the http stream */
+      $ret=@OCIFetchInto($this->m_query_id, $this->m_record, OCI_ASSOC+OCI_RETURN_NULLS+OCI_RETURN_LOBS);
+      $error = @OCIError($this->m_query_id); 
+      $this->m_row++;
+// @TODO JvdW 10-01-2004 added as in class.atkmysqldb.inc
+// lowers key names instead of the values
+      $this->m_record = array_change_key_case($this->m_record, CASE_LOWER);
+
+// @TODO JvdW 10-01-2004 just use $ret from OCIFetchInto to check for no_more_data
+        if (!$ret && $this->m_auto_free)
       {
-        for ($i = 1; $i <= OCINumcols($this->m_query_id); $i++)
-        {
-          $column = strtoupper(OCIColumnname($this->m_query_id, $i));
-          $column_return = strtolower($column);
-          $this->m_record[$column_return] = $result[$column];
-        }
-        $m_row++;
-
-        return 1;
-      }
-
-      /* error */
-      else
-      {
-        $error = OCIError($this->m_link_id);
-        $this->m_errno = $error["code"];
-        $this->m_error = $error["message"];
-
-        /* no more records, no problem */
-        if(1403 == $this->m_errno) 
-        { 
-          $this->m_errno = 0;
-          $this->m_error = "";
-          $this->disconnect();
+          @OCIFreeStatement($this->m_query_id);
+          $this->m_query_id = 0;
         }
 
-        return 0;
-      }
+	return $ret;
     }
+
 
     /**
      * Goto a certain position in result set.
@@ -257,6 +182,9 @@
         /* lock */
         if ($mode == "write")
         {
+// @TODO JvdW 10-01-2004 probably going to add 'NOWAIT' to it so that you get an error
+// incase somebody else has this table row also locked. Now we get a deadlock
+// better still let Oracle handle locks and adjust update statements accordingly.
           $m_query_id = OCIParse($this->m_link_id, "lock table $table in row exclusive mode");
           $result = @OCIExecute($m_query_id);
           if (!$result) 
@@ -267,7 +195,7 @@
         }
 
         /* return result */
-        return 1;
+	  return $result;
       }
       return 0;
     }
@@ -365,6 +293,9 @@
      */
     function metadata($table, $full=false)
     {
+      /* first connect */
+      if ($this->connect()==DB_SUCCESS)
+      {      
       /* query for data */
       $this->query("SELECT 
                       T.table_name,T.column_name,T.data_type,
@@ -399,7 +330,7 @@
           $result["num_fields"] = $i;
         } 
       }
-
+      }
       /* return */
       return $result;
     }
@@ -473,6 +404,16 @@
       return $result;
     }
 
+    /**
+     * This function indicates what searchmodes the database supports.
+     * @return array with search modes
+     * @TODO JvdW 10-01-2004 How is this used? Oracle8 and onwards have OracleText which allows searching for
+     * specific words from the data of a column(s) e.g. select * from table where contains(table.column,'search_text')=1
+     */
+    function getSearchModes()
+    {      
+      return array("exact","substring","wildcard","regexp","soundex","greaterthan","greaterthanequal","lessthan","lessthanequal");
+    }
     
   }
 
