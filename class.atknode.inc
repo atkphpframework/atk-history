@@ -734,7 +734,7 @@
     {      
       
       $page = &$this->getPage();
-      $page->register_script($config_atkroot."atk/javascript/formfocus.js");      
+      $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");      
       $this->setStyle("style.css");
       
       $params = array();
@@ -883,12 +883,11 @@
      * Creates an add page
      */
     function addPage($record=NULL)
-    {
-      global $config_atkroot;
+    {      
       
       $page = &$this->getPage();
             
-      $page->register_script($config_atkroot."atk/javascript/formfocus.js");
+      $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
       $this->setStyle("style.css");
       
       $output = $this->statusbar();
@@ -984,7 +983,7 @@
      */
     function editArray($mode="add", $record=NULL, $forceList="", $suppressList="", $fieldprefix="")
     {
-      global $config_atkroot, $g_sessionData;
+      global $g_sessionData;
 
       /* read metadata */
       $this->setAttribSizes();          
