@@ -38,7 +38,7 @@
   define("NF_MRPA",                 131072); // Multi-priority-selection of records is turned on.
 
   define("NF_LOCK",                 262144); // lock records
-  
+
   define("NF_READONLY", NF_NO_ADD|NF_NO_DELETE|NF_NO_EDIT); // aggregate flag to quickly create readonly nodes.
 
   /* recordlist flags */
@@ -138,7 +138,7 @@
 
   // Create database object.
   include_once($config_atkroot."atk/include/db.inc");
-  
+
    // session vars are valid until they are set to something else. if you go a session level higher,
    // the next level will still contain these vars (unless overriden in the url)
    $g_sessionVars = array("atknodetype","atkfilter","atkselector","atkaction");
@@ -306,13 +306,13 @@
                                "copy"=>"add",
                                "editcopy"=>"add",
                                "search"=>"admin");
-                               
+
     /**
-     * The right to execute certain actions can be implied by the fact that you 
+     * The right to execute certain actions can be implied by the fact that you
      * have some other right. For example, if you have the right to access a
-     * feature (admin right), you may also view that record, and don't need 
+     * feature (admin right), you may also view that record, and don't need
      * explicit rights to view it. So the 'view' right is said to be 'implied'
-     *  by the 'admin' right. 
+     *  by the 'admin' right.
      */
     var $m_securityImplied = array("view"=>"admin");
 
@@ -728,6 +728,8 @@
       global $g_layout, $config_atkroot;
       $g_layout->initGui();
       $g_layout->register_script($config_atkroot."atk/javascript/formfocus.js");
+      $g_layout->register_script($config_atkroot."atk/javascript/formnavigation.js");
+
       $g_layout->ui_top($g_layout->title($this->m_module, $this->m_type,"edit"));
       $g_layout->output($this->statusbar($locked));
       $g_layout->output('<form name="entryform" enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?'.SID.'"'.
@@ -735,14 +737,16 @@
       $g_layout->output(session_form());
 
       if (count($this->m_tabListEdit) > 1) $g_layout->tabs_top($this->buildTabs());
-      $forceList = decodeKeyValueSet($this->m_postvars['atkfilter']);      
+      $forceList = decodeKeyValueSet($this->m_postvars['atkfilter']);
       $g_layout->output($this->editForm("edit",$record,$forceList,$this->m_postvars['atksuppress']));
       if (count($this->m_tabListEdit) > 1) $g_layout->tabs_bottom();
 
       $g_layout->output('<br>');
       $g_layout->output($this->getFormButtons("edit"));
       $g_layout->output('</form>');
-      $g_layout->ui_bottom();      
+
+      $g_layout->ui_bottom();
+
     }
 
     /**
@@ -808,7 +812,7 @@
         }
 
       }
-      $page.='</table>';          
+      $page.='</table>';
 
       if (count($this->m_tabListView) > 1) $g_layout->tabs_top($this->buildTabs());
       $g_layout->output($page);
@@ -816,17 +820,17 @@
 
       $buttons = '<br><form method="get">'.session_form(SESSION_NESTED).
                         '&nbsp;<input type="submit" name="atkback" value="&lt;&lt; '.text('back').'">&nbsp;';
-                        
+
       // if appropriate, display an edit button.
       if (!$this->hasFlag(NF_NO_EDIT)&&$this->allowed("edit", $record))
-      {        
+      {
         $buttons.= '<input type="hidden" name="atkaction" value="edit">'.
                    '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">'.
                    '&nbsp;<input type="submit" value="'.text('edit').'">&nbsp;';
-      }      
-    
+      }
+
       $buttons.= '</form>';
-      
+
       $g_layout->output($buttons."<br>");
 
       $g_layout->ui_bottom();
@@ -840,6 +844,7 @@
       global $g_layout, $config_atkroot;
       $g_layout->initGui();
       $g_layout->register_script($config_atkroot."atk/javascript/formfocus.js");
+      $g_layout->register_script($config_atkroot."atk/javascript/formnavigation.js");
       $g_layout->ui_top($g_layout->title($this->m_module, $this->m_type, 'add'));
       $g_layout->output($this->statusbar());
 
@@ -916,7 +921,7 @@
       global $config_atkroot, $g_sessionData;
 
       /* read metadata */
-      $this->setAttribSizes();          
+      $this->setAttribSizes();
 
       /* default values */
       $defaults = $record;
@@ -928,7 +933,7 @@
         $this->modifyRecord($defaults, $this->m_postvars["atkformdata"]);
         $this->m_postvars["atkformdata"]="";
         $g_sessionData["default"]["stack"][atkStackID()][atkLevel()]["atkformdata"]="";
-      }          
+      }
 
       $pk = $this->primaryKey($record);
 
@@ -945,7 +950,7 @@
           {
             $defaults[$varname]=$value;
           }
-        }        
+        }
       }
 
       /* add mode */
@@ -1010,7 +1015,7 @@
           }
         }
       }
-            
+
       /* extra submission data */
       $result["hide"][] = '<input type="hidden" name="'.$fieldprefix.'atkescape">';
       $result["hide"][] = '<input type="hidden" name="'.$fieldprefix.'atknodetype" value="'.$this->atknodetype().'">';
@@ -1021,7 +1026,7 @@
        * to get HTML code for hideing the attribute's data. You can override the attribute's
        * edit() method by supplying an <attributename>_edit function in the derived classes.
        */
-      $tab = $this->getActiveTab();      
+      $tab = $this->getActiveTab();
       foreach (array_keys($this->m_attribIndexList) as $r)
       {
         $attribname = $this->m_attribIndexList[$r]["name"];
@@ -1045,7 +1050,7 @@
 
         /* we let the attribute add itself to the edit array */
         $p_attrib->addToEditArray($mode, $result, $defaults, $record['atkerror'], $fieldprefix);
-      }            
+      }
 
       /* check for errors */
       $result["error"] = $record['atkerror'];
@@ -1069,8 +1074,8 @@
     {
       global $g_layout;
 
-      /* get data, transform into form, return */            
-      $data = $this->editArray($mode, $record, $forceList, $suppressList, $fieldprefix);      
+      /* get data, transform into form, return */
+      $data = $this->editArray($mode, $record, $forceList, $suppressList, $fieldprefix);
       $form = $g_layout->ret_editForm($data, $this);
       return $form;
     }
@@ -1409,24 +1414,24 @@
 
       $g_layout->ui_bottom();
     }
-    
+
     /**
      * return an array with the default actions for a certain mode.
      *
      * @param $mode The mode for which you want a list of actions.
-     *              Currently available modes for this method: 
+     *              Currently available modes for this method:
      *               - "admin" (for actions in adminscreens)
-     *               - "relation" (for the list of actions when 
+     *               - "relation" (for the list of actions when
      *                 displaying a recordlist in a onetomany-relation)
      *               - "view" (for actions when viewing only)
      *              Note: the default implementation of defaultActions
-     *              makes no difference between "relation" and "admin" and 
-     *              will return the same actions for both, but you might want 
+     *              makes no difference between "relation" and "admin" and
+     *              will return the same actions for both, but you might want
      *              to override this behaviour in derived classes.
-     * @param $params An array of extra parameters to add to all the action 
-     *                urls. You can use this to pass things like an atkfilter 
+     * @param $params An array of extra parameters to add to all the action
+     *                urls. You can use this to pass things like an atkfilter
      *                for example. The array should be key/value based.
-     *                
+     *
      * @example defaultActions("admin") will return a list of actions
      *          that can be performed on records of this node in an
      *          admin screen.
@@ -1435,7 +1440,7 @@
     {
       $actions = array();
       $postfix = "";
-      
+
       if (count($params)>0)
       {
         foreach ($params as $key=>$value)
@@ -1443,9 +1448,9 @@
           $postfix.= "&$key=".rawurlencode($value);
         }
       }
-        
+
       // Changed: it used to be that you could only view if you didn't have
-      // edit right. This was changed because of Achievo bug #41 
+      // edit right. This was changed because of Achievo bug #41
       // (http://www.achievo.org/bug/41)
       $actionbase = $_SERVER["PHP_SELF"].'?atknodetype='.$this->atknodetype().'&atkselector=[pk]'.$postfix;
       if (!$this->hasFlag(NF_NO_VIEW)&&$this->allowed("view"))
@@ -1458,8 +1463,8 @@
         if (!$this->hasFlag(NF_NO_EDIT)&&$this->allowed("edit"))
         {
           $actions["edit"] = $actionbase.'&atkaction=edit';
-        }        
-      
+        }
+
         if (!$this->hasFlag(NF_NO_DELETE)&&$this->allowed("delete"))
         {
           $actions["delete"] = $actionbase.'&atkaction=delete';
@@ -1469,7 +1474,7 @@
           $actions["copy"] = $actionbase.'&atkaction=copy';
         }
       }
-      
+
       return $actions;
     }
 
@@ -1535,7 +1540,7 @@
         $this->recordActions($row["record"], $row["actions"], $row["mra"]);
         $result["mra"] = array_merge($result["mra"], $row["mra"]);
         foreach($row["actions"] as $name => $url)
-        {         
+        {
           if (!empty($url) && $this->allowed($name, $row["record"]))
           {
             /* dirty hack */
@@ -2440,11 +2445,11 @@
       // for example, modules modifying all classes in all modules with the
       // name 'bill'.
       for ($i = 0, $_i = count($g_modifiers[$this->atknodetype()]); $i < $_i; $i++)
-      {      
+      {
         $modname = $g_modifiers[$this->atknodetype()][$i];
         $mod = getModule($modname);
         $modifiername = $this->m_type."_modifier";
-        
+
         if (method_exists($mod,$modifiername))
         {
           atkdebug("Applying modifier from module $modname to ".$this->m_type);
@@ -2520,7 +2525,7 @@
       global $g_db, $g_sessionManager, $g_layout;
       $this->m_postvars = $postvars;
 
-      $this->m_action = $postvars['atkaction'];          
+      $this->m_action = $postvars['atkaction'];
 
       /** DIRTY HACK
           if action is something else than edit, we clear the atkformdata sessionstuff **/
@@ -2573,7 +2578,7 @@
     function action_update()
     {
       global $g_db;
-      
+
       if ($this->m_postvars['atkcancel']=="")
       {
         $record = $this->updateRecord();
@@ -2624,7 +2629,7 @@
               $this->m_action="edit";
               //update succesful, pk value might be changed so update m_orgkey
               $record["atkprimkey"] = $this->primaryKey($record);
-  
+
               $locked = FALSE;
               if ($this->hasFlag(NF_LOCK))
               {
@@ -2635,7 +2640,7 @@
                   return;
                 }
               }
-  
+
               //$this->setOrgKeyValue($record);
               $this->editPage($record, $locked);
             }
@@ -2717,8 +2722,8 @@
       if (!empty($this->m_postvars['confirm']))
       {
         global $g_db;
-        // Confirmation page was displayed and 'yes' was clicked        
-        if($this->deleteDb($this->m_postvars['atkselector']))        
+        // Confirmation page was displayed and 'yes' was clicked
+        if($this->deleteDb($this->m_postvars['atkselector']))
         {
           $g_db->commit();
           $location = $this->feedbackUrl("delete", ACTION_SUCCESS);
@@ -2728,8 +2733,8 @@
         {
           $g_db->rollback();
           $location = $this->feedbackUrl("delete",ACTION_FAILED,$g_db->getErrorMsg());
-          $this->redirect($location);    
-        }        
+          $this->redirect($location);
+        }
       }
       elseif (empty($this->m_postvars['cancel']))
       {
@@ -2795,7 +2800,7 @@
 
       if(count($recordset) > 0)
       {
-        
+
         if(!$this->copyDb($recordset[0]))
         {
           $g_db->rollback();
@@ -3111,7 +3116,7 @@
               $p_attrib->validate($record, $mode);
             }
           }
-        }   
+        }
       }
       if(count($record['atkerror']) > 0) return false;
 
@@ -3136,7 +3141,7 @@
               triggerError($record, $attribname, 'error_primarykey_exists', '', $this->m_type);
             }
           }
-          
+
           // if no root elements may be added to the tree, then every record needs to have a parent!
           if ($p_attrib->hasFlag(AF_PARENT) && $this->hasFlag(NF_TREE_NO_ROOT_ADD) && $this->m_action == "save")
             $p_attrib->m_flags |= AF_OBLIGATORY;
@@ -3235,7 +3240,7 @@
         {
           $p_attrib = &$this->m_attribList[$storelist[$i]];
           if (!$p_attrib->store($g_db, $record,"update"))
-          {          
+          {
             // something went wrong.
             return false;
           }
@@ -3437,10 +3442,10 @@
             }
           }
         }
-      }      
+      }
       foreach (array_keys($this->m_attribList) as $attribname)
       {
-        $p_attrib = &$this->m_attribList[$attribname];        
+        $p_attrib = &$this->m_attribList[$attribname];
         if (
              (
                 ((is_array($includeList) && in_array($attribname,$includeList))
@@ -3461,22 +3466,22 @@
         }
       }
 
-      if ($order!="") $query->addOrderBy($order);      
+      if ($order!="") $query->addOrderBy($order);
 
-      if (is_array($limit)) 
+      if (is_array($limit))
       {
         if (count($limit) == 2)
         {
           $query->setLimit($limit["offset"], $limit["limit"]);
         }
-      }      
+      }
       else if (!empty($limit))
       {
         $query->setLimit(0, $limit);
       }
-      
-      $querystring = $query->buildSelect();   
-      
+
+      $querystring = $query->buildSelect();
+
       $dbrecords = $g_db->getrows($querystring);
 
 //      $this->setOrgKeyValue($dbrecords[0]);
@@ -3549,12 +3554,12 @@
         foreach (array_keys($this->m_attribList) as $name)
           if ($this->m_attribList[$name]->hasFlag(AF_FORCE_LOAD)) $usedFields[] = $name;
         $usedFields = array_unique($usedFields);
-      }             
-      
+      }
+
       foreach ($usedFields as $usedfield)
       {
         list($attribname) = explode(".", $usedfield);
-        $p_attrib = &$this->m_attribList[$attribname];        
+        $p_attrib = &$this->m_attribList[$attribname];
         if (method_exists($p_attrib,"load"))
         {
           //$loadlist[]=$attribname;
@@ -3620,18 +3625,18 @@
       }
 
       if ($query->executeInsert())
-      {        
+      {
 
         // also store special storage attributes.
         for ($i = 0, $_i = count($storelist); $i < $_i; $i++)
         {
           $p_attrib = &$this->m_attribList[$storelist[$i]];
-  
+
           if (!$p_attrib->store($g_db, $record, $mode))
           {
             // error
             return false;
-          }        
+          }
         }
 
         // new primary key
@@ -3655,10 +3660,10 @@
     function deleteDb($selector)
     {
       global $g_db;
-            
+
 
       $recordset = $this->selectDb($selector,"","","","","delete");
-               
+
       if (count($this->m_cascadingAttribs)>0)
       {
         for ($i = 0, $_i = count($recordset); $i < $_i; $i++)
@@ -3674,9 +3679,9 @@
           }
         }
       }
-          
+
       if ($g_db->query("DELETE FROM ".$this->m_table." WHERE ".$selector))
-      {      
+      {
         for ($i = 0, $_i = count($recordset); $i < $_i; $i++)
         {
           if (!$this->postDel($recordset[$i]))
@@ -3690,7 +3695,7 @@
       else
       {
         return false;
-      }      
+      }
     }
 
     /**
@@ -3732,7 +3737,7 @@
      */
     function postUpdate($record)
     {
-      // Do nothing      
+      // Do nothing
       return true;
     }
 
@@ -3843,16 +3848,16 @@
     /**
      * This function determines if the user has the right to perform a certain
      * action on the node.
-     * 
+     *
      * @param  $action - The action to be checked
      *         $record (optional) - The record on which the action is to be
-     *                              performed. The standard implementation 
-     *                              ignores this parameter, but in derived 
+     *                              performed. The standard implementation
+     *                              ignores this parameter, but in derived
      *                              nodes you can override this function and
      *                              implement your own record based security
-     *                              policy. Keep in mind though that a 
+     *                              policy. Keep in mind though that a
      *                              record is not passed in every situation.
-     *      
+     *
      * @return true if the action may be performed.
      *         false if the action is not allowed
      */
@@ -3867,7 +3872,7 @@
       {
         $alias = $this->m_securityAlias;
       }
-      
+
       // Resolve action
       $action = $this->securityKey($action);
 
@@ -4019,7 +4024,7 @@
     /**
      * Search all records for the occurance of a certain expression.
      *
-     * The method will only return results for which the current user has 
+     * The method will only return results for which the current user has
      * the view-privilege.
      *
      * This function searches in all fields that are not AF_HIDE_SEARCH for
