@@ -1232,9 +1232,7 @@
     function buildNavigation($mode="")
     {
       $limit = (int)$this->m_postvars['atklimit'];
-
       $filter = $this->validateFilter($this->m_postvars["atkfilter"]);
-
       $count = (int)$this->countDb($filter, $this->m_listExcludes, "", $mode);
 
       // maximum number of bookmarks to pages.
