@@ -1971,6 +1971,7 @@
     header('Content-Type: '. $mime_type);
     header('Content-Disposition:  filename="'.$fileName.'.'.$ext.'"');
     header('Pragma: no-cache');
+    header('Pragma: public');
     header('Expires: 0');
 		
 		// 1. as a bzipped file
