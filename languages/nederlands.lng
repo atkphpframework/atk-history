@@ -182,7 +182,8 @@
   $txt_login = "Inloggen";
   $txt_auth_max_loginattempts_exceeded = "Teveel pogingen. Inloggen is geblokkeerd. Neem contact op met uw systeembeheerder.";
   $txt_auth_mismatch = "Gebruikernaam en/of wachtwoord zijn niet juist. Probeert u het opnieuw.";
-  $txt_auth_dberror = "De database server is niet bereikbaar, er is een mail gestuurd naar platformdev@ibuildings.nl.";
+  $txt_auth_dberror = "De database server is niet bereikbaar, er is een mail gestuurd naar %s.";
+  $txt_auth_dberror_user = "Deze site is tijdelijk niet bereikbaar vanwege onderhoud.";
   $txt_auth_account_locked = "Dit account is vergrendeld. Probeer indien mogelijk een ander account, of neem contact op met uw systeembeheerder.";
 
   $txt_wysiwyg_fontface = "Lettertype";

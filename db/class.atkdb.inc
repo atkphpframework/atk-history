@@ -145,35 +145,52 @@
     
     function halt()
     {
-      global $g_layout;
+      global $g_layout, $config_databasecheck;
       if ($this->m_haltonerror)
       { 
         if($this->getErrorType()=="system")
         {        
-          if($this->getAtkDbErrno() == DB_UNKNOWNDATABASE)
+          if ($config_databasecheck)
 	  {
-            if (!getUser())
+  	    if($this->getAtkDbErrno() == DB_UNKNOWNDATABASE)
 	    {
-              atkdebug($this->getErrorMsg());
-              mailreport();
-              return $this->m_error;
-	    }
-	    else
-	    {
-	      $g_layout->error("System error", $this->getErrorMsg());
+              if (!getUser())
+	      {
+                if ($this->m_user)
+	        {
+	  	  atkdebug($this->getErrorMsg());
+		  return $this->m_error;
+                }
+	        else
+	        {
+                  $g_layout->error("System error", text("auth_dberror_user"));
+	          atkerror("atkdb::halt() on system error");
+	          if(in_array($this->m_errno,$this->m_critical_error)) $level='critical';
+                  halt("",$level);
+	        }
+	      }
+	      else
+	      {
+                $g_layout->error("System error", $this->getErrorMsg());
+	        atkerror("atkdb::halt() on system error");
+	        if(in_array($this->m_errno,$this->m_critical_error)) $level='critical';
+                halt($this->getErrorMsg(),$level);
+	      }
+            }
+            else
+            {
+              $g_layout->error("System error", text());
 	      atkdebug("atkdb::halt() on system error");
-              mailreport();
-	      if(in_array($this->m_errno,$this->m_critical_error)) $level='critical';
+              if(in_array($this->m_errno,$this->m_critical_error)) $level='critical';
               halt($this->getErrorMsg(),$level);
-	    }
-          }
-          else
-          {
-            $g_layout->error("System error", $this->getErrorMsg());
+            }
+	  }
+	  else
+	  {
 	    atkdebug("atkdb::halt() on system error");
             if(in_array($this->m_errno,$this->m_critical_error)) $level='critical';
             halt($this->getErrorMsg(),$level);
-          }
+	  }
         }
         else
         {

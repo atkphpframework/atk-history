@@ -367,7 +367,7 @@
           
     function loginForm($defaultname, $lastresponse)
     {      
-      
+      global $config_mailreport;
       $loginattempts = sessionLoad('loginattempts');            
       $loginattempts = 0;
       if($loginattempts=="") $loginattempts = 0;
@@ -378,7 +378,7 @@
       }
       else
       {     
-        $loginattempts++;      
+        $loginattempts++;
       }
 
       sessionStore('loginattempts', $loginattempts);      
@@ -415,7 +415,7 @@
 	}
         else if($lastresponse == AUTH_DBERROR)
         {
-            $output.='<tr><td colspan=2 class=error>'.text('auth_dberror').'<br><br></td></tr>';
+            $output.='<tr><td colspan=2 class=error>'. sprintf(text("auth_dberror"), $config_mailreport).'<br><br></td></tr>';
 	    mailreport();
 	}
 	
@@ -424,11 +424,10 @@
         $output.="<tr><td colspan=2 class=table height=6></td></tr>";
         $output.="<tr><td valign=top class=table>".text('password').":</td><td><input type=password size=15 name=auth_pw value=''></td></tr>";
         $output.="<tr><td class=table colspan=2 align=center height=50 valign=middle><input type=submit value=".text('login')."></td></tr>";      
-                       
       }
       
       $output.='</table></form>';
-
+      
       $output.='<SCRIPT LANGUAGE="JavaScript">placeFocus()</SCRIPT>';
       
       $page->addContent($ui->render("login.tpl", array("title"=>text('login_form'),
@@ -436,7 +435,6 @@
       $o = &atkOutput::getInstance();
       $o->output($page->render(text("login_form")));
     }
-
 
     function auth_userField($defaultname)
     {            
