@@ -217,4 +217,7 @@
 
   $txt_export = "Exporteren";
   $txt_error_fileexists = "Bestand bestaat al op de server. Verander de naam van het bestand";
+  
+  $txt_access_denied = "Toegang geweigerd";
+  $txt_error_node_action_access_denied = "Sorry, u heeft geen toestemming om deze bewerking uit te voeren.";
 ?>
