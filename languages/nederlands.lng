@@ -214,4 +214,6 @@
   $txt_feedback = "Bevestiging";
   
   $txt_error_date_invalid = "Ongeldige datum";
+
+  $txt_export = "Exporteren";
 ?>

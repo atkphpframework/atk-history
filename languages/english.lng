@@ -172,5 +172,7 @@
   $txt_feedback_save = "The item has been added.";
   $txt_feedback_update = "The modifications have been saved.";
   $txt_feedback = "Feedback";
+
+  $txt_export = "Export";
   
 ?>
