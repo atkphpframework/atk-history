@@ -1050,6 +1050,104 @@
     }
 
     /**
+     * Function outputs a form with all values hidden. This is probably only
+     * usefull for the atkOneToOneRelation's hide method.
+     * @param $mode mode of the form ("edit" or "add")
+     * @param $forcelist a key-value array used to preset certain fields to
+     *                   a certain value
+     * @param $fieldprefix if set, each form element is prefixed with the
+     *                     specified prefix (used in embedded forms)
+     */
+    function hideForm($mode="add",$record = NULL, $forceList="", $fieldprefix="")
+    {
+      global $g_layout, $config_atkroot,$g_sessionData,$atklevel;
+
+      $defaults = $record;
+
+      // Form may have been saved in a session..
+      if ($this->m_postvars["atkformdata"]!="")
+      {
+        atkdebug("Session formdata present");
+        $this->modifyRecord(&$defaults, $this->m_postvars["atkformdata"]);
+        $this->m_postvars["atkformdata"]="";
+        //atk_var_dump($g_sessionData);
+        $g_sessionData["default"]["stack"][$atklevel]["atkformdata"]="";
+      }
+
+      $pk = $this->primaryKey($record);
+
+      if ($mode=="edit")
+      {
+        $form.='<input type="hidden" name="'.$fieldprefix.'atkaction" value="update">';
+
+        // Nodes can define edit_values
+        if (method_exists($this,"edit_values"))
+        {
+          $overrides = $this->edit_values($defaults);
+          while (list($varname,$value) = each($overrides))
+          {
+            $defaults[$varname]=$value;
+          }
+        }
+      }
+      else
+      {
+        $form.='<input type="hidden" name="'.$fieldprefix.'atkaction" value="save">';
+
+        // Nodes can define initial values, if they don't already have values.
+        if (method_exists($this,"initial_values"))
+        {
+          $overrides = $this->initial_values();
+          while (list($varname,$value) = each($overrides))
+          {
+            if ($defaults[$varname]=="") $defaults[$varname]=$value;
+          }
+        }
+      }
+
+      $form.='<input type="hidden" name="'.$fieldprefix.'atkprimkey" value="'.$record["atkprimkey"].'">';
+
+      if (is_array($forceList))
+      {
+        while(list($forcedvarname,$forcedvalue)=each($forceList))
+        {
+          if ($forcedvarname!="")
+          {
+            if (strpos($forcedvarname,'.')>0)
+            {
+              list($table,$field) = split('\.',$forcedvarname);
+              $defaults[$table][$field] = $forcedvalue;
+              $attribname = $table;
+            }
+            else
+            {
+              $defaults[$forcedvarname]=$forcedvalue;
+              $attribname = $forcedvarname;
+            }
+            $p_attrib = &$this->m_attribList[$attribname];
+            $p_attrib->m_flags |= AF_READONLY|AF_HIDE_ADD;
+          }
+        }
+      }
+
+      for($r=0;$r<count($this->m_attribIndexList);$r++)
+      {
+        $attribname = $this->m_attribIndexList[$r]["name"];
+        $attribtabs = $this->m_attribIndexList[$r]["tabs"];
+        $p_attrib = &$this->m_attribList[$attribname];
+
+        // fields that have not yet been initialised may be overriden in the url..
+        if ($defaults[$p_attrib->fieldName()]=="" && $this->m_postvars[$p_attrib->fieldName()]!="")
+        {
+          $defaults[$p_attrib->fieldName()] = $this->m_postvars[$p_attrib->fieldName()];
+        }
+        $form.=$p_attrib->hide($defaults, $fieldprefix);
+      }
+
+      return $form;
+    }
+
+    /**
      * Function outputs a form that the user can use to search records.
      */
     function searchForm($record = NULL)
