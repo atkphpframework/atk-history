@@ -1317,6 +1317,7 @@
     {
       switch ($action)
       {
+        case "add": // add and edit both use the same form.
         case "edit": return "editform.tpl";
         case "view": return "viewform.tpl";
         case "search": return "searchform.tpl";
