@@ -1332,7 +1332,8 @@
         }
       }
 
-      $g_layout->output($this->recordList($recordset, $actions));
+      $flags = ($this->hasFlag(NF_MRA) ? RL_MRA : 0) | ($this->hasFlag(NF_MRPA) ? RL_MRPA : 0);
+      $g_layout->output($this->normalRecordList($recordset, $actions, $flags));
 
       if (!empty($nav)) $g_layout->output('<br>'.$nav);
       $g_layout->output('<br><br>');
@@ -1429,9 +1430,12 @@
      * @param $suppresslist fields we don't display
      * @param $sessionsave links are embedded in a form, save form data?
      */
-    function recordList($recordset, $actions, $sortable=true,$suppressList="", $sessionsave=false)
+    function recordList($recordset, $actions, $sortable=true, $suppressList="", $sessionsave=false)
     {
       $flags = (!$sortable ? RL_NO_SORT : 0) | ($sessionsave ? RL_EMBED : 0);
+      $flags |= (($this->m_action == "admin" || $sessionsave) && $this->hasFlag(NF_MRA)) ? RL_MRA : 0;
+      $flags |= (($this->m_action == "admin" || $sessionsave) && $this->hasFlag(NF_MRPA)) ? RL_MRPA : 0;
+      $flags |= ($this->hasFlag(NF_NO_SEARCH) || $this->m_postvars["atkaction"] == "search") ? RL_NO_SEARCH : 0;
       $form  = ($sessionsave ? "entryform" : "");
       return $this->normalRecordList($recordset, $actions, $flags, $suppress, $form);
     }
@@ -1470,23 +1474,14 @@
     {
       global $g_layout, $PHP_SELF, $g_theme;
 
-      /* Set flags. If multi-record-actions are enabled we also set the RL_MRA flag. We don't display
-       * the search boxes if the NF_NO_SEARCH flag has been set, or if we are in extended search mode
-       * (otherwise we have 2 search forms).
-       */
-      $flags |= $this->hasFlag(NF_MRA) ? RL_MRA : 0;
-      $flags |= ($this->hasFlag(NF_NO_SEARCH) || $this->m_postvars["atkaction"] == "search") ? RL_NO_SEARCH : 0;
-
       /* retrieve list array */
       $list = $this->listArray($recordset, $flags, "", $actions, $suppressList);
 
-      /* Agains check some flags. It has no use displaying the multi-record-actions form if
-       * there aren't any multi-record actions. It has no use to display the search row if
-       * there aren't any search boxes to display.
-       */
-      if ($this->hasFlag(NF_MRA) && (count($list["mra"]) == 0 || count($list["rows"]) == 0)) $flags ^= RL_MRA;
+      /* Check if some flags are still valid or not... */
+      if (hasFlag($flags, RL_MRA) && (count($list["mra"]) == 0 || count($list["rows"]) == 0)) $flags ^= RL_MRA;
       if (!hasFlag($flags, RL_NO_SEARCH) && count($list["search"]) == 0) $flags |= RL_NO_SEARCH;
-      if ($this->hasFlag(NF_MRPA) && count($this->m_priority_actions) > 0 && count($list["rows"]) > 0)
+      if (hasFlag($flags, RL_MRPA) && (count($this->m_priority_actions) == 0 || count($list["rows"]) == 0)) $flags ^= RL_MRPA;
+      elseif (hasFlag($flags, RL_MRPA))
       {
         $flags = ($flags | RL_MRA | RL_MRPA ) ^ RL_MRA;
         if ($this->m_priority_max == 0)
@@ -2153,7 +2148,7 @@
 
         $actions["select"]=atkurldecode($this->m_postvars['atktarget']);
 
-        $g_layout->output($this->recordList($recordset, $actions));
+        $g_layout->output($this->normalRecordList($recordset, $actions));
 
         if (!empty($nav)) $g_layout->output('<br>'.$nav.'<br>');
         $g_layout->output('<br>');

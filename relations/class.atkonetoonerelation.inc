@@ -55,7 +55,7 @@
           if (!empty($this->m_destinationFilter)) $filter = rawurlencode($this->m_destinationFilter);
           $actions = array("view" => dispatch_url($this->m_destination, "view", array("atkselector" => "[pk]", "atkfilter" => $filter)));
           $this->m_destInstance->m_flags |= NF_NO_SEARCH;
-          $result = $this->m_destInstance->recordList(array($myrecord), $actions, false, array($this->m_refKey), false)."<br>";
+          $result = $this->m_destInstance->normalRecordList(array($myrecord), $actions, RL_EMBED, array($this->m_refKey))."<br>";
         }
       }
 
