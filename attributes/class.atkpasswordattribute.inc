@@ -116,12 +116,13 @@
   }
 
   /**
-   * Add's slashes to the string for the database
+   * Add's slashes to the string for the database and replace old password with the new
    * @param $rec Array with values
    * @return String with slashes
    */
   function value2db($rec)
   {
+    $rec[$this->fieldName()]["hash"] = $rec[$this->fieldName()]["new"];
     return addslashes($rec[$this->fieldName()]["hash"]);
   }
 
@@ -166,10 +167,6 @@
       $error = TRUE;
       triggerError($record, $this->fieldName(), 'error_obligatoryfield');
     }
-    
-    /* new password? */
-    if (!$error && strlen($value["new"]) > 0)
-    $record[$this->fieldName()]["hash"] = md5($record[$this->fieldName()]["new"]);
   }
 
   /**
@@ -231,6 +228,16 @@
       $out .= $vowels[mt_rand()%count($vowels)];
     }
       return $out;
+    }
+
+    /**
+     * Overwriting the fetchValue to ensure all passwords are hashed
+     */    
+    function fetchValue($rec)
+    {
+      $rec[$this->fieldName()]["new"] = md5($rec[$this->fieldName()]["new"]);
+      $rec[$this->fieldName()]["again"] = md5($rec[$this->fieldName()]["again"]);
+      return $rec[$this->fieldName()];
     }
 }
 ?>
