@@ -1007,7 +1007,7 @@
   function usefilter($filter)     { atkuse("filter"   , $filter);    }
 
   /**
-  * description
+  * use an atk class (attribute, relation or filter)
   *
   * @return void
   */
@@ -1016,7 +1016,7 @@
     global $config_atkroot;
     $a = explode(".", $name);
     if (count($a) == 2)
-      $include = $config_atkroot."modules/".strtolower($a[0])."/".$type."s/class.".strtolower($a[1]).".inc";
+      $include = moduleDir(strtolower($a[0])).$type."s/class.".strtolower($a[1]).".inc";
     else $include = $config_atkroot."atk/".$type."s/class.".strtolower($name).".inc";
     include_once($include);
   }
