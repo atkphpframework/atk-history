@@ -114,10 +114,10 @@
       }
       else
       {
+        $curval = ($record[$this->fieldName()]>0?$this->_minutes2string($record[$this->fieldName()]):"");
         $result = '<input type="text" name="'.$fieldprefix.$this->formName().
-                '" value="'.$this->_minutes2string($record[$this->fieldName()]).'"'.
-                ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').
-                ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>';        
+                '" value="'.$curval.'"'.
+                ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').'>';        
       }
       return $result;
     }        
