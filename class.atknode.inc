@@ -1916,8 +1916,7 @@
       
       $listName = "rl_".getUniqueId("normalRecordList");
       
-      $page = &$this->getPage();
-      $page->register_script(atkconfig("atkroot")."atk/keyboard/javascript/class.atkrlkeylistener.js");
+      $page = &$this->getPage();      
       $page->register_script(atkconfig("atkroot")."atk/javascript/recordlist.js");
                         
       $defaulthighlight = $theme->getAttribute("highlight");                 
@@ -2262,7 +2261,7 @@
         }
         
         $kb = &atkKeyboard::getInstance();
-        $kb->addRecordListHandler($listName, $selectcolor, count($records));
+        $kb->addRecordListHandler($listName, $selectcolor, count($records));        
         
         $res = $ui->render("recordlist.tpl", array("vorientation"=>$vorientation,
                                                    "rows"=>$records,

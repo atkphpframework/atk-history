@@ -43,6 +43,10 @@
       // does not know the highlight color of each row.
       $params = array("'".$id."'", "'".$highlight."'", $reccount);
       $this->addHandler("atkRLKeyListener", $params);
+      
+      // atkrlkeylistener must be loaded after the main addHandler, which loads keyboardhandler.
+      $page = &atkPage::getInstance();
+      $page->register_script(atkconfig("atkroot")."atk/keyboard/javascript/class.atkrlkeylistener.js");
     }
     
     function addHandler($handlertype, $params)
