@@ -38,6 +38,7 @@
   define("NF_MRPA",                 131072); // Multi-priority-selection of records is turned on.
 
   define("NF_LOCK",                 262144); // lock records
+  define("NF_EXT_SORT",             524288); // enable extended sorting
   
   define("NF_READONLY", NF_NO_ADD|NF_NO_DELETE|NF_NO_EDIT); // aggregate flag to quickly create readonly nodes.
 
@@ -48,6 +49,8 @@
   define("RL_MRA",                             8); // multi-record-actions enabled
   define("RL_MRPA",                           16); // multi-record-priority-actions enabled
   define("RL_LOCK",                           32); // records can be locked
+  define("RL_EXT_SORT",                       64); // extended sort feature
+  
 
   /*
    * action status flags
@@ -234,12 +237,6 @@
     var $m_table;
     var $m_seq;
 
-    /**
-     * The db
-     */
-    var $m_db;
-
-    
     /**
      * The primary key of this node
      */
@@ -623,15 +620,11 @@
      * @param $tablename The Tablename
      * @param $seq sequence
      */
-    function setTable($tablename, $seq="", $db=NULL)
+    function setTable($tablename,$seq="")
     {
-      global $g_db;
-
       $this->m_table      = $tablename;
       if ($seq=="") $seq = $tablename;
       $this->m_seq        = $seq;
-      if ($db==NULL) $this->m_db = &$g_db;
-      else $this->m_db = &$db;
     }
 
     /**
@@ -1029,10 +1022,7 @@
             if($attribname!="")
             {
               $p_attrib = &$this->m_attribList[$attribname];
-              if (is_object($p_attrib))
-              {
-                if (!$p_attrib->hasFlag(AF_NO_FILTER)) $p_attrib->m_flags |= AF_READONLY|AF_HIDE_ADD;
-              }
+              if (!$p_attrib->hasFlag(AF_NO_FILTER)) $p_attrib->m_flags |= AF_READONLY|AF_HIDE_ADD;
             }
           }
         }
@@ -1132,7 +1122,7 @@
      */
     function searchForm($record = NULL)
     {
-      global $g_layout;
+      global $g_layout, $g_db;
 
       $this->setAttribSizes();
 
@@ -1140,7 +1130,7 @@
 
       $form.=$g_layout->ret_table_simple();
 
-      $dbSearchModes = $this->m_db->getSearchModes();
+      $dbSearchModes = $g_db->getSearchModes();
       $form.='<tr>';
       $form.=$g_layout->ret_td(text("search_mode"),'colspan="1"');
       $sel.='<input type="radio" name="atksearchmethod" value="AND" checked>'.text("search_and").'&nbsp;&nbsp;&nbsp;';
@@ -1248,7 +1238,7 @@
       // maximum number of bookmarks to pages.
       $max_bm = 10;
 
-      if (!($limit > 0 && $count > $limit && ceil($count / $limit) > 1))return "";
+      if (!($limit > 0 && $count > $limit && ceil($count / $limit) > 1)) return "";
 
       $pages = ceil($count / $limit);
       $curr  = ($this->m_postvars['atkstartat'] / $limit) + 1;
@@ -1312,7 +1302,7 @@
 
         // We use wildcard search for the index. Should be supported by any database.
 
-        $nav.=href($_SERVER["PHP_SELF"]."?atknodetype=".$this->atkNodeType()."&atkaction=".$this->m_action."&atksearch[".$this->m_index."]=".$char."*&atksearchmode[".$this->m_index."]=wildcard",$label);
+        $nav.=href($_SERVER["PHP_SELF"]."?atknodetype=".$this->atkNodeType()."&atkaction=".$this->m_action."&atksearch[".$this->m_index."]=".$char."*&atksearchmode[".$this->m_index."]=wildcard&atkstartat=0",$label);
 
         // uncomment the following line if 26 letters seems to become too wide.
         //if ($count>13 && ($i+1)==floor($count/2)) $nav.='<br>'; else
@@ -1365,9 +1355,11 @@
       if ($this->m_postvars['atklimit']=="") $this->m_postvars['atklimit']=atkconfig("recordsperpage");
 
       if ($this->m_postvars['atkstartat']=="") $this->m_postvars['atkstartat']=0;
+      
+      $columnConfig = &$this->getColumnConfig();
 
       $recordset = $this->selectDb($this->m_postvars['atkfilter'],
-                                   $this->m_postvars['atkorderby'],
+                                   $columnConfig->getOrderByStatement(),
                                    array("offset" => $this->m_postvars['atkstartat'], "limit" => $this->m_postvars['atklimit']),
                                    $this->m_listExcludes,
                                    "",
@@ -1408,7 +1400,7 @@
         else
         {
           // generic text
-          $label = text(getNodeType($this->m_type))." ".text("add");
+          $label = text(getNodeType($this->m_type), $this->m_module)." ".text("add");
         }
         $g_layout->output(href($addurl,$label,SESSION_NESTED).'<br><br>');
       }
@@ -1424,7 +1416,7 @@
         $actions = $this->defaultActions("admin");
       }
 
-      $flags = ($this->hasFlag(NF_MRA) ? RL_MRA : 0) | ($this->hasFlag(NF_MRPA) ? RL_MRPA : 0) | ($this->hasFlag(NF_LOCK) ? RL_LOCK : 0);
+      $flags = ($this->hasFlag(NF_MRA) ? RL_MRA : 0) | ($this->hasFlag(NF_MRPA) ? RL_MRPA : 0) | ($this->hasFlag(NF_LOCK) ? RL_LOCK : 0) | ($this->hasFlag(NF_EXT_SORT) ? RL_EXT_SORT : 0);
       $g_layout->output($this->normalRecordList($recordset, $actions, $flags));
 
       if (!empty($nav)) $g_layout->output('<br>'.$nav);
@@ -1529,14 +1521,18 @@
 
       /* get the heading and search columns */
       if (!hasFlag($flags, RL_NO_SEARCH)) $this->setAttribSizes();
+      
+      $columnConfig = &$this->getColumnConfig();
+      
       foreach (array_keys($this->m_attribIndexList) as $r)
       {
         $name = $this->m_attribIndexList[$r]["name"];
         if (!in_array($name, $suppress))
         {
-          $attribute = &$this->m_attribList[$name];
+          $attribute = &$this->m_attribList[$name];                    
+          
           $attribute->addToListArrayHeader($this->m_action, $result, $prefix, $flags,
-                                           $this->m_postvars["atksearch"], $this->m_postvars["atkorderby"]);
+                                           $this->m_postvars["atksearch"], $columnConfig);
         }
       }
 
@@ -1547,20 +1543,21 @@
         $actions = $actions["actions"];
       }
       else
-        $mra = $this->hasFlag(NF_NO_DELETE) ? array() : array("delete");
+        $mra = $this->hasFlag(NF_NO_DELETE) ? array() : array("delete");              
 
       /* get the rows */
-      for ($i = 0, $_i = count($recordset); $i < $_i; $i++)
+      for ($i = 0, $_i = count($recordset), $r=0; $i < $_i; $i++, $r++)
       {
-        $result["rows"][$i] = array("columns" => array(), "actions" => $actions, "mra" => $mra, "record" => &$recordset[$i], "data" => array());
-        $result["rows"][$i]["selector"] = $this->primaryKey($recordset[$i]);
-        $row = &$result["rows"][$i];
+        $result["rows"][$r] = array("actions" => $actions, "mra" => $mra, "record" => &$recordset[$i], "data" => array());
+        $result["rows"][$r]["selector"] = $this->primaryKey($recordset[$i]);
+        $result["rows"][$r]["type"]="data"; // data or subtotal
+        $row = &$result["rows"][$r];
 
         /* locked */
         if (hasFlag($flags, RL_LOCK))
         {
-          $result["rows"][$i]["lock"] = $this->m_lock->isLocked($result["rows"][$i]["selector"], $this->m_table);
-          if (is_array($result["rows"][$i]["lock"]))
+          $result["rows"][$r]["lock"] = $this->m_lock->isLocked($result["rows"][$r]["selector"], $this->m_table);
+          if (is_array($result["rows"][$r]["lock"]))
           {
             unset($row["actions"]["edit"]);
             unset($row["actions"]["delete"]);
@@ -1596,15 +1593,22 @@
         }
 
         /* columns */
-        foreach (array_keys($this->m_attribIndexList) as $r)
+        foreach (array_keys($this->m_attribIndexList) as $idx)
         {
-          $name = $this->m_attribIndexList[$r]["name"];
+          $name = $this->m_attribIndexList[$idx]["name"];
           if (!in_array($name, $suppress))
           {
             $attribute = &$this->m_attribList[$name];
-            $attribute->addToListArrayRow($this->m_action, $result, $i, $prefix, $flags);
+            $attribute->addToListArrayRow($this->m_action, $result, $i, $prefix, $flags);                        
           }
-        }
+        }        
+      }
+      
+      if (hasFlag($flags, RL_EXT_SORT) && $columnConfig->hasSubTotals())
+      {
+        include_once(atkconfig("atkroot")."atk/recordlist/class.atktotalizer.inc");
+        $totalizer = &new atkTotalizer($this, $columnConfig);
+        $result["rows"] = $totalizer->totalize($result["rows"]);
       }
 
       if (hasFlag($flags, RL_MRA))
@@ -1709,6 +1713,34 @@
         if ($orientation == "right" || $orientation == "both") $output .= $g_layout->ret_td_datatitle();
 
       $output.= "</tr>";
+      
+      /**************/
+      /* SORT   ROW */
+      /**************/
+      if (hasFlag($flags, RL_EXT_SORT))
+      {                
+        $button = '<input type="submit" value="'.text("sort").'">';       
+
+        $output .= '<tr>'.
+                     '<a name="sortform"></a>'.
+                     '<form action="'.$_SERVER["PHP_SELF"].'?'.SID.'" method="get">'.
+                     session_form().                       
+                       '<input type="hidden" name="atkstartat" value="0">'; // reset atkstartat to first page after a new sort
+
+          if (hasFlag($flags, RL_MRA) || hasFlag($flags, RL_MRPA)) $output .= $g_layout->ret_td_datatitle();
+          if (hasFlag($flags, RL_LOCK)) $output .= $g_layout->ret_td_datatitle();
+          if ($orientation == "left" || $orientation == "both") $output .= $g_layout->ret_td_datatitle($button);
+
+          foreach (array_keys($list["heading"]) as $key)
+            if (isset($list["sort"][$key])) $output .= $g_layout->ret_td_datatitle($list["sort"][$key]);
+            else $output.= $g_layout->ret_td_datatitle('&nbsp;');
+
+          if ($orientation == "right" || $orientation == "both") $output .= $g_layout->ret_td_datatitle($button);
+
+        $output .=   '</form>'.
+                   '</tr>';
+      }
+      
 
       /**************/
       /* SEARCH ROW */
@@ -1775,8 +1807,8 @@
 
       /********/
       /* ROWS */
-      /********/
-      for ($i = 0, $_i = count($list["rows"]); $i < $_i; $i++)
+      /********/      
+      for ($datarows=0, $i = 0, $_i = count($list["rows"]); $i < $_i; $i++)
       {
         /* Special rowColor method makes it possible to change the row color based on the record data.
          * the method can return a simple value (which will be used for the normal row color), or can be
@@ -1791,10 +1823,21 @@
           if (is_array($bgn)) list($bgn, $bgh) = $bgn;
         }
 
-        /* alternate colors of rows */
-        $output .= '<tr class="row'.($i % 2 == 0 ? 1 : 2).'" '.(empty($bgn) ? '' : 'style="background-color:'.$bgn.'" ').
-                   '  onmouseover="if (typeof(this.style) != \'undefined\') this.style.backgroundColor = \''.$bgh.'\'"'.
-                   '  onmouseout="if (typeof(this.style) != \'undefined\') this.style.backgroundColor = \''.(empty($bgn)?'':$bgn).'\'">';
+        //atkdebug($list["rows"][$i]["type"]);
+        if ($list["rows"][$i]["type"]=="data")
+        {
+          $datarows++;
+          /* alternate colors of rows */
+          $output .= '<tr class="row'.($datarows % 2 == 0 ? 1 : 2).'" '.(empty($bgn) ? '' : 'style="background-color:'.$bgn.'" ').
+                     '  onmouseover="if (typeof(this.style) != \'undefined\') this.style.backgroundColor = \''.$bgh.'\'"'.
+                     '  onmouseout="if (typeof(this.style) != \'undefined\') this.style.backgroundColor = \''.(empty($bgn)?'':$bgn).'\'">';
+          $tdfunc = "ret_td";
+        }
+        else
+        {
+          $output.='<tr>';
+          $tdfunc = "ret_td_datatitle";
+        }
 
         /* multi-record-priority-actions -> priority selection */
         if (hasFlag($flags, RL_MRPA))
@@ -1804,14 +1847,14 @@
           for ($j = $this->m_priority_min; $j <= $this->m_priority_max; $j++)
             $select .= '<option value="'.$j.'">'.$j.'</option>';
           $select .= '</select>';
-          $output .= $g_layout->ret_td($select, $vorientation);
+          $output .= $g_layout->$tdfunc($select, $vorientation);
         }
 
         /* multi-record-actions -> checkbox */
         elseif (hasFlag($flags, RL_MRA))
         {
           if (count($list["rows"][$i]["mra"]) > 0)
-            $output .= $g_layout->ret_td(
+            $output .= $g_layout->$tdfunc(
                          '<input type="checkbox" name="'.$listName.'_atkselector[]" value="'.rawurlencode($list["rows"][$i]["selector"]).'" onclick="if (this.disabled) this.checked = false">'.
                          '<script language="javascript">'.$listName.'["'.rawurlencode($list["rows"][$i]["selector"]).'"] = new Array("'.implode($list["rows"][$i]["mra"], '","').'");</script>',
                          $vorientation
@@ -1826,7 +1869,7 @@
           if (is_array($list["rows"][$i]["lock"]))
           {
             $alt = $list["rows"][$i]["lock"]["user_id"]." / ".$list["rows"][$i]["lock"]["user_ip"];
-            $output .= $g_layout->ret_td('<img src="'.atkconfig("atkroot").'atk/images/lock.gif" alt="'.$alt.'" border="0">');
+            $output .= $g_layout->$tdfunc('<img src="'.atkconfig("atkroot").'atk/images/lock.gif" alt="'.$alt.'" border="0">');
           }
           else $output .= $g_layout->ret_td('&nbsp;');
         }
@@ -1838,19 +1881,19 @@
         /* actions (left) */
         if ($orientation == "left" || $orientation == "both")
         {
-          if (!empty($str_actions)) $output .= $g_layout->ret_td($str_actions, $vorientation);
-          else $output .= $g_layout->ret_td("&nbsp;", $vorientation);
+          if ($list["rows"][$i]["type"]=="data"&&!empty($str_actions)) $output .= $g_layout->$tdfunc($str_actions, $vorientation);
+          else $output .= $g_layout->$tdfunc("&nbsp;", $vorientation);
         }
 
         /* columns */
         foreach ($list["rows"][$i]["data"] as $html)
-          $output .= $g_layout->ret_td($html, $vorientation);
+          $output .= $g_layout->$tdfunc($html, $vorientation);
 
         /* actions (right) */
         if ($orientation=="right"||$orientation=="both")
         {
-          if (!empty($str_actions)) $output .= $g_layout->ret_td($str_actions, $vorientation);
-          else $output .= $g_layout->ret_td("&nbsp;", $vorientation);
+          if ($list["rows"][$i]["type"]=="data"&&!empty($str_actions)) $output .= $g_layout->$tdfunc($str_actions, $vorientation);
+          else $output .= $g_layout->$tdfunc("&nbsp;", $vorientation);
         }
 
         $output .= '</tr>';
@@ -2163,15 +2206,7 @@
       {
         $p_attrib = &$this->m_attribList[$attribname];
         $musthide=(is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList));
-        if (
-            ($p_attrib->hasFlag(AF_HIDE_LIST)==false)
-            &&
-            (
-              ($p_attrib->hasFlag(AF_HIDE_SELECT)==false)
-              ||($this->m_action!="select")
-            )
-            &&$musthide==false
-           )
+        if (!$musthide)
         {
           $output.=$sof.text($p_attrib->fieldName(),$this->m_type).$eof;
 
@@ -2193,15 +2228,7 @@
         {
           $p_attrib = &$this->m_attribList[$attribname];
           $musthide=(is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList));
-          if (
-              ($p_attrib->hasFlag(AF_HIDE_LIST)==false)
-              &&
-              (
-                ($p_attrib->hasFlag(AF_HIDE_SELECT)==false)
-                ||($this->m_action!="select")
-              )
-              &&$musthide==false
-             )
+          if (!$musthide)
           {
             // An <attributename>_display function may be provided in a derived
             // class to display an attribute.
@@ -2240,15 +2267,7 @@
         {
           $p_attrib = &$this->m_attribList[$attribname];
         $musthide=(is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList));
-          if (
-              ($p_attrib->hasFlag(AF_HIDE_LIST)==false)
-              &&
-              (
-                ($p_attrib->hasFlag(AF_HIDE_SELECT)==false)
-                ||($this->m_action!="select")
-              )
-              &&$musthide==false
-             )
+          if (!$musthide)
           {
             if ($p_attrib->hasFlag(AF_TOTAL))
             {
@@ -2365,9 +2384,11 @@
       if ($this->m_postvars['atkstartat']=="") $this->m_postvars['atkstartat']=0;
 
       $filter = $this->validateFilter($this->m_postvars["atkfilter"]);
+      
+      $columnConfig = &$this->getColumnConfig();
 
       $recordset = $this->selectDb($filter,
-                                   $this->m_postvars['atkorderby'],
+                                   $columnConfig->getOrderByStatement(),
                                    array("offset" => $this->m_postvars['atkstartat'], "limit" => $this->m_postvars['atklimit']),
                                    $this->m_listExcludes,
                                    "",
@@ -2391,14 +2412,13 @@
 
         // create navigation bar
         $nav = $this->buildNavigation("select");
-
         if (!empty($nav)) $g_layout->output("$nav<br>");
         $g_layout->output('<br>');
 
         $actions["select"]=atkurldecode($this->m_postvars['atktarget']);
 
         $g_layout->output($this->normalRecordList($recordset, $actions));
-        
+
         if (!empty($nav)) $g_layout->output('<br>'.$nav.'<br>');
         $g_layout->output('<br>');
 
@@ -2420,7 +2440,7 @@
       if ($checkoverride && method_exists($this, $method))
         return $this->$method($atkselector, $locked);
 
-      global $g_layout;
+      global $g_layout, $g_db;
       $g_layout->initGui();
 
       if (is_array($atkselector))
@@ -2566,9 +2586,10 @@
      */
     function setAttribSizes()
     {
-      if ($this->m_attribsizesset) return true;      
+      if ($this->m_attribsizesset) return true;
+      global $g_db;
 
-      $metainfo = $this->m_db->tableMeta($this->m_table);
+      $metainfo = $g_db->tableMeta($this->m_table);
 
       foreach (array_keys($this->m_attribList) as $attribname)
       {
@@ -2580,8 +2601,6 @@
       }
       $this->m_attribsizesset = true;
     }
-
-
 
     /**
      * The dispatcher. This functions looks at the atkaction from the postvars
@@ -2599,7 +2618,7 @@
      */
     function dispatch($postvars, $fullpage=true)
     {
-      global $g_sessionManager, $g_layout;
+      global $g_db, $g_sessionManager, $g_layout;
       $this->m_postvars = $postvars;
 
       $this->m_action = $postvars['atkaction'];          
@@ -2634,7 +2653,7 @@
       // This is the end of all things for this page..
       // so we clean up some resources..
 
-      $this->m_db->disconnect();
+      $g_db->disconnect();
       atkdebug("disconnected from the database");
     }
 
@@ -2799,7 +2818,6 @@
 
     function action_copy()
     {
-      atkdebug("atknode::action_copy()");
       $recordset = $this->selectDb($this->m_postvars['atkselector'],"","","","","copy");
       if(count($recordset)>0)
       {
@@ -2815,7 +2833,6 @@
 
     function action_editcopy()
     {
-      atkdebug("atknode::action_editcopy()");
       $recordset = $this->selectDb($this->m_postvars['atkselector'],"","","","","copy");
 
       if(count($recordset) > 0)
@@ -3104,6 +3121,7 @@
      */
     function validate(&$record, $mode, $ignoreList=array())
     {
+      global $g_db;
       atkdebug("validate()");
 
       foreach (array_keys($this->m_attribList) as $attribname)
@@ -3119,7 +3137,7 @@
             $atkorgkey = $record["atkprimkey"];
             if(($atkorgkey == '' // no orgkey, so adding this record
                 || $atkorgkey != $this->primaryKey($record)) // key has changed, so check is necessary
-               &&  count($this->m_db->getrows("SELECT ".$p_attrib->fieldName()." FROM ".$this->m_table." WHERE ".$this->primaryKey($record)))>0
+               &&  count($g_db->getrows("SELECT ".$p_attrib->fieldName()." FROM ".$this->m_table." WHERE ".$this->primaryKey($record)))>0
               )
             {
               triggerError($record, $attribname, 'error_primarykey_exists', '', $this->m_type);
@@ -3137,7 +3155,7 @@
           }
           // if flag is primary
           else if ($p_attrib->hasFlag(AF_UNIQUE) && !$p_attrib->hasFlag(AF_PRIMARY) &&
-                   count($this->m_db->getrows("SELECT ".$p_attrib->fieldName()." FROM ".$this->m_table." WHERE $attribname='".escapeSQL($record[$attribname])."' AND NOT (".$this->primaryKey($record).")"))>0
+                   count($g_db->getrows("SELECT ".$p_attrib->fieldName()." FROM ".$this->m_table." WHERE $attribname='".escapeSQL($record[$attribname])."' AND NOT (".$this->primaryKey($record).")"))>0
                   )
           {
             triggerError($record, $attribname, 'error_uniquefield', '', $this->m_type);
@@ -3173,6 +3191,8 @@
      */
     function updateDb(&$record)
     {
+      global $g_db;
+
       $name = "atk".atkconfig("database")."query";
       $query = new $name();
 
@@ -3221,7 +3241,7 @@
         for ($i = 0, $_i = count($storelist); $i < $_i; $i++)
         {
           $p_attrib = &$this->m_attribList[$storelist[$i]];
-          $p_attrib->store($this->m_db, $record,"update");
+          $p_attrib->store($g_db, $record,"update");
         }
 
         // Now we call a postUpdate function, that can be used to do some processing after the record
@@ -3244,15 +3264,12 @@
      */
     function countDb($selector="", $excludeList="", $includeList="", $mode="")
     {
+      global $g_db;
       $name = "atk".atkconfig("database")."query";
       $query = new $name();
 
       $query->addTable($this->m_table);
       $query->addCondition($selector);
-      
-      if(array_key_exists("atkfilter", $this->m_postvars))
-        $query->addCondition($this->m_postvars["atkfilter"]);
-
       $query->m_searchmethod = $this->m_postvars['atksearchmethod'];
 
       if (!$this->hasFlag(NF_NO_FILTER))
@@ -3328,14 +3345,9 @@
 
 
       $querystring = $query->buildCount();
-      $result = $this->m_db->getrows($querystring);
-
-      // group by fix:
-      // if there exists a group by (added by atk/filters) the 'else' situation occurs
-      if(count($result)==1)
-        return $result[0]["count"];
-      else
-        return count($result);
+      //$g_db->query($querystring);
+      $result = $g_db->getrows($querystring);
+      return $result[0]["count"];
     }
 
    /** Copies a record
@@ -3358,9 +3370,13 @@
      * @param $limit Limit (Not supported for Oracle databases yet)
      */
     function selectDb($selector="", $order="", $limit="", $excludeList="",$includeList="", $mode="")
-    {
+    {      
+      global $g_db;
+
       $selectlist = array();
       $loadlist = array();
+
+      if($order=="" && $this->m_default_order!="") $order=$this->m_default_order;
 
       $name = "atk".atkconfig("database")."query";
       $query = new $name();
@@ -3419,10 +3435,9 @@
           }
         }
       }      
-
       foreach (array_keys($this->m_attribList) as $attribname)
       {
-        $p_attrib = &$this->m_attribList[$attribname];     
+        $p_attrib = &$this->m_attribList[$attribname];        
         if (
              (
                 ((is_array($includeList) && in_array($attribname,$includeList))
@@ -3443,34 +3458,7 @@
         }
       }
 
-      if (!empty($order))
-      {
-        if (!is_array($order) && stristr($order, ",")) $query->addOrderBy($order);
-        elseif (!is_array($order)) $order = array($order);
-        
-        if (is_array($order))
-        { 
-          $attrName = $order[0];
-        
-          if (!empty($this->m_attribList[$attrName]))
-          {
-            $attr = &$this->m_attribList[$attrName];
-            // check if there is an <attribname>_addtoorderby function
-            // that will override the default addtoorderby function
-            $funcname = $attr->m_name."_addtoorderby";
-            if (method_exists($this, $funcname)) $this->$funcname($query, $order);
-            else $attr->addToOrderBy($query, $order);
-          }
-          else if (!empty($this->m_default_order))
-          {
-            $query->addOrderBy($this->m_default_order);
-          }
-        }  
-      }
-      else if (!empty($this->m_default_order))
-      {
-        $query->addOrderBy($this->m_default_order);
-      }
+      if ($order!="") $query->addOrderBy($order);      
 
       if (is_array($limit)) 
       {
@@ -3486,7 +3474,7 @@
       
       $querystring = $query->buildSelect();   
       
-      $dbrecords = $this->m_db->getrows($querystring);
+      $dbrecords = $g_db->getrows($querystring);
 
 //      $this->setOrgKeyValue($dbrecords[0]);
 
@@ -3522,7 +3510,7 @@
         {
           $p_attrib = &$this->m_attribList[$loadlist[$j]];
 
-          $recordset[$i][$loadlist[$j]] = $p_attrib->load($this->m_db, $recordset[$i], $mode);
+          $recordset[$i][$loadlist[$j]] = $p_attrib->load($g_db, $recordset[$i], $mode);
         }
       }
       return $recordset;
@@ -3594,7 +3582,7 @@
      */
     function addDb(&$record, $exectrigger=true, $mode="add")
     {
-      atkdebug("atkNode::addDb() start ".$this->m_type." mode: ".$mode);
+      global $g_db;
 
       $name = "atk".atkconfig("database")."query";
       $query = new $name();
@@ -3607,16 +3595,13 @@
       foreach (array_keys($this->m_attribList) as $attribname)
       {
         $p_attrib = &$this->m_attribList[$attribname];
-        if ($mode != "add" || $p_attrib->needsInsert($record))
+        if ($p_attrib->hasStore($mode))
         {
-          if ($p_attrib->hasStore($mode))
-          {
-            $storelist[]=$attribname;
-          }
-          else
-          {
-            $querylist[]=$attribname;
-          }
+          $storelist[]=$attribname;
+        }
+        else
+        {
+          $querylist[]=$attribname;
         }
       }
 
@@ -3625,7 +3610,7 @@
         $p_attrib = &$this->m_attribList[$querylist[$i]];
         if ($p_attrib->hasFlag(AF_AUTO_INCREMENT))
         {
-          $record[$p_attrib->fieldName()]=$this->m_db->nextid($this->m_seq);
+          $record[$p_attrib->fieldName()]=$g_db->nextid($this->m_seq);
         }
 
         $p_attrib->addToQuery($query,$this->m_table,"",$record,1,"add"); // start at level 1
@@ -3638,7 +3623,7 @@
       {
         $p_attrib = &$this->m_attribList[$storelist[$i]];
 
-        $p_attrib->store($this->m_db_db, $record, $mode);
+        $p_attrib->store($g_db, $record, $mode);
 
       }
 
@@ -3649,8 +3634,7 @@
       // has been saved.
       if ($exectrigger) $this->postAdd($record, $mode);
 
-      atkdebug($this->m_db->m_error);
-      atkdebug("atkNode::addDb() stop ".$this->m_type." mode:".$mode);
+      atkdebug($g_db->m_error);
     }
 
     /**
@@ -3661,6 +3645,8 @@
      */
     function deleteDb($selector)
     {
+      global $g_db;
+
       $recordset = $this->selectDb($selector,"","","","","delete");
                
       if (count($this->m_cascadingAttribs)>0)
@@ -3676,7 +3662,7 @@
       }
 
       $query = "DELETE FROM ".$this->m_table." WHERE ".$selector;
-      $this->m_db->query($query);
+      $g_db->query($query);
       // todo: instead of delete, set the deleted flag.
 
       for ($i = 0, $_i = count($recordset); $i < $_i; $i++)
@@ -4077,5 +4063,13 @@
       }
       return "";
     }
+    
+    function &getColumnConfig()
+    {
+      include_once(atkconfig("atkroot")."atk/recordlist/class.atkcolumnconfig.inc");
+      $columnConfig = &atkColumnConfig::getConfig($this);
+      return $columnConfig;
+    }
+        
   }
 ?>
