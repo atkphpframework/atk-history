@@ -1202,8 +1202,7 @@
           {
             $pk_err_msg .= text($pk_err_attrib[$i]);
             if (($i+1) < count($pk_err_attrib)) $pk_err_msg .= ", ";
-          }
-          $form.=$this->ret_td($error_title.$pk_err_msg.$errormsg.'<br><br>','colspan="2"');
+          }          
           $errors[] = array("label"=>text("error_primarykey_exists"),
                             "msg"=>$pk_err_msg);
         }        
