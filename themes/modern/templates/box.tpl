@@ -10,7 +10,7 @@
       </table>
       <table width="100%" border="0" cellpadding="0" cellspacing="0">
         <tr>
-          <td style="border: solid 0 #333333; border-bottom-width:1px" bgcolor="#D8E4F0" align="center" class="block">
+          <td style="border: solid 0 #333333; border-bottom-width:1px; border-right-width:1px" bgcolor="#D8E4F0" align="center" class="block">
             {$content}	    
           </td>
 	</tr>
