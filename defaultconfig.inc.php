@@ -44,6 +44,10 @@
   $config_auth_userdescriptor = "[".$config_auth_userfield."]";
   // this parameter can be used to specify a where clause which will be used to validate users login credentials
   $config_auth_accountenableexpression = "";
+  
+  // By default, there is no 'grantall' privilege. Apps can set this if necessary. 
+  // Syntax: "module.nodename.privilege"
+  $config_auth_grantall_privilege = ""; 
 
   $config_logging = 0; // no logging;
   $config_logfile = "/tmp/atk-security.log";
@@ -58,6 +62,8 @@
   $config_menu_layout = "default";
   $config_top_frame = 0; // 0 = no   - 1 = yes
   $config_defaulttheme = "default";
+
+  $config_defaultfavico ="";
 
   // Display a 'stack' of the user activities in the top right corner.
   $config_stacktrace = true;

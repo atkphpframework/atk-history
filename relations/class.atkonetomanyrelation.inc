@@ -175,7 +175,7 @@
             {
               $key = text(getNodeType($this->m_destination))." ".strtolower(text("add"));
               $label = text($key);
-          }
+          	}
           } 
           $output.="<tr><td>".href($add_url,$label,SESSION_NESTED,true)."</td></tr>";
         }
@@ -347,6 +347,27 @@
         if (is_object($attrib) && strpos(get_class($attrib), "elation")!==false) return true;
       }
       return false;
+    }
+    
+   /**
+    * Override isEmpty function - in a oneToMany relation we should check if the
+    * relation contains any records. When there aren't any, the relation is empty,
+    * otherwise it isn't
+    *
+    * @param   array   &$record The record to check
+    * @return bool true if a destination record is present. False if not.
+    */
+    function isEmpty(&$record)
+    {
+    	if ($this->hasFlag(AF_OBLIGATORY))
+    	{
+				$loaded = $this->load(null,$record);
+  	    return empty($loaded);
+  	  }
+    	else
+    	{
+    		return parent::isEmpty($record);
+    	}
     }
   }
 ?>

@@ -38,6 +38,7 @@
   define("NF_MRPA",                 131072); // Multi-priority-selection of records is turned on.
 
   define("NF_LOCK",                 262144); // lock records
+  define("NF_EXT_SORT",             524288); // enable extended sorting
   
   define("NF_READONLY", NF_NO_ADD|NF_NO_DELETE|NF_NO_EDIT); // aggregate flag to quickly create readonly nodes.
 
@@ -48,6 +49,8 @@
   define("RL_MRA",                             8); // multi-record-actions enabled
   define("RL_MRPA",                           16); // multi-record-priority-actions enabled
   define("RL_LOCK",                           32); // records can be locked
+  define("RL_EXT_SORT",                       64); // extended sort feature
+  
 
   /*
    * action status flags
@@ -681,6 +684,31 @@
     }
 
     /**
+     * Removes a filter
+     * @param string $filter  The fieldname you want to filter OR a where clause 
+     *                         expression
+     * @param bool $withvalue Whether or not it's a filter with a value 
+     *                         (filter as expression) 
+     */
+    function removeFilter($filter, $withvalue=false)
+    {
+      if ($withvalue)
+      {
+        unset($this->m_filters[$filter]);
+      }
+      else
+      {
+        foreach ($this->m_fuzzyFilters as $filtername => $filtervalue)
+        {
+          if ($filter == $filtervalue)
+          {
+            $this->m_fuzzyFilters[$filtername] = null;
+          }
+        }
+      }
+    }
+    
+    /**
      * Returns the form buttons for a certain page.
      */
     function getFormButtons($mode, $record)
@@ -826,8 +854,11 @@
       $g_layout->output($page);
       if (count($this->m_tabListView) > 1) $g_layout->tabs_bottom();
 
-      $buttons = '<br><form method="get">'.session_form(SESSION_NESTED).
-                        '&nbsp;<input type="submit" name="atkback" value="&lt;&lt; '.text('back').'">&nbsp;';
+      $buttons = '<br><form method="get">'.session_form(SESSION_NESTED);
+      if (atkLevel()>0)
+      {
+        $buttons.= '&nbsp;<input type="submit" name="atkback" value="&lt;&lt; '.text('back').'">&nbsp;';
+      }
                         
       // if appropriate, display an edit button.
       if (!$this->hasFlag(NF_NO_EDIT)&&$this->allowed("edit", $record))
@@ -902,7 +933,9 @@
         $g_layout->output(session_form(SESSION_DEFAULT));
         $g_layout->output('<input type="hidden" name="'.$fieldprefix.'atkaction" value="admin">');
       }
-      $form.='<input type="hidden" name="atknodetype" value="'.$this->atknodetype().'">';
+      $vars ='<input type="hidden" name="atknodetype" value="'.$this->atknodetype().'">';
+      $vars.='<input type="hidden" name="atkstartat" value="0">'; // start at first page after new search
+      $g_layout->output($vars);
 
       $g_layout->output($this->searchForm($record));
       $g_layout->output('<br>&nbsp;<input type="submit" value="'.text('search').'">&nbsp;');
@@ -1197,8 +1230,10 @@
               while (list($key, $searchMode) = each($searchModes))
               {
                 // if supported, we select the 'like' searchmode by default
-                $selected="";
-                if ($this->m_postvars["atksearchmode"][$p_attrib->m_name]==$searchMode||($this->m_postvars["atksearchmode"][$p_attrib->m_name]==""&&$searchMode=="substring")) $selected="selected";
+                $selected=""; 
+                if ($this->m_postvars["atksearchmode"][$p_attrib->m_name]==$searchMode||
+                    ((!is_array($this->m_postvars["atksearchmode"]) || $this->m_postvars["atksearchmode"][$p_attrib->m_name]=="")&&
+                     $searchMode=="substring")) $selected="selected";
                 $sel.= '<option value="'.$searchMode.'" '.$selected.'>'.text("search_".$searchMode);
               }
               $sel.= '</select>';
@@ -1295,7 +1330,7 @@
 
         // We use wildcard search for the index. Should be supported by any database.
 
-        $nav.=href($_SERVER["PHP_SELF"]."?atknodetype=".$this->atkNodeType()."&atkaction=".$this->m_action."&atksearch[".$this->m_index."]=".$char."*&atksearchmode[".$this->m_index."]=wildcard",$label);
+        $nav.=href($_SERVER["PHP_SELF"]."?atknodetype=".$this->atkNodeType()."&atkaction=".$this->m_action."&atksearch[".$this->m_index."]=".$char."*&atksearchmode[".$this->m_index."]=wildcard&atkstartat=0",$label);
 
         // uncomment the following line if 26 letters seems to become too wide.
         //if ($count>13 && ($i+1)==floor($count/2)) $nav.='<br>'; else
@@ -1347,10 +1382,12 @@
       // pages.
       if ($this->m_postvars['atklimit']=="") $this->m_postvars['atklimit']=atkconfig("recordsperpage");
 
-      if ($this->m_postvars['atkstartat']=="" || isset($this->m_postvars["atksearch"])) $this->m_postvars['atkstartat']=0;
+      if ($this->m_postvars['atkstartat']=="") $this->m_postvars['atkstartat']=0;
+      
+      $columnConfig = &$this->getColumnConfig();
 
       $recordset = $this->selectDb($this->m_postvars['atkfilter'],
-                                   $this->m_postvars['atkorderby'],
+                                   $columnConfig->getOrderByStatement(),
                                    array("offset" => $this->m_postvars['atkstartat'], "limit" => $this->m_postvars['atklimit']),
                                    $this->m_listExcludes,
                                    "",
@@ -1391,7 +1428,7 @@
         else
         {
           // generic text
-          $label = text(getNodeType($this->m_type))." ".text("add");
+          $label = text(getNodeType($this->m_type), $this->m_module)." ".text("add");
         }
         $g_layout->output(href($addurl,$label,SESSION_NESTED).'<br><br>');
       }
@@ -1407,7 +1444,7 @@
         $actions = $this->defaultActions("admin");
       }
 
-      $flags = ($this->hasFlag(NF_MRA) ? RL_MRA : 0) | ($this->hasFlag(NF_MRPA) ? RL_MRPA : 0) | ($this->hasFlag(NF_LOCK) ? RL_LOCK : 0);
+      $flags = ($this->hasFlag(NF_MRA) ? RL_MRA : 0) | ($this->hasFlag(NF_MRPA) ? RL_MRPA : 0) | ($this->hasFlag(NF_LOCK) ? RL_LOCK : 0) | ($this->hasFlag(NF_EXT_SORT) ? RL_EXT_SORT : 0);
       $g_layout->output($this->normalRecordList($recordset, $actions, $flags));
 
       if (!empty($nav)) $g_layout->output('<br>'.$nav);
@@ -1512,14 +1549,18 @@
 
       /* get the heading and search columns */
       if (!hasFlag($flags, RL_NO_SEARCH)) $this->setAttribSizes();
+      
+      $columnConfig = &$this->getColumnConfig();
+      
       foreach (array_keys($this->m_attribIndexList) as $r)
       {
         $name = $this->m_attribIndexList[$r]["name"];
         if (!in_array($name, $suppress))
         {
-          $attribute = &$this->m_attribList[$name];
+          $attribute = &$this->m_attribList[$name];                    
+          
           $attribute->addToListArrayHeader($this->m_action, $result, $prefix, $flags,
-                                           $this->m_postvars["atksearch"], $this->m_postvars["atkorderby"]);
+                                           $this->m_postvars["atksearch"], $columnConfig);
         }
       }
 
@@ -1530,20 +1571,21 @@
         $actions = $actions["actions"];
       }
       else
-        $mra = $this->hasFlag(NF_NO_DELETE) ? array() : array("delete");
+        $mra = $this->hasFlag(NF_NO_DELETE) ? array() : array("delete");              
 
       /* get the rows */
-      for ($i = 0, $_i = count($recordset); $i < $_i; $i++)
+      for ($i = 0, $_i = count($recordset), $r=0; $i < $_i; $i++, $r++)
       {
-        $result["rows"][$i] = array("columns" => array(), "actions" => $actions, "mra" => $mra, "record" => &$recordset[$i], "data" => array());
-        $result["rows"][$i]["selector"] = $this->primaryKey($recordset[$i]);
-        $row = &$result["rows"][$i];
+        $result["rows"][$r] = array("actions" => $actions, "mra" => $mra, "record" => &$recordset[$i], "data" => array());
+        $result["rows"][$r]["selector"] = $this->primaryKey($recordset[$i]);
+        $result["rows"][$r]["type"]="data"; // data or subtotal
+        $row = &$result["rows"][$r];
 
         /* locked */
         if (hasFlag($flags, RL_LOCK))
         {
-          $result["rows"][$i]["lock"] = $this->m_lock->isLocked($result["rows"][$i]["selector"], $this->m_table);
-          if (is_array($result["rows"][$i]["lock"]))
+          $result["rows"][$r]["lock"] = $this->m_lock->isLocked($result["rows"][$r]["selector"], $this->m_table);
+          if (is_array($result["rows"][$r]["lock"]))
           {
             unset($row["actions"]["edit"]);
             unset($row["actions"]["delete"]);
@@ -1579,15 +1621,22 @@
         }
 
         /* columns */
-        foreach (array_keys($this->m_attribIndexList) as $r)
+        foreach (array_keys($this->m_attribIndexList) as $idx)
         {
-          $name = $this->m_attribIndexList[$r]["name"];
+          $name = $this->m_attribIndexList[$idx]["name"];
           if (!in_array($name, $suppress))
           {
             $attribute = &$this->m_attribList[$name];
-            $attribute->addToListArrayRow($this->m_action, $result, $i, $prefix, $flags);
+            $attribute->addToListArrayRow($this->m_action, $result, $i, $prefix, $flags);                        
           }
-        }
+        }        
+      }
+      
+      if (hasFlag($flags, RL_EXT_SORT) && $columnConfig->hasSubTotals())
+      {
+        include_once(atkconfig("atkroot")."atk/recordlist/class.atktotalizer.inc");
+        $totalizer = &new atkTotalizer($this, $columnConfig);
+        $result["rows"] = $totalizer->totalize($result["rows"]);
       }
 
       if (hasFlag($flags, RL_MRA))
@@ -1692,6 +1741,34 @@
         if ($orientation == "right" || $orientation == "both") $output .= $g_layout->ret_td_datatitle();
 
       $output.= "</tr>";
+      
+      /**************/
+      /* SORT   ROW */
+      /**************/
+      if (hasFlag($flags, RL_EXT_SORT))
+      {                
+        $button = '<input type="submit" value="'.text("sort").'">';       
+
+        $output .= '<tr>'.
+                     '<a name="sortform"></a>'.
+                     '<form action="'.$_SERVER["PHP_SELF"].'?'.SID.'" method="get">'.
+                     session_form().                       
+                       '<input type="hidden" name="atkstartat" value="0">'; // reset atkstartat to first page after a new sort
+
+          if (hasFlag($flags, RL_MRA) || hasFlag($flags, RL_MRPA)) $output .= $g_layout->ret_td_datatitle();
+          if (hasFlag($flags, RL_LOCK)) $output .= $g_layout->ret_td_datatitle();
+          if ($orientation == "left" || $orientation == "both") $output .= $g_layout->ret_td_datatitle($button);
+
+          foreach (array_keys($list["heading"]) as $key)
+            if (isset($list["sort"][$key])) $output .= $g_layout->ret_td_datatitle($list["sort"][$key]);
+            else $output.= $g_layout->ret_td_datatitle('&nbsp;');
+
+          if ($orientation == "right" || $orientation == "both") $output .= $g_layout->ret_td_datatitle($button);
+
+        $output .=   '</form>'.
+                   '</tr>';
+      }
+      
 
       /**************/
       /* SEARCH ROW */
@@ -1717,7 +1794,8 @@
                      session_form().
                        '<input type="hidden" name="atknodetype" value="'.$this->atknodetype().'">'.
                        '<input type="hidden" name="atkaction" value="'.$this->m_action.'">'.
-                       '<input type="hidden" name="atksearchmode" value="'.$searchmode.'">';
+                       '<input type="hidden" name="atksearchmode" value="'.$searchmode.'">'.
+                       '<input type="hidden" name="atkstartat" value="0">'; // reset atkstartat to first page after a new search
 
           if (hasFlag($flags, RL_MRA) || hasFlag($flags, RL_MRPA)) $output .= $g_layout->ret_td_datatitle();
           if (hasFlag($flags, RL_LOCK)) $output .= $g_layout->ret_td_datatitle();
@@ -1757,8 +1835,8 @@
 
       /********/
       /* ROWS */
-      /********/
-      for ($i = 0, $_i = count($list["rows"]); $i < $_i; $i++)
+      /********/      
+      for ($datarows=0, $i = 0, $_i = count($list["rows"]); $i < $_i; $i++)
       {
         /* Special rowColor method makes it possible to change the row color based on the record data.
          * the method can return a simple value (which will be used for the normal row color), or can be
@@ -1773,10 +1851,21 @@
           if (is_array($bgn)) list($bgn, $bgh) = $bgn;
         }
 
-        /* alternate colors of rows */
-        $output .= '<tr class="row'.($i % 2 == 0 ? 1 : 2).'" '.(empty($bgn) ? '' : 'style="background-color:'.$bgn.'" ').
-                   '  onmouseover="if (typeof(this.style) != \'undefined\') this.style.backgroundColor = \''.$bgh.'\'"'.
-                   '  onmouseout="if (typeof(this.style) != \'undefined\') this.style.backgroundColor = \''.(empty($bgn)?'':$bgn).'\'">';
+        //atkdebug($list["rows"][$i]["type"]);
+        if ($list["rows"][$i]["type"]=="data")
+        {
+          $datarows++;
+          /* alternate colors of rows */
+          $output .= '<tr class="row'.($datarows % 2 == 0 ? 1 : 2).'" '.(empty($bgn) ? '' : 'style="background-color:'.$bgn.'" ').
+                     '  onmouseover="if (typeof(this.style) != \'undefined\') this.style.backgroundColor = \''.$bgh.'\'"'.
+                     '  onmouseout="if (typeof(this.style) != \'undefined\') this.style.backgroundColor = \''.(empty($bgn)?'':$bgn).'\'">';
+          $tdfunc = "ret_td";
+        }
+        else
+        {
+          $output.='<tr>';
+          $tdfunc = "ret_td_datatitle";
+        }
 
         /* multi-record-priority-actions -> priority selection */
         if (hasFlag($flags, RL_MRPA))
@@ -1786,14 +1875,14 @@
           for ($j = $this->m_priority_min; $j <= $this->m_priority_max; $j++)
             $select .= '<option value="'.$j.'">'.$j.'</option>';
           $select .= '</select>';
-          $output .= $g_layout->ret_td($select, $vorientation);
+          $output .= $g_layout->$tdfunc($select, $vorientation);
         }
 
         /* multi-record-actions -> checkbox */
         elseif (hasFlag($flags, RL_MRA))
         {
           if (count($list["rows"][$i]["mra"]) > 0)
-            $output .= $g_layout->ret_td(
+            $output .= $g_layout->$tdfunc(
                          '<input type="checkbox" name="'.$listName.'_atkselector[]" value="'.rawurlencode($list["rows"][$i]["selector"]).'" onclick="if (this.disabled) this.checked = false">'.
                          '<script language="javascript">'.$listName.'["'.rawurlencode($list["rows"][$i]["selector"]).'"] = new Array("'.implode($list["rows"][$i]["mra"], '","').'");</script>',
                          $vorientation
@@ -1808,7 +1897,7 @@
           if (is_array($list["rows"][$i]["lock"]))
           {
             $alt = $list["rows"][$i]["lock"]["user_id"]." / ".$list["rows"][$i]["lock"]["user_ip"];
-            $output .= $g_layout->ret_td('<img src="'.atkconfig("atkroot").'atk/images/lock.gif" alt="'.$alt.'" border="0">');
+            $output .= $g_layout->$tdfunc('<img src="'.atkconfig("atkroot").'atk/images/lock.gif" alt="'.$alt.'" border="0">');
           }
           else $output .= $g_layout->ret_td('&nbsp;');
         }
@@ -1820,19 +1909,19 @@
         /* actions (left) */
         if ($orientation == "left" || $orientation == "both")
         {
-          if (!empty($str_actions)) $output .= $g_layout->ret_td($str_actions, $vorientation);
-          else $output .= $g_layout->ret_td("&nbsp;", $vorientation);
+          if ($list["rows"][$i]["type"]=="data"&&!empty($str_actions)) $output .= $g_layout->$tdfunc($str_actions, $vorientation);
+          else $output .= $g_layout->$tdfunc("&nbsp;", $vorientation);
         }
 
         /* columns */
         foreach ($list["rows"][$i]["data"] as $html)
-          $output .= $g_layout->ret_td($html, $vorientation);
+          $output .= $g_layout->$tdfunc($html, $vorientation);
 
         /* actions (right) */
         if ($orientation=="right"||$orientation=="both")
         {
-          if (!empty($str_actions)) $output .= $g_layout->ret_td($str_actions, $vorientation);
-          else $output .= $g_layout->ret_td("&nbsp;", $vorientation);
+          if ($list["rows"][$i]["type"]=="data"&&!empty($str_actions)) $output .= $g_layout->$tdfunc($str_actions, $vorientation);
+          else $output .= $g_layout->$tdfunc("&nbsp;", $vorientation);
         }
 
         $output .= '</tr>';
@@ -2344,12 +2433,14 @@
       $g_layout->initGui();
       // When there's a lot of data, records will be spread across multiple pages.
       if ($this->m_postvars['atklimit']=="") $this->m_postvars['atklimit']=atkconfig("recordsperpage");
-      if ($this->m_postvars['atkstartat']=="" || isset($this->m_postvars["atksearch"])) $this->m_postvars['atkstartat']=0;
+      if ($this->m_postvars['atkstartat']=="") $this->m_postvars['atkstartat']=0;
 
       $filter = $this->validateFilter($this->m_postvars["atkfilter"]);
+      
+      $columnConfig = &$this->getColumnConfig();
 
       $recordset = $this->selectDb($filter,
-                                   $this->m_postvars['atkorderby'],
+                                   $columnConfig->getOrderByStatement(),
                                    array("offset" => $this->m_postvars['atkstartat'], "limit" => $this->m_postvars['atklimit']),
                                    $this->m_listExcludes,
                                    "",
@@ -3331,7 +3422,7 @@
      * @param $limit Limit (Not supported for Oracle databases yet)
      */
     function selectDb($selector="", $order="", $limit="", $excludeList="",$includeList="", $mode="")
-    {
+    {      
       global $g_db;
 
       $selectlist = array();
@@ -3431,9 +3522,9 @@
       else if (!empty($limit))
       {
         $query->setLimit(0, $limit);
-      }
-      
-      $querystring = $query->buildSelect();   
+      }      
+
+      $querystring = $query->buildSelect(true);   
       
       $dbrecords = $g_db->getrows($querystring);
 
@@ -4024,5 +4115,13 @@
       }
       return "";
     }
+    
+    function &getColumnConfig()
+    {
+      include_once(atkconfig("atkroot")."atk/recordlist/class.atkcolumnconfig.inc");
+      $columnConfig = &atkColumnConfig::getConfig($this);
+      return $columnConfig;
+    }
+        
   }
 ?>
