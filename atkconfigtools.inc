@@ -83,12 +83,12 @@
      * @param path the module path
      * @param flags the module flags (see above)
      */
-    function module($name, $path="", $flags=0)
+    function module($name, $path="", $flags="")
     {
       global $g_modules, $config_module_path, $g_moduleflags;
       if ($path=="") $path = $config_module_path."/".$name."/";
       $g_modules[$name] = $path;
-      if ($flags>0) $g_moduleflags[$name] = $flags;
+      if ($flags!="") $g_moduleflags[$name] = $flags;
     }
 
     /**
@@ -96,9 +96,9 @@
      *
      * @return the value of a config variable
      */
-    function atkconfig($tag, $default="")
+    function atkconfig($tag)
     {
-      return (isset($GLOBALS["config_".$tag])?$GLOBALS["config_".$tag]:$default);
+      return $GLOBALS["config_".$tag];
     }
 
 ?>
