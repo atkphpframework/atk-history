@@ -1437,13 +1437,14 @@
 
     /**
      * Sets the priority range, for multi-record-priority actions.
-     * @param $min the minimum priority (>= 1)
-     * @param $max the maximum priority (0 for auto)
+     * @param $min the minimum priority
+     * @param $max the maximum priority (0 for auto => min + record count)
      */
     function setPriorityRange($min=1, $max=0)
     {
-      if ($min <= 1) $this->m_priority_min = 1;
+      $this->m_priority_min = (int)$min;
       if ($max < $this->m_priority_min) $max = 0;
+      else $this->m_priority_max = $max;
     }
 
     /**
@@ -1487,7 +1488,8 @@
       if ($this->hasFlag(NF_MRPA) && count($this->m_priority_actions) > 0)
       {
         $flags = ($flags | RL_MRA | RL_MRPA ) ^ RL_MRA;
-        if ($this->m_priority_max == 0) $this->m_priority_max = count($list["rows"]);
+        if ($this->m_priority_max == 0)
+          $this->m_priority_max = $this->m_priority_min + count($list["rows"]) - 1;
       }
 
       /* start of output */
@@ -1559,27 +1561,12 @@
       }
 
       /*******************************************/
-      /* MULTI-RECORD-PRIORITY-ACTIONS FORM DATA */
+      /* MULTI-RECORD-(PRIORITY-)ACTIONS FORM DATA */
       /*******************************************/
-      if (hasFlag($flags, RL_MRPA))
+      if (hasFlag($flags, RL_MRA) || hasFlag($flags, RL_MRPA))
       {
-        if (!hasFlag($flags, RL_EMBED))
-        {
-          if (empty($formName)) $formName = "atkrl_".getUniqueID("normalRecordList");
-          $output .= '<form name="'.$formName.'" method="post">'.
-                     session_form(SESSION_NESTED).
-                       '<input type="hidden" name="atkescape">';
-        }
+        $g_layout->register_script(atkconfig("atkroot").'atk/javascript/formselect.js');
 
-        $output .= '<input type="hidden" name="atk_mrpa_atknodetype" value="'.$this->atknodetype().'">'.
-                   '<script language="javascript" src="'.atkconfig("atkroot").'atk/javascript/formselect.js"></script>';
-      }
-
-      /**********************************/
-      /* MULTI-RECORD-ACTIONS FORM DATA */
-      /**********************************/
-      elseif (hasFlag($flags, RL_MRA))
-      {
         $listName = "atkrl_".getUniqueId("normalRecordList");
 
         if (!hasFlag($flags, RL_EMBED))
@@ -1590,9 +1577,9 @@
                        '<input type="hidden" name="atkescape">';
         }
 
-        $output .= '<input type="hidden" name="'.$listName.'_atknodetype" value="'.$this->atknodetype().'">'.
-                   '<script language="javascript" src="'.atkconfig("atkroot").'atk/javascript/formselect.js"></script>'.
-                   '<script language="javascript">'.$listName.' = new Object();</script>';
+        $output .= '<input type="hidden" name="'.$listName.'_atknodetype" value="'.$this->atknodetype().'">';
+        if (hasFlag($flags, RL_MRA))
+          $output .= '<script language="javascript">'.$listName.' = new Object();</script>';
       }
 
       /********/
@@ -1621,7 +1608,7 @@
         /* multi-record-priority-actions -> priority selection */
         if (hasFlag($flags, RL_MRPA))
         {
-          $select = '<select name="atk_mrpa_atkselector[]">'.
+          $select = '<select name="'.$listName.'_atkselector[]">'.
                       '<option value="'.rawurlencode($list["rows"][$i]["selector"]).'"></option>';
           for ($j = $this->m_priority_min; $j <= $this->m_priority_max; $j++)
             $select .= '<option value="'.$j.'">'.$j.'</option>';
@@ -1638,8 +1625,7 @@
                          '<script language="javascript">'.$listName.'["'.rawurlencode($list["rows"][$i]["selector"]).'"] = new Array("'.implode($list["rows"][$i]["mra"], '","').'");</script>'
                         );
 
-          else
-            $output .= '<td>&nbsp;</td>';
+          else $output .= '<td>&nbsp;</td>';
         }
 
         $str_actions = "";
@@ -1703,14 +1689,14 @@
                          '<img src="'.atkconfig("atkroot").'atk/images/arrow.gif" border="0">'.
                        '</td>'.
                        '<td>'.
-                         '<select name="atk_mrpa_atkaction">'.
+                         '<select name="'.$listName.'_atkaction">'.
                            '<option value="">'.text("with_selected").':</option>';
 
                            foreach ($this->m_priority_actions as $name)
                              $output .= '<option value="'.$name.'">'.text($name).'</option>';
 
         $output .=       '</select>&nbsp;'.
-                         '<input type="button" value="'.text("submit").'" onclick="atkSubmitMRPA(this.form, \''.session_url($PHP_SELF, SESSION_NESTED).'\')">'.
+                         '<input type="button" value="'.text("submit").'" onclick="atkSubmitMRPA(\''.$listName.'\', this.form, \''.session_url($PHP_SELF, SESSION_NESTED).'\')">'.
                        '</td>'.
                      '</tr>'.
                    '</table>'.

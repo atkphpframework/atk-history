@@ -108,21 +108,22 @@ function atkSubmitMRA(name, form, target)
  * distinguish between the submit of the edit form, and the submit of the multi-record action.
  * This method uses the atkescape option to redirect the multi-record-priority action to a level higher
  * on the session stack, which makes it possible to return to the edit form (saving updated values!)
+ * @param name unique recordlist name
  * @param form reference to the form object
  * @param target where do we escape to?
  */
-function atkSubmitMRPA(form, target)
+function atkSubmitMRPA(name, form, target)
 {
   /* some stuff we need to know */
-  var atknodetype = form.elements['atk_mrpa_atknodetype'].value;
-  var index  = form.elements['atk_mrpa_atkaction'].selectedIndex;
-  var atkaction = form.elements['atk_mrpa_atkaction'][index].value;
+  var atknodetype = form.elements[name + '_atknodetype'].value;
+  var index  = form.elements[name + '_atkaction'].selectedIndex;
+  var atkaction = form.elements[name + '_atkaction'][index].value;
 
   /* initial target URL */
   target += 'atknodetype=' + atknodetype + '&atkaction=' + atkaction;
 
   /* get selectors */
-  var list = form.elements['atk_mrpa_atkselector[]'];
+  var list = form.elements[name + '_atkselector[]'];
 
   /* no selectors?! impossible situation, bail out! */
   if (index == 0 || typeof(list) == 'undefined') return;
