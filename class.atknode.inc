@@ -1337,6 +1337,12 @@
 
       if (!empty($nav)) $g_layout->output('<br>'.$nav);
       $g_layout->output('<br><br>');
+      
+      $adminFooter = $this->adminFooter();      
+      if ($adminFooter!="")
+      {
+        $g_layout->output($adminFooter."<br>");
+      }
 
       $g_layout->ui_bottom();
     }
@@ -3266,6 +3272,16 @@
     {
       return "";
     }
+    
+   /**
+     * Function that is called when creating an adminPage. Developers can override
+     * this function in their classes and return a string.
+     */
+    function adminFooter()
+    {
+      return "";
+    }
+
 
     /**
      * Lookup the security 'key' for an action
