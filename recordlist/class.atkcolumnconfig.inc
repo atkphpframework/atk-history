@@ -165,29 +165,32 @@
     }
     
     function getOrderByStatement()
-    {      
-      /*if ($this->m_custom_atkorderby!="")
-      {
-        // bwc order method.
-        atkdebug("Obsolete use of atkorderby");
-        return $this->m_custom_atkorderby;
-      } 
-      else
-      {*/
-//        uasort($this->m_colcfg, array("atkColumnConfig", "_compareSortAttrs"));
-        
-        $result = array();
-        
-        foreach($this->m_colcfg as $field=>$config)
-        {        
-          if (is_object($this->m_node->m_attribList[$field]))
-          {
-            $direction = ($config["direction"]=="desc"?" DESC":"");          
-            $result[] = $this->m_node->m_attribList[$field]->getOrderByStatement().$direction;
-          }
+    {              
+      $result = array();
+      
+      foreach($this->m_colcfg as $field=>$config)
+      {        
+        if (is_object($this->m_node->m_attribList[$field]))
+        {
+          $direction = ($config["direction"]=="desc"?" DESC":"");          
+          $result[] = $this->m_node->m_attribList[$field]->getOrderByStatement().$direction;
         }
-        return implode(", ", $result);
-      //}
+      }
+      return implode(", ", $result);
+    }
+    
+    function getOrderFields()
+    {              
+      $result = array();
+      
+      foreach($this->m_colcfg as $field=>$config)
+      {        
+        if (is_object($this->m_node->m_attribList[$field]))
+        {          
+          $result[] = $field;
+        }
+      }
+      return $result;
     }
     
     function getSortDirection($attribute)
