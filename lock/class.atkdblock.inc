@@ -1,4 +1,13 @@
 <?php
+
+// LOCALLY MODIFIED VERSION:
+// Deze versie is een replacement van de originele atkdblock, en bevat
+// extra debugging informatie omdat er een bug in de originele locking
+// zit. Ook is in deze versie de 'uw lock is verlopen' melding 
+// uitgeschakeld. Als deze bug is opgelost kan deze file volledig worden
+// vervangen door de originele atk versie.
+// Deze locally modified versie is gemaakt door maurice.
+
 /**
  * $Id$
  *
@@ -95,7 +104,7 @@ class atkDbLock extends atkLock
    */
   function lock($selector, $table)
   {
-    global $g_db, $g_layout, $g_sessionManager;
+    global $g_db, $HTTP_SERVER_VARS, $g_layout, $g_sessionManager;
     $success = FALSE;
 
     /* first check if we haven't locked the item already */
@@ -140,9 +149,9 @@ class atkDbLock extends atkLock
       $query->addField("lock_table", escapeSQL($table));
       $query->addField("lock_record", escapeSQL($selector));
       $query->addField("user_id", escapeSQL($user));
-      $query->addField("user_ip", escapeSQL($_SERVER["REMOTE_ADDR"]));
+      $query->addField("user_ip", escapeSQL($HTTP_SERVER_VARS["REMOTE_ADDR"]));
       $query->addField("lock_stamp", $g_db->func_now(), "", "", FALSE);
-      if (substr(atkconfig("database"),0,3) != 'oci')
+      if (atkconfig("database") != 'oci8' && atkconfig("database") != 'oci9')
         $query->addField("lock_lease", $g_db->func_now()." + INTERVAL 60 SECOND", "", "", FALSE);
       else $query->addField("lock_lease", $g_db->func_now()." +  ".(60/86400), "", "", FALSE);
       $query->addField("lock_lease_count", "0");
@@ -178,7 +187,7 @@ class atkDbLock extends atkLock
    */
   function unlock($selector, $table)
   {
-    global $g_db;
+    global $g_db, $HTTP_SERVER_VARS;
 
     $user = getUser();
     if (is_array($user))
@@ -198,7 +207,7 @@ class atkDbLock extends atkLock
         "lock_table = '".escapeSQL($table)."' AND ".
         "lock_record = '".escapeSQL($selector)."' AND ".
         "user_id = '".escapeSQL($user)."' AND ".
-        "user_ip = '".escapeSQL($_SERVER["REMOTE_ADDR"])."' AND ".
+        "user_ip = '".escapeSQL($HTTP_SERVER_VARS["REMOTE_ADDR"])."' AND ".
         "session_id = '".escapeSQL(session_id())."'".
       ") OR (".
         "lock_lease <= ".$g_db->func_now().
@@ -206,6 +215,16 @@ class atkDbLock extends atkLock
     );
     $result = $g_db->query($query->buildDelete());
 
+    //temporal for debuging MM
+    $fp = fopen("/home/pz/www/compiled/lock_error.log","a");
+
+    //temporal for debuging MM
+    $q = $query->buildDelete();
+    $result = $g_db->affected_rows();
+    $msg = "DELETE after unlock ".date("F j, Y, H:i:s") . " rows ".$result. " ".$q;
+    fwrite($fp, $msg );
+    fclose($fp);
+    
     /* unlock the lock table */
     $g_db->unlock("db_lock");
   }
@@ -220,7 +239,7 @@ class atkDbLock extends atkLock
    */
   function extend($identifier)
   {
-    global $g_db, $ATK_VARS;
+    global $g_db, $HTTP_SERVER_VARS, $ATK_VARS;
 
     if (!empty($ATK_VARS["stack"])) $atkstackid = $ATK_VARS["stack"];
     else $atkstackid = atkStackID();
@@ -234,14 +253,14 @@ class atkDbLock extends atkLock
     /* extend lock lease */
     $name = "atk".atkconfig("database")."query";
     $query = new $name();
-    if (substr(atkconfig("database"),0,3) != 'oci')
+    if (atkconfig("database") != 'oci8' && atkconfig("database") != 'oci9')
       $query->addField("lock_lease", $g_db->func_now()." + INTERVAL 60 SECOND", "", "", FALSE);
     else $query->addField("lock_lease", $g_db->func_now()." +  ".(60/86400), "", "", FALSE);
     $query->addField("lock_lease_count", "lock_lease_count + 1", "", "", FALSE);
     $query->addTable("db_lock");
     $query->addCondition("lock_id = ".(int)$identifier);
     $query->addCondition("user_id = '".escapeSQL($user)."'");
-    $query->addCondition("user_ip = '".escapeSQL($_SERVER["REMOTE_ADDR"])."'");
+    $query->addCondition("user_ip = '".escapeSQL($HTTP_SERVER_VARS["REMOTE_ADDR"])."'");
     $query->addCondition("session_id = '".escapeSQL(session_id())."'");
     $query->addCondition("lock_lease >= ".$g_db->func_now());
     $query->executeUpdate();
@@ -250,13 +269,30 @@ class atkDbLock extends atkLock
     /* unlock the lock table */
     $g_db->unlock("db_lock");
 
+    //temporal for debuging MM
+    $fp = fopen("/home/pz/www/compiled/lock_error.log","a");
+
     /* reset lock ID in session */
     if ($result <= 0)
     {
       $atklockList = $this->loadLockList();
       if (is_array($atklockList)) unset($atklockList[$atkstackid]);
       $this->storeLockList($atklockList);
+
+      //temporal for debuging MM
+      $q = $query->buildUpdate();
+      $s = $query->buildSelect();
+      $msg = "\nLOCK FAILED ".date("F j, Y, H:i:s") ."\n". $q. "\n\nresult ".$result."\n\n";
+      $msg .= $s."\n\n";
+      fwrite($fp, $msg );
+      //mail("maurice@ibuildings.nl,ludo@ibuildings.nl","pz: lock failed", $msg, "From: www.zeeland.nl\n");
     }
+    else
+    {
+      //temporal for debuging MM
+      fwrite($fp, "LOCK EXTENDED ".date("F j, Y, H:i:s") ." user=". $user. " user_ip=".escapeSQL($HTTP_SERVER_VARS["REMOTE_ADDR"])." lock_id=".(int)$identifier." session_id=".escapeSQL(session_id())."\n");
+    }
+    fclose($fp);
     
     /* return */
     return $result > 0;

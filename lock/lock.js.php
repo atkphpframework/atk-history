@@ -1,4 +1,13 @@
 <?php
+  //LOCALLY MODIFIED VERSION
+  //Als een lock fout gaat door (bv door connectie probleem) wordt
+  //er een foutmelding via een pop-up getoond. Deze  foutmelding komt 
+  //nog te vaak voor en werkt erg storend voor beheerders. Zolang het lock
+  //systeem nog regelmatig fout gaat mag de melding niet getoond worden.
+  //Zie atkLockUnlock()
+  //Deze locally modified versie is gemaakt door maurice.
+
+
   global $ATK_VARS;
   $id = (int)$ATK_VARS["id"];
   $message = text("lock_expired");
@@ -122,7 +131,10 @@ function atkLockUnlock()
   atkLock.isLocked = false;
   if (typeof(document.images['_lock_']) != 'undefined')
     document.images['_lock_'].src='<?php echo atkconfig("atkroot");?>atk/images/lock_expired.gif';
-  alert('<?=addslashes($message)?>');
+  
+  //Deze foutmelding komt nog te vaak voor en werkt erg storend voor beheerders. Zolang het lock
+  //systeem nog regelmatig fout gaat mag de melding niet getoond worden.
+  //alert('<?=addslashes($message)?>');
 }
 
 atkLockInit('<?=$id?>');
