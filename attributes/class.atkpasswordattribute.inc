@@ -145,7 +145,7 @@
   {
     $error = FALSE;
     $value = $record[$this->fieldName()];
-
+    
     if ($mode == 'update'
         && (strlen($value["new"]) > 0 || strlen($value["again"]) > 0)
         && !$this->hasFlag(AF_PASSWORD_NOVALIDATE)
