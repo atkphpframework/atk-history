@@ -288,6 +288,7 @@
       /* edit */
       else
       {
+
         /* we first check if there is no edit override method, if there
          * is this method has the same behaviour as the atkAttribute's method
          */
@@ -300,8 +301,9 @@
         /* how we handle 1:1 relations normally */
         else
         {
+
           if ($this->createDestination())
-	        {
+	  {
             /* we first check if the record doesn't already exist */
             if ($defaults[$this->fieldName()] != NULL)
             {
@@ -331,7 +333,15 @@
 
             /* add fields */
             $forceList = decodeKeyValueSet($this->m_destinationFilter);
-            $forceList[$this->m_refKey][$this->m_ownerInstance->primaryKeyField()] = $defaults[$this->m_ownerInstance->primaryKeyField()];                 
+            if($this->destinationHasRelation())
+            {
+              $forceList[$this->m_refKey][$this->m_ownerInstance->primaryKeyField()] = $defaults[$this->m_ownerInstance->primaryKeyField()];
+            }
+            else
+            {
+               // its possible that the destination has no relation back. In that case the refKey is just an attribute
+               $forceList[$this->m_refKey] = $defaults[$this->m_ownerInstance->primaryKeyField()];
+            }
             $a = $this->m_destInstance->editArray($mode, $myrecord, $forceList, array(), $this->fieldName()."_AE_");
 
             /* errors and hidden fields */
@@ -354,7 +364,7 @@
               $arr["fields"][] = "-";
             }
           }
-	      }
+        }
       }
     }
 
