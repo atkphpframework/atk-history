@@ -106,7 +106,7 @@
       else
       {
         $result = '<input type="text" name="'.$fieldprefix.$this->formName().
-                '" value="'.htmlspecialchars($record[$this->fieldName()]).'"'.
+                '" value="'.$this->_minutes2value($record[$this->fieldName()]).'"'.
                 ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').
                 ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>';        
       }
