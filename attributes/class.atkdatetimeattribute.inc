@@ -1,4 +1,4 @@
-<?
+<?php
 
   /**
    * The atkDateTimeAttribute class can be used for date and time entry.
