@@ -235,23 +235,24 @@
 
   // Password changer text
   $txt_passchange_title= "Wachtwoord veranderen";
-  $txt_password_change1= "Geef hier uw gebruikersnaam en e-mail adres, dit moet hetzelfde e-mail adres zijn die geregistreerd staat.<br> \n";
-  $txt_password_change1.="Indien het hetzelfde adres is word hier een e-mail naar gestuurd met een unieke id en word u doorverwezen <br>\n";
-  $txt_password_change1.="naar een pagina waar u uw wachtwoord, m.b.v. de id code, kunt wijzigen. <br>\n Het kan enige tijd duren voordat de e-mail aankomt.";
+  $txt_passchange_please_enter_email_and_username = "Geef hier uw gebruikersnaam en e-mail adres, dit moet hetzelfde e-mail adres zijn die geregistreerd staat.<br> \n
+                                                   Indien het hetzelfde adres is word hier een e-mail naar gestuurd met een unieke id en word u doorverwezen <br>\n
+                                                   naar een pagina waar u uw wachtwoord, m.b.v. de id code, kunt wijzigen. <br>\n Het kan enige tijd duren voordat de e-mail aankomt.";
   
-  $txt_password_change2= "Vul hier uw ID code in en uw nieuwe wachtwoord 2 maal, zodra de code en wachtwoorden geverifieerd zijn<br>\n";
-  $txt_password_change2.="word u doorverwezen naar de inlog pagina waar u uw nieuwe wachtwoord kunt gebruiken.";
+  $txt_passchange_please_enter_id_and_password = "Vul hier uw ID code in en uw nieuwe wachtwoord 2 maal, zodra de code en wachtwoorden geverifieerd zijn<br>\n
+                                                  word u doorverwezen naar de inlog pagina waar u uw nieuwe wachtwoord kunt gebruiken.";
   
   $txt_passchange_email_error="Uw ingevoerde e-mail adres en/of gebruikersnaam is onjuist.";
   $txt_passchange_id_error="Uw ingevoerde ID code is onjuist.";
   $txt_passchange_password_error="Uw ingevoerde wachtwoorden komen niet overeen.";
   $txt_passchange_try_again="Probeert u het nogmaals";
+  $txt_passchange_forgot_password="Ik ben mijn wachtwoord vergeten";
   
   $txt_passchange_subject_mail="Uw nieuwe wachtwoord instellen";
-  $txt_passchange_body_mail="Iemand, waarschijnlijk u, heeft aangegeven het wachtwoord van uw account te willen veranderen.\n";
-  $txt_passchange_body_mail.="Indien u dit was kunt u uw wachtwoord veranderen met de volgende ID code: '%s'.\n";
-  $txt_passchange_body_mail.='U kunt of naar %s?user=%s&id2=%s gaan of de ID code handmatig invullen.\n';
-  $txt_passchange_body_mail.="Indien u dit niet gedaan heeft, gelieve contact op te nemen met ".atkconfig("mailreport").".\n";
+  $txt_passchange_body_mail='Iemand, waarschijnlijk u, heeft aangegeven het wachtwoord van uw account te willen veranderen.\n
+                             Indien u dit was kunt u uw wachtwoord veranderen met de volgende ID code: "%s".\n
+                             U kunt of naar %s?user=%s&id2=%s gaan of de ID code handmatig invullen.\n
+                             Indien u dit niet gedaan heeft, gelieve contact op te nemen met ".atkconfig("mailreport").".\n';
   
   $txt_app_launcher = "ATK Applicatie Starter";
   $txt_app_reopen   = "Opnieuw starten";
