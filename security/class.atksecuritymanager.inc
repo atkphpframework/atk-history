@@ -54,6 +54,7 @@
     var $m_authorization = 0; 
     var $m_scheme = "none";
     var $m_user = array();
+    var $m_page_response = true;
     
     // If login really fails (no relogin box, but an errormessage), the 
     // error message that caused the fatal error is put in this variable.
@@ -107,7 +108,6 @@
       global $g_layout;      
       
       $session = &atkSessionManager::getSession();
-      
       $response=AUTH_UNVERIFIED;
       
       if (atkconfig("auth_loginform")==true) // form login
@@ -135,7 +135,8 @@
         if (atkconfig("authentication_cookie") && $auth_user!="administrator")
         {
           $cookiename = "atkauth_".str_replace(" ","_",text("app_title"));
-          if (!empty($_COOKIE[$cookiename])) setcookie($cookiename, "", 0);
+          $cookiepath = atkconfig("application_root");
+          if (!empty($_COOKIE[$cookiename])) setcookie($cookiename, "", 0, $cookiepath);
         }
         if($ATK_VARS["atklogout"]>1)
         {
@@ -160,15 +161,17 @@
           // Cookiename is based on the app_title, for there may be more than 1 atk app running,
           // each with their own cookie..
           $cookiename = "atkauth_".str_replace(" ","_",text("app_title"));          
-          list($enc, $user, $passwd) = split("\.",base64_decode($_COOKIE[$cookiename]));          
+          //decode after the string has been seperated
+          //because the vars might have '.' in them
+          list($enc, $user, $passwd) = split("\.",$_COOKIE[$cookiename]);          
                      
           // for security reasons administrator will never be cookied..
           if ($auth_user=="" && $user!="" && $user!="administrator")
           {        
             atkdebug("Using cookie to retrieve previously used userid/password");          
-            $auth_user = $user;
-            $auth_pw = $passwd;
-            $md5 = ($enc=="MD5"); // cookie may already be md5;
+            $auth_user = base64_decode($user);
+            $auth_pw = base64_decode($passwd);
+            $md5 = (base64_decode($enc)=="MD5"); // cookie may already be md5;
           }
         }              
         
@@ -262,7 +265,8 @@
                     $enc = "PLAIN";
                   }
                 }
-                setcookie($cookiename,base64_encode($enc.".".$auth_user.".".$tmppw), time()+60*(atkconfig("authentication_cookie_expire")));
+                $cookiepath = atkconfig("application_root");
+                setcookie($cookiename,base64_encode($enc).".".base64_encode($auth_user).".".base64_encode($tmppw), time()+60*(atkconfig("authentication_cookie_expire")),$cookiepath);
               }
             }
             else
@@ -287,7 +291,6 @@
         // but we double check with some more data from the session to see
         // if the login is really valid.
         $session_auth = $g_sessionManager->getValue("authentication", "globals");          
-                
         if (atkconfig("authentication_session") && 
             $session["login"]==1 && 
             $session_auth["authenticated"]==1 && 
@@ -312,20 +315,29 @@
       // still not logged in?! 
       if ($session["login"]!=1)
       {
-        if(atkconfig("auth_loginform"))
+        if($this->m_page_response)
         {
-          $this->loginForm($auth_user, $response);
-          $g_layout->outputFlush();
-          exit();
+          if(atkconfig("auth_loginform"))
+          {
+            $this->loginForm($auth_user, $response);
+            $g_layout->outputFlush();
+            exit();
+          }
+          else
+          {
+            header('WWW-Authenticate: Basic realm="'.text("app_title").' - '.strftime("%c",time()).'"');
+            if (ereg("Microsoft", $SERVER_SOFTWARE)) header("Status: 401 Unauthorized");
+            else header("HTTP/1.0 401 Unauthorized");
+            return false;
+          }
         }
         else
         {
-          header('WWW-Authenticate: Basic realm="'.text("app_title").' - '.strftime("%c",time()).'"');
-          if (ereg("Microsoft", $SERVER_SOFTWARE)) header("Status: 401 Unauthorized");
-          else header("HTTP/1.0 401 Unauthorized");
-          return false;
+	  unset($ATK_VARS["atklogout"]);
+          return AUTH_MISMATCH;
         }
       }
+
 
       // we are authenticated, but atklogout is still active, let's get rid of it!
       else if (isset($ATK_VARS["atklogout"])) header("Location: ".$_SERVER["PHP_SELF"]."?");
@@ -628,10 +640,10 @@
     (This is actually a small wrapper for $securityManager->authenticate(), 
     so you can quickly secure an application.
    */
-  function atksecure()
+  function atksecure($page_response=true)
   {
     $securityMgr = &atkGetSecurityManager();
-    
+    $securityMgr->m_page_response = $page_response;
     if (!$securityMgr->authenticate())
     {
       echo '<b>'.text("login_failed").'</b>';      
