@@ -139,13 +139,13 @@
   $txt_explain_session_expired = "Sua sessão expirou. Isto acontece se a aplicação está inativa por algum tempo. Se você quiser continuar realize o login novamente.";
   
   // visual html editor
-  $txt_ww_sourcemode = "Source mode";
-  $txt_ww_visualmode = "Visual mode";
+  $txt_ww_sourcemode = "Modo original";
+  $txt_ww_visualmode = "Modo visual";
 
   // multi-record actions selection
   $txt_select_all     = "Marcar tudo";
   $txt_deselect_all   = "Desmarcar tudo";
-  $txt_select_invert  = "Inverter sele]ção";
+  $txt_select_invert  = "Inverter seleção";
   $txt_with_selected  = "Com o selecionado";
   $txt_submit         = "Ir";
 
