@@ -227,7 +227,7 @@
               }
               if($boxActive)  
               {
-                $mainHtml .="<b>".text(getNodeType($nodename))."</b><br>";
+                $mainHtml .="<b>".$this->getNodeSecurityName($nodename, $modname)."</b><br>";
                 $mainHtml .=$html;
                 $mainHtml .="<br><br>\n";
               }
@@ -258,6 +258,17 @@
       if (strtolower(substr($label,0,10))=="permission") // no suitable translation found
       {
         $label = text($action, $node, $modulename); // generic action text.        
+      }
+      return $label;
+    }
+    
+    function getNodeSecurityName($nodename, $modulename="")
+    {
+      $label = text("profile_".$nodename, $modulename);
+      if (strtolower(substr($label,0,7))=="profile")
+      {
+        // no suitable translation found
+        $label = text($nodename, $modulename); // Generic text.
       }
       return $label;
     }
