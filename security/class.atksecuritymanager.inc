@@ -328,8 +328,11 @@
       }
 
       // we are authenticated, but atklogout is still active, let's get rid of it!
-      else if (isset($ATK_VARS["atklogout"])) header("Location: ".$_SERVER["PHP_SELF"]."?");
-
+      else if (isset($ATK_VARS["atklogout"]))
+      {
+         header("Location: ".$_SERVER["PHP_SELF"]."?");
+         exit;
+      }
       // we keep the relogin state until the atklogout variable isn't set anymore
       else if (!isset($ATK_VARS["atklogout"]) && $session["relogin"]==1) $session["relogin"]=0;
 
