@@ -849,7 +849,7 @@
         }
         else
         {
-          $params["content"] = $innercontent;
+          $params["content"] = $innerform;
         }
   
         $params["formstart"] = '<form method="get">'.session_form(SESSION_NESTED);
