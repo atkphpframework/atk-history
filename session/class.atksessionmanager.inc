@@ -48,7 +48,10 @@
     {
       $this->m_namespace = $namespace;
       $this->m_usestack = $usestack;
-      session_regenerate_id(); 
+      if (atkconfig("session_regenerate", true)==true)
+      {
+        session_regenerate_id(); 
+      }
       atkdebug("creating sessionManager (namespace: $namespace)");
     }
 
