@@ -96,7 +96,15 @@
      */
     function search($record="", $extended=false)
     {
-      if (!$extended) return parent::search($record, $extended);
+      if (!$extended) 
+      {
+        if (is_array($record[$this->fieldName()]))
+        {
+           // Two values were entered in the extended search screen.
+           $record[$this->fieldName()] = $record[$this->fieldName()]["from"]."/".$record[$this->fieldName()]["to"];
+        }
+        return parent::search($record, $extended);
+      }
       else
       {
         $id = "atksearch[".$this->formName()."][from]";
@@ -121,9 +129,25 @@
      * @return a piece of the SQL where clause
      */
     function searchCondition(&$query, $table, $value, $searchmode)
-    {
+    {  
+      if (!is_array($value)) 
+      {        
+        $slash = strpos($value, "/"); // Support for 'from/to' searches.
+        $str = $value;
+        if ($slash)
+        {          
+          $value = array();
+          $value["from"]=substr($str, 0, $slash);
+          $value["to"]=substr($str,$slash+1);         
+          $searchmode="between";
+        }
+        else
+        {
+          $value["from"] = $value; // quicksearch doesn't use an array.    
+        }
+      }
       if ($searchmode!="between") 
-      {
+      {        
         // Use default handler, and use only the first field.
         return parent::searchCondition($query, $table, $value["from"], $searchmode);
       }
