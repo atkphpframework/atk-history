@@ -1,6 +1,10 @@
 <?php
   // ATK Configuration file. 
   
+  // Unique application identifier
+  // Set this when using multiple applications within one website
+  $config_identifier = "atkapp";
+
   //----------------- DATABASE CONFIGURATION --------------------
 
   // Specify the type of database. 
