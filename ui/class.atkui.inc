@@ -53,9 +53,19 @@
       $g_layout->initGui();
 
       $this->m_smarty->assign($vars);              
-           
+      
+      // if $tplname contains a full pathname, the template
+      // is rendered as is. 
+      // If it's just a filename, we lookup the template in
+      // the theme directory.
+      if (strpos($tplname, "/")===false)
+      {
+        // lookup template in theme.
+        $tplname = $this->m_theme->tplPath($tplname);
+      }
+                 
       // Default theme assigns.               
-      return $this->m_smarty->fetch($this->m_theme->tplPath($tplname));
+      return $this->m_smarty->fetch($tplname);
       
     }        
     

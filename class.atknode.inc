@@ -869,7 +869,7 @@
   
         }  
         
-        $innerform = $ui->render("viewform.tpl", array("fields"=>$fields));
+        $innerform = $ui->render($this->getTemplate("view", $record, $tab), array("fields"=>$fields));
         
         $params["content"] = $this->tabulate("view", $innerform);        
   
@@ -1283,7 +1283,8 @@
 
           $tplfield["full"] = $editsrc;        
         }
-        $fields[] = $tplfield;
+        $fields[] = $tplfield; // make field available in numeric array
+        $params[$field["name"]] = $tplfield; // make field available in associative array
       }
       
       $ui = &$this->getUi();
@@ -1293,11 +1294,33 @@
       {
         $result.= $hidden;
       }
-      $result.= $ui->render("editform.tpl", array("fields"=>$fields,
-                                                  "errortitle"=>$error_title,
-                                                  "errors"=>$errors));
+      
+      $params["fields"] = $fields; // add all fields as an numeric array.
+      $params["errortitle"] = $error_title;
+      $params["errors"] = $errors; // Add the list of errors.
+      
+      $result.= $ui->render($this->getTemplate($mode, $record, $tab), $params);
       return $result;
             
+    }
+    
+    /**
+     * The system calls this method to determine which template to use when 
+     * rendering a certain screen. The default implementation always returns 
+     * the same template. You can override this method in your node however,
+     * to determine on the fly which template to use. 
+     * The action, the current record (if any) and the tab are passed as
+     * parameter. By using these params, you can have custom templates per
+     * action, and/or per tab, and even per record.
+     */
+    function getTemplate($action, $record="", $tab="")
+    {
+      switch ($action)
+      {
+        case "edit": return "editform.tpl";
+        case "view": return "viewform.tpl";
+        case "search": return "searchform.tpl";
+      }
     }
 
     /**
@@ -1417,7 +1440,7 @@
           }                
         }
                 
-        return $ui->render("searchform.tpl", $params);
+        return $ui->render($this->getTemplate("search", $record), $params);
 
       }    
       else
