@@ -216,14 +216,14 @@ class atkDbLock extends atkLock
     $result = $g_db->query($query->buildDelete());
 
     //temporal for debuging MM
-    $fp = fopen("/home/pz/www/compiled/lock_error.log","a");
+//    $fp = fopen("/home/pz/www/compiled/lock_error.log","a");
 
     //temporal for debuging MM
     $q = $query->buildDelete();
     $result = $g_db->affected_rows();
     $msg = "DELETE after unlock ".date("F j, Y, H:i:s") . " rows ".$result. " ".$q;
-    fwrite($fp, $msg );
-    fclose($fp);
+//    fwrite($fp, $msg );
+//    fclose($fp);
     
     /* unlock the lock table */
     $g_db->unlock("db_lock");
