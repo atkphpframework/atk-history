@@ -939,7 +939,9 @@
     }
 
     function searchPage($record=NULL)
-    {      
+    {   
+      global $g_layout;
+      $this->setStyle("style.css");
       $g_layout->initGui();
       $g_layout->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
       $ui = &atknew("atk.ui.atkui");
@@ -1311,101 +1313,100 @@
     function searchForm($record = NULL)
     {
       global $g_db;
-
-      $this->setAttribSizes();
-
-      $defaults = $record;
-
-      $form.=$g_layout->ret_table_simple();
-
-      $dbSearchModes = $g_db->getSearchModes();
-      $form.='<tr>';
-      $form.=$g_layout->ret_td(text("search_mode"),'colspan="1"');
-      $sel.='<input type="radio" name="atksearchmethod" value="AND" checked>'.text("search_and").'&nbsp;&nbsp;&nbsp;';
-      $sel.='<input type="radio" name="atksearchmethod" value="OR">'.text("search_or");
-      $form.=$g_layout->ret_td($sel, 'colspan="2"');
-      $form.='</tr>';
-      $form.='<tr>'.$g_layout->ret_td("<hr>",'colspan="3"').'</tr>';
-
-      foreach (array_keys($this->m_attribList) as $attribname)
+      
+      $ui = &atknew("atk.ui.atkui");
+      
+      if (is_object($ui))
       {
-        $p_attrib = &$this->m_attribList[$attribname];
-        $attribSearchModes = $p_attrib->getSearchModes();
 
-        if (!$p_attrib->hasFlag(AF_HIDE_SEARCH))
+        $this->setAttribSizes();
+  
+        $defaults = $record;
+  
+        $dbSearchModes = $g_db->getSearchModes();
+        $params = array();
+        $params['searchmode_title'] = text("search_mode");
+        $params['searchmode_and'] = '<input type="radio" name="atksearchmethod" value="AND" checked>'.text("search_and");
+        $params['searchmode_or'] = '<input type="radio" name="atksearchmethod" value="OR">'.text("search_or");      
+        $params["fields"] = array();                
+  
+        foreach (array_keys($this->m_attribList) as $attribname)
         {
-
-          // We must perform an array_values over array_intersect, to maintain a
-          // correct numeric array index (array_intersect mangles those)
-          $searchModes = array_values(array_intersect($dbSearchModes,$attribSearchModes));
-
-          if (count($searchModes)>0) // Don't display this attribute if it doesn't support searching.
+          $p_attrib = &$this->m_attribList[$attribname];
+          $attribSearchModes = $p_attrib->getSearchModes();        
+  
+          if (!$p_attrib->hasFlag(AF_HIDE_SEARCH))
           {
-
-            $form.='<tr>';
-
-            // Keep track of the number of td's we have to fill with the edit thingee..
-            // This depends on AF_NOLABEL for example.
-            $tdcount = 1;
-
-            // The Label of the attribute (can be suppressed with AF_NOLABEL or AF_BLANKLABEL)
-            // For each attribute, a txt_<attributename> must be provided in the language files.
-            if ($p_attrib->hasFlag(AF_NOLABEL)==false)
+            $field = array();
+            // We must perform an array_values over array_intersect, to maintain a
+            // correct numeric array index (array_intersect mangles those)
+            $searchModes = array_values(array_intersect($dbSearchModes,$attribSearchModes));
+  
+            if (count($searchModes)>0) // Don't display this attribute if it doesn't support searching.
             {
-              if ($p_attrib->hasFlag(AF_BLANKLABEL))
+            
+              $funcname = $p_attrib->m_name."_search";
+  
+              if (method_exists($this,$funcname))
               {
-                $form.=$g_layout->ret_td('&nbsp;');
+                $field["widget"] = $this->$funcname($defaults, $fieldprefix);
               }
               else
               {
-                $form.=$g_layout->ret_td($p_attrib->label($record).': ','valign="top"');
+                $field["widget"] = $p_attrib->search($defaults, true); // second param indicates extended search.
               }
-            }
-            else
-            {
-              $tdcount++; // If there's no label, the other td's have to be filled up.
-            }
-
-
-            $funcname = $p_attrib->m_name."_search";
-
-            if (method_exists($this,$funcname))
-            {
-              $editsrc = $this->$funcname($defaults, $fieldprefix);
-            }
-            else
-            {
-              $editsrc = $p_attrib->search($defaults, true); // second param indicates extended search.
-            }
-
-
-            $form.=$g_layout->ret_td($editsrc,'colspan="'.$tdcount.'" valign="top"');
-            if(count($searchModes)==1)
-            {
-              $sel = '<input type="hidden" name="atksearchmode['.$p_attrib->m_name.']" value="'.$searchModes[0].'">'.text("search_".$searchModes[0]);
-            }
-            else
-            {
-              $sel = '<select name="atksearchmode['.$p_attrib->m_name.']">';
-              while (list($key, $searchMode) = each($searchModes))
+              
+              $field["full"] = $field["widget"]; // lateron, we might add more to full
+              
+              if(count($searchModes)==1)
               {
-                // if supported, we select the 'like' searchmode by default
-                $selected="";
-                if ($this->m_postvars["atksearchmode"][$p_attrib->m_name]==$searchMode||($this->m_postvars["atksearchmode"][$p_attrib->m_name]==""&&$searchMode=="substring")) $selected="selected";
-                $sel.= '<option value="'.$searchMode.'" '.$selected.'>'.text("search_".$searchMode);
+                $field["searchmode"] = '<input type="hidden" name="atksearchmode['.$p_attrib->m_name.']" value="'.$searchModes[0].'">'.text("search_".$searchModes[0]);
               }
-              $sel.= '</select>';
-            }
-            $form.=$g_layout->ret_td($sel,'valign="top"');
-            $form.='</tr>';
-          }
+              else
+              {
+                $sel = '<select name="atksearchmode['.$p_attrib->m_name.']">';
+                while (list($key, $searchMode) = each($searchModes))
+                {
+                  // if supported, we select the 'like' searchmode by default
+                  $selected="";
+                  if ($this->m_postvars["atksearchmode"][$p_attrib->m_name]==$searchMode||($this->m_postvars["atksearchmode"][$p_attrib->m_name]==""&&$searchMode=="substring")) $selected="selected";
+                  $sel.= '<option value="'.$searchMode.'" '.$selected.'>'.text("search_".$searchMode);
+                }
+                $sel.= '</select>';
+                $field["searchmode"] = $sel;
+              }                        
+            
+              // The Label of the attribute (can be suppressed with AF_NOLABEL or AF_BLANKLABEL)
+              // For each attribute, a txt_<attributename> must be provided in the language files.
+              if ($p_attrib->hasFlag(AF_NOLABEL)==false)
+              {
+                if ($p_attrib->hasFlag(AF_BLANKLABEL))
+                {
+                  $field['label'] = "";
+                }
+                else
+                {
+                  $field['label'] = $p_attrib->label($record);
+                }
+              }
+              else
+              {
+                $field['line'] = $field['widget'];
+              }
+              $params["fields"][] = $field;
+              
+            }            
+          }                
         }
+                
+        return $ui->render("searchform.tpl", $params);
 
+      }    
+      else
+      {
+        atkerror("ui object error");
       }
-
-      $form.='</table>';
-
-      return $form;
+      
     }
 
     /**
