@@ -201,16 +201,6 @@
                              "username"=>stringparse(atkconfig("auth_userdescriptor"), $recs[$i]));
        }
        return $userlist;
-
-     }
-
-     function getEmail($user)
-     {
-       global $g_db;
-       $query = "SELECT email FROM ".atkconfig("auth_usertable")." WHERE ".atkconfig("auth_userfield")." = '$user';";
-       $recs = $g_db->getrows($query);
-       atkdebug($recs[0]["email"]);
-       return $recs[0]["email"];
      }
    }
 ?>

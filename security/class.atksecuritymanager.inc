@@ -422,10 +422,11 @@
         $output.="<tr><td valign=top class=table>".text('username').":</td><td>".$userField."</td></tr>";   
         $output.="<tr><td colspan=2 class=table height=6></td></tr>";
         $output.="<tr><td valign=top class=table>".text('password').":</td><td><input type=password size=15 name=auth_pw value=''></td></tr>";
-        $output.="<tr><td class=table colspan=2 align=center height=50 valign=middle><input type=submit value=".text('login')."></td></tr>";      
+        $output.="<tr><td class=table colspan=2 align=center height=50 valign=middle><input type=submit value=".text('login')."></td></tr>";
       }
       
       $output.='</table></form>';
+      $output.='<tr><td class=table align=left valign=bottom><a href="passchange.php"><small style="color:#FFFFFF;font-size:9pt">&nbsp;Ik ben mijn wachtwoord vergeten</small></a></td></tr>';
       $output.='<SCRIPT LANGUAGE="JavaScript">placeFocus()</SCRIPT>';
       
       $page->addContent($ui->render("login.tpl", array("title"=>text('login_form'),
