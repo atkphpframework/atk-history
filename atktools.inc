@@ -606,6 +606,14 @@
   }
 
   /**
+   * wrap lines
+   */
+  function _wordwrap($line)
+  {
+    return wordwrap($line,100,"\n",1);
+  }
+
+  /**
    * Sent a detailed error report to the maintainer.
    */
   function mailreport()
@@ -624,20 +632,37 @@
       $body.= "\nPHP Version: ".phpversion()."\n\n";
 
       $body.= "\nDEBUGMESSAGES\n".str_repeat("-",70)."\n";
-      $body.= implode("\n",$g_debug_msg);
-
-      $body.= "\n\nHTTP_GET_VARS\n".str_repeat("-",70)."\n";
-      foreach ($HTTP_GET_VARS as $key=>$value)
+      for($i=0, $_=count($g_debug_msg);$i<$_;$i++)
       {
-        $body.=$key.str_repeat(" ",max(1,20-strlen($key)))." = ".$value."\n";
+        $lines[] = _wordwrap($g_debug_msg[$i]);
+      }
+      $body.= implode("\n",$lines);
+
+      if (count($_GET)>0)
+      {
+        $body.= "\n\n_GET\n".str_repeat("-",70)."\n";
+        foreach ($_GET as $key=>$value)
+        {
+          $body.=_wordwrap($key.str_repeat(" ",max(1,20-strlen($key)))." = ".$value)."\n";
+        }
       }
 
-      if (count($HTTP_POST_VARS)>0)
+      $request = getallheaders();
+      if (count($request)>0)
       {
-        $body.= "\n\nHTTP_POST_VARS\n".str_repeat("-",70)."\n";
-        foreach ($HTTP_POST_VARS as $key=>$value)
+        $body.= "\n\nREQUEST INFORMATION\n".str_repeat("-",70)."\n";
+        foreach($request as $key=>$value)
+        {
+          $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value)."\n";
+        }
+      }
+
+      if (count($_POST)>0)
+      {
+        $body.= "\n\n_POST\n".str_repeat("-",70)."\n";
+        foreach ($_POST as $key=>$value)
         { 
-          $body.=$key.str_repeat(" ",max(1,20-strlen($key)))." = ".$value."\n";
+          $body.=_wordwrap($key.str_repeat(" ",max(1,20-strlen($key)))." = ".$value)."\n";
         }
       }
       $body.= "\n\nATK CONFIGURATION\n".str_repeat("-",70)."\n";
@@ -645,7 +670,7 @@
       {
         if (substr($key,0,7)=="config_")
         {
-          $body.=$key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value."\n";
+          $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value)."\n";
         }
       }
       
@@ -654,7 +679,7 @@
       {      
         foreach($g_user as $key => $value)
         {
-          $body.=$key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value."\n";
+          $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value)."\n";
         }
       }
       else $body.= "Not known\n";
@@ -672,7 +697,7 @@
 	       {
             foreach ($item as $key=>$value)
             {              
-              $body.=$key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value."\n";
+              $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value)."\n";
             }
           }
         }
@@ -682,7 +707,7 @@
           $body.="\nNamespace globals:\n";
           foreach ($ns_globals as $key=>$value)
           {
-            $body.=$key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value."\n";
+            $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value)."\n";
           }
         }
         $globals = $g_sessionData["globals"];
@@ -691,7 +716,7 @@
           $body.="\nGlobals:\n";
           foreach ($globals as $key=>$value)
           {
-            $body.=$key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value."\n";
+            $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value)."\n";
           }
         }
       }
@@ -700,7 +725,7 @@
 
       foreach ($HTTP_SERVER_VARS as $key=>$value)
       {
-        $body.=$key.str_repeat(" ",max(1,20-strlen($key)))." = $value\n";
+        $body.=_wordwrap($key.str_repeat(" ",max(1,20-strlen($key)))." = ".$value)."\n";
       }
 
       mail($config_mailreport,$subject,$body,"From: $from <atkinfo@ibuildings.nl>");
