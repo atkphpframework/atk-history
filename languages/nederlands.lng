@@ -185,6 +185,7 @@
   $txt_auth_dberror = "De database server is niet bereikbaar, er is een mail gestuurd naar %s.";
   $txt_auth_dberror_user = "Deze site is tijdelijk niet bereikbaar vanwege onderhoud.";
   $txt_auth_account_locked = "Dit account is vergrendeld. Probeer indien mogelijk een ander account, of neem contact op met uw systeembeheerder.";
+  $txt_auth_site_down = "De beheeromgeving is momenteel offline vanwege onderhoud";
 
   $txt_wysiwyg_fontface = "Lettertype";
   $txt_wysiwyg_fontsize = "Pt";
