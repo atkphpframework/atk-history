@@ -1368,7 +1368,8 @@
     function listArray(&$recordset, $flags=0, $prefix="", $actions=array(), $suppress=array())
     {
       if (!is_array($suppress)) $suppress = array();
-      $result = array("heading" => array(), "search" => array(), "rows" => array(), "total" => array(), "mra" => array());
+      $result = array("heading" => array(), "search" => array(), "rows" => array(),
+                      "totalraw" => array(), "total" => array(), "mra" => array());
 
       /* get the heading and search columns */
       if (!hasFlag($flags, RL_NO_SEARCH)) $this->setAttribSizes();
@@ -1579,7 +1580,6 @@
                        '<input type="hidden" name="atkescape">';
         }
 
-        $output .= '<input type="hidden" name="'.$listName.'_atknodetype" value="'.$this->atknodetype().'">';
         if (hasFlag($flags, RL_MRA))
           $output .= '<script language="javascript">var '.$listName.' = new Object();</script>';
       }
@@ -1713,6 +1713,8 @@
       /****************************************/
       elseif (hasFlag($flags, RL_MRA))
       {
+        $target = session_url($PHP_SELF.'?atknodetype='.$this->atkNodeType(), SESSION_NESTED);
+
         $output .= '<tr><td align="left">'.
                    '<table border="0" cellspacing="0" cellpadding="2">'.
                      '<tr>'.
@@ -1736,7 +1738,7 @@
                              $output .= '<option value="'.$name.'">'.text($name).'</option>';
 
         $output .=       '</select>&nbsp;'.
-                         '<input type="button" value="'.text("submit").'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.session_url($PHP_SELF, SESSION_NESTED).'\')">'.
+                         '<input type="button" value="'.text("submit").'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\')">'.
                        '</td>'.
                      '</tr>'.
                    '</table>'.
