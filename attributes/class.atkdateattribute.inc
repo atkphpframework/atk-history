@@ -171,7 +171,7 @@
         
         if (!$this->hasFlag(AF_DATE_NO_CALENDAR))
         {
-          $result.=' <input type="reset" value="..." onclick="return showCalendar(\''.$fieldname.'\', \''.$fieldname.'\', \'y-mm-dd\', false);">';
+          $result.=' <!-- <input type="reset" value="..." onclick="return showCalendar(\''.$fieldname.'\', \''.$fieldname.'\', \'y-mm-dd\', false);"> -->';
         }
         return $result;
       }
@@ -324,7 +324,7 @@
             
       if (!$this->hasFlag(AF_DATE_NO_CALENDAR))
       {
-        $result.=' <input type="reset" value="..." onclick="return showCalendar(\''.$fieldname.'\', \''.$fieldname.'[year]\', \'y-mm-dd\', true);">';
+        $result.='<!-- <input type="reset" value="..." onclick="return showCalendar(\''.$fieldname.'\', \''.$fieldname.'[year]\', \'y-mm-dd\', true);"> -->';
       }
 
       /* return result */
