@@ -61,15 +61,32 @@
      * @param $record
      * @return text string of $record
      */
-    function display($record)
-    {
+    function display_plain($record)
+    { 
       $date = $this->m_date->display($record);
-			$time = $this->m_time->display($record);
+      $time = $this->m_time->display($record);
       if($date!='' && $time!='')
-        return $date."&nbsp;".$time;
+        return $date." ".$time;
       else
         return "";
     }
+
+    /**
+     * Display's html version of Record
+     * @param $record
+     * @return text string of $record
+     */
+    function display($record)
+    { 
+      $date = $this->display_plain($record);
+      return str_replace(" ","&nbsp;",$date);
+    }
+
+    function fetchValue($postvars)
+    {
+      $result = $postvars[$this->formName()];
+      return $result;
+    } 
 
     function fetchValue($postvars)
     {
