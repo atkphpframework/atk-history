@@ -11,6 +11,8 @@
    */
 
   useattrib("atkTextAttribute");
+  
+  include_once(atkconfig("atkroot")."atk/utils/class.atkstringparser.inc");
 
   class atkFileWriterAttribute extends atkTextAttribute
   {
@@ -42,11 +44,21 @@
       // Note 2: even if contents is "", we write the file, since the file 
       // might exist and contain old information.
       
-      $contents = $record[$this->fieldName()];            
+      $contents = $record[$this->fieldName()];                        
       
-      // determine filename.
-      $filename = stringparse($this->m_filename, $record);
+      $parser = new atkStringParser($this->m_filename);
       
+      if (!$parser->isComplete($record))
+      {
+        // record does not contain all data. Let's lazy load.
+        atkdebug("[atkfilewriter] Lazy loading rest of record to complete filename.");
+        $recs = $this->m_ownerInstance->selectDb($record["atkprimkey"]);
+        $record = $recs[0];
+        //atk_var_dump($record, 'this is what we have now');
+      }              
+      
+      $filename = $parser->parse($record);
+              
       $fp = @fopen($filename, "w");
       
       if ($fp==false)
@@ -59,6 +71,7 @@
         fclose($fp);
         atkdebug("[".$this->fieldName()."] succesfully wrote $filename..");
       }
+      
       return $contents;      
       //return escapeSQL($contents);
     }
