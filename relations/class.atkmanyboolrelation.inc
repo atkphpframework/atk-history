@@ -8,6 +8,8 @@
    * $Id$
    *
    */
+   
+  define("AF_MANYBOOL_NOCOLUMNS", AF_SPECIFIC_1);
 
   userelation("atkmanytomanyrelation");
 
@@ -46,9 +48,9 @@
       // now select all records
       $recordset = $this->m_destInstance->selectDb();
       
-      $result.= '<table border="0">';
-      for ($i=0;$i<count($recordset);$i++)
-      {
+      $result.= '<table border="0"><tr><td class="table" valign="top"><table border="0">';
+      for ($i=0, $_i=count($recordset);$i<$_i;$i++)
+      {               
         $detaillink = "&nbsp;";
         $selector="";
         if (in_array($this->m_destInstance->primaryKey($recordset[$i]),$selectedPk))
@@ -82,8 +84,12 @@
                        $recordset[$i][$this->m_destInstance->primaryKeyField()].
                        '" '.$sel.'></td><td class="table">'.
                        $this->m_destInstance->descriptor($recordset[$i]).'</td><td class="table">'.$detaillink.'</td></tr>'."\n";
+        if ($_i>10 && !$this->hasFlag(AF_MANYBOOL_NOCOLUMNS) && ($i+1==ceil($_i/2)))
+        {
+          $result.='</table></td><td class="table" valign="top"><table border="0">';
+        }
       }
-      $result.='</table>';
+      $result.='</table></td></tr></table>';
       return $result;
     }
 
