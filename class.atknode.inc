@@ -891,7 +891,8 @@
       // an <attributename>_edit function in the derived classes.
       for($r=0;$r<count($this->m_attribIndexList);$r++)
       { 
-        $p_attrib = &$this->m_attribList[$this->m_attribIndexList[$r]["name"]];
+        $attribname = $this->m_attribIndexList[$r]["name"];
+        $p_attrib = &$this->m_attribList[$attribname];
         // fields that have not yet been initialised may be overriden in the url..
         if ($defaults[$p_attrib->fieldName()]=="" && $this->m_postvars[$p_attrib->fieldName()]!="")
         {
@@ -1274,7 +1275,8 @@
       // are totalisable collumns.
       for($i=0;$i<count($this->m_attribIndexList);$i++)
       {
-        $p_attrib = &$this->m_attribList[$this->m_attribIndexList[$i]["name"]];
+        $attribname = $this->m_attribIndexList[$i]["name"];
+        $p_attrib = &$this->m_attribList[$attribname];
         //$p_attrib = &$this->m_attribList[$attribname];
         $musthide=(is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList));
         if (
@@ -1350,7 +1352,8 @@
         // Second loop.. this time for the search fields.
         for($i=0;$i<count($this->m_attribIndexList);$i++)
         {
-          $p_attrib = &$this->m_attribList[$this->m_attribIndexList[$i]["name"]];
+          $attribname = $this->m_attribIndexList[$i]["name"];
+          $p_attrib = &$this->m_attribList[$attribname];
           $musthide=(is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList));
           if (
               ($p_attrib->hasFlag(AF_HIDE_LIST)==false)
@@ -1460,7 +1463,8 @@
 
         for($r=0;$r<(count($this->m_attribIndexList));$r++)
         {
-          $p_attrib = &$this->m_attribList[$this->m_attribIndexList[$r]["name"]];
+          $attribname = $this->m_attribIndexList[$r]["name"];
+          $p_attrib = &$this->m_attribList[$attribname];
           //echo $r."/".(count($this->m_attribIndexList)-1)." - ".$this->m_attribIndexList[$r]["name"]."<br>";
           $musthide=(is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList));
           if (
@@ -1518,7 +1522,8 @@
         // Third loop.. this time for the totals row.
         for($i=0;$i<count($this->m_attribIndexList);$i++)
         {
-         $p_attrib = &$this->m_attribList[$this->m_attribIndexList[$i]["name"]];
+          $attribname = $this->m_attribIndexList[$i]["name"];
+          $p_attrib = &$this->m_attribList[$attribname];
           $musthide=(is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList));
           if (
               ($p_attrib->hasFlag(AF_HIDE_LIST)==false)
