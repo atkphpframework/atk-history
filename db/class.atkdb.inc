@@ -145,17 +145,28 @@
     
     function halt()
     {
+      global $g_layout;
       if ($this->m_haltonerror)
       { 
         if($this->getErrorType()=="system")
         {        
-          if(substr($this->getErrorMsg(), 0 , 31) == "Kan niet connecten met database")
+          if($this->getAtkDbErrno() == DB_UNKNOWNDATABASE)
 	  {
-            // atkdebug("We can't connect!");
-            return $this->m_error;
+            if (!getUser())
+	    {
+              return $this->m_error;
+	    }
+	    else
+	    {
+	      $g_layout->error("System error", $this->getErrorMsg());
+	      atkdebug("atkdb::halt() on system error");
+              if(in_array($this->m_errno,$this->m_critical_error)) $level='critical';
+              halt($this->getErrorMsg(),$level);
+	    }
           }
           else
           {
+            $g_layout->error("System error", $this->getErrorMsg());
 	    atkdebug("atkdb::halt() on system error");
             if(in_array($this->m_errno,$this->m_critical_error)) $level='critical';
             halt($this->getErrorMsg(),$level);
