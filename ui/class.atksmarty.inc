@@ -51,6 +51,12 @@
 
         $s_smarty->default_handler = atkconfig("defaulthandler");
         $s_smarty->default_modifier = atkconfig("defaultmodifier");
+        
+        // plugin dirs
+        $s_smarty->plugins_dir = array(atkconfig("atkroot")."atk/ui/smarty/plugins",
+                                       atkconfig("atkroot")."atk/ui/plugins");
+        $customplugindir = atkconfig("tplplugindir");
+        if ($customplugindir!="") $s_smarty->plugins_dir[] = $customplugindir;
 
         //$s_smarty->register_compiler_function("tpl","tpl_include");
         atkdebug("Instantiated new Smarty");

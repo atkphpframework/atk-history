@@ -214,12 +214,10 @@
     var $m_page = NULL;
 
     /**
-     * List of available tabs.
+     * List of available tabs. Keyvalue array in form array('action'=>'tablist')
      */
-    var $m_tabListAdd = array();
-    var $m_tabListEdit = array();
-    var $m_tabListView = array();
-
+    var $m_tabList = array();
+    
     /**
      * The type of node. (The constructor of a derived class passes its type
      * to the atkNode class.
@@ -354,6 +352,9 @@
 
     /* List of actions that should give feedback */
     var $m_feedback = array();
+    
+    /* Cached ui object */
+    var $m_atkUI = NULL;
 
     /*** Public functions ***/
 
@@ -492,9 +493,9 @@
           if (!is_array($tab) && $tab != "*") $tab = array($tab);
           if ($tab != "*")
           {
-            if (!$attribute->hasFlag(AF_HIDE_ADD)) $this->m_tabListAdd = atk_array_merge($this->m_tabListAdd, $tab);
-            if (!$attribute->hasFlag(AF_HIDE_EDIT)) $this->m_tabListEdit = atk_array_merge($this->m_tabListEdit, $tab);
-            if (!$attribute->hasFlag(AF_HIDE_ADD|AF_HIDE_EDIT) && !$attribute->hasFlag(AF_HIDE_VIEW)) $this->m_tabListView = atk_array_merge($this->m_tabListView, $tab);
+            if (!$attribute->hasFlag(AF_HIDE_ADD)) $this->m_tabList["add"] = atk_array_merge($this->m_tabList["add"], $tab);
+            if (!$attribute->hasFlag(AF_HIDE_EDIT)) $this->m_tabList["edit"] = atk_array_merge($this->m_tabList["edit"], $tab);
+            if (!$attribute->hasFlag(AF_HIDE_ADD|AF_HIDE_EDIT) && !$attribute->hasFlag(AF_HIDE_VIEW)) $this->m_tabList["view"] = atk_array_merge($this->m_tabList["view"], $tab);
           }
         }
 
@@ -654,9 +655,13 @@
      */
     function getActiveTab()
     {
-      if ($this->m_action == "add") $list = &$this->m_tabListAdd;
-      elseif ($this->m_action == "edit") $list = &$this->m_tabListEdit;
-      else $list = &$this->m_tabListView;
+      $list = &$this->m_tabList[$this->m_action];
+      if (!is_array($list)) 
+      {
+        // fallback to view tabs.
+        $list = &$this->m_tabList["view"];
+      }
+      
       if (!empty($this->m_postvars["atktab"]) && in_array($this->m_postvars["atktab"], $list)) $tab = $this->m_postvars["atktab"];
       elseif (!empty($this->m_default_tab) && in_array($this->m_default_tab, $list)) $tab = $this->m_default_tab;
       else $tab = $list[0];
@@ -717,14 +722,27 @@
       $output.= '<br><form method="get">'.session_form(SESSION_BACK).
                         '<input type="submit" class="btn_cancel" value="&lt;&lt; '.text('back').'"></form>';
       
-      $ui = &atknew("atk.ui.atkui");
+      $ui = &$this->getUi();
       if (is_object($ui))
-      {        
-        $total = $ui->render("box.tpl", array("title"=>$ui->title($this->m_module, $this->m_type, $this->m_action),
-                                              "content"=>$output));
+      {                
+        $total = $ui->renderBox(array("title"=>$ui->title($this->m_module, $this->m_type, $this->m_action),
+                                      "content"=>$output));
       }
       return $total;
       
+    }
+    
+    function &getUi()
+    {          
+      if (!is_object($this->atkUI))
+      {      
+        $this->atkUI = &atknew("atk.ui.atkui");
+        if (is_object($this->atkUI))
+        {
+          $this->atkUI->setNode($this);
+        }
+      }
+      return $this->atkUI;
     }
 
     /**
@@ -737,14 +755,13 @@
       $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");      
       $this->setStyle("style.css");
       
-      $params = array();
+      $params = $this->getDefaultActionParams($locked);
 
-      $params["statusbar"] = $this->statusbar($locked);
       $params["formstart"] = '<form name="entryform" enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?'.SID.'"'.
                                    ' method="post" onsubmit="return globalSubmit(this)">'.
                                    session_form();
       
-      $ui = &atknew("atk.ui.atkui");
+      $ui = &$this->getUi();
       
       if (is_object($ui))
       {
@@ -752,29 +769,42 @@
         $forceList = decodeKeyValueSet($this->m_postvars['atkfilter']);      
         $form =$this->editForm("edit",$record,$forceList,$this->m_postvars['atksuppress']);
 
-        if (count($this->m_tabListEdit) > 1) 
-        {        
-          $params["content"] =$ui->render("tabs.tpl", array("tabs"=>$this->buildTabs(),
-                                                 "content"=>$form));
-        }
-        else
-        {
-          $params["content"] = $form;
-        }
+        $params["content"] = $this->tabulate("edit", $form);
         
         $params["buttons"] = $this->getFormButtons("edit");
-        $params["formend"] = '</form>';
         
-        $output = $ui->render("editpage.tpl", $params);
+        $output = $ui->renderAction("edit", $params);
               
-        $total = $ui->render("box.tpl", array("title"=>$ui->title($this->m_module, $this->m_type,'edit'),
-                                              "content"=>$output));
+        $total = $ui->renderBox(array("title"=>$ui->title($this->m_module, $this->m_type,'edit'),
+                                      "content"=>$output));
         return $total;
       }
       else
       {
         atkerror("Failed to create ui object");
       }      
+    }        
+    
+    function tabulate($action, $content)
+    {
+      if (count($this->m_tabList[$action]) > 1) 
+      {     
+        $ui = &$this->getUi();
+        if (is_object($ui))
+        {
+          return $ui->renderTabs(array("tabs"=>$this->buildTabs($action),
+                                       "content"=>$content));
+        }
+      }
+      return $content;      
+    }
+    
+    function getDefaultActionParams($locked=false)
+    {
+      $params = $this->getHelp();
+      $params["lockstatus"] = $this->getLockStatusIcon($locked);
+      $params["formend"] = '</form>';
+      return $params;
     }
 
     /**
@@ -782,13 +812,12 @@
      */
     function viewPage($record)
     {      
-      $ui = &atknew("atk.ui.atkui");
+      $ui = &$this->getUi();
       $this->setStyle("style.css");
       
       if (is_object($ui))
       {
-        $params = array();
-        $params["statusbar"]=$this->statusbar();
+        $params = $this->getDefaultActionParams();        
         
         $fields = array();          
   
@@ -843,16 +872,8 @@
         }  
         
         $innerform = $ui->render("viewform.tpl", array("fields"=>$fields));
-  
-        if (count($this->m_tabListView) > 1)
-        { 
-          $params["content"] = $ui->render("tabs.tpl", array("tabs"=>$this->buildTabs(),
-                                                             "content"=>$innerform));
-        }
-        else
-        {
-          $params["content"] = $innerform;
-        }
+        
+        $params["content"] = $this->tabulate("view", $innerform);        
   
         $params["formstart"] = '<form method="get">'.session_form(SESSION_NESTED);
         $params["buttons"][] = '<input type="submit" class="btn_cancel" name="atkback" value="&lt;&lt; '.text('back').'">';
@@ -867,10 +888,10 @@
       
         $params["formend"] = '</form>';                
         
-        $output = $ui->render("viewpage.tpl", $params);
+        $output = $ui->renderAction("view", $params);
         
-        $total = $ui->render("box.tpl", array("title"=>$ui->title($this->m_module, $this->m_type,'view'),
-                                              "content"=>$output));
+        $total = $ui->renderBox(array("title"=>$ui->title($this->m_module, $this->m_type,'view'),
+                                      "content"=>$output));
         return $total;
       }
       else
@@ -889,7 +910,7 @@
       $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
       $this->setStyle("style.css");
       
-      $params["statusbar"] = $this->statusbar();
+      $params = $this->getDefaultActionParams();
 
       $formstart ='<form name="entryform" enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?'.SID.'"'.
                      ' method="post" onsubmit="return globalSubmit(this)">';
@@ -900,23 +921,14 @@
       
       $params["formstart"] = $formstart;
       
-      $ui = &atknew("atk.ui.atkui");
+      $ui = &$this->getUi();
       if (is_object($ui))
       {        
-
         $forceList = decodeKeyValueSet($this->m_postvars['atkfilter']);
-        $form = $this->editForm("add",$record,$forceList);      
-      
-        if (count($this->m_tabListAdd) > 1) 
-        {        
-          $params["content"] = $ui->render("tabs.tpl", array("tabs"=>$this->buildTabs(),
-                                                 "content"=>$form));
-        }  
-        else
-        {
-          $params["content"] = $form;
-        }   
-      
+        $form = $this->editForm("add",$record,$forceList);                      
+        
+        $params["content"] = $this->tabulate("add", $form);                
+                    
         $params["buttons"][] = '<input type="submit" class="btn_save" value="'.text('save').'&nbsp;">';
         if ($this->m_action=="add")
         {
@@ -925,10 +937,10 @@
         }
         $params["formend"] = '</form><SCRIPT LANGUAGE="JavaScript">placeFocus()</SCRIPT>';
         
-        $output = $ui->render("addpage.tpl", $params);
+        $output = $ui->renderAction("add", $params);
               
-        $total = $ui->render("box.tpl", array("title"=>$ui->title($this->m_module, $this->m_type,'add'),
-                                               "content"=>$output));
+        $total = $ui->renderBox(array("title"=>$ui->title($this->m_module, $this->m_type,'add'),
+                                      "content"=>$output));
         
         return $total;               
       }      
@@ -944,7 +956,7 @@
       $this->setStyle("style.css");
       $g_layout->initGui();
       $g_layout->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
-      $ui = &atknew("atk.ui.atkui");
+      $ui = &$this->getUi();
       $g_layout->ui_top($ui->title($this->m_module, $this->m_type,'search'));
       $g_layout->output($this->statusbar());
 
@@ -1167,9 +1179,8 @@
             $type = (empty($error["node"]) ? $this->m_type : $error["node"]);
             $index = $this->m_attribList[$error['attrib_name']]->m_index;
             $tabs  = $this->m_attribIndexList[$index]["tabs"];
-            if (($this->m_action == "add" && count($this->m_tabListAdd) > 1 ||
-                 $this->m_action == "edit" && count($this->m_tabListEdit) > 1) &&
-                 $tabs != "*" && !atk_in_array($tab, $tabs))
+            if (count($this->m_tabList[$this->m_action]) > 1
+                 && $tabs != "*" && !atk_in_array($tab, $tabs))
               $error_tab = ' ('.text("error_tab").' '.href($_SERVER["PHP_SELF"]."?atktab=".$tabs[0],text("tab_".$tabs[0], $node->m_type),SESSION_DEFAULT,true).')';
             else $error_tab = "";
             
@@ -1268,7 +1279,7 @@
         $fields[] = $tplfield;
       }
       
-      $ui = &atknew("atk.ui.atkui");
+      $ui = &$this->getUi();
       $page = &$this->getPage();
       $page->register_script(atkconfig("atkroot")."atk/javascript/formsubmit.js");
       foreach ($data["hide"] as $hidden)
@@ -1314,7 +1325,7 @@
     {
       global $g_db;
       
-      $ui = &atknew("atk.ui.atkui");
+      $ui = &$this->getUi();
       
       if (is_object($ui))
       {
@@ -1503,34 +1514,40 @@
      * Builds a tab navigation panel
      * @return tab navigation panel HTML code
      */
-    function buildTabs()
+    function buildTabs($action="")
     {      
+      if ($action=="")
+      {
+        // assume active action
+        $action = $this->m_action;
+      }
+      
       $result = array();
 
       // which tab is currently selected
       $tab = $this->getActiveTab();
 
       // build navigator
-      if ($this->m_action == "add") $list = &$this->m_tabListAdd;
-      elseif ($this->m_action == "edit") $list = &$this->m_tabListEdit;
-      else $list = &$this->m_tabListView;
+      $list = &$this->m_tabList[$action];
       
-      foreach ($list as $t)
+      if (is_array($list))
       {
-        $newtab["title"] = text("tab_$t",$this->m_type);
-        $url = $_SERVER["PHP_SELF"]."?atknodetype=".$this->atkNodeType()."&atkaction=".$this->m_action."&atktab=".$t;
-        if ($this->m_action == "view") 
+        foreach ($list as $t)
         {
-          $newtab["link"] = session_url($url, SESSION_DEFAULT);
+          $newtab["title"] = text("tab_$t",$this->m_type);
+          $url = $_SERVER["PHP_SELF"]."?atknodetype=".$this->atkNodeType()."&atkaction=".$this->m_action."&atktab=".$t;
+          if ($this->m_action == "view") 
+          {
+            $newtab["link"] = session_url($url, SESSION_DEFAULT);
+          }
+          else 
+          {
+            $newtab["link"] = "javascript:atkSubmit('".atkurlencode(session_url($url, SESSION_DEFAULT))."')";
+          }
+          $newtab["selected"] = ($t == $tab);
+          $result[] = $newtab;
         }
-        else 
-        {
-          $newtab["link"] = "javascript:atkSubmit('".atkurlencode(session_url($url, SESSION_DEFAULT))."')";
-        }
-        $newtab["selected"] = ($t == $tab);
-        $result[] = $newtab;
       }
-
       return $result;
     }
 
@@ -1619,11 +1636,11 @@
         $output.=$adminFooter."<br>";
       }
       
-      $ui = &atknew("atk.ui.atkui");
+      $ui = &$this->getUi();
       if (is_object($ui))
       {        
-        $page = $ui->render("box.tpl", array("header"=>$ui->title($this->m_module, $this->m_type,'admin'),
-                                             "content"=>$output));
+        $page = $ui->renderBox(array("header"=>$ui->title($this->m_module, $this->m_type,'admin'),
+                                     "content"=>$output));
       }
       return $page;
     }
@@ -2543,7 +2560,7 @@
 
       $filter = $this->validateFilter($this->m_postvars["atkfilter"]);
       
-      $ui = &atknew("atk.ui.atkui");
+      $ui = &$this->getUi();
 
       $recordset = $this->selectDb($filter,
                                    $this->m_postvars['atkorderby'],
@@ -2592,7 +2609,7 @@
      */
     function confirmDelete($atkselector, $locked=FALSE)
     {    
-      $ui = &atknew("atk.ui.atkui");
+      $ui = &$this->getUi();
       
       $this->setStyle("style.css");
 
@@ -2605,14 +2622,13 @@
       $formstart.='<input type="hidden" name="atknodetype" value="'.$this->atknodetype().'">';
       $formstart.='<input type="hidden" name="atkselector" value="'.$atkselector_str.'">';            
       
-      $output.=$ui->render("confirm.tpl", array("statusbar"=>$this->statusbar($locked),
-                                                "text"=>$this->confirmDeleteText($atkselector),
+      $output.=$ui->render("confirm.tpl", array("text"=>$this->confirmDeleteText($atkselector),
                                                 "formstart"=>$formstart,
                                                 "formend"=>'</form>',
                                                 "okbtn"=>'<input name="confirm" class="btn" type="submit" value="'.text('yes').'" style="width:80px">',
                                                 "cancelbtn"=>'<input name="cancel" type="submit" class="btn_cancel" value="'.text('no').'" style="width:80px">'));
-      return $ui->render("box.tpl", array("title"=>$ui->title($this->m_module, $this->m_type,'delete'),
-                                          "content"=>$output));                                          
+      return $ui->renderBox(array("title"=>$ui->title($this->m_module, $this->m_type,'delete'),
+                                  "content"=>$output));                                          
     }
 
     // function to show delete confirmation message
@@ -2761,7 +2777,7 @@
         $g_layout->ui_bottom();
       }
       
-      $ui = &atknew("atk.ui.atkui");
+      $ui = &$this->getUi();
       $screen = $page->render(text('app_shorttitle')." - ".$ui->title($this->m_module, $this->m_type,$this->m_postvars['atkaction']), $fullpage);            
       
       $output = &atkOutput::getInstance();
@@ -2782,14 +2798,15 @@
       $recordset = $this->selectDb($this->m_postvars['atkselector'],"","",$this->m_viewExcludes,"","view");
       
       $page = &$this->getPage();
-      $page->addContent($this->viewPage($recordset[0]));
+      
+      $page->addContent($this->renderAction("admin", $this->viewPage($recordset[0])));
     }
 
     function action_add()
     {
       atkdebug("Action add");
       $page = &$this->getPage();
-      $page->addContent($this->addPage());
+      $page->addContent($this->renderAction("add", $this->addPage()));
     }
 
     function action_update()
@@ -2995,17 +3012,17 @@
     {
       $page = &$this->getPage();
       
-      $res = "";
+      $res = array();
       if ($this->hasFlag(NF_NO_ADD)==false&&$this->allowed("add"))
       {
         if (!$this->hasFlag(NF_ADD_LINK)) // otherwise, in adminPage, an add link will be added.
         {
-          $res.=$this->addPage();
+          $res[]=$this->addPage();
         }
       }
-      $res.= $this->adminPage();
+      $res[]= $this->adminPage();
                         
-      $page->addContent($res);
+      $page->addContent($this->renderAction("admin", $res));
             
     }
 
@@ -3016,7 +3033,7 @@
 
     function action_edit()
     {
-      $page = &$this->getPage();
+      $page = &$this->getPage();    
       
       $recordset = $this->selectDb($this->m_postvars['atkselector'],"","","","","edit");
       
@@ -3035,8 +3052,22 @@
       {
         $res = $this->editPage($recordset[0], false);
       }
+            
+      $page->addContent($this->renderAction("edit", $res));
+    }
+    
+    function renderAction($action, $blocks=array())
+    {
+      if(!is_array($blocks))
+      {
+        $blocks = ($blocks==""?array():array($blocks));
+      }
       
-      $page->addContent($res);
+      $ui = &$this->getUi();
+      
+      // todo: overridable action templates
+      return $ui->render("actionpage.tpl", array("blocks"=>$blocks,
+                                                 "title"=>$ui->title($this->m_module, $this->m_type, $action)));
     }
 
     function action_select()
@@ -3053,7 +3084,7 @@
     {
       global $g_layout;
       $g_layout->initGui();
-      $ui = &atknew("atk.ui.atkui");
+      $ui = &$this->getUi();
       $g_layout->ui_top($ui->title($this->m_module, $this->m_type, $action));
       $g_layout->output($this->statusbar());
 
@@ -4055,7 +4086,7 @@
       if (!$this->m_statusbarDone)
       {
         global $g_sessionManager;
-        $ui = &atknew("atk.ui.atkui");
+        $ui = &$this->getUi();
         
         $params = array();
                 
@@ -4065,21 +4096,35 @@
           $params["stacktrace"] = $g_sessionManager->stackTrace();
         }
                 
-        $params["helpurl"] = $this->helpUrl();
-        if ($params["helpurl"]!="")
-        {
-          $page = &$this->getPage();
-          $page->register_script(atkconfig("atkroot")."atk/javascript/newwindow.js");          
-          $params["helplabel"] = text("help");
-          $params["helplink"] = '<a href="'.$params["helpurl"].'">'.$params["helplabel"].'</a>';
-        }
-        
-        if ($locked) 
-        {
-          $params["lockstatus"] = '<img src="'.atkconfig("atkroot").'atk/images/lock.gif" name="_lock_">';
-        }
+        $help = $this->getHelp();
+        $params = array_merge($params, $help);
+                
+        $params["lockstatus"] = $this->getLockStatusIcon($locked);        
         
         return $ui->render("statusbar.tpl", $params);        
+      }
+      return "";
+    }
+    
+    function getHelp()
+    {
+      $res = array();
+      $res["helpurl"] = $this->helpUrl();
+      if ($res["helpurl"]!="")
+      {
+        $page = &$this->getPage();
+        $page->register_script(atkconfig("atkroot")."atk/javascript/newwindow.js");          
+        $res["helplabel"] = text("help");
+        $res["helplink"] = '<a href="'.$res["helpurl"].'">'.$res["helplabel"].'</a>';
+      }
+      return $res;
+    }
+    
+    function getLockStatusIcon($lockstatus)
+    {
+      if ($lockstatus)
+      {
+        return '<img src="'.atkconfig("atkroot").'atk/images/lock.gif" name="_lock_">';
       }
       return "";
     }

@@ -4,6 +4,7 @@
   {
     var $m_smarty = NULL;  
     var $m_theme = NULL;
+    var $m_node = NULL;
     
     function atkUI()
     {
@@ -14,8 +15,29 @@
       $this->m_smarty = &atkSmarty::getInstance();          
       
       $this->m_smarty->assign("themedir", $this->m_theme->themeDir());
-            
+      atkdebug("Created a new atkUI");            
     }        
+    
+    function setNode(&$node)
+    {
+      $this->m_node = &$node;
+    }
+    
+    function renderAction($action, $vars)
+    {
+      // todo.. action specific templates
+      return $this->render("action.tpl", $vars);
+    }      
+    
+    function renderBox($vars)
+    {
+      return $this->render("box.tpl", $vars);
+    }
+    
+    function renderTabs($vars)
+    {
+      return $this->render("tabs.tpl", $vars);
+    }
     
     function render($tplname, $vars=array())
     { 
