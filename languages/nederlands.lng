@@ -22,6 +22,7 @@
   $txt_edit = "Bewerk";
   $txt_delete = "Verwijder";
   $txt_add = "Toevoegen";
+  $txt_new = "Nieuw";
   $txt_copy = "Kopieer";
   $txt_editcopy = "Bewerk kopie";
   $txt_admin = "Administratie";
