@@ -454,11 +454,14 @@
     
     function setHideWhenEmpty($hidewhenempty)
     {
-      $this->m_hidewhenempty = $hidewhenempty;
+      $this->m_hidewhenempty = $hidewhenempty;      
       
       // We must undo the obligatory flag, if we hide.      
-      $this->m_flags ^= AF_OBLIGATORY;
-    }
+      if ($hidewhenempty && count($this->getSelectableRecords())==0)
+      {
+        $this->m_flags ^= AF_OBLIGATORY;
+      }
+    }    
     
     function addToEditArray($mode, &$arr, &$defaults, &$error, $fieldprefix)
     {
@@ -467,9 +470,9 @@
       // check if destination table is empty
       // only check if hidewhenempty is set to true
       if (!$this->m_hidewhenempty || count($this->getSelectableRecords())>0)
-      {            
+      {                          
         return parent::addToEditArray($mode, $arr, $defaults, $error, $fieldprefix);  
-      }
+      }      
     }
   }
 
