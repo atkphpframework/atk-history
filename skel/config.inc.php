@@ -22,6 +22,14 @@
   // next buttons. You can specify the number of records to show on a page.
   $config_recordsperpage=25; 
   
+  // Databasecheck
+  // Recommended for sites which 'enjoy' frequent downtime of the database
+  // If on users will receive an graphical error informing them the site is down
+  // administrators will receive a message that the database is down
+  // and a mail will be sent to error reporting address.
+  // Comment to disable.
+  $config_databasecheck = 1;
+
   //----------------- DEBUGGER CONFIGURATION ----------------------
   
   // The automatic error reporter
