@@ -13,7 +13,8 @@
 
   $cookiepath = atkconfig("application_root");
   session_set_cookie_params($cookie_params["lifetime"],$cookiepath);
-  session_name(cleanSessionId(atkconfig("identifier")));
+  //session_name(cleanSessionId(atkconfig("identifier")));
+  session_name(atkconfig("identifier"));
   session_start();    
 
   global $config_identifier;
@@ -471,7 +472,12 @@
     global $g_sessionManager;
     return $g_sessionManager->getValue($var, $namespace);
   }
-  
+
+  /**
+   * This function does not work as it should and should be fixed
+   * It was designed to clean sessionIDs when they are passed back to
+   * the system. This because certain bots (MSNBot) like to pollute it with slashes
+   */  
   function cleanSessionId($name)
   {   
     global ${$name};
