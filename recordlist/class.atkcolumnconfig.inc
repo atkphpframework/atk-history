@@ -170,7 +170,7 @@
       
       foreach($this->m_colcfg as $field=>$config)
       {        
-        if (is_object($this->m_node->m_attribList[$field]))
+        if ($config["sortorder"]>0 && is_object($this->m_node->m_attribList[$field]))
         {
           $direction = ($config["direction"]=="desc"?" DESC":"");          
           $result[] = $this->m_node->m_attribList[$field]->getOrderByStatement().$direction;
@@ -200,11 +200,7 @@
     
     function getUrlCommand($attribute, $command)
     {
-      switch ($command)
-      {
-        case "asc": return "atkcolcmd[][asc]=".$attribute;
-        case "desc": return "atkcolcmd[][desc]=".$attribute;
-      }
+      return "atkcolcmd[][$command]=".$attribute;      
     }
     
     function doUrlCommand($cmd)
@@ -221,6 +217,8 @@
               list($attrib, $value) = each($param);
               $this->setSortOrder($attrib, $value);
               break;
+            case "subtotal": $this->setSubTotal($param, true); break;
+            case "unsubtotal": $this->setSubTotal($param, false); break;
           }
         }
       }
@@ -307,17 +305,69 @@
       $this->m_colcfg = array();
     }
     
+    function hasSubTotals()
+    {
+      foreach(array_keys($this->m_colcfg) as $attribute)
+      {
+        if ($this->hasSubTotal($attribute)) return true;
+      }
+      return false;
+    }
+    
     function hasSubTotal($attribute)
     {
-      return true;
       return ($this->m_colcfg[$attribute]["subtotal"]==1);
+    }
+    
+    function hasSubTotalByOrder($order)
+    {
+      foreach($this->m_colcfg as $attrib=>$info)
+      {
+        if ($info["sortorder"]==$order) return $this->hasSubTotal($attrib);
+      }
+      return false;
+    }
+    
+    function setSubTotal($attribute, $active)
+    {
+      $this->m_colcfg[$attribute]["subtotal"] = ($active?1:0);
     }
     
     function _compareSortAttrs($a, $b)
     {      
-      return ($a["sortorder"]<=$b["sortorder"]?-1:1);
-      
+      return ($a["sortorder"]<=$b["sortorder"]?-1:1);      
     }        
+    
+    function totalizable()
+    {
+      foreach(array_keys($this->m_node->m_attribList) as $attribname)
+      {
+        $p_attrib = &$this->m_node->m_attribList[$attribname];
+        if ($p_attrib->hasFlag(AF_TOTAL)) return true;
+      }
+      return false;
+    }
+    
+    function totalizableColumns()
+    {
+      $result = array();
+      foreach(array_keys($this->m_node->m_attribList) as $attribname)
+      {
+        $p_attrib = &$this->m_node->m_attribList[$attribname];
+        if ($p_attrib->hasFlag(AF_TOTAL)) $result[] = $attribname;
+      }
+      return $result;
+    }
+    
+    function subtotalColumns()
+    {
+      $result = array();
+      foreach(array_keys($this->m_colcfg) as $attribute)
+      {
+        if ($this->hasSubTotal($attribute)) $result[]=$attribute;
+      }
+      return $result;
+    }
             
   }
 

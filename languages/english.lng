@@ -179,4 +179,9 @@
   $txt_access_denied = "Access denied";
   $txt_error_node_action_access_denied = "Sorry, you do not have permission to perform this action.";
   
+  $txt_column_desc = "Up";
+  $txt_column_asc  = "Down";
+  $txt_column_subtotal = "Subtotal";
+  $txt_column_unsubtotal = "No Subt.";
+  
 ?>

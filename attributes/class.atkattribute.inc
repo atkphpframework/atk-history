@@ -370,15 +370,16 @@
       {
         $right = '&gt;';
       }
-      */
+      
       
       $res.= '<td align="left" class="table"><b>'.$left.' '.$right.'</b></td>';
-      $specificOptions = $this->sortOptions();
+      */
+      $specificOptions = $this->sortOptions($columnConfig);
       if ($specificOptions!="")
       {
-        $res.= '<td align="center">'.$specificOptions.'</td>';
+        $res.= '<td align="left" class="table" nowrap>'.$specificOptions.'&nbsp;</td>';
       }
-      $res.= '<td align="right" class="table" nowrap>'.$this->sortOrder($columnConfig).'</td>';
+      $res.= '<td align="right" class="table" nowrap> '.$this->sortOrder($columnConfig).'</td>';
       $res.= '</tr></table>';
       return $res;
     }
@@ -386,8 +387,14 @@
     /** 
      * Default atkAttribute does not have fancy sort options.
      */
-    function sortOptions()
+    function sortOptions(&$columnConfig)
     {
+      if (!$this->hasFlag(AF_TOTAL) && $columnConfig->totalizable())
+      {
+        // if we are not the sumcolumn itself, but there are totalcolumns present, we can perform subtotalling
+        $cmd = ($columnConfig->hasSubTotal($this->fieldName())?"unsubtotal":"subtotal");
+        return href('dispatch.php?'.$columnConfig->getUrlCommand($this->fieldName(), $cmd), text("column_".$cmd)).' ';
+      }
       return "";
     }
     
@@ -400,7 +407,7 @@
       if ($currentOrder>0)
       {        
         $direction = ($columnConfig->getSortDirection($this->fieldName())=="desc" ? "asc":"desc");            
-        $res= href('dispatch.php?'.$columnConfig->getUrlCommand($fieldname, $direction), text($direction)).' ';
+        $res= href('dispatch.php?'.$columnConfig->getUrlCommand($fieldname, $direction), text("column_".$direction)).' ';
       }
       
       $res.= '<select name="atkcolcmd[][setorder]['.$fieldname.']">';

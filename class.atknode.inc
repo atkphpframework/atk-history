@@ -1543,15 +1543,14 @@
         $actions = $actions["actions"];
       }
       else
-        $mra = $this->hasFlag(NF_NO_DELETE) ? array() : array("delete");
-        
-      $runningTotals = array();
+        $mra = $this->hasFlag(NF_NO_DELETE) ? array() : array("delete");              
 
       /* get the rows */
       for ($i = 0, $_i = count($recordset), $r=0; $i < $_i; $i++, $r++)
       {
         $result["rows"][$r] = array("actions" => $actions, "mra" => $mra, "record" => &$recordset[$i], "data" => array());
         $result["rows"][$r]["selector"] = $this->primaryKey($recordset[$i]);
+        $result["rows"][$r]["type"]="data"; // data or subtotal
         $row = &$result["rows"][$r];
 
         /* locked */
@@ -1603,6 +1602,13 @@
             $attribute->addToListArrayRow($this->m_action, $result, $i, $prefix, $flags);                        
           }
         }        
+      }
+      
+      if (hasFlag($flags, RL_EXT_SORT) && $columnConfig->hasSubTotals())
+      {
+        include_once(atkconfig("atkroot")."atk/recordlist/class.atktotalizer.inc");
+        $totalizer = &new atkTotalizer($this, $columnConfig);
+        $result["rows"] = $totalizer->totalize($result["rows"]);
       }
 
       if (hasFlag($flags, RL_MRA))
@@ -1801,8 +1807,8 @@
 
       /********/
       /* ROWS */
-      /********/
-      for ($i = 0, $_i = count($list["rows"]); $i < $_i; $i++)
+      /********/      
+      for ($datarows=0, $i = 0, $_i = count($list["rows"]); $i < $_i; $i++)
       {
         /* Special rowColor method makes it possible to change the row color based on the record data.
          * the method can return a simple value (which will be used for the normal row color), or can be
@@ -1817,10 +1823,21 @@
           if (is_array($bgn)) list($bgn, $bgh) = $bgn;
         }
 
-        /* alternate colors of rows */
-        $output .= '<tr class="row'.($i % 2 == 0 ? 1 : 2).'" '.(empty($bgn) ? '' : 'style="background-color:'.$bgn.'" ').
-                   '  onmouseover="if (typeof(this.style) != \'undefined\') this.style.backgroundColor = \''.$bgh.'\'"'.
-                   '  onmouseout="if (typeof(this.style) != \'undefined\') this.style.backgroundColor = \''.(empty($bgn)?'':$bgn).'\'">';
+        //atkdebug($list["rows"][$i]["type"]);
+        if ($list["rows"][$i]["type"]=="data")
+        {
+          $datarows++;
+          /* alternate colors of rows */
+          $output .= '<tr class="row'.($datarows % 2 == 0 ? 1 : 2).'" '.(empty($bgn) ? '' : 'style="background-color:'.$bgn.'" ').
+                     '  onmouseover="if (typeof(this.style) != \'undefined\') this.style.backgroundColor = \''.$bgh.'\'"'.
+                     '  onmouseout="if (typeof(this.style) != \'undefined\') this.style.backgroundColor = \''.(empty($bgn)?'':$bgn).'\'">';
+          $tdfunc = "ret_td";
+        }
+        else
+        {
+          $output.='<tr>';
+          $tdfunc = "ret_td_datatitle";
+        }
 
         /* multi-record-priority-actions -> priority selection */
         if (hasFlag($flags, RL_MRPA))
@@ -1830,14 +1847,14 @@
           for ($j = $this->m_priority_min; $j <= $this->m_priority_max; $j++)
             $select .= '<option value="'.$j.'">'.$j.'</option>';
           $select .= '</select>';
-          $output .= $g_layout->ret_td($select, $vorientation);
+          $output .= $g_layout->$tdfunc($select, $vorientation);
         }
 
         /* multi-record-actions -> checkbox */
         elseif (hasFlag($flags, RL_MRA))
         {
           if (count($list["rows"][$i]["mra"]) > 0)
-            $output .= $g_layout->ret_td(
+            $output .= $g_layout->$tdfunc(
                          '<input type="checkbox" name="'.$listName.'_atkselector[]" value="'.rawurlencode($list["rows"][$i]["selector"]).'" onclick="if (this.disabled) this.checked = false">'.
                          '<script language="javascript">'.$listName.'["'.rawurlencode($list["rows"][$i]["selector"]).'"] = new Array("'.implode($list["rows"][$i]["mra"], '","').'");</script>',
                          $vorientation
@@ -1852,7 +1869,7 @@
           if (is_array($list["rows"][$i]["lock"]))
           {
             $alt = $list["rows"][$i]["lock"]["user_id"]." / ".$list["rows"][$i]["lock"]["user_ip"];
-            $output .= $g_layout->ret_td('<img src="'.atkconfig("atkroot").'atk/images/lock.gif" alt="'.$alt.'" border="0">');
+            $output .= $g_layout->$tdfunc('<img src="'.atkconfig("atkroot").'atk/images/lock.gif" alt="'.$alt.'" border="0">');
           }
           else $output .= $g_layout->ret_td('&nbsp;');
         }
@@ -1864,19 +1881,19 @@
         /* actions (left) */
         if ($orientation == "left" || $orientation == "both")
         {
-          if (!empty($str_actions)) $output .= $g_layout->ret_td($str_actions, $vorientation);
-          else $output .= $g_layout->ret_td("&nbsp;", $vorientation);
+          if ($list["rows"][$i]["type"]=="data"&&!empty($str_actions)) $output .= $g_layout->$tdfunc($str_actions, $vorientation);
+          else $output .= $g_layout->$tdfunc("&nbsp;", $vorientation);
         }
 
         /* columns */
         foreach ($list["rows"][$i]["data"] as $html)
-          $output .= $g_layout->ret_td($html, $vorientation);
+          $output .= $g_layout->$tdfunc($html, $vorientation);
 
         /* actions (right) */
         if ($orientation=="right"||$orientation=="both")
         {
-          if (!empty($str_actions)) $output .= $g_layout->ret_td($str_actions, $vorientation);
-          else $output .= $g_layout->ret_td("&nbsp;", $vorientation);
+          if ($list["rows"][$i]["type"]=="data"&&!empty($str_actions)) $output .= $g_layout->$tdfunc($str_actions, $vorientation);
+          else $output .= $g_layout->$tdfunc("&nbsp;", $vorientation);
         }
 
         $output .= '</tr>';
@@ -3377,7 +3394,7 @@
      * @param $limit Limit (Not supported for Oracle databases yet)
      */
     function selectDb($selector="", $order="", $limit="", $excludeList="",$includeList="", $mode="")
-    {
+    {      
       global $g_db;
 
       $selectlist = array();
@@ -4077,5 +4094,6 @@
       $columnConfig = &atkColumnConfig::getConfig($this);
       return $columnConfig;
     }
+        
   }
 ?>
