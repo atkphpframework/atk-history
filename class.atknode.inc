@@ -1450,14 +1450,32 @@
       }
       
     }
+    
+    function buildNavigation($mode="", $navurls="")
+    {
+      if ($navurls=="")
+      {
+        // Have to determine navurls ourselves.
+        $navurls = $this->getNavigationUrls($mode);
+      }
+      $links=array();
+      foreach ($navurls as $key=>$nav)
+      {
+        $links[] = href($nav["url"], $nav["title"]);
+      }
+      return implode("&nbsp;|&nbsp;", $links);
+      
+    }
 
     /**
      * Creates a navigation bar, for browsing through the record pages
      * (if a limit is set, and there are more records)
      * @return a HTML string for navigating through records
      */
-    function buildNavigation($mode="")
+    function getNavigationUrls($mode="")
     {
+      $res = array();
+      
       $limit = (int)$this->m_postvars['atklimit'];
 
       $filter = $this->validateFilter($this->m_postvars["atkfilter"]);
@@ -1467,7 +1485,7 @@
       // maximum number of bookmarks to pages.
       $max_bm = 10;
 
-      if (!($limit > 0 && $count > $limit && ceil($count / $limit) > 1)) return "";
+      if (!($limit > 0 && $count > $limit && ceil($count / $limit) > 1)) return array();
 
       $pages = ceil($count / $limit);
       $curr  = ($this->m_postvars['atkstartat'] / $limit) + 1;
@@ -1489,22 +1507,23 @@
       if ($curr > 1)
       {
         $newstart = $this->m_postvars['atkstartat'] - $limit;
-        $nav = href($_SERVER["PHP_SELF"]."?atknodetype=".$this->atkNodeType()."&atkaction=".$this->m_action."&atkstartat=".$newstart,text('previous'))."&nbsp;|&nbsp;";
+        $res['previous'] = array("title"=>text("previous"), "url"=>session_url($_SERVER["PHP_SELF"]."?atknodetype=".$this->atkNodeType()."&atkaction=".$this->m_action."&atkstartat=".$newstart));
       }
 
       for ($i = $begpg; $i <= $endpg; $i++)
       {
-        $nav .= ($i == $curr) ? "<b>$i</b>" : href($_SERVER["PHP_SELF"]."?atknodetype=".$this->atkNodeType()."&atkaction=".$this->m_action."&atkstartat=".max(0, ($i-1) * $limit),"$i");
-        if ($i != $endpg) $nav .= "&nbsp;|&nbsp;";
+        if ($i==$curr) $res[$i] = array("title"=>"<b>$i</b>", "url"=>"");
+        else $res[$i] = array("title"=>$i, 
+                            "url"=>session_url($_SERVER["PHP_SELF"]."?atknodetype=".$this->atkNodeType()."&atkaction=".$this->m_action."&atkstartat=".max(0, ($i-1) * $limit)));
       }
 
       if ($curr < $pages)
       {
-        $newstart = $this->m_postvars['atkstartat'] + $limit;;
-        $nav .= "&nbsp;|&nbsp;".href($_SERVER["PHP_SELF"].'?atkstartat='.$newstart,text('next'));
+        $newstart = $this->m_postvars['atkstartat'] + $limit;
+        $res['next'] = array("title"=>text("next"), "url"=>session_url($_SERVER["PHP_SELF"].'?atkstartat='.$newstart));
       }
 
-      return $nav;
+      return $res;
     }
 
     /**
@@ -1647,7 +1666,10 @@
         {
           $params["index"] = $this->buildIndex($recordset[0][$this->m_index]);
         }
-        $params["navbar"] = $this->buildNavigation("admin");
+        
+        $navigation = $this->getNavigationUrls("admin");    
+        
+        $params["navbar"] = $this->buildNavigation("admin", $navigation);
         
         if(!is_array($actions))
         {
@@ -1655,7 +1677,7 @@
         }
 
         $flags = ($this->hasFlag(NF_MRA) ? RL_MRA : 0) | ($this->hasFlag(NF_MRPA) ? RL_MRPA : 0) | ($this->hasFlag(NF_LOCK) ? RL_LOCK : 0);
-        $params["list"] = $this->normalRecordList($recordset, $actions, $flags);
+        $params["list"] = $this->normalRecordList($recordset, $actions, $flags, "", "", $navigation);
  
         $params["footer"] = $this->adminFooter();                            
         
@@ -1885,14 +1907,14 @@
      * @param $suppressList fields we don't display
      * @param $formName if embedded the form name in which we are embedded
      */
-    function normalRecordList($recordset, $actions, $flags=0, $suppressList="", $formName="")
+    function normalRecordList($recordset, $actions, $flags=0, $suppressList="", $formName="", $navigation="")
     {      
       $this->addStyle("recordlist.css");
       
       atkimport("atk.ui.atktheme");
       $theme = &atkTheme::getInstance();
       
-      $listName = "atkrl_".getUniqueId("normalRecordList");
+      $listName = "rl_".getUniqueId("normalRecordList");
       
       $page = &$this->getPage();
       $page->register_script(atkconfig("atkroot")."atk/keyboard/javascript/class.atkrlkeylistener.js");
@@ -2049,6 +2071,14 @@
         
         $records = array();    
         
+        $actionloader = "rl_a['".$listName."'] = new Array();";
+        $actionloader.= "\nrl_a['".$listName."']['base'] = '".session_vars(SESSION_NESTED)."';";
+        $actionloader.= "\nrl_a['".$listName."']['embed'] = ".(hasFlag($flags, RL_EMBED)?'true':'false').";";        
+        
+        if ($navigation["next"]["url"]!="") $actionloader.="\nrl_a['".$listName."']['next'] = '".$navigation["next"]["url"]."';";
+        if ($navigation["previous"]["url"]!="") $actionloader.="\nrl_a['".$listName."']['previous'] = '".$navigation["previous"]["url"]."';";
+
+        
         for ($i = 0, $_i = count($list["rows"]); $i < $_i; $i++)
         {
           $record = array();
@@ -2106,9 +2136,15 @@
             else $record["cols"][] = array("content"=>"");
           }
   
-          $str_actions = "";
+          $str_actions = "";          
+          $actionloader.="\nrl_a['".$listName."'][".$i."] = new Array();";
           foreach ($list["rows"][$i]["actions"] as $name => $url)
-            $str_actions .= href($url, text($name, $this->m_type), SESSION_NESTED, hasFlag($flags, RL_EMBED)).'&nbsp;';
+          {
+            //$str_actions .= href($url, text($name, $this->m_type), SESSION_NESTED, hasFlag($flags, RL_EMBED)).'&nbsp;';
+            $actionloader.="\nrl_a['".$listName."'][".$i."]['".$name."'] = '".$url."';";            
+            
+            $str_actions.='<a href="'."javascript:rl_do('".$listName."',$i,'".$name."');".'">'.text($name, $this->m_type).'</a>&nbsp;';
+          }                  
   
           /* actions (left) */
           if ($orientation == "left" || $orientation == "both")
@@ -2135,6 +2171,8 @@
           $records[] = $record;
 
         }
+        
+        $page->register_loadscript($actionloader);
   
         /*************/
         /* TOTAL ROW */

@@ -21,27 +21,57 @@ atkRLKeyListener.superclass = atkGKeyListener.prototype;
 atkRLKeyListener.prototype.handleKey = function(key, ctrl, shift)
 {  
   if (key==KEY_DOWN) this.down();
-  if (key==KEY_UP) this.up();
-  if (key==KEY_RIGHT) alert('nextpage in rl');
-  if (key==KEY_LEFT) alert('prevpage in rl');
+  else if (key==KEY_UP) this.up();
+  else if (key==KEY_RIGHT) this.next();
+  else if (key==KEY_LEFT) this.previous();
+  else if (key==KEY_DEL) this.do_action('delete');
+  else if (key==KEY_E) this.do_action('edit');
+  else if (key==KEY_V) this.do_action('view');
+  else
+  {
+    // Other key, which we ignore.
+    // alert('key '+key+' pressed...');
+  }
+}
+
+atkRLKeyListener.prototype.do_action = function(action)
+{
+  if (this.currentrec>-1)
+  {
+    rl_do(this.recordlistId, this.currentrec, action);
+  }
+}
+
+atkRLKeyListener.prototype.next = function()
+{
+  rl_next(this.recordlistId);
+}
+
+atkRLKeyListener.prototype.previous = function()
+{
+  rl_previous(this.recordlistId);
 }
 
 atkRLKeyListener.prototype.focus = function(direction)
-{  
+{    
   focussedRecordlist = this.recordlistId;
   if (direction==DIR_UP)   // We come from below.
   {  
     this.last();
   }
-  else // We come from above
+  else if (direction==DIR_DOWN) // We come from above
   {
     this.first(); // move to first record.
+  }
+  else // Clicked in the middle
+  {    
   }
 }
 
 atkRLKeyListener.prototype.blur = function()
 {
-  focussedRecordlist = null;
+  this.deselectRow();
+  focussedRecordlist = null;  
 }
 
 atkRLKeyListener.prototype.first = function()
@@ -52,26 +82,33 @@ atkRLKeyListener.prototype.first = function()
   this.down();
 }
 
-atkRLKeyListener.prototype.setRow = function(rownum)
+atkRLKeyListener.prototype.setRow = function(rownum, oldcolor)
 {
-  this.focus(DIR_DOWN);
-  this.deselectRow();
-  this.currentrec=rownum;
-  this.selectRow();
+  if (this.currentrec!=rownum) // check if not already selected
+  {
+    kb_focus(this.id, DIR_NONE);
+  
+    this.deselectRow();
+    this.currentrec=rownum;
+    this.selectRow();
+    this.prevcolor=oldcolor;
+    return true;
+  }
+  return false;
 }
 
 atkRLKeyListener.prototype.deselectRow = function()
 {
-  if (this.currentrec>0)
+  if (this.currentrec>=0)
   {
-    prevRow = document.getElementById(this.recordlistId+'_'+this.currentrec);
-    prevRow.style.backgroundColor = this.prevcolor;  
+    curRow = document.getElementById(this.recordlistId+'_'+this.currentrec);
+    curRow.style.backgroundColor = this.prevcolor;  
   }
 }
 
 atkRLKeyListener.prototype.selectRow = function()
 {
-  if (this.currentrec>0)
+  if (this.currentrec>=0)
   {
     newRow = document.getElementById(this.recordlistId+'_'+this.currentrec);
     this.prevcolor = newRow.style.backgroundColor;

@@ -4,5 +4,5 @@
   $theme["customstyles"] = array("style.css", "recordlist.css");
   
   $theme["highlight"] = "#c5d7ff";
-  $theme["select"]    = "#b6c7f4";
+  $theme["select"]    = "#96a7ff";
 ?>

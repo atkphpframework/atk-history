@@ -4,10 +4,14 @@ KEY_DOWN  = 40;
 KEY_RIGHT = 39;
 KEY_UP    = 38;
 KEY_LEFT  = 37;
+KEY_DEL   = 46;
+KEY_E     = 69;
+KEY_V     = 86;
 
 // Directions
 DIR_DOWN = 1;
 DIR_UP   = 2;
+DIR_NONE = 3;
 
 // Detect if we are dealing with netscape/mozilla.
 var ver = navigator.appVersion; 
@@ -61,7 +65,7 @@ function atkFEKeyListener(elementId, onUp, onDown, onLeft, onRight, onCtrl)
   // Hook ourselves an onfocus event to keep track of focus, when using the mouse.
   var el = document.getElementById(this.elementId);
   el.listener = this; // Give the element a pointer to the listener, so we can always access it. 
-  el.onfocus = function() { focussedListener = this.listener.id; }
+  el.onfocus = function() { kb_defocus(); focussedListener = this.listener.id; }
 }
 
 atkFEKeyListener.prototype = new atkGKeyListener();
@@ -155,14 +159,14 @@ function kb_handleKey(e)
 
 function kb_focusFirst()
 {
-  if (focussedListener>-1) keyListeners[focussedListener].blur();
+  kb_defocus();
   if (keyListeners.length>0) focussedListener = 0;
   keyListeners[focussedListener].focus(DIR_DOWN);
 }
 
 function kb_focusLast()
 {
-  if (focussedListener>-1) keyListeners[focussedListener].blur();
+  kb_defocus();
   if (keyListeners.length>0) focussedListener = keyListeners.length-1;
   keyListeners[focussedListener].focus(DIR_UP);
 }
@@ -171,10 +175,9 @@ function kb_focusPrevious()
 {
   if (focussedListener>0) 
   {
-    keyListeners[focussedListener].blur(); // blur the previous one (we must do this, because
-                                           // we cannot assume that it is done automatically by 
-                                           // the browser, since we focus things that the browser
-                                           // cannot focus.
+    kb_defocus(); // blur the previous one (we must do this, because we cannot
+                  // assume that it is done automatically by the browser, 
+                  // since we focus things that the browser cannot focus.
     focussedListener--;
     keyListeners[focussedListener].focus(DIR_UP);
   }
@@ -185,9 +188,27 @@ function kb_focusNext()
 {
   if (focussedListener<keyListeners.length-1) 
   {
-    keyListeners[focussedListener].blur(); // blur the previous one.
+    kb_defocus();
     focussedListener++;
     keyListeners[focussedListener].focus(DIR_DOWN);
   }
   else kb_focusFirst();  
+}
+
+function kb_focus(num, direction)
+{  
+  if (num<keyListeners.length)
+  {
+    kb_defocus();
+    focussedListener=num;
+    keyListeners[focussedListener].focus(direction);
+  }  
+}
+
+function kb_defocus()
+{
+  if (focussedListener>-1 && focussedListener<keyListeners.length)
+  {
+    keyListeners[focussedListener].blur(); // blur the currently focussed element.    
+  }
 }

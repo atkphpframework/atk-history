@@ -31,7 +31,7 @@
               <tr id="{$row.id}" class="row{if $row.rownum % 2 == 0 }1{else}2{/if}" {if $row.background!=""}style="background-color:{$row.background}" {/if}
                    onmouseover="highlightrow(this, '{$row.highlight}')"
                    onmouseout="resetrow(this)"
-                   onclick="selectrow('{$listid}', {$row.rownum})">
+                   onclick="selectrow(this, '{$listid}', {$row.rownum})">
               {foreach from=$row.cols item=col}
                 <td valign="{$vorientation}" {$col.htmlattributes}>
                   {if $col.content != ""}{$col.content}{else}&nbsp;{/if}

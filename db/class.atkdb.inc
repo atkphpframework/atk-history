@@ -238,17 +238,6 @@
     {
       return 0;
     }
-
-    /**
-     * Goto a certain position in result set.
-     * Not specifying a position will set the pointer
-     * at the beginning of the result set.
-     * @param $position the position
-     * @return result of seek
-     */
-    function seek($position=0)
-    {
-    }
   
     /**
      * Lock a certain table in the database 
@@ -288,58 +277,7 @@
     function num_rows()
     {
       return 0;
-    }
-
-    /**
-     * Evaluatie the result; how many fields
-     * where affected by the query.
-     * @return number of affected fields
-     */
-    function num_fields()
-    {
-      return 0;
-    }
-
-    /**
-     * Same effect as num_rows, but
-     * a bit of a shorthand notation.
-     * @return number of affected rows
-     */
-    function nf()
-    {
-      return $this->num_rows();
-    }
-
-    /**
-     * Same effect as num_rows, but print
-     * the result instead of returning it.
-     */
-    function np()
-    {
-      print $this->num_rows();
-    }
-
-    /**
-     * Get the value of a certain field of
-     * the currently selected record.
-     * @param $name the field name
-     * @return the field value
-     */
-    function f($name)
-    {
-      return $this->m_record[$name];
-    }
-
-    /**
-     * Print the value of a certain field of
-     * the currently selected record.
-     * @param $name the field name
-     * @return the field value
-     */
-    function p($name)
-    {
-      print $this->m_record[$name];
-    }
+    } 
 
     /**
      * Get the next sequence number
