@@ -304,6 +304,7 @@
     
     function getOrderByStatement()
     {
+      atkdebug("ATKATTRIBUTE: ".$this->fieldName());
       return $this->m_ownerInstance->m_table.".".$this->fieldName();
     }
 
@@ -320,7 +321,7 @@
     function addToListArrayHeader($action, &$arr, $fieldprefix, $flags, $atksearch, &$columnConfig)
     {
       global $g_sessionManager, $ATK_VARS;     
-
+  
       if (!$this->hasFlag(AF_HIDE_LIST) && !($this->hasFlag(AF_HIDE_SELECT) && $action == "select"))
       {
         $key = $fieldprefix.$this->fieldName();
@@ -351,9 +352,9 @@
     function listHeaderSortUrl($atkorderby)
     {
       global $ATK_VARS;
+      $order = $this->m_ownerInstance->m_table.".".$this->fieldName();
       $order = $this->fieldName();
       if ($atkorderby == $order) $order .= " DESC";      
-      
       return session_url($_SERVER["PHP_SELF"].'?atknodetype='.$ATK_VARS["atknodetype"].'&atkaction='.$ATK_VARS["atkaction"].'&atkorderby='.rawurlencode($order));
     }
     
@@ -605,7 +606,7 @@
      */
     function needsUpdate($record)
     {
-      return (!$this->hasFlag(AF_READONLY_EDIT) && !$this->hasFlag(AF_HIDE_EDIT));
+      return (!$this->hasFlag(AF_READONLY_EDIT) && !$this->hasFlag(AF_HIDE_EDIT) && array_key_exists($this->m_name, $record));
     }
 
     function getSearchModes()
