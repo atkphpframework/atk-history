@@ -48,13 +48,13 @@
       global $g_layout;
 
       $myrecords = $record[$this->fieldName()];
-      
+
       if (!is_array($myrecords))
       {
         atkdebug("Lazy loading of records.");
         $myrecords = $this->load(NULL, $record, "admin");
       }
-      
+
       $result = text("none"); // default result
 
       if ($this->createDestination())
@@ -94,7 +94,7 @@
 
       if ($this->createDestination())
       {
-      
+
         // If someone pressed 'save', no records are loaded from the db.
         // since we don't post all records in this relation like we do with
         // other attributes, we have to load them at 'edit' time.
@@ -112,15 +112,15 @@
 
           $actions = array();
           $params = array();
-          
+
           if ($this->m_destinationFilter!="")
           {
             $params["atkfilter"]=$this->m_destinationFilter;
           }
-          
-          /* The next lines of code have been replaced by a call to 
-             m_destInstance->defaultActions. 
-             
+
+          /* The next lines of code have been replaced by a call to
+             m_destInstance->defaultActions.
+
           if (!$this->m_destInstance->hasFlag(NF_NO_EDIT))
           {
           $actions["edit"] = $_SERVER["PHP_SELF"].'?atknodetype='.$this->m_destination.'&atkaction=edit&atkselector=[pk]'.$strfilter;
@@ -134,7 +134,7 @@
           {
             $actions["copy"] = $_SERVER["PHP_SELF"].'?atknodetype='.$this->m_destination.'&atkaction=copy&atkselector=[pk]';
           }*/
-          $actions = $this->m_destInstance->defaultActions("relation", $params);   
+          $actions = $this->m_destInstance->defaultActions("relation", $params);
 
           $flags = RL_EMBED;
           $flags |= $this->m_destInstance->hasFlag(NF_MRA) ? RL_MRA : 0;
@@ -176,7 +176,7 @@
               $key = text(getNodeType($this->m_destination))." ".strtolower(text("add"));
               $label = text($key);
           }
-          } 
+          }
           $output.="<tr><td>".href($add_url,$label,SESSION_NESTED,true)."</td></tr>";
         }
         $output.="</table>";
@@ -186,7 +186,7 @@
       }
       return "";
     }
-    
+
     /**
           * This function can be implemented in derived classes to add extra information
           * (text, links, whatever) to the top of the attribute, right before the recordlist
@@ -198,7 +198,7 @@
     {
       return "";
     }
-    
+
     /**
           * This function can be implemented in derived classes to add extra information
           * (text, links, whatever) to the bottom of the attribute, right after the add link.
@@ -275,7 +275,8 @@
       $rel = &getNode($classname);
       atkdebug("O2M DELETE voor $classname: ".$this->m_refKey."='".$record[$this->m_ownerInstance->primaryKeyField()]."'");
 
-      $rel->deleteDb($rel->m_table.'.'.$this->m_refKey."='".$record[$this->m_ownerInstance->primaryKeyField()]."'");
+      $primkeyattr = &$this->m_ownerInstance->m_attribList[$this->m_ownerInstance->primaryKeyField()];
+      $rel->deleteDb($rel->m_table.'.'.$this->m_refKey."='".$primkeyattr->value2db($record)."'");
     }
 
 
@@ -312,21 +313,21 @@
               {
                 atkdebug("hmm.. there's no relation back. fixing the value of refKey...");
                 $onetomanyrecs[$i][$this->m_refKey] = $record[$this->m_ownerInstance->primaryKeyField()];
-              }  
+              }
               $this->m_destInstance->addDb($onetomanyrecs[$i], true, $mode);
 
             }
           }
         }
-      }      
+      }
     }
-    
+
     function hide($record="", $fieldprefix="")
-    {    
+    {
       //Nothing to hide..
       return "";
     }
-    
+
     /**
     * currently we cannot search one2many relations
     */
