@@ -115,6 +115,7 @@
   set_error_handler("atkErrorHandler");
   error_reporting(E_ALL);
 
+  require_once($config_atkroot."atk/ui/class.atkoutput.inc");
   require_once($config_atkroot."atk/class.layout.inc");
   require_once($config_atkroot."atk/utils/adodb-time.inc.php");
   require_once($config_atkroot."atk/db/class.atk".$config_database."db.inc");
@@ -209,6 +210,8 @@
      */
     var $m_attribList = array();
     var $m_attribIndexList = array();
+    
+    var $m_page = NULL;
 
     /**
      * List of available tabs.
@@ -365,7 +368,7 @@
     function atkNode($type, $flags=0)
     {
       $this->m_type = $type;
-      $this->m_flags = $flags;
+      $this->m_flags = $flags;            
     }
 
     /**
@@ -708,16 +711,19 @@
      */
     function lockPage()
     {
-      global $g_layout;
-      $g_layout->initGui();
-
-      $g_layout->ui_top($g_layout->title($this->m_module, $this->m_type, $this->m_action));
-      $g_layout->output($this->statusbar());
-      $g_layout->output ('<img src="'.atkconfig("atkroot").'atk/images/lock.gif"><br><br>'.text("lock_locked").'<br>');
-
-      $g_layout->output('<br><form method="get">'.session_form(SESSION_BACK).
-                        '<input type="submit" value="&lt;&lt; '.text('back').'"></form>');
-      $g_layout->ui_bottom();
+      $output = $this->statusbar();
+      $output.= '<img src="'.atkconfig("atkroot").'atk/images/lock.gif"><br><br>'.text("lock_locked").'<br>';
+      $output.= '<br><form method="get">'.session_form(SESSION_BACK).
+                        '<input type="submit" value="&lt;&lt; '.text('back').'"></form>';
+      
+      $ui = &atknew("atk.ui.atkui");
+      if (is_object($ui))
+      {        
+        $total = $ui->render("box.tpl", array("title"=>$ui->title($this->m_module, $this->m_type, $this->m_action),
+                                              "content"=>$output));
+      }
+      return $total;
+      
     }
 
     /**
@@ -725,24 +731,46 @@
      */
     function editPage($record, $locked=FALSE)
     {
-      global $g_layout, $config_atkroot;
-      $g_layout->initGui();
-      $g_layout->register_script($config_atkroot."atk/javascript/formfocus.js");
-      $g_layout->ui_top($g_layout->title($this->m_module, $this->m_type,"edit"));
-      $g_layout->output($this->statusbar($locked));
-      $g_layout->output('<form name="entryform" enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?'.SID.'"'.
-                                   ' method="post" onsubmit="return globalSubmit(this)">');
-      $g_layout->output(session_form());
+      global $config_atkroot;
+      
+      $page = &$this->getPage();
+      $page->register_script($config_atkroot."atk/javascript/formfocus.js");
 
-      if (count($this->m_tabListEdit) > 1) $g_layout->tabs_top($this->buildTabs());
-      $forceList = decodeKeyValueSet($this->m_postvars['atkfilter']);      
-      $g_layout->output($this->editForm("edit",$record,$forceList,$this->m_postvars['atksuppress']));
-      if (count($this->m_tabListEdit) > 1) $g_layout->tabs_bottom();
+      $output = $this->statusbar($locked);
+      $output.= '<form name="entryform" enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?'.SID.'"'.
+                                   ' method="post" onsubmit="return globalSubmit(this)">';
+      $output.=session_form();
+      
+      $ui = &atknew("atk.ui.atkui");
+      
+      if (is_object($ui))
+      {
+      
+        $forceList = decodeKeyValueSet($this->m_postvars['atkfilter']);      
+        $innercontent.=$this->editForm("edit",$record,$forceList,$this->m_postvars['atksuppress']);
 
-      $g_layout->output('<br>');
-      $g_layout->output($this->getFormButtons("edit"));
-      $g_layout->output('</form>');
-      $g_layout->ui_bottom();      
+        if (count($this->m_tabListEdit) > 1) 
+        {        
+          $output.=$ui->render("tabs.tpl", array("tabs"=>$this->buildTabs(),
+                                                 "content"=>$innercontent));
+        }
+        else
+        {
+          $output.=$innercontent;
+        }
+        
+        
+  
+        $output.='<br>'.$this->getFormButtons("edit").'</form>';
+              
+        $total = $ui->render("box.tpl", array("title"=>$ui->title($this->m_module, $this->m_type,'edit'),
+                                              "content"=>$output));
+        return $total;
+      }
+      else
+      {
+        atkerror("Failed to create ui object");
+      }      
     }
 
     /**
@@ -751,85 +779,100 @@
     function viewPage($record)
     {
       global $g_layout;
-      $g_layout->initGui();
-
-      $g_layout->ui_top($g_layout->title($this->m_module, $this->m_type,'view'));
-      $g_layout->output($this->statusbar());
-
-      $page.=$g_layout->ret_table_simple();
-
-      // get active tab
-      $tab = $this->getActiveTab();
-
-      // For all attributes we use the display() function to display the
-      // attributes current value. This may be overridden by supplying
-      // an <attributename>_display function in the derived classes.
-      foreach (array_keys($this->m_attribIndexList) as $i)
+      $ui = &atknew("atk.ui.atkui");
+      
+      if (is_object($ui))
       {
-        $p_attrib = &$this->m_attribList[$this->m_attribIndexList[$i]["name"]];
-
-        if (!$p_attrib->hasFlag(AF_HIDE_VIEW) && ($this->m_attribIndexList[$i]["tabs"] == "*" || in_array($tab, $this->m_attribIndexList[$i]["tabs"])))
+            
+        $output=$this->statusbar();
+  
+        $innercontent.=$g_layout->ret_table_simple();
+  
+        // get active tab
+        $tab = $this->getActiveTab();
+  
+        // For all attributes we use the display() function to display the
+        // attributes current value. This may be overridden by supplying
+        // an <attributename>_display function in the derived classes.
+        foreach (array_keys($this->m_attribIndexList) as $i)
         {
-          // fields that have not yet been initialised may be overriden in the url..
-          $page.='<tr>';
-
-          // Keep track of the number of td's we have to fill with the edit thingee..
-          // This depends on AF_NOLABEL for example.
-          $tdcount = 1;
-
-          // The Label of the attribute (can be suppressed with AF_NOLABEL or AF_BLANKLABEL)
-          // For each attribute, a txt_<attributename> must be provided in the language files.
-          if ($p_attrib->hasFlag(AF_NOLABEL)==false)
+          $p_attrib = &$this->m_attribList[$this->m_attribIndexList[$i]["name"]];
+  
+          if (!$p_attrib->hasFlag(AF_HIDE_VIEW) && ($this->m_attribIndexList[$i]["tabs"] == "*" || in_array($tab, $this->m_attribIndexList[$i]["tabs"])))
           {
-            if ($p_attrib->hasFlag(AF_BLANKLABEL))
+            // fields that have not yet been initialised may be overriden in the url..
+            $innercontent.='<tr>';
+  
+            // Keep track of the number of td's we have to fill with the edit thingee..
+            // This depends on AF_NOLABEL for example.
+            $tdcount = 1;
+  
+            // The Label of the attribute (can be suppressed with AF_NOLABEL or AF_BLANKLABEL)
+            // For each attribute, a txt_<attributename> must be provided in the language files.
+            if ($p_attrib->hasFlag(AF_NOLABEL)==false)
             {
-              $page.=$g_layout->ret_td('&nbsp;');
+              if ($p_attrib->hasFlag(AF_BLANKLABEL))
+              {
+                $innercontent.=$g_layout->ret_td('&nbsp;');
+              }
+              else
+              {
+  
+                $innercontent.=$g_layout->ret_td($p_attrib->label($record).': ','valign="top"');
+              }
             }
             else
             {
-
-              $page.=$g_layout->ret_td($p_attrib->label($record).': ','valign="top"');
+              $tdcount++; // If there's no label, the other td's have to be filled up.
             }
+  
+            // An <attributename>_display function may be provided in a derived
+            // class to display an attribute. If it exists we will use that method
+            // else we will just use the attribute's display method.
+            $funcname = $p_attrib->m_name."_display";
+            if (method_exists($this, $funcname)) $editsrc = $this->$funcname($record, "view");
+            else $editsrc=$p_attrib->display($record, "view");
+  
+            $innercontent .= $g_layout->ret_td($editsrc, 'colspan="'.$tdcount.'" valign="top"');
+            $innercontent .= "</tr>";
           }
-          else
-          {
-            $tdcount++; // If there's no label, the other td's have to be filled up.
-          }
-
-          // An <attributename>_display function may be provided in a derived
-          // class to display an attribute. If it exists we will use that method
-          // else we will just use the attribute's display method.
-          $funcname = $p_attrib->m_name."_display";
-          if (method_exists($this, $funcname)) $editsrc = $this->$funcname($record, "view");
-          else $editsrc=$p_attrib->display($record, "view");
-
-          $page .= $g_layout->ret_td($editsrc, 'colspan="'.$tdcount.'" valign="top"');
-          $page .= "</tr>";
+  
         }
-
-      }
-      $page.='</table>';          
-
-      if (count($this->m_tabListView) > 1) $g_layout->tabs_top($this->buildTabs());
-      $g_layout->output($page);
-      if (count($this->m_tabListView) > 1) $g_layout->tabs_bottom();
-
-      $buttons = '<br><form method="get">'.session_form(SESSION_NESTED).
-                        '&nbsp;<input type="submit" name="atkback" value="&lt;&lt; '.text('back').'">&nbsp;';
-                        
-      // if appropriate, display an edit button.
-      if (!$this->hasFlag(NF_NO_EDIT)&&$this->allowed("edit", $record))
-      {        
-        $buttons.= '<input type="hidden" name="atkaction" value="edit">'.
-                   '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">'.
-                   '&nbsp;<input type="submit" value="'.text('edit').'">&nbsp;';
-      }      
-    
-      $buttons.= '</form>';
+        $innercontent.='</table>';          
+  
+        if (count($this->m_tabListView) > 1)
+        { 
+          $output.= $ui->render("tabs.tpl", array("tabs"=>$this->buildTabs(),
+                                                  "content"=>$innercontent));
+        }
+        else
+        {
+          $output.= $innercontent;
+        }
+  
+        $buttons = '<br><form method="get">'.session_form(SESSION_NESTED).
+                          '&nbsp;<input type="submit" name="atkback" value="&lt;&lt; '.text('back').'">&nbsp;';
+                          
+        // if appropriate, display an edit button.
+        if (!$this->hasFlag(NF_NO_EDIT)&&$this->allowed("edit", $record))
+        {        
+          $buttons.= '<input type="hidden" name="atkaction" value="edit">'.
+                     '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">'.
+                     '&nbsp;<input type="submit" value="'.text('edit').'">&nbsp;';
+        }      
       
-      $g_layout->output($buttons."<br>");
-
-      $g_layout->ui_bottom();
+        $buttons.= '</form>';
+        
+        $output.= $buttons."<br>";
+        
+        $total = $ui->render("box.tpl", array("title"=>$ui->title($this->m_module, $this->m_type,'view'),
+                                              "content"=>$output));
+        return $total;
+      }
+      else
+      {
+        atkerror("ui object error");
+      }
     }
 
     /**
@@ -837,34 +880,57 @@
      */
     function addPage($record=NULL)
     {
-      global $g_layout, $config_atkroot;
-      $g_layout->initGui();
-      $g_layout->register_script($config_atkroot."atk/javascript/formfocus.js");
-      $g_layout->ui_top($g_layout->title($this->m_module, $this->m_type, 'add'));
-      $g_layout->output($this->statusbar());
+      global $config_atkroot;
+      
+      $page = &$this->getPage();
+            
+      $page->register_script($config_atkroot."atk/javascript/formfocus.js");
+      
+      $output = $this->statusbar();
 
-      $g_layout->output('<form name="entryform" enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?'.SID.'"'.
-                                   ' method="post" onsubmit="return globalSubmit(this)">');
+      $output.='<form name="entryform" enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?'.SID.'"'.
+                                   ' method="post" onsubmit="return globalSubmit(this)">';
 
       /* if we are on an admin page we would like to stay on the admin page after adding a new record */
-      if ($this->m_action == "admin") $g_layout->output(session_form(SESSION_NESTED));
-      else $g_layout->output(session_form());
+      if ($this->m_action == "admin") $output.=session_form(SESSION_NESTED);
+      else $output.=session_form();
+      
+      $ui = &atknew("atk.ui.atkui");
+      if (is_object($ui))
+      {        
 
-
-      if (count($this->m_tabListAdd) > 1) $g_layout->tabs_top($this->buildTabs());
-      $forceList = decodeKeyValueSet($this->m_postvars['atkfilter']);
-      $g_layout->output($this->editForm("add",$record,$forceList));
-      if (count($this->m_tabListAdd) > 1) $g_layout->tabs_bottom();
-
-      $g_layout->output('<br>&nbsp;<input type="submit" value="'.text('save').'&nbsp;">');
-      if ($this->m_action=="add")
+        $forceList = decodeKeyValueSet($this->m_postvars['atkfilter']);
+        $innercontent.=$this->editForm("add",$record,$forceList);      
+      
+        if (count($this->m_tabListAdd) > 1) 
+        {        
+          $output.=$ui->render("tabs.tpl", array("tabs"=>$this->buildTabs(),
+                                                 "content"=>$innercontent));
+        }  
+        else
+        {
+          $output.=$innercontent;
+        }   
+      
+        $output.='<br>&nbsp;<input type="submit" value="'.text('save').'&nbsp;">';
+        if ($this->m_action=="add")
+        {
+          // if action is admin, we don't show the cancelbutton..
+          $output.='&nbsp;<input type="submit" name="atkcancel" value="'.text('cancel').'">&nbsp;';
+        }
+        $output.='</form>';
+        
+        $output.='<SCRIPT LANGUAGE="JavaScript">placeFocus()</SCRIPT>';
+              
+        $total = $ui->render("box.tpl", array("title"=>$ui->title($this->m_module, $this->m_type,'add'),
+                                               "content"=>$output));
+        
+        return $total;               
+      }      
+      else
       {
-        // if action is admin, we don't show the cancelbutton..
-        $g_layout->output('&nbsp;<input type="submit" name="atkcancel" value="'.text('cancel').'">&nbsp;');
+        atkerror("ui object failure");
       }
-      $g_layout->output('</form>');
-      $g_layout->ui_bottom();
-      $g_layout->output('<SCRIPT LANGUAGE="JavaScript">placeFocus()</SCRIPT>');
     }
 
     function searchPage($record=NULL)
@@ -872,7 +938,8 @@
       global $g_layout, $config_atkroot;
       $g_layout->initGui();
       $g_layout->register_script($config_atkroot."atk/javascript/formfocus.js");
-      $g_layout->ui_top($g_layout->title($this->m_module, $this->m_type,'search'));
+      $ui = &atknew("atk.ui.atkui");
+      $g_layout->ui_top($ui->title($this->m_module, $this->m_type,'search'));
       $g_layout->output($this->statusbar());
 
       $g_layout->output('<form name="entryform" action="'.$_SERVER["PHP_SELF"].'?'.SID.'" method="post">');
@@ -1298,10 +1365,8 @@
      * @return tab navigation panel HTML code
      */
     function buildTabs()
-    {
-      global $g_layout;
-
-      $result = "";
+    {      
+      $result = array();
 
       // which tab is currently selected
       $tab = $this->getActiveTab();
@@ -1310,13 +1375,21 @@
       if ($this->m_action == "add") $list = &$this->m_tabListAdd;
       elseif ($this->m_action == "edit") $list = &$this->m_tabListEdit;
       else $list = &$this->m_tabListView;
+      
       foreach ($list as $t)
       {
-        $title = text("tab_$t",$this->m_type);
+        $newtab["title"] = text("tab_$t",$this->m_type);
         $url = $_SERVER["PHP_SELF"]."?atknodetype=".$this->atkNodeType()."&atkaction=".$this->m_action."&atktab=".$t;
-        if ($this->m_action == "view") $link = session_url($url, SESSION_DEFAULT);
-        else $link = "javascript:atkSubmit('".atkurlencode(session_url($url, SESSION_DEFAULT))."')";
-        $result .= $g_layout->ret_tab($title, $link, ($t == $tab));
+        if ($this->m_action == "view") 
+        {
+          $newtab["link"] = session_url($url, SESSION_DEFAULT);
+        }
+        else 
+        {
+          $newtab["link"] = "javascript:atkSubmit('".atkurlencode(session_url($url, SESSION_DEFAULT))."')";
+        }
+        $newtab["selected"] = ($t == $tab);
+        $result[] = $newtab;
       }
 
       return $result;
@@ -1328,8 +1401,7 @@
      */
     function adminPage($actions="")
     {
-      global $g_layout, $atksearch, $config_atkroot;
-      $g_layout->initGui();
+      global $atksearch, $config_atkroot;            
 
       // When there's a lot of data, records will be spread across multiple
       // pages.
@@ -1357,15 +1429,14 @@
                              SESSION_REPLACE));
             break;
           }
-      }
-
-      $g_layout->ui_top($g_layout->title($this->m_module, $this->m_type,'admin'));
-      $g_layout->output($this->statusbar());
+      }            
+      
+      $output = $this->statusbar();
 
       $adminHeader = $this->adminHeader();
       if ($adminHeader!="")
       {
-        $g_layout->output($adminHeader."<br><br>");
+        $output.=$adminHeader."<br><br>";
       }
 
       if ($this->hasFlag(NF_ADD_LINK) && !$this->hasFlag(NF_NO_ADD) && $this->allowed("add"))
@@ -1381,14 +1452,14 @@
           // generic text
           $label = text(getNodeType($this->m_type))." ".text("add");
         }
-        $g_layout->output(href($addurl,$label,SESSION_NESTED).'<br><br>');
+        $output.=href($addurl,$label,SESSION_NESTED).'<br><br>';
       }
 
       // create navigation bar
-      if ($this->m_index != "") $g_layout->output($this->buildIndex($recordset[0][$this->m_index]).'<br><br>');
+      if ($this->m_index != "") $output.=$this->buildIndex($recordset[0][$this->m_index]).'<br><br>';
       $nav = $this->buildNavigation("admin");
-      if (!empty($nav)) $g_layout->output("$nav<br>");
-      $g_layout->output('<br>');
+      if (!empty($nav)) $output.="$nav<br>";
+      $output.='<br>';
 
       if(!is_array($actions))
       {
@@ -1396,18 +1467,24 @@
       }
 
       $flags = ($this->hasFlag(NF_MRA) ? RL_MRA : 0) | ($this->hasFlag(NF_MRPA) ? RL_MRPA : 0) | ($this->hasFlag(NF_LOCK) ? RL_LOCK : 0);
-      $g_layout->output($this->normalRecordList($recordset, $actions, $flags));
+      $output.=$this->normalRecordList($recordset, $actions, $flags);
 
-      if (!empty($nav)) $g_layout->output('<br>'.$nav);
-      $g_layout->output('<br><br>');
+      if (!empty($nav)) $output.='<br>'.$nav;
+      $output.='<br><br>';
 
       $adminFooter = $this->adminFooter();
       if ($adminFooter!="")
       {
-        $g_layout->output($adminFooter."<br>");
+        $output.=$adminFooter."<br>";
       }
-
-      $g_layout->ui_bottom();
+      
+      $ui = &atknew("atk.ui.atkui");
+      if (is_object($ui))
+      {        
+        $page = $ui->render("box.tpl", array("header"=>$ui->title($this->m_module, $this->m_type,'admin'),
+                                             "content"=>$output));
+      }
+      return $page;
     }
     
     /**
@@ -2324,6 +2401,8 @@
       if ($this->m_postvars['atkstartat']=="" || isset($atksearch)) $this->m_postvars['atkstartat']=0;
 
       $filter = $this->validateFilter($this->m_postvars["atkfilter"]);
+      
+      $ui = &atknew("atk.ui.atkui");
 
       $recordset = $this->selectDb($filter,
                                    $this->m_postvars['atkorderby'],
@@ -2341,7 +2420,7 @@
       }
       else
       {
-        $g_layout->ui_top($g_layout->title($this->m_module, $this->m_type,'select'));
+        $g_layout->ui_top($ui->title($this->m_module, $this->m_type,'select'));
         $g_layout->output($this->statusbar());
         $g_layout->output(text("title_select", $this->m_type).'<br>');
         $g_layout->output('<br>');
@@ -2374,12 +2453,14 @@
     {
       global $g_layout;
       $g_layout->initGui();
+      
+      $ui = &atknew("atk.ui.atkui");
 
       if (is_array($atkselector))
         $atkselector_str = '(('. implode($atkselector, ') OR (').'))';
       else $atkselector_str = $atkselector;
 
-      $g_layout->ui_top($g_layout->title($this->m_module, $this->m_type,'delete'));
+      $g_layout->ui_top($ui->title($this->m_module, $this->m_type,'delete'));
       $g_layout->output($this->statusbar($locked));
 
       $g_layout->output('<form action="'.$_SERVER["PHP_SELF"].'?"'.SID.' method="post">');
@@ -2529,6 +2610,8 @@
         atkdebug("Clearing stored formdata");
         $this->m_postvars["atkformdata"]="";
       }
+      
+      $page = &$this->getPage();
 
       if ($this->allowed($this->m_action))
       {
@@ -2543,11 +2626,12 @@
         $g_layout->output("<br><br>".text("error_node_action_access_denied", $this->m_type)."<br><br><br>");
         $g_layout->ui_bottom();
       }
-
-      if ($fullpage)
-      {
-        $g_layout->page(text('app_shorttitle')." - ".$g_layout->title($this->m_module, $this->m_type,$this->m_postvars['atkaction']));
-      }
+      
+      $ui = &atknew("atk.ui.atkui");
+      $screen = $page->render(text('app_shorttitle')." - ".$ui->title($this->m_module, $this->m_type,$this->m_postvars['atkaction']), $fullpage);            
+      
+      $output = &atkOutput::getInstance();
+      $output->output($screen);
 
       // This is the end of all things for this page..
       // so we clean up some resources..
@@ -2562,13 +2646,16 @@
     {
       atkdebug("Action view");
       $recordset = $this->selectDb($this->m_postvars['atkselector'],"","",$this->m_viewExcludes,"","view");
-      $this->viewPage($recordset[0]);
+      
+      $page = &$this->getPage();
+      $page->addContent($this->viewPage($recordset[0]));
     }
 
     function action_add()
     {
       atkdebug("Action add");
-      $this->addPage();
+      $page = &$this->getPage();
+      $page->addContent($this->addPage());
     }
 
     function action_update()
@@ -2589,7 +2676,7 @@
         if ($error)
         {
           $this->m_action="edit";
-          $this->editPage($record);
+          $res = $this->editPage($record);
         }
         else
         {
@@ -2767,14 +2854,20 @@
 
     function action_admin()
     {
+      $page = &$this->getPage();
+      
+      $res = "";
       if ($this->hasFlag(NF_NO_ADD)==false&&$this->allowed("add"))
       {
         if (!$this->hasFlag(NF_ADD_LINK)) // otherwise, in adminPage, an add link will be added.
         {
-          $this->addPage();
+          $res.=$this->addPage();
         }
       }
-      $this->adminPage();
+      $res.= $this->adminPage();
+                        
+      $page->addContent($res);
+            
     }
 
     function action_search()
@@ -2784,19 +2877,27 @@
 
     function action_edit()
     {
+      $page = &$this->getPage();
+      
       $recordset = $this->selectDb($this->m_postvars['atkselector'],"","","","","edit");
-
-      $locked = FALSE;
+      
       if ($this->hasFlag(NF_LOCK))
       {
-        if ($this->m_lock->lock($this->primaryKey($recordset[0]), $this->m_table)) $locked = TRUE;
+        if ($this->m_lock->lock($this->primaryKey($recordset[0]), $this->m_table)) 
+        {
+          $res = $this->editPage($recordset[0], true);
+        }
         else
         {
-          $this->lockPage();
-          return;
+          $res = $this->lockPage();
         }
+      }  
+      else
+      {
+        $res = $this->editPage($recordset[0], false);
       }
-      $this->editPage($recordset[0], $locked);
+      
+      $page->addContent($res);
     }
 
     function action_select()
@@ -2813,7 +2914,8 @@
     {
       global $g_layout;
       $g_layout->initGui();
-      $g_layout->ui_top($g_layout->title($this->m_module, $this->m_type, $action));
+      $ui = &atknew("atk.ui.atkui");
+      $g_layout->ui_top($ui->title($this->m_module, $this->m_type, $action));
       $g_layout->output($this->statusbar());
 
       $g_layout->output(text('feedback_'.$action.'_'.atkActionStatus($actionstatus), $this->m_type));
@@ -2854,6 +2956,21 @@
       {
         $this->m_feedback[$action] = $statusmask;
       }
+    }
+            
+    function &getPage()
+    {
+      static $s_atkpage = NULL;
+      if ($s_atkpage == NULL)
+      {
+        $s_atkpage = atknew("atk.ui.atkpage");
+     
+        // Backwardscompatibility hack. We must inform the (deprecated) layout class
+        // of the page.
+        global $g_layout;
+        $g_layout->m_atkpage = &$s_atkpage;
+      }      
+      return $s_atkpage;
     }
 
     /**

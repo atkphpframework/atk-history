@@ -2,7 +2,10 @@
   header("Content-Type: text/css"); 
   chdir("../");   
   include_once("atk.inc");
-  $g_layout->initGui();
+  
+  atkimport("atk.ui.atktheme");      
+  $theme = atkTheme::getInstance();
+  
 ?>
 
 BODY
