@@ -1,8 +1,8 @@
 <?php
   /**
    * The atkDateAttribute class represents an attribute of a node that has a date dingske.
-   * @author  Peter C. Verhage <peter@achievo.com>
-              Tom Schenkenberg <Tom@achievo.com>
+   * @author  Peter C. Verhage <peter@achievo.org>
+              Tom Schenkenberg <Tom@achievo.org>
    *
    * @version $Revision$
    *   

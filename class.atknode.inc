@@ -53,7 +53,7 @@
    *                   - Lots of other small things need to be done. Search for
    *                     'todo' in the code :)
    *
-   * @author Ivo Jansch (ivo@achievo.com)
+   * @author Ivo Jansch (ivo@achievo.org)
    * @version $Revision$
    *
    * $Id$

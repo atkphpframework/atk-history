@@ -79,7 +79,7 @@
    * control its behaviour, like whether an atkAttribute
    * is obligatory, etc.
    *
-   * @author Ivo Jansch <ivo@achievo.com>
+   * @author Ivo Jansch <ivo@achievo.org>
    *
    * @version $Revision$
    *
