@@ -340,10 +340,11 @@
      * Add an atkAttribute to the node ($attribute should be an object of type
      * atkAttribute or one of its derivatives)
      * @param $attribute the attribute you want to add
-     * @param $tab on which tab should the field be displayed? (array for multiple tabs!)
+     * @param $tab on which tab should the field be displayed?
+     *        (use array for multiple tabs or "all" for all tabs!)
      * @param $order override the attribute order
      */
-    function add($attribute,$tab="default",$order=0)
+    function add($attribute,$tab=NULL,$order=0)
     {
       global $g_securityManager;
       static $attrib_order = 100;
@@ -354,11 +355,15 @@
       // Because tabs will probably be used more than the order override option
       // the API for this method now favours the $tab argument. For backwards
       // compatibility we still support the old API ($attribute,$order=0).
-      if (is_int($tab))
+      if (!($tab === NULL) && is_int($tab))
       {
         $order = $tab;
         $tab = "default";
       }
+
+      // If no tab is specified we use the current default tab
+      // (specified with the setDefaultTab method, or "default" otherwise)
+      elseif ($tab === NULL) $tab = $this->m_default_tab;
 
       // NOTE: THIS SHOULD WORK. BUT, since add() is called from inside the $this
       // constructor, m_ownerInstance ends up being a copy of $this, rather than
@@ -454,9 +459,9 @@
           $attrib_order+=100;
         }
 
-        // add new tab(s) to the tab list
-        if (!is_array($tab)) $tab = array($tab);
-        $this->m_tabList = atk_array_merge($this->m_tabList, $tab);
+        // add new tab(s) to the tab list ("all" isn't a tab!)
+        if (!is_array($tab) && $tab != "all") $tab = array($tab);
+        if ($tab != "all") $this->m_tabList = atk_array_merge($this->m_tabList, $tab);
 
         $attribute->m_order = $order;
         $this->m_attribIndexList[$attrib_index]=array("name"=>$attribute->fieldName(),"tabs"=>$tab,"order"=>$attribute->m_order);
@@ -571,6 +576,10 @@
 
     /**
      * Set default tab being displayed in view/add/edit mode.
+     * After calling this method, all attributes which are added after the method call
+     * without specification of tab will be placed on the default tab. This means
+     * you should use this method probably before you add any attributes to your node!
+     * @param $tab the name of the default tab
      */
     function setDefaultTab($tab="default")
     {
@@ -663,7 +672,7 @@
       {
         $p_attrib = &$this->m_attribList[$this->m_attribIndexList[$i]["name"]];
 
-        if (!$p_attrib->hasFlag(AF_HIDE) && in_array($tab, $this->m_attribIndexList[$i]["tabs"]))
+        if (!$p_attrib->hasFlag(AF_HIDE) && ($this->m_attribIndexList[$i]["tabs"] == "all" || in_array($tab, $this->m_attribIndexList[$i]["tabs"])))
         {
           // fields that have not yet been initialised may be overriden in the url..
           $page.='<tr>';
@@ -940,7 +949,7 @@
         {
           $defaults[$p_attrib->fieldName()] = $this->m_postvars[$p_attrib->fieldName()];
         }
-        if ((is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList)) || !in_array($tab, $attribtabs))
+        if ((is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList)) || ($attribtabs != "all" && !in_array($tab, $attribtabs)))
         {
           $form.=$p_attrib->hide($defaults, $fieldprefix);
         }
