@@ -367,7 +367,7 @@
           
     function loginForm($defaultname, $lastresponse)
     {      
-      global $config_mailreport;
+      global $config_mailreport, $config_atkroot;
       $loginattempts = sessionLoad('loginattempts');            
       if($loginattempts=="") $loginattempts = 0;
       
@@ -392,12 +392,22 @@
       $output.='<form action="'.$_SERVER["PHP_SELF"].'" method="post">';
       $output.=makeHiddenPostVars(array("atklogout", "loginattempts"));       
       $output.='<br><br><table border=0 cellspacing=2 cellpadding=0 align=center>';                     
-
       // max_loginattempts of 0 means no maximum.
       if(atkconfig('max_loginattempts')>0 && $loginattempts>atkconfig('max_loginattempts'))
       {        
         $output.="<tr><td class=table>".text('auth_max_loginattempts_exceeded')."<br><br></td></tr>";
       }      
+      else if(file_exists(atkconfig(default_home)."/ADMINCLOSED"))
+      {
+	if(atkconfig(offline_message))
+	{
+	  $output.="<tr><td class=table>".atkconfig(offline_message)."<br><br></td></tr>";
+	}
+	else
+	{
+          $output.="<tr><td class=table>".text('auth_site_down')."<br><br></td></tr>";
+	}
+      }
       else
       {
         // generate the username input field
@@ -426,7 +436,8 @@
       }
       
       $output.='</table></form>';
-      if ($this->m_authorization->setPasswordAllowed())
+
+      if ($this->m_authorization->setPasswordAllowed() AND !file_exists(atkconfig(default_home)."/ADMINCLOSED"))
       {
         $output.='<tr><td class=table align=left valign=bottom><a href="passchange.php"><small style="color:#FFFFFF;font-size:9pt">&nbsp;'.text(passchange_forgot_password).'</small></a></td></tr>';
       }
