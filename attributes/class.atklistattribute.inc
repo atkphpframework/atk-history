@@ -227,11 +227,11 @@
     {
       if(is_array($rec[$this->fieldName()]) && count($rec[$this->fieldName()]>=1) && $this->m_listrows > 1)
       {
-        return implode("|",$rec[$this->fieldName()]);
+        return implode("|",escapeSQL($rec[$this->fieldName()]));
       }
       else
       {
-        return $rec[$this->fieldName()];
+        return escapeSQL($rec[$this->fieldName()]);
       }
     }
 
@@ -240,11 +240,11 @@
       // if this is a multirow item explode the items
       if ($this->m_listrows > 1)
       {
-        $dummy = explode("|", $rec[$this->fieldName()]);
+        $dummy = explode("|", stripslashes($rec[$this->fieldName()]));
       }
       else
       {
-        $dummy = $rec[$this->fieldName()];
+        $dummy = stripslashes($rec[$this->fieldName()]);
       }
 
       return $dummy;
