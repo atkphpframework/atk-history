@@ -328,8 +328,11 @@
       }
 
       // we are authenticated, but atklogout is still active, let's get rid of it!
-      else if (isset($ATK_VARS["atklogout"])) header("Location: ".$_SERVER["PHP_SELF"]."?");
-
+      else if (isset($ATK_VARS["atklogout"]))
+      {
+         header("Location: ".$_SERVER["PHP_SELF"]."?");
+         exit;
+      }
       // we keep the relogin state until the atklogout variable isn't set anymore
       else if (!isset($ATK_VARS["atklogout"]) && $session["relogin"]==1) $session["relogin"]=0;
 
@@ -344,6 +347,25 @@
       sessionStore('loginattempts',''); //reset maxloginattempts
       return true;
     }     
+    
+    /**
+     * Reload the current user data.
+     * This method should be called if userdata, for example name or other 
+     * fields, have been updated for the currently logged in user.
+     * 
+     * The method will make sure that $g_securityManager->m_user, $g_user and 
+     * the authenticated user in the session are refreshed.
+     */
+    function reloadUser()
+    {
+      global $g_user, $g_sessionManager;
+      $user = getUser();
+      $this->m_user = $this->m_authorization->getUser($user["userid"]);            
+      $g_user = &$this->m_user;      
+      $old_auth = $g_sessionManager->getValue("authentication", "globals");          
+      $old_auth["user"] = $g_user;
+      $g_sessionManager->globalVar("authentication",$old_auth, true);
+    }
           
     function loginForm($defaultname, $lastresponse)
     {
