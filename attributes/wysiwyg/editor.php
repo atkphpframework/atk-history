@@ -1,4 +1,4 @@
-<?
+<?php
 
 global $HTTP_USER_AGENT;
 

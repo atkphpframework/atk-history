@@ -11,7 +11,7 @@
     * }
     *
     * @author Martin Roest (martin@ibuildings.nl) 
-    *         Sandy Pleyte (sandy@achievo.com)
+    *         Sandy Pleyte (sandy@achievo.org)
     * @version $Revision$
     *
     * $Id$
