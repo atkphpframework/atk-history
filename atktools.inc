@@ -55,8 +55,6 @@
   */
   function halt($msg,$level="warning")
   {
-    global $g_db,$g_layout;
-    
     if ($level == $GLOBALS['config_halt_on_error']||$level == "critical")
     {
       if($level == "warning")
@@ -68,26 +66,11 @@
         // critical
         $level_color="#ff0000";
       }
-      $message="<font color=\"$level_color\"><b>$level</b></font>: $msg<br>\n";
-      $g_layout->clear();
-      $g_layout->initGui();
-      $g_layout->ui_top(text('error'));
-      $g_layout->output("Error msg: ".$message);
 
-      if (atkLevel()>0)
-      {
-        $g_layout->output('<br><br><form method="get">'.session_form(SESSION_BACK).
-                          '<input type="submit" value="&lt;&lt; '.text('back').'"></form>');
-      }
-
-      $g_layout->output('<br>');
-      $g_layout->ui_bottom();
-      $g_db->disconnect();
-      $g_layout->outputFlush();
-      die();
-      
-          
-      
+      echo "<html>";
+      echo '<body bgcolor="#ffffff" color="#000000">';
+      echo "<font color=\"$level_color\"><b>$level</b></font>: $msg<br>\n";
+      die("<b>Halted.</b>");
     }
     else
     {
