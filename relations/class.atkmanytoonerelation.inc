@@ -75,6 +75,13 @@
      */
     function fetchValue($rec)
     {
+      // We must undo the obligatory flag, if we hide. And the fetchValue
+      // method is the designated place for that.      
+      if ($this->m_hidewhenempty && count($this->getSelectableRecords())==0)
+      {      
+        $this->m_flags ^= AF_OBLIGATORY;
+      }
+      
       // We must put the result of decodeKey into a variable first,
       // because PHP3 can't handle each() with a non-constant expression.
       $tmp = decodeKeyValuePair($rec[$this->fieldName()]);
@@ -410,8 +417,8 @@
      * Dummy function
      */
     function validate(&$record, $mode)
-    {
-    }
+    {      
+    }      
 
     function equal($recA, $recB)
     {
@@ -454,13 +461,7 @@
     
     function setHideWhenEmpty($hidewhenempty)
     {
-      $this->m_hidewhenempty = $hidewhenempty;      
-      
-      // We must undo the obligatory flag, if we hide.      
-      if ($hidewhenempty && count($this->getSelectableRecords())==0)
-      {
-        $this->m_flags ^= AF_OBLIGATORY;
-      }
+      $this->m_hidewhenempty = $hidewhenempty;                        
     }    
     
     function addToEditArray($mode, &$arr, &$defaults, &$error, $fieldprefix)
