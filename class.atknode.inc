@@ -1661,7 +1661,7 @@
         
         $output = $ui->renderList("admin", $params);   
       
-        return $ui->renderBox(array("header"=>$ui->title($this->m_module, $this->m_type, 'admin'),
+        return $ui->renderBox(array("title"=>$ui->title($this->m_module, $this->m_type, 'admin'),
                                     "content"=>$output));
       }                 
       else
