@@ -1,6 +1,6 @@
 BODY
 {
-  background-color: #D5E8F4;
+  background-color: #eeeeee;
   color: #000000;
   font-size: 10px;
   font-family: Verdana,Helvetica,Arial;
@@ -74,7 +74,7 @@ INPUT,
 SELECT,
 TEXTAREA
 {
-  background-color: #EFF6FF;
+  background-color: #eeeeee;
   color: #000000;
   font-family: verdana, helvetica, arial;
   font-size: 11px;  

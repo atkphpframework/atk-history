@@ -15,6 +15,8 @@
       $this->m_smarty = &atkSmarty::getInstance();          
       
       $this->m_smarty->assign("themedir", $this->m_theme->themeDir());
+
+      $this->m_smarty->assign("atkroot", atkconfig("atkroot"));
       atkdebug("Created a new atkUI");            
     }        
     

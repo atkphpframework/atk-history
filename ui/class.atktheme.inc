@@ -97,6 +97,12 @@
     {
       return $this->m_themedir;
     }
+    
+    // example: getAttribute("highlight");
+    function getAttribute($attrib)
+    {
+      return $this->m_def[$attrib];
+    }
   }
 
 ?>

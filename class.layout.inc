@@ -88,7 +88,7 @@
         }
         else
         {
-          $page->register_style((file_exists(atkconfig("atkroot")."./style.php") ? "." : atkconfig("atkroot")."atk").'/style.php');
+          $page->register_style((file_exists(atkconfig("atkroot")."./style.css") ? "." : atkconfig("atkroot")."atk").'/style.css');
         }
       }
     }

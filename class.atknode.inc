@@ -749,11 +749,10 @@
      * Creates an edit page
      */
     function editPage($record, $locked=FALSE)
-    {      
-      
+    {        
       $page = &$this->getPage();
       $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");      
-      $this->setStyle("style.css");
+      $this->addStyle("style.css");
       
       $params = $this->getDefaultActionParams($locked);
 
@@ -812,7 +811,7 @@
     function viewPage($record)
     {      
       $ui = &$this->getUi();
-      $this->setStyle("style.css");
+      $this->addStyle("style.css");
       
       if (is_object($ui))
       {
@@ -907,7 +906,7 @@
       $page = &$this->getPage();
             
       $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
-      $this->setStyle("style.css");
+      $this->addStyle("style.css");
       
       $params = $this->getDefaultActionParams();
 
@@ -951,7 +950,7 @@
 
     function searchPage($record=NULL)
     {         
-      $this->setStyle("style.css");      
+      $this->addStyle("style.css");      
       
       $page = &$this->getPage();
       $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
@@ -1213,13 +1212,12 @@
       
       // Handle fields
       // load images
+      atkimport("atk.ui.atktheme");
       $theme = &atkTheme::getInstance();
       $tipimg = $theme->imgPath("help.gif");
       $reqimg = '<img align="top" onMouseOver="javascript:window.status=\''.
                    addslashes(text("field_obligatory")).'\';" src="'.$theme->imgPath("required_field.gif").'" border="0" alt="'.
-                   text("field_obligatory").'">';
-      atkimport("atk.ui.atktheme");
-      
+                   text("field_obligatory").'">';            
 
       /* display the edit fields */
       $fields = array();
@@ -1568,88 +1566,84 @@
     {
       global $atksearch;
       
-      $this->setStyle("style.css");
-
-      // When there's a lot of data, records will be spread across multiple
-      // pages.
-      if ($this->m_postvars['atklimit']=="") $this->m_postvars['atklimit']=atkconfig("recordsperpage");
-
-      if ($this->m_postvars['atkstartat']=="" || isset($atksearch)) $this->m_postvars['atkstartat']=0;
-
-      $recordset = $this->selectDb($this->m_postvars['atkfilter'],
-                                   $this->m_postvars['atkorderby'],
-                                   array("offset" => $this->m_postvars['atkstartat'], "limit" => $this->m_postvars['atklimit']),
-                                   $this->m_listExcludes,
-                                   "",
-                                   "admin");
-
-      // check for search-action (if search returns only one record!)
-      if (is_array($this->m_postvars['atksearch']) && count($this->m_postvars['atksearch']) > 0 &&
-          is_array($this->m_search_action) && count($recordset) == 1)
-      {
-        for ($i = 0, $_i = count($this->m_search_action); $i < $_i; $i++)
-          if ($this->allowed($this->m_search_action[$i], $recordset[$i]))
-          {
-            $this->redirect(session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->atkNodeType().
-                            '&atkaction='.$this->m_search_action[$i].
-                            '&atkselector='.rawurlencode($this->primaryKey($recordset[0])),
-                             SESSION_REPLACE));
-            break;
-          }
-      }                
-
-      $adminHeader = $this->adminHeader();
-      if ($adminHeader!="")
-      {
-        $output.=$adminHeader."<br><br>";
-      }
-
-      if ($this->hasFlag(NF_ADD_LINK) && !$this->hasFlag(NF_NO_ADD) && $this->allowed("add"))
-      {
-        $addurl = $_SERVER["PHP_SELF"].'?atknodetype='.$this->atknodetype().'&atkaction=add';
-        if ($GLOBALS["txt_link_".getNodeType($this->m_type)."_add"]!="")
-        {
-          // specific text
-          $label = text("link_".getNodeType($this->m_type)."_add");
-        }
-        else
-        {
-          // generic text
-          $label = text(getNodeType($this->m_type))." ".text("add");
-        }
-        $output.=href($addurl,$label,SESSION_NESTED).'<br><br>';
-      }
-
-      // create navigation bar
-      if ($this->m_index != "") $output.=$this->buildIndex($recordset[0][$this->m_index]).'<br><br>';
-      $nav = $this->buildNavigation("admin");
-      if (!empty($nav)) $output.="$nav<br>";
-      $output.='<br>';
-
-      if(!is_array($actions))
-      {
-        $actions = $this->defaultActions("admin");
-      }
-
-      $flags = ($this->hasFlag(NF_MRA) ? RL_MRA : 0) | ($this->hasFlag(NF_MRPA) ? RL_MRPA : 0) | ($this->hasFlag(NF_LOCK) ? RL_LOCK : 0);
-      $output.=$this->normalRecordList($recordset, $actions, $flags);
-
-      if (!empty($nav)) $output.='<br>'.$nav;
-      $output.='<br><br>';
-
-      $adminFooter = $this->adminFooter();
-      if ($adminFooter!="")
-      {
-        $output.=$adminFooter."<br>";
-      }
+      $this->addStyle("style.css");
       
       $ui = &$this->getUi();
       if (is_object($ui))
       {        
-        $page = $ui->renderBox(array("header"=>$ui->title($this->m_module, $this->m_type,'admin'),
-                                     "content"=>$output));
-      }
-      return $page;
+        $params = array();
+
+        // When there's a lot of data, records will be spread across multiple
+        // pages.
+        if ($this->m_postvars['atklimit']=="") $this->m_postvars['atklimit']=atkconfig("recordsperpage");
+        if ($this->m_postvars['atkstartat']=="" || isset($atksearch)) $this->m_postvars['atkstartat']=0;
+
+        $recordset = $this->selectDb($this->m_postvars['atkfilter'],
+                                     $this->m_postvars['atkorderby'],
+                                     array("offset" => $this->m_postvars['atkstartat'], "limit" => $this->m_postvars['atklimit']),
+                                     $this->m_listExcludes,
+                                     "",
+                                     "admin");
+
+        // check for search-action (if search returns only one record!)
+        if (is_array($this->m_postvars['atksearch']) && count($this->m_postvars['atksearch']) > 0 &&
+            is_array($this->m_search_action) && count($recordset) == 1)
+        {
+          for ($i = 0, $_i = count($this->m_search_action); $i < $_i; $i++)
+            if ($this->allowed($this->m_search_action[$i], $recordset[$i]))
+            {
+              $this->redirect(session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->atkNodeType().
+                              '&atkaction='.$this->m_search_action[$i].
+                              '&atkselector='.rawurlencode($this->primaryKey($recordset[0])),
+                               SESSION_REPLACE));
+              break;
+            }
+        }                
+
+        $params["header"] = $this->adminHeader();      
+
+        if ($this->hasFlag(NF_ADD_LINK) && !$this->hasFlag(NF_NO_ADD) && $this->allowed("add"))
+        {
+          $addurl = $_SERVER["PHP_SELF"].'?atknodetype='.$this->atknodetype().'&atkaction=add';
+          if ($GLOBALS["txt_link_".getNodeType($this->m_type)."_add"]!="")
+          {
+            // specific text
+            $label = text("link_".getNodeType($this->m_type)."_add");
+          }
+          else
+          {
+            // generic text
+            $label = text(getNodeType($this->m_type))." ".text("add");
+          }
+          $params["header"].="<br><br>".href($addurl,$label,SESSION_NESTED);
+        }
+
+        // create index and navigation bar
+        if ($this->m_index != "") 
+        {
+          $params["index"] = $this->buildIndex($recordset[0][$this->m_index]);
+        }
+        $params["navbar"] = $this->buildNavigation("admin");
+        
+        if(!is_array($actions))
+        {
+          $actions = $this->defaultActions("admin");
+        }
+
+        $flags = ($this->hasFlag(NF_MRA) ? RL_MRA : 0) | ($this->hasFlag(NF_MRPA) ? RL_MRPA : 0) | ($this->hasFlag(NF_LOCK) ? RL_LOCK : 0);
+        $params["list"] = $this->normalRecordList($recordset, $actions, $flags);
+ 
+        $params["footer"] = $this->adminFooter();                            
+        
+        $output = $ui->renderList("admin", $params);   
+      
+        return $ui->renderBox(array("header"=>$ui->title($this->m_module, $this->m_type, 'admin'),
+                                    "content"=>$output));
+      }                 
+      else
+      {
+        atkerror("Failed to create ui object");
+      }      
     }
     
     /**
@@ -1868,8 +1862,12 @@
      * @param $formName if embedded the form name in which we are embedded
      */
     function normalRecordList($recordset, $actions, $flags=0, $suppressList="", $formName="")
-    {
-      global $g_layout, $g_theme;
+    {      
+      $this->addStyle("recordlist.css");
+      
+      atkimport("atk.ui.atktheme");
+      $theme = &atkTheme::getInstance();
+     
 
       /* retrieve list array */
       $list = $this->listArray($recordset, $flags, "", $actions, $suppressList);
@@ -1883,312 +1881,330 @@
         $flags = ($flags | RL_MRA | RL_MRPA ) ^ RL_MRA;
         if ($this->m_priority_max == 0)
           $this->m_priority_max = $this->m_priority_min + count($list["rows"]) - 1;
-      }
-
-      /* start of output */
-      $output = '<table border="0" cellspacing="0" cellpadding="0">'.
-                  '<tr>'.
-                    '<td align="left">'.
-                       $g_layout->data_top();
+      }      
 
       $orientation  = atkconfig("recordlist_orientation");
       if (trim(atkconfig("recordlist_vorientation")) != "")
-        $vorientation = 'valign="'.atkconfig("recordlist_vorientation").'"';
-      else $vorientation = 'valign="top"';
+        $vorientation = atkconfig("recordlist_vorientation");
+      else $vorientation = 'top';
+      
+      $ui = &$this->getUi();
+      $page = &$this->getPage();
+      if (is_object($ui) && is_object($page))
+      {                
 
-      /**************/
-      /* HEADER ROW */
-      /**************/
-      $output .= "<tr>";
-
-        if (hasFlag($flags, RL_MRA) || hasFlag($flags, RL_MRPA)) $output .= $g_layout->ret_td_datatitle();
-        if (hasFlag($flags, RL_LOCK)) $output .= $g_layout->ret_td_datatitle('<img src="'.atkconfig("atkroot").'atk/images/lock_head.gif">');
-        if ($orientation == "left" || $orientation == "both") $output .= $g_layout->ret_td_datatitle();
-
+        /**************/
+        /* HEADER ROW */
+        /**************/        
+        $headercols = array();
+        
+        if (hasFlag($flags, RL_MRA) || hasFlag($flags, RL_MRPA)) 
+        {
+          $headercols[] = array("content"=>""); // Empty leader on top of mra action list.
+        }
+        if (hasFlag($flags, RL_LOCK)) 
+        {
+          $headercols[] = array("content"=>'<img src="'.atkconfig("atkroot").'atk/images/lock_head.gif">');
+        }
+        if ($orientation == "left" || $orientation == "both") 
+        {
+          $headercols[] = array("content"=>"");
+        }    
+  
         foreach ($list["heading"] as $field => $head)
         {
-          if (empty($head["url"])) $output .= $g_layout->ret_td_datatitle($head["title"]);
-          else $output .= $g_layout->ret_td_datatitle(href($head["url"], $head["title"]));
+          if (empty($head["url"])) 
+          {
+            $headercols[] = array("content"=>$head["title"]);
+          }
+          else 
+          {
+            $headercols[] = array("content"=>href($head["url"], $head["title"]));
+          }
         }
-
-        if ($orientation == "right" || $orientation == "both") $output .= $g_layout->ret_td_datatitle();
-
-      $output.= "</tr>";
-
-      /**************/
-      /* SEARCH ROW */
-      /**************/
-      if (!hasFlag($flags, RL_NO_SEARCH))
-      {
-        $searchmode = $this->m_postvars["atksearchmode"];
-        if (empty($searchmode)) $searchmode = atkconfig("search_defaultmode");
-
-        /* Get the first one, because they are all the same for now
-         * TODO: every attrib needs to get his own searchmode
-         */
-        if (is_array($searchmode)) $searchmode = $searchmode[0];
-
-        $button = '<input type="submit" class="btn_search" value="'.text("search").'">';
-        if (!$this->hasFlag(NF_NO_EXTENDED_SEARCH))
-          $button .= '<br>'.href($_SERVER["PHP_SELF"]."?atknodetype=".$this->atknodetype()."&atkaction=search&atksearchmode=".
-                                             $searchmode,"(".text("search_extended").")",SESSION_NESTED);
-
-        $output .= '<tr>'.
-                     '<a name="searchform"></a>'.
-                     '<form action="'.$_SERVER["PHP_SELF"].'?'.SID.'" method="get">'.
-                     session_form().
-                       '<input type="hidden" name="atknodetype" value="'.$this->atknodetype().'">'.
-                       '<input type="hidden" name="atkaction" value="'.$this->m_action.'">'.
-                       '<input type="hidden" name="atksearchmode" value="'.$searchmode.'">';
-
-          if (hasFlag($flags, RL_MRA) || hasFlag($flags, RL_MRPA)) $output .= $g_layout->ret_td_datatitle();
-          if (hasFlag($flags, RL_LOCK)) $output .= $g_layout->ret_td_datatitle();
-          if ($orientation == "left" || $orientation == "both") $output .= $g_layout->ret_td_datatitle($button);
-
+  
+        if ($orientation == "right" || $orientation == "both") 
+        {
+          $headercols[] = array("content"=>"");
+        }
+  
+        /**************/
+        /* SEARCH ROW */
+        /**************/
+    
+        $searchcols = array();
+        
+        if (!hasFlag($flags, RL_NO_SEARCH))
+        {
+          $searchmode = $this->m_postvars["atksearchmode"];
+          if (empty($searchmode)) $searchmode = atkconfig("search_defaultmode");
+  
+          /* Get the first one, because they are all the same for now
+           * TODO: every attrib needs to get his own searchmode
+           */
+          if (is_array($searchmode)) $searchmode = $searchmode[0];
+  
+          $button = '<input type="submit" class="btn_search" value="'.text("search").'">';
+          if (!$this->hasFlag(NF_NO_EXTENDED_SEARCH))
+          {
+            $button .= '<br>'.href($_SERVER["PHP_SELF"]."?atknodetype=".$this->atknodetype()."&atkaction=search&atksearchmode=".
+                                               $searchmode,"(".text("search_extended").")",SESSION_NESTED);
+          }
+  
+          $searchstart = '<a name="searchform"></a><form action="'.$_SERVER["PHP_SELF"].'?'.SID.'" method="get">'.
+                       session_form().
+                         '<input type="hidden" name="atknodetype" value="'.$this->atknodetype().'">'.
+                         '<input type="hidden" name="atkaction" value="'.$this->m_action.'">'.
+                         '<input type="hidden" name="atksearchmode" value="'.$searchmode.'">';
+  
+          if (hasFlag($flags, RL_MRA) || hasFlag($flags, RL_MRPA))
+          {
+            $searchcols[] = array("content"=>"");
+          }
+          if (hasFlag($flags, RL_LOCK)) 
+          {
+            $searchcols[] = array("content"=>"");
+          }
+          if ($orientation == "left" || $orientation == "both") 
+          {
+            $searchcols[] = array("content"=>$button);            
+          }
+  
           foreach (array_keys($list["heading"]) as $key)
-            if (isset($list["search"][$key])) $output .= $g_layout->ret_td_datatitle($list["search"][$key]);
-            else $output.= $g_layout->ret_td_datatitle('&nbsp;');
-
-          if ($orientation == "right" || $orientation == "both") $output .= $g_layout->ret_td_datatitle($button);
-
-        $output .=   '</form>'.
-                   '</tr>';
-      }
-
-      /*******************************************/
-      /* MULTI-RECORD-(PRIORITY-)ACTIONS FORM DATA */
-      /*******************************************/
-      if (hasFlag($flags, RL_MRA) || hasFlag($flags, RL_MRPA))
-      {
-        $g_layout->register_script(atkconfig("atkroot").'atk/javascript/formselect.js');
-
-        $listName = "atkrl_".getUniqueId("normalRecordList");
-
-        if (!hasFlag($flags, RL_EMBED))
-        {
-          if (empty($formName)) $formName = $listName;
-          $output .= '<form name="'.$formName.'" method="post">'.
-                     session_form(SESSION_NESTED).
-                     '<input type="hidden" name="atkescape" value="">'.
-                     '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">'.
-                     '<input type="hidden" name="atkaction" value="'.$this->m_action.'">';
+          {
+            if (isset($list["search"][$key])) 
+            {              
+              $searchcols[] = array("content"=>$list["search"][$key]);
+            }
+            else 
+            {
+              $searchcols[] = array("content"=>"");
+            }
+          }
+          if ($orientation == "right" || $orientation == "both") 
+          {
+            $searchcols[] = array("content"=>$button);
+          }
+  
+          $seachend = '</form>';
         }
-
-        if (hasFlag($flags, RL_MRA))
-          $output .= '<script language="javascript">var '.$listName.' = new Object();</script>';
-      }
-
-      /********/
-      /* ROWS */
-      /********/
-      for ($i = 0, $_i = count($list["rows"]); $i < $_i; $i++)
-      {
-        /* Special rowColor method makes it possible to change the row color based on the record data.
-         * the method can return a simple value (which will be used for the normal row color), or can be
-         * an array, in which case the first element will be the normal row color, and the second the mouseover
-         * row color, example: function rowColor(&$record, $num) { return array('red', 'blue'); }
-         */
-        $method = "rowColor";
-        $bgh = $g_theme["RowMouseOver"];
-        if (method_exists($this, $method))
-        {
-          $bgn = $this->$method($recordset[$i], $i);
-          if (is_array($bgn)) list($bgn, $bgh) = $bgn;
+  
+        /*******************************************/
+        /* MULTI-RECORD-(PRIORITY-)ACTIONS FORM DATA */
+        /*******************************************/
+        if (hasFlag($flags, RL_MRA) || hasFlag($flags, RL_MRPA))
+        {                    
+          $page->register_script(atkconfig("atkroot")."atk/javascript/formselect.js");          
+  
+          $listName = "atkrl_".getUniqueId("normalRecordList");
+  
+          if (!hasFlag($flags, RL_EMBED))
+          {
+            if (empty($formName)) $formName = $listName;
+            $liststart = '<form name="'.$formName.'" method="post">'.
+                       session_form(SESSION_NESTED).
+                       '<input type="hidden" name="atkescape" value="">'.
+                       '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">'.
+                       '<input type="hidden" name="atkaction" value="'.$this->m_action.'">';
+          }
+  
+          if (hasFlag($flags, RL_MRA))
+          {
+            $liststart.= '<script language="javascript">var '.$listName.' = new Object();</script>';
+          }
         }
+  
+        /********/
+        /* ROWS */
+        /********/
+        
+        $records = array();    
+        
+        for ($i = 0, $_i = count($list["rows"]); $i < $_i; $i++)
+        {
+          $record = array();
+          
+          /* Special rowColor method makes it possible to change the row color based on the record data.
+           * the method can return a simple value (which will be used for the normal row color), or can be
+           * an array, in which case the first element will be the normal row color, and the second the mouseover
+           * row color, example: function rowColor(&$record, $num) { return array('red', 'blue'); }
+           */
+          $method = "rowColor";          
+          $bgh = $theme->getAttribute("highlight");
+          if (method_exists($this, $method))
+          {
+            $bgn = $this->$method($recordset[$i], $i);
+            if (is_array($bgn)) list($bgn, $bgh) = $bgn;
+          }
+                    
+  
+          /* alternate colors of rows */          
+          $record["background"] = $bgn;
+          $record["highlight"] = $bgh;
+          $record["rownum"] = $i;
+  
+          /* multi-record-priority-actions -> priority selection */
+          if (hasFlag($flags, RL_MRPA))
+          {
+            $select = '<select name="'.$listName.'_atkselector[]">'.
+                        '<option value="'.rawurlencode($list["rows"][$i]["selector"]).'"></option>';
+            for ($j = $this->m_priority_min; $j <= $this->m_priority_max; $j++)
+              $select .= '<option value="'.$j.'">'.$j.'</option>';
+            $select .= '</select>';
+            $record["cols"][] = array("content" => $select);
+          }
+  
+          /* multi-record-actions -> checkbox */
+          elseif (hasFlag($flags, RL_MRA))
+          {
+            if (count($list["rows"][$i]["mra"]) > 0)
+              $record["cols"][] = array(
+                           "content"=>'<input type="checkbox" name="'.$listName.'_atkselector[]" value="'.rawurlencode($list["rows"][$i]["selector"]).'" onclick="if (this.disabled) this.checked = false">'.
+                                      '<script language="javascript">'.$listName.'["'.rawurlencode($list["rows"][$i]["selector"]).'"] = new Array("'.implode($list["rows"][$i]["mra"], '","').'");</script>');
+  
+            else $record["cols"][] = array("content"=>"");
+          }
+  
+          /* locked? */
+          if (hasFlag($flags, RL_LOCK))
+          {
+            if (is_array($list["rows"][$i]["lock"]))
+            {
+              $alt = $list["rows"][$i]["lock"]["user_id"]." / ".$list["rows"][$i]["lock"]["user_ip"];
+              $record["cols"][] = array("content"=>'<img src="'.atkconfig("atkroot").'atk/images/lock.gif" alt="'.$alt.'" border="0">');
+            }
+            else $record["cols"][] = array("content"=>"");
+          }
+  
+          $str_actions = "";
+          foreach ($list["rows"][$i]["actions"] as $name => $url)
+            $str_actions .= href($url, text($name, $this->m_type), SESSION_NESTED, hasFlag($flags, RL_EMBED)).'&nbsp;';
+  
+          /* actions (left) */
+          if ($orientation == "left" || $orientation == "both")
+          {
+            if (!empty($str_actions)) 
+            {
+              $record["cols"][] = array("content"=>$str_actions);
+            }
+            else  $record["cols"][] = array("content"=>"");
+            
+          }
+  
+          /* columns */
+          foreach ($list["rows"][$i]["data"] as $html)
+            $record["cols"][] = array("content"=>$html);
+  
+          /* actions (right) */
+          if ($orientation=="right"||$orientation=="both")
+          {
+            if (!empty($str_actions)) $record["cols"][] = array("content"=>$str_actions);
+            else $record["cols"][] = array("content"=>"");
+          }
+  
+          $records[] = $record;
 
-        /* alternate colors of rows */
-        $output .= '<tr class="row'.($i % 2 == 0 ? 1 : 2).'" '.(empty($bgn) ? '' : 'style="background-color:'.$bgn.'" ').
-                   '  onmouseover="if (typeof(this.style) != \'undefined\') this.style.backgroundColor = \''.$bgh.'\'"'.
-                   '  onmouseout="if (typeof(this.style) != \'undefined\') this.style.backgroundColor = \''.(empty($bgn)?'':$bgn).'\'">';
-
-        /* multi-record-priority-actions -> priority selection */
+        }
+  
+        /*************/
+        /* TOTAL ROW */
+        /*************/
+        $totalcols = array();
+        
+        if (count($list["total"]) > 0)
+        {          
+          if (hasFlag($flags, RL_MRA) || hasFlag($flags, RL_MRPA)) $totalcols[] = array("content"=>"");
+          if (hasFlag($flags, RL_LOCK)) $totalcols[] = array("content"=>"");
+          if ($orientation == "left" || $orientation == "both") $totalcols[] = array("content"=>"");
+  
+          foreach (array_keys($list["heading"]) as $key)
+          {
+            if (empty($list["total"][$key])) $totalcols[] = array("content"=>"");
+            else $totalcols[] = array("content"=>$list["total"][$key]);
+          }
+  
+          if ($orientation == "right" || $orientation == "both") $totalcols[] = array("content"=>"");          
+        }
+          
+        /*************************************************/
+        /* MULTI-RECORD-PRIORITY-ACTION FORM (CONTINUED) */
+        /*************************************************/
         if (hasFlag($flags, RL_MRPA))
         {
-          $select = '<select name="'.$listName.'_atkselector[]">'.
-                      '<option value="'.rawurlencode($list["rows"][$i]["selector"]).'"></option>';
-          for ($j = $this->m_priority_min; $j <= $this->m_priority_max; $j++)
-            $select .= '<option value="'.$j.'">'.$j.'</option>';
-          $select .= '</select>';
-          $output .= $g_layout->ret_td($select, $vorientation);
+          $target = session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->atkNodeType(), SESSION_NESTED);
+    
+          /* multiple actions -> dropdown */
+          if (count($this->m_priority_actions) > 1)
+          {
+            $mra = '<select name="'.$listName.'_atkaction">'.
+                         '<option value="">'.text("with_selected").':</option>';
+  
+            foreach ($this->m_priority_actions as $name)
+              $mra .= '<option value="'.$name.'">'.text($name).'</option>';
+  
+            $mra .= '</select>&nbsp;'.
+                       '<input type="button" class="btn" value="'.text("submit").'" onclick="atkSubmitMRPA(\''.$listName.'\', this.form, \''.$target.'\')">';
+          }
+  
+          /* one action -> only the submit button */
+          else
+          {
+            $mra = '<input type="hidden" name="'.$listName.'_atkaction" value="'.$this->m_priority_actions[0].'">'.
+                       '<input type="button" class="btn" value="'.text($this->m_priority_actions[0]).'" onclick="atkSubmitMRPA(\''.$listName.'\', this.form, \''.$target.'\')">';
+          }        
+  
+          if (!hasFlag($flags, RL_EMBED)) $listend = '</form>';
         }
-
-        /* multi-record-actions -> checkbox */
+  
+        /****************************************/
+        /* MULTI-RECORD-ACTION FORM (CONTINUED) */
+        /****************************************/
         elseif (hasFlag($flags, RL_MRA))
         {
-          if (count($list["rows"][$i]["mra"]) > 0)
-            $output .= $g_layout->ret_td(
-                         '<input type="checkbox" name="'.$listName.'_atkselector[]" value="'.rawurlencode($list["rows"][$i]["selector"]).'" onclick="if (this.disabled) this.checked = false">'.
-                         '<script language="javascript">'.$listName.'["'.rawurlencode($list["rows"][$i]["selector"]).'"] = new Array("'.implode($list["rows"][$i]["mra"], '","').'");</script>',
-                         $vorientation
-                        );
-
-          else $output .= '<td>&nbsp;</td>';
-        }
-
-        /* locked? */
-        if (hasFlag($flags, RL_LOCK))
-        {
-          if (is_array($list["rows"][$i]["lock"]))
+          $target = session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->atkNodeType(), SESSION_NESTED);
+  
+          $mra = (count($list["rows"]) > 1 ?
+                      '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'all\')">'.text("select_all").'</a> / '.
+                      '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'none\')">'.text("deselect_all").'</a> / '.
+                      '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'invert\')">'.text("select_invert").'</a>'
+                     :
+                      '<img src="'.atkconfig("atkroot").'atk/images/dummy.gif" border="0" height="1" width="1">');
+                    
+          /* multiple actions -> dropdown */
+          if (count($list["mra"]) > 1)
           {
-            $alt = $list["rows"][$i]["lock"]["user_id"]." / ".$list["rows"][$i]["lock"]["user_ip"];
-            $output .= $g_layout->ret_td('<img src="'.atkconfig("atkroot").'atk/images/lock.gif" alt="'.$alt.'" border="0">');
-          }
-          else $output .= $g_layout->ret_td('&nbsp;');
-        }
-
-        $str_actions = "";
-        foreach ($list["rows"][$i]["actions"] as $name => $url)
-          $str_actions .= href($url, text($name, $this->m_type), SESSION_NESTED, hasFlag($flags, RL_EMBED)).'&nbsp;';
-
-        /* actions (left) */
-        if ($orientation == "left" || $orientation == "both")
-        {
-          if (!empty($str_actions)) $output .= $g_layout->ret_td($str_actions, $vorientation);
-          else $output .= $g_layout->ret_td("&nbsp;", $vorientation);
-        }
-
-        /* columns */
-        foreach ($list["rows"][$i]["data"] as $html)
-          $output .= $g_layout->ret_td($html, $vorientation);
-
-        /* actions (right) */
-        if ($orientation=="right"||$orientation=="both")
-        {
-          if (!empty($str_actions)) $output .= $g_layout->ret_td($str_actions, $vorientation);
-          else $output .= $g_layout->ret_td("&nbsp;", $vorientation);
-        }
-
-        $output .= '</tr>';
-      }
-
-      /*************/
-      /* TOTAL ROW */
-      /*************/
-      if (count($list["total"]) > 0)
-      {
-        $output .= '<tr>';
-
-          if (hasFlag($flags, RL_MRA) || hasFlag($flags, RL_MRPA)) $output .= $g_layout->ret_td_datatitle();
-          if (hasFlag($flags, RL_LOCK)) $output .= $g_layout->ret_td_datatitle();
-          if ($orientation == "left" || $orientation == "both") $output .= $g_layout->ret_td_datatitle();
-
-          foreach (array_keys($list["heading"]) as $key)
-            if (empty($list["total"][$key])) $output .= $g_layout->ret_td_datatitle();
-            else $output .= $g_layout->ret_td_datatitle($list["total"][$key]);
-
-          if ($orientation == "right" || $orientation == "both") $output .= $g_layout->ret_td_datatitle();
-
-        $output .= '</tr>';
-      }
-
-      /* almost at the end of the output */
-      $output .=      $g_layout->data_bottom().
-                   '</td>'.
-                 '</tr>';
-
-      /*************************************************/
-      /* MULTI-RECORD-PRIORITY-ACTION FORM (CONTINUED) */
-      /*************************************************/
-      if (hasFlag($flags, RL_MRPA))
-      {
-        $target = session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->atkNodeType(), SESSION_NESTED);
-
-        $output .= '<tr><td align="left">'.
-                   '<table border="0" cellspacing="0" cellpadding="2">'.
-                     '<tr>'.
-                       '<td valign="top">'.
-                         '<img src="'.atkconfig("atkroot").'atk/images/arrow.gif" border="0">'.
-                       '</td>'.
-                       '<td>';
-
-        /* multiple actions -> dropdown */
-        if (count($this->m_priority_actions) > 1)
-        {
-          $output .= '<select name="'.$listName.'_atkaction">'.
+            $mra .= '<select name="'.$listName.'_atkaction" onchange="javascript:updateSelectable(\''.$listName.'\', this.form)">'.
                        '<option value="">'.text("with_selected").':</option>';
-
-          foreach ($this->m_priority_actions as $name)
-            $output .= '<option value="'.$name.'">'.text($name).'</option>';
-
-          $output .= '</select>&nbsp;'.
-                     '<input type="button" class="btn" value="'.text("submit").'" onclick="atkSubmitMRPA(\''.$listName.'\', this.form, \''.$target.'\')">';
+  
+            foreach ($list["mra"] as $name)
+              $mra .= '<option value="'.$name.'">'.text($name).'</option>';
+  
+            $mra .= '</select>&nbsp;'.
+                       '<input type="button" class="btn" value="'.text("submit").'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\')">';
+          }
+  
+          /* one action -> only the submit button */
+          else
+          {
+            $mra .= '<input type="hidden" name="'.$listName.'_atkaction" value="'.$list["mra"][0].'">'.
+                       '<input type="button" class="btn" value="'.text($list["mra"][0]).'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\')">';
+          }
+  
+          if (!hasFlag($flags, RL_EMBED)) $listend = '</form>';
         }
 
-        /* one action -> only the submit button */
-        else
-        {
-          $output .= '<input type="hidden" name="'.$listName.'_atkaction" value="'.$this->m_priority_actions[0].'">'.
-                     '<input type="button" class="btn" value="'.text($this->m_priority_actions[0]).'" onclick="atkSubmitMRPA(\''.$listName.'\', this.form, \''.$target.'\')">';
-        }
-
-        $output .=     '</td>'.
-                     '</tr>'.
-                   '</table>'.
-                   '</td></tr>';
-
-        if (!hasFlag($flags, RL_EMBED)) $output .= '</form>';
+        $res = $ui->render("recordlist.tpl", array("vorientation"=>$vorientation,
+                                                   "rows"=>$records,
+                                                   "header"=>$headercols,
+                                                   "search"=>$searchcols,
+                                                   "total"=>$totalcols,
+                                                   "searchstart"=>$searchstart,
+                                                   "searchend"=>$searchend,
+                                                   "liststart"=>$liststart,
+                                                   "listend"=>$listend,
+                                                   "mra"=>$mra));
+        return $res;
       }
-
-      /****************************************/
-      /* MULTI-RECORD-ACTION FORM (CONTINUED) */
-      /****************************************/
-      elseif (hasFlag($flags, RL_MRA))
-      {
-        $target = session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->atkNodeType(), SESSION_NESTED);
-
-        $output .= '<tr><td align="left">'.
-                   '<table border="0" cellspacing="0" cellpadding="2">'.
-                     '<tr>'.
-                       '<td rowspan="2" valign="top">'.
-                         '<img src="'.atkconfig("atkroot").'atk/images/arrow.gif" border="0">'.
-                       '</td>'.
-                       $g_layout->ret_td
-                       (
-                         count($list["rows"]) > 1 ?
-                           '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'all\')">'.text("select_all").'</a> / '.
-                           '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'none\')">'.text("deselect_all").'</a> / '.
-                           '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'invert\')">'.text("select_invert").'</a>'
-                         :
-                           '<img src="'.atkconfig("atkroot").'atk/images/dummy.gif" border="0" height="1" width="1">'
-                         ,
-                         'align="center"'
-                       ).
-                     '</tr>'.
-                     '<tr>'.
-                       '<td>';
-
-        /* multiple actions -> dropdown */
-        if (count($list["mra"]) > 1)
-        {
-          $output .= '<select name="'.$listName.'_atkaction" onchange="javascript:updateSelectable(\''.$listName.'\', this.form)">'.
-                     '<option value="">'.text("with_selected").':</option>';
-
-          foreach ($list["mra"] as $name)
-            $output .= '<option value="'.$name.'">'.text($name).'</option>';
-
-          $output .= '</select>&nbsp;'.
-                     '<input type="button" class="btn" value="'.text("submit").'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\')">';
-        }
-
-        /* one action -> only the submit button */
-        else
-        {
-          $output .= '<input type="hidden" name="'.$listName.'_atkaction" value="'.$list["mra"][0].'">'.
-                     '<input type="button" class="btn" value="'.text($list["mra"][0]).'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\')">';
-        }
-
-        $output .=     '</td>'.
-                     '</tr>'.
-                   '</table>'.
-                   '</td></tr>';
-
-        if (!hasFlag($flags, RL_EMBED)) $output .= '</form>';
-      }
-
-      /* end of output */
-      $output .= '</table>';
-
-      return $output;
     }
 
     /**
@@ -2617,7 +2633,7 @@
     {    
       $ui = &$this->getUi();
       
-      $this->setStyle("style.css");
+      $this->addStyle("style.css");
 
       if (is_array($atkselector))
         $atkselector_str = '(('. implode($atkselector, ') OR (').'))';
@@ -2750,14 +2766,14 @@
      *                  This is the default. If you set this to false,
      *                  just plain output is generated. Warning:
      *                  If you set this to false, YOU are responsible for
-     *                  handling $g_layout->m_scripts and $g_layout->m_stylesheets
-     *                  and $g_layout->m_submitscripts. (when $fullpage is true,
+     *                  handling $page->m_scripts, $page->m_stylesheets
+     *                  and $page->m_submitscripts. (when $fullpage is true,
      *                  these are automatically includedn in the head of the page.
      *
      */
     function dispatch($postvars, $fullpage=true)
     {
-      global $g_db, $g_sessionManager, $g_layout;
+      global $g_db, $g_sessionManager;
       $this->m_postvars = $postvars;
 
       $this->m_action = $postvars['atkaction'];          
@@ -2780,10 +2796,7 @@
       }
       else
       {
-        $g_layout->initGui();
-        $g_layout->ui_top(text('access_denied'));
-        $g_layout->output("<br><br>".text("error_node_action_access_denied", $this->m_type)."<br><br><br>");
-        $g_layout->ui_bottom();
+        $page->addContent($this->genericPage(text('access_denied'), "<br><br>".text("error_node_action_access_denied", $this->m_type)."<br><br><br>"));      
       }
       
       $ui = &$this->getUi();
@@ -2924,6 +2937,14 @@
         $location = $this->feedbackUrl("save", ACTION_CANCELLED);
         $this->redirect($location);
       }
+    }
+    
+    function genericPage($title, $content)
+    {
+       $ui = &$this->getUi();
+       $this->addStyle("style.css");
+       return $this->renderActionPage($title, $ui->renderBox(array("title"=>$title,
+                                                                   "content"=>$content)));
     }
 
     function action_delete()
@@ -3146,17 +3167,15 @@
             
     function &getPage()
     {
-      static $s_atkpage = NULL;
-      if ($s_atkpage == NULL)
-      {
-        $s_atkpage = atknew("atk.ui.atkpage");
+      atkimport("atk.ui.atkpage");
+      $page = &atkPage::getInstance();
      
-        // Backwardscompatibility hack. We must inform the (deprecated) layout class
-        // of the page.
-        global $g_layout;
-        $g_layout->m_atkpage = &$s_atkpage;
-      }      
-      return $s_atkpage;
+      // Backwardscompatibility hack. We must inform the (deprecated) layout class
+      // of the page.
+      global $g_layout;
+      $g_layout->m_atkpage = &$page;
+      
+      return $page;
     }
 
     /**
@@ -4284,7 +4303,7 @@
       return "";
     }
     
-    function setStyle($style)
+    function addStyle($style)
     {
       atkimport("atk.ui.atktheme");
       $theme = &atkTheme::getInstance();

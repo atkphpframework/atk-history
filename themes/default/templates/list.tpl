@@ -23,5 +23,10 @@
     <td valign="top" align="center">{$navbar}<br></td>
   </tr>
   {/if}
+  {if $footer!=""}
+  <tr>
+    <td valign="top" align="center">{$footer}<br><br></td>
+  </tr>
+  {/if}
 </table>
 {$formend}

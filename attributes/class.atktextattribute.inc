@@ -55,9 +55,8 @@
         $cols = $this->m_cols;
       }
       else 
-      {        
-        global $g_layout;
-        $cols = $g_layout->maxInputSize();        
+      {                
+        $cols = $this->maxInputSize();        
       }
       $rows = $this->m_rows;
       

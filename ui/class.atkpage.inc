@@ -3,8 +3,20 @@
   class atkPage 
   {
     var $m_scripts = array();
+    var $m_submitscripts = array();
     var $m_stylesheets = array();
     var $m_content = "";
+    
+    function &getInstance()
+    {
+      static $s_page = NULL;
+      if ($s_page == NULL)
+      {
+        $s_page = new atkPage();
+        atkdebug("Created a new atkPage instance");        
+      }
+      return $s_page;
+    }
         
     
     /**
@@ -14,6 +26,15 @@
     function register_script($file)
     {
       if (!in_array($file, $this->m_scripts)) $this->m_scripts[] = $file;
+    }
+    
+    /**
+     * Register a javascript for validation on submit of a form.
+     * @param $code the code to execute on submit.
+     */
+    function register_submitscript($code)
+    {      
+      if (!in_array($code, $this->m_submitscripts)) $this->m_submitscripts[] = $code;
     }
     
     /**
@@ -88,8 +109,8 @@
     
     function atkPage()
     {
-      // Load default stylesheet.
-      $this->register_style((file_exists(atkconfig("atkroot")."./style.php") ? "." : atkconfig("atkroot")."atk").'/style.php');  
+      // Load default app-level stylesheet.
+      $this->register_style((file_exists(atkconfig("atkroot")."./style.css") ? "." : atkconfig("atkroot")."atk").'/style.css');  
     }
         
   }

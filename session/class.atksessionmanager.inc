@@ -415,7 +415,7 @@
   */
   function atksession($namespace = "default", $usestack=true)
   {
-    global $ATK_VARS, $g_sessionManager, $g_layout;
+    global $ATK_VARS, $g_sessionManager;
     global $atkprevlevel;
 
     $g_sessionManager = new atkSessionManager($namespace, $usestack);
@@ -429,7 +429,9 @@
     if ($ATK_VARS["atkescape"]!="")
     {
       atkNode::redirect(atkurldecode($ATK_VARS["atkescape"]));
-      $g_layout->outputFlush();
+
+      $output = &atkOutput::getInstance();
+      $output->outputFlush();
       exit;
     }      
     // Back check
@@ -437,7 +439,8 @@
     {
       // When we go back, we go one level deeper than the level we came from.
       atkNode::redirect(session_url($_SERVER["PHP_SELF"]."?atklevel=".($atkprevlevel-1)));
-      $g_layout->outputFlush();
+      $output = &atkOutput::getInstance();
+      $output->outputFlush();
       exit;
     }
 

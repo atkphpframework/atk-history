@@ -209,8 +209,8 @@
           $autolink = "";
           if ($this->hasFlag(AF_RELATION_AUTOLINK)) // auto edit/view link
           {
-            global $g_layout;
-            $g_layout->register_script(atkconfig("atkroot")."atk/javascript/class.atkmanytoonerelation.js");
+            $page = &atkPage::getInstance();
+            $page->register_script(atkconfig("atkroot")."atk/javascript/class.atkmanytoonerelation.js");
             $editlink = session_url("dispatch.php?atknodetype=".$this->m_destination."&atkaction=edit&atkselector=REPLACEME",SESSION_NESTED);
 
             $autolink = "<a href='javascript:atkSubmit(mto_parse(\"".atkurlencode($editlink)."\", document.entryform.".$fieldprefix.$this->fieldName().".value))'>".text('edit')."</a>";
