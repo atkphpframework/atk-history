@@ -100,7 +100,6 @@
   // need to make it global ourselves. Todo: replace EVERY reference to
   // PHP_SELF with _SERVER["PHP_SELF"] eventually.
   $PHP_SELF = $_SERVER["PHP_SELF"];
-
   require_once($config_atkroot."atk/atkconfigtools.inc");
   require_once($config_atkroot."atk/defaultconfig.inc.php");
 
@@ -3561,14 +3560,17 @@
       foreach (array_keys($this->m_attribList) as $attribname)
       {
         $p_attrib = &$this->m_attribList[$attribname];
-        if ($p_attrib->hasStore($mode))
-        {
-          $storelist[]=$attribname;
-        }
-        else
-        {
-          $querylist[]=$attribname;
-        }
+        if ($p_attrib->needsInsert($record))
+	{
+          if ($p_attrib->hasStore($mode))
+          {
+            $storelist[]=$attribname;
+          }
+          else
+          {
+            $querylist[]=$attribname;
+          }
+	}
       }
 
       for ($i = 0, $_i = count($querylist); $i < $_i; $i++)
