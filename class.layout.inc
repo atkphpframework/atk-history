@@ -27,6 +27,7 @@
 
     var $m_submitscripts = array();
     var $m_scripts = array();
+    var $m_scriptcode;
     var $m_stylesheets = array();
 
     /**
@@ -223,6 +224,11 @@
     {
       if (!in_array($file, $this->m_scripts)) $this->m_scripts[] = $file;
     }
+    
+    function register_scriptcode($code)
+    {
+      $this->m_scriptcode[] = $code;
+    }
 
     function register_submitscript($code)
     {
@@ -314,8 +320,13 @@
         $res.="if (retval!=true) return false;\n";
       }
       $res.="return retval;
-               }
-             </script>\n";
+               }";
+      
+      for ($i = 0; $i < count($this->m_scriptcode); $i++)
+      {
+        $res.=$this->m_scriptcode[$i];
+      }
+      $res.="       </script>\n";
 
       for ($i = 0; $i < count($this->m_stylesheets); $i++)
         $res.='  <link href="'.$this->m_stylesheets[$i].'" rel="stylesheet" type="text/css">'."\n";
@@ -709,9 +720,9 @@
             elseif (get_class($field["attribute"]) == "atkboolattribute")
               $form .= $this->ret_td('<label for="'.$field["name"].'">'.$field["label"].'</label>: ', 'valign="top"');
             else 
-              $form .= $this->ret_td($field["label"].': ','valign="top"');
+              $form .= $this->ret_td($field["label"].': <br />','valign="top"');
+              $form.="</tr><tr>";
           }
-
           /* If there's no label, the other td's have to be filled up. */
           else $tdcount++;
 
