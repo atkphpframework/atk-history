@@ -20,7 +20,7 @@
    */
   
   /* change dir for includes */
-  chdir("../../");
+  $config_atkroot = "../../";
   include_once($config_atkroot."atk/atkconfigtools.inc");
   include_once($config_atkroot."atk/defaultconfig.inc.php");
   include_once($config_atkroot."config.inc.php");

@@ -4,7 +4,7 @@
    * is one record in the first table that belongs to one record in the 
    * second table.
    *
-   * @author Ivo Jansch (ivo@achievo.com)
+   * @author Ivo Jansch (ivo@achievo.org)
    * @version $Revision$
    *
    * $Id$   
