@@ -688,7 +688,7 @@
      */
     function getFormButtons($mode)
     {
-      $result = "";
+      $result = array();
 
       // edit mode
       if ($mode == "edit")
@@ -697,10 +697,11 @@
         // which means that 'saveandclose' doesn't close anyway, so we leave out
         // the 'saveandclose' button. Unless, a feedback screen is configured.
         if (atkLevel() >0 || hasFlag($this->m_feedback["update"], ACTION_SUCCESS))
-          $result = '&nbsp;<input type="submit" class="btn_saveandclose" value="'.text('saveandclose').'">&nbsp;';
-
-        $result .= '&nbsp;<input type="submit" class="btn_save" name="atknoclose" value="'.text('save').'">&nbsp;'.
-                   '&nbsp;<input type="submit" class="btn_cancel" name="atkcancel" value="'.text('cancel').'">&nbsp;';
+        {
+          $result[] = '<input type="submit" class="btn_saveandclose" value="'.text('saveandclose').'">';
+        }
+        $result[] = '<input type="submit" class="btn_save" name="atknoclose" value="'.text('save').'">';
+        $result[] = '<input type="submit" class="btn_cancel" name="atkcancel" value="'.text('cancel').'">';
       }
 
       return $result;
@@ -730,17 +731,18 @@
      * Creates an edit page
      */
     function editPage($record, $locked=FALSE)
-    {
-      global $config_atkroot;
+    {      
       
       $page = &$this->getPage();
       $page->register_script($config_atkroot."atk/javascript/formfocus.js");      
       $this->setStyle("style.css");
+      
+      $params = array();
 
-      $output = $this->statusbar($locked);
-      $output.= '<form name="entryform" enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?'.SID.'"'.
-                                   ' method="post" onsubmit="return globalSubmit(this)">';
-      $output.=session_form();
+      $params["statusbar"] = $this->statusbar($locked);
+      $params["formstart"] = '<form name="entryform" enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?'.SID.'"'.
+                                   ' method="post" onsubmit="return globalSubmit(this)">'.
+                                   session_form();
       
       $ui = &atknew("atk.ui.atkui");
       
@@ -748,21 +750,22 @@
       {
       
         $forceList = decodeKeyValueSet($this->m_postvars['atkfilter']);      
-        $innercontent.=$this->editForm("edit",$record,$forceList,$this->m_postvars['atksuppress']);
+        $form =$this->editForm("edit",$record,$forceList,$this->m_postvars['atksuppress']);
 
         if (count($this->m_tabListEdit) > 1) 
         {        
-          $output.=$ui->render("tabs.tpl", array("tabs"=>$this->buildTabs(),
-                                                 "content"=>$innercontent));
+          $params["content"].=$ui->render("tabs.tpl", array("tabs"=>$this->buildTabs(),
+                                                 "content"=>$form));
         }
         else
         {
-          $output.=$innercontent;
+          $params["content"] = $form;
         }
         
+        $params["buttons"] = $this->getFormButtons("edit");
+        $params["formend"] = '</form>';
         
-  
-        $output.='<br>'.$this->getFormButtons("edit").'</form>';
+        $output = $ui->render("editpage.tpl", $params);
               
         $total = $ui->render("box.tpl", array("title"=>$ui->title($this->m_module, $this->m_type,'edit'),
                                               "content"=>$output));
@@ -778,8 +781,7 @@
      * Creates an view (=readonly) page
      */
     function viewPage($record)
-    {
-      global $g_layout;
+    {      
       $ui = &atknew("atk.ui.atkui");
       $this->setStyle("style.css");
       
@@ -937,10 +939,9 @@
     }
 
     function searchPage($record=NULL)
-    {
-      global $g_layout, $config_atkroot;
+    {      
       $g_layout->initGui();
-      $g_layout->register_script($config_atkroot."atk/javascript/formfocus.js");
+      $g_layout->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
       $ui = &atknew("atk.ui.atkui");
       $g_layout->ui_top($ui->title($this->m_module, $this->m_type,'search'));
       $g_layout->output($this->statusbar());
@@ -1293,7 +1294,7 @@
      */
     function hideForm($mode="add",$record = NULL, $forceList="", $fieldprefix="")
     {
-      global $g_layout, $config_atkroot,$g_sessionData;
+      global $g_layout, $g_sessionData;
 
       /* suppress all */
       $suppressList = array();
@@ -1540,7 +1541,7 @@
      */
     function adminPage($actions="")
     {
-      global $atksearch, $config_atkroot;            
+      global $atksearch;
       
       $this->setStyle("style.css");
 
@@ -4056,7 +4057,7 @@
     {      
       if (!$this->m_statusbarDone)
       {
-        global $g_sessionManager, $config_atkroot;
+        global $g_sessionManager;
         $ui = &atknew("atk.ui.atkui");
         
         $params = array();
@@ -4071,7 +4072,7 @@
         if ($params["helpurl"]!="")
         {
           $page = &$this->getPage();
-          $page->register_script($config_atkroot."atk/javascript/newwindow.js");          
+          $page->register_script(atkconfig("atkroot")."atk/javascript/newwindow.js");          
           $params["helplabel"] = text("help");
           $params["helplink"] = '<a href="'.$params["helpurl"].'">'.$params["helplabel"].'</a>';
         }
