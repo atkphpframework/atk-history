@@ -320,6 +320,13 @@
       for ($i = 0; $i < count($this->m_stylesheets); $i++)
         $res.='  <link href="'.$this->m_stylesheets[$i].'" rel="stylesheet" type="text/css">'."\n";
 
+      $favico = atkconfig("defaultfavico");
+      if ($favico!="")
+      {
+        $res.= '<link rel="icon" href="'.$favico.'" type="image/x-icon">
+                <link rel="shortcut icon" href="'.$favico.'" type="image/x-icon">'."\n";
+      }
+
       $res.="</head>\n";
       return $res;
     }
