@@ -104,8 +104,8 @@
   $txt_july = "July";
   $txt_june = "June";
   $txt_language_de = "German";
-  $txt_language_en = "Engels";
-  $txt_language_fr = "Frans";
+  $txt_language_en = "English";
+  $txt_language_fr = "French";
   $txt_language_nl = "Dutch";
   $txt_list_null_value = "No value";
   $txt_lock_expired = "The items you have opened are no longer exclusively accessible by you. This can have various causes,
