@@ -125,7 +125,7 @@
   function atkerror($txt)
   {
     global $g_error_msg;
-    $g_error_msg[]="[".elapsed()."] ".$txt;    
+    $g_error_msg[]="[".elapsed()."] ".$txt;
   }
 
    /**
@@ -204,7 +204,7 @@
     {
       $res.='<input type="hidden" name="atkstackid" value="'.atkStackID().'">';
     }
-    
+
     $res .= '<input type="hidden" name="'.session_name().'" value="'.session_id().'">';
 
     for ($i=0;$i<count($g_stickyurl);$i++)
@@ -223,7 +223,7 @@
   function session_vars($sessionstatus=SESSION_DEFAULT, $levelskip=1, $url="")
   {
     global $g_stickyurl;
-    
+
     $newlevel = session_level($sessionstatus, $levelskip);
     $vars="";
    // atklevel is already set manually, we don't append it..
@@ -271,7 +271,7 @@
     $url.=$start;
 
     $url.=session_vars($sessionstatus, $levelskip, $url);
-   
+
     return $url;
   }
 
@@ -662,7 +662,7 @@
       {
         $body.= "\n\n_POST\n".str_repeat("-",70)."\n";
         foreach ($_POST as $key=>$value)
-        { 
+        {
           $body.=_wordwrap($key.str_repeat(" ",max(1,20-strlen($key)))." = ".$value)."\n";
         }
       }
@@ -674,10 +674,10 @@
           $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value)."\n";
         }
       }
-      
+
       $body.= "\n\nCurrent User:\n".str_repeat("-",70)."\n";
       if (is_array($g_user) && count($g_user))
-      {      
+      {
         foreach($g_user as $key => $value)
         {
           $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value)."\n";
@@ -697,7 +697,7 @@
           if (is_array($stack[$i]))
 	       {
             foreach ($item as $key=>$value)
-            {              
+            {
               $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value)."\n";
             }
           }
@@ -739,8 +739,8 @@
    */
   function escapeSQL($string, $wildcard=false)
   {
-    global $g_db;    
-    return $g_db->escapeSQL($string, $wildcard);    
+    global $g_db;
+    return $g_db->escapeSQL($string, $wildcard);
   }
 
   /**
@@ -927,6 +927,16 @@
     return false;
   }
 
+  function usefilter($filter)
+  {
+    global $config_atkroot;
+    $a = explode(".", $filter);
+    if (count($a) == 2)
+      $include = $config_atkroot."modules/".strtolower($a[0])."/filters/class.".strtolower($a[1]).".inc";
+    else $include = $config_atkroot."atk/filters/class.".strtolower($filter).".inc";
+    include_once($include);
+  }
+
   function useattrib($attribute)
   {
     global $config_atkroot;
@@ -979,15 +989,15 @@
   {
     return ($var & $flag) == $flag;
   }
-  
+
   /**
    * Makes an url from the target var and all postvars
    * @param $target the path of the file to open
-   */  
+   */
   function makeUrlFromPostvars($target)
   {
     global $ATK_VARS;
-    
+
     if(count($ATK_VARS ))
     {
       $url = $target."?";
@@ -998,17 +1008,17 @@
       return $url;
     }
     return "";
-    
+
   }
-  
+
     /**
    * Makes an string with hidden input fields
    * containing all posted vars
-   */  
+   */
   function makeHiddenPostvars($excludes=array())
   {
     global $ATK_VARS;
-    
+
     if(count($ATK_VARS ))
     {
       foreach ($ATK_VARS as $key => $val)
@@ -1020,8 +1030,8 @@
     }
     return "";
   }
-  
-  /** 
+
+  /**
    * Returns a string representation of an action status.
    * @param $status Must be one of ACTION_FAILED, ACTION_SUCCESS or ACTION_CANCELLED.
    */
@@ -1034,7 +1044,7 @@
       case ACTION_SUCCESS: return "success";
     }
   }
-  
+
   /**
    * Writes trace file to system tmp directory
    * @param $msg message to display in the trace
