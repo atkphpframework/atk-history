@@ -17,7 +17,7 @@
     /**
      * The referential key in the target node
      */
-    var $m_refKey="";
+    var $m_refKey=array();
 
     /**
      * The maximum number of records that you may have a relation with..
@@ -34,7 +34,15 @@
     {
       $this->atkRelation($name, $destination, $flags|AF_HIDE_ADD|AF_HIDE_SEARCH); // 1toM Relations are NEVER edited when adding a rec.
                                                                                  // and for now, we cannot search them.
-      $this->m_refKey = $refKey;
+                                                                                 
+      if (is_array($refKey))
+      {
+        $this->m_refKey = $refKey;
+      }
+      else
+      {
+        $this->m_refKey[] = $refKey;
+      }
     }
 
     /**
@@ -69,7 +77,7 @@
             if (!$this->m_destInstance->hasFlag(NF_NO_VIEW))
               $actions = array("view" => dispatch_url($this->m_destination, "view", array("atkselector" => "[pk]", "atkfilter" => $filter)));
             else $actions = array();
-            $result = $this->m_destInstance->normalRecordList($myrecords, $actions, RL_NO_SORT|RL_NO_SEARCH, array($this->m_refKey))."<br>";
+            $result = $this->m_destInstance->normalRecordList($myrecords, $actions, RL_NO_SORT|RL_NO_SEARCH, $this->m_refKey)."<br>";
           }
         }
       }
@@ -110,29 +118,13 @@
           {
             $params["atkfilter"]=$this->m_destinationFilter;
           }
-          
-          /* The next lines of code have been replaced by a call to 
-             m_destInstance->defaultActions. 
-             
-          if (!$this->m_destInstance->hasFlag(NF_NO_EDIT))
-          {
-          $actions["edit"] = $_SERVER["PHP_SELF"].'?atknodetype='.$this->m_destination.'&atkaction=edit&atkselector=[pk]'.$strfilter;
-          }
-
-          if (!$this->m_destInstance->hasFlag(NF_NO_DELETE))
-          {
-            $actions["delete"] = $_SERVER["PHP_SELF"].'?atknodetype='.$this->m_destination.'&atkaction=delete&atkselector=[pk]'.$strfilter;
-          }
-          if($this->m_destInstance->hasFlag(NF_COPY))
-          {
-            $actions["copy"] = $_SERVER["PHP_SELF"].'?atknodetype='.$this->m_destination.'&atkaction=copy&atkselector=[pk]';
-          }*/
+                    
           $actions = $this->m_destInstance->defaultActions("relation", $params);   
 
           $flags = RL_EMBED;
           $flags |= $this->m_destInstance->hasFlag(NF_MRA) ? RL_MRA : 0;
           $flags |= $this->m_destInstance->hasFlag(NF_MRPA) ? RL_MRPA : 0;
-          $cell.=$this->m_destInstance->normalRecordList($myrecords, $actions, $flags, array($this->m_refKey), "entryform");
+          $cell.=$this->m_destInstance->normalRecordList($myrecords, $actions, $flags, $this->m_refKey, "entryform");
 
           $output.=$GLOBALS['g_layout']->ret_td($cell);
           $output.="</tr>";
@@ -146,13 +138,19 @@
             // we need to set the filter of the record we are going to add. The referential key must
             // be set to the value of the current primary key. However, the current primary key
             // contains the table name and a dot. So we strip that.
-            list($tmp,$refkeyvalue) = explode(".",$record["atkprimkey"]);
-            $strfilter = $this->m_refKey.".".$refkeyvalue;
+            for ($i=0, $_i=count($this->m_refKey); $i<$_i; $i++)
+            {
+              $filterelems[] = $this->m_refKey[0].".".$this->m_ownerInstance->m_primaryKey[$i]."=".$record[$this->m_ownerInstance->m_primaryKey[$i]];
+            }
           }
           else
           {
-            $strfilter = $this->m_refKey."=".$record[$this->m_ownerInstance->primaryKeyField()];
+            for ($i=0, $_i=count($this->m_refKey); $i<$_i; $i++)
+            {
+              $filterelems[] = $this->m_refKey[$i]."=".$record[$this->m_ownerInstance->m_primaryKey[$i]];
+            }
           }
+          $strfilter = implode(" AND ", $filterelems);
           if ($this->m_destinationFilter!="")
           {
             $strfilter.=' AND '.$this->m_destinationFilter;
@@ -227,13 +225,14 @@
       {
         if ($this->createDestination())
         {
-          if ($this->m_refKey=="") $this->m_refKey=$this->m_owner;
-
-          $key = decodeKeyValueSet($record["atkprimkey"]);
-          // we assume singular referential keys, which means, there's only one value in $keyvalue;
-          list($tmp,$keyvalue) = each($key);
-
-          $where = $this->m_destInstance->m_table.".".$this->m_refKey."='".$keyvalue."'";
+          if (count($this->m_refKey)==0||$this->m_refKey[0]=="") $this->m_refKey[0]=$this->m_owner;
+          
+          for ($i=0, $_i = count($this->m_refKey); $i<$_i; $i++)
+          {
+            $whereelems[] = $this->m_destInstance->m_table.".".$this->m_refKey[$i]."='".$record[$this->m_ownerInstance->m_primaryKey[$i]]."'";
+          }          
+          
+          $where = implode(" AND ", $whereelems);
 
           if ($this->m_destinationFilter!="")
           {
@@ -267,8 +266,17 @@
       $classname = $this->m_destination;
       $rel = &getNode($classname);
       atkdebug("O2M DELETE voor $classname: ".$this->m_refKey."='".$record[$this->m_ownerInstance->primaryKeyField()]."'");
+      
+      for ($i=0, $_i = count($this->m_refKey); $i<$_i; $i++)
+      {
+         $whereelems[] = $rel->m_table.".".$this->m_refKey[$i]."='".$record[$this->m_ownerInstance->m_primaryKey[$i]]."'";
+      }         
+      $where = implode(" AND ", $whereelems);
 
-      $rel->deleteDb($rel->m_table.'.'.$this->m_refKey."='".$record[$this->m_ownerInstance->primaryKeyField()]."'");
+      if ($where!="") // double check, so we never by accident delete the entire db
+      {
+        $rel->deleteDb($where);
+      }
     }
 
 
@@ -299,13 +307,22 @@
               // the referential key of the onetomanyrecs could be wrong, if we
               // are called for example from a copy function. So just in case,
               // we reset the correct key.
-              $onetomanyrecs[$i][$this->m_refKey][$this->m_ownerInstance->primaryKeyField()] = $record[$this->m_ownerInstance->primaryKeyField()];
-
               if(!$this->destinationHasRelation())
               {
                 atkdebug("hmm.. there's no relation back. fixing the value of refKey...");
-                $onetomanyrecs[$i][$this->m_refKey] = $record[$this->m_ownerInstance->primaryKeyField()];
+                for ($j=0, $_j = count($this->m_refKey); $j<$_j; $j++)
+                {
+                  $onetomanyrecs[$i][$this->m_refKey[$j]] = $record[$this->m_ownerInstance->m_primaryKey[$j]];
+                }
               }  
+              else
+              {
+                for ($j=0, $_j = count($this->m_refKey); $j<$_j; $j++)
+                {
+                   $onetomanyrecs[$i][$this->m_refKey[0]][$this->m_ownerInstance->m_primaryKey[$j]] = $record[$this->m_ownerInstance->m_primaryKey[$j]];
+                }                              
+              }        
+              
               $this->m_destInstance->addDb($onetomanyrecs[$i], true, $mode);
 
             }
@@ -328,7 +345,8 @@
     {
       if ($this->createDestination())
       {
-        $attrib = $this->m_destInstance->m_attribList[$this->m_refKey];
+        // If there's a relation back, it's in the destination node under the name of the first refkey element.
+        $attrib = $this->m_destInstance->m_attribList[$this->m_refKey[0]];
         if (is_object($attrib) && strpos(get_class($attrib), "elation")!==false) return true;
       }
       return false;
