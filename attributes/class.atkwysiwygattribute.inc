@@ -312,6 +312,7 @@
         $result.= "\n attrib.content = ".$current_value_aux;
         $result.= "\n attrib.editor = '".$this->m_editorname."';";
         $result.= "\n attribute[attribute.length] = attrib;";
+        $result.= "\n stylesheet = '".atkconfig("site_url")."'+'styles/style.css';";
         $result.= "\n } ";
       }
       $result.= "\n </script>";
