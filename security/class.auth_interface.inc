@@ -102,6 +102,15 @@
     {
       return array();
     }
+    
+    /**
+     * This function returns the email of a user
+     * 
+     */
+    function getEmail($user)
+    {
+      return $email;
+    }
         
   }
 

@@ -369,7 +369,6 @@
     {      
       global $config_mailreport;
       $loginattempts = sessionLoad('loginattempts');            
-      $loginattempts = 0;
       if($loginattempts=="") $loginattempts = 0;
       
       if($loginattempts=="") 
@@ -427,7 +426,6 @@
       }
       
       $output.='</table></form>';
-      
       $output.='<SCRIPT LANGUAGE="JavaScript">placeFocus()</SCRIPT>';
       
       $page->addContent($ui->render("login.tpl", array("title"=>text('login_form'),
