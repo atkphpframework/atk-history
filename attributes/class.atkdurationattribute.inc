@@ -171,14 +171,21 @@
     
     function _minutes2string($minutes)
     {
+      $prefix = "";
+      if($minutes<0)
+      {
+        $prefix="- ";
+        $minutes = abs($minutes);
+      }
+      
       if(atkconfig("durationformat",0)==DURATIONFORMAT_DECIMAL)
       {        
         $decimalvalue = $this->_getHourPart($minutes) + ($this->_getMinutePart($minutes)/60);
-        return sprintf("%02.02f", $decimalvalue);
+        return $prefix.sprintf("%02.02f", $decimalvalue);
       }
       elseif(atkconfig("durationformat",0)==DURATIONFORMAT_TIME)
       {        
-        return sprintf("%02d:%02d",$this->_getHourPart($minutes), $this->_getMinutePart($minutes));        
+        return $prefix.sprintf("%02d:%02d",$this->_getHourPart($minutes), $this->_getMinutePart($minutes));        
       }
     }   
     
