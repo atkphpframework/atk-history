@@ -3494,9 +3494,9 @@
       else if (!empty($limit))
       {
         $query->setLimit(0, $limit);
-      }
-      
-      $querystring = $query->buildSelect();   
+      }      
+
+      $querystring = $query->buildSelect(true);   
       
       $dbrecords = $g_db->getrows($querystring);
 
