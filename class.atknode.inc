@@ -714,7 +714,7 @@
       $output = $this->statusbar();
       $output.= '<img src="'.atkconfig("atkroot").'atk/images/lock.gif"><br><br>'.text("lock_locked").'<br>';
       $output.= '<br><form method="get">'.session_form(SESSION_BACK).
-                        '<input type="submit" value="&lt;&lt; '.text('back').'"></form>';
+                        '<input type="submit" class="btn_cancel" value="&lt;&lt; '.text('back').'"></form>';
       
       $ui = &atknew("atk.ui.atkui");
       if (is_object($ui))
@@ -853,14 +853,14 @@
         }
   
         $buttons = '<br><form method="get">'.session_form(SESSION_NESTED).
-                          '&nbsp;<input type="submit" name="atkback" value="&lt;&lt; '.text('back').'">&nbsp;';
+                          '&nbsp;<input type="submit" class="btn_cancel" name="atkback" value="&lt;&lt; '.text('back').'">&nbsp;';
                           
         // if appropriate, display an edit button.
         if (!$this->hasFlag(NF_NO_EDIT)&&$this->allowed("edit", $record))
         {        
           $buttons.= '<input type="hidden" name="atkaction" value="edit">'.
                      '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">'.
-                     '&nbsp;<input type="submit" value="'.text('edit').'">&nbsp;';
+                     '&nbsp;<input type="submit" class="btn" value="'.text('edit').'">&nbsp;';
         }      
       
         $buttons.= '</form>';
@@ -915,11 +915,11 @@
           $output.=$innercontent;
         }   
       
-        $output.='<br>&nbsp;<input type="submit" value="'.text('save').'&nbsp;">';
+        $output.='<br>&nbsp;<input type="submit" class="btn_save" value="'.text('save').'&nbsp;">';
         if ($this->m_action=="add")
         {
           // if action is admin, we don't show the cancelbutton..
-          $output.='&nbsp;<input type="submit" name="atkcancel" value="'.text('cancel').'">&nbsp;';
+          $output.='&nbsp;<input type="submit" class="btn_cancel" name="atkcancel" value="'.text('cancel').'">&nbsp;';
         }
         $output.='</form>';
         
@@ -963,7 +963,7 @@
       $form.='<input type="hidden" name="atknodetype" value="'.$this->atknodetype().'">';
 
       $g_layout->output($this->searchForm($record));
-      $g_layout->output('<br>&nbsp;<input type="submit" value="'.text('search').'">&nbsp;');
+      $g_layout->output('<br>&nbsp;<input type="submit" class="btn_search" value="'.text('search').'">&nbsp;');
       $g_layout->output('</form>');
       $g_layout->ui_bottom();
       $g_layout->output('<SCRIPT LANGUAGE="JavaScript">placeFocus()</SCRIPT>');
@@ -1904,7 +1904,7 @@
          */
         if (is_array($searchmode)) $searchmode = $searchmode[0];
 
-        $button = '<input type="submit" value="'.text("search").'">';
+        $button = '<input type="submit" class="btn_search" value="'.text("search").'">';
         if (!$this->hasFlag(NF_NO_EXTENDED_SEARCH))
           $button .= '<br>'.href($_SERVER["PHP_SELF"]."?atknodetype=".$this->atknodetype()."&atkaction=search&atksearchmode=".
                                              $searchmode,"(".text("search_extended").")",SESSION_NESTED);
@@ -2087,14 +2087,14 @@
             $output .= '<option value="'.$name.'">'.text($name).'</option>';
 
           $output .= '</select>&nbsp;'.
-                     '<input type="button" value="'.text("submit").'" onclick="atkSubmitMRPA(\''.$listName.'\', this.form, \''.$target.'\')">';
+                     '<input type="button" class="btn" value="'.text("submit").'" onclick="atkSubmitMRPA(\''.$listName.'\', this.form, \''.$target.'\')">';
         }
 
         /* one action -> only the submit button */
         else
         {
           $output .= '<input type="hidden" name="'.$listName.'_atkaction" value="'.$this->m_priority_actions[0].'">'.
-                     '<input type="button" value="'.text($this->m_priority_actions[0]).'" onclick="atkSubmitMRPA(\''.$listName.'\', this.form, \''.$target.'\')">';
+                     '<input type="button" class="btn" value="'.text($this->m_priority_actions[0]).'" onclick="atkSubmitMRPA(\''.$listName.'\', this.form, \''.$target.'\')">';
         }
 
         $output .=     '</td>'.
@@ -2143,14 +2143,14 @@
             $output .= '<option value="'.$name.'">'.text($name).'</option>';
 
           $output .= '</select>&nbsp;'.
-                     '<input type="button" value="'.text("submit").'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\')">';
+                     '<input type="button" class="btn" value="'.text("submit").'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\')">';
         }
 
         /* one action -> only the submit button */
         else
         {
           $output .= '<input type="hidden" name="'.$listName.'_atkaction" value="'.$list["mra"][0].'">'.
-                     '<input type="button" value="'.text($list["mra"][0]).'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\')">';
+                     '<input type="button" class="btn" value="'.text($list["mra"][0]).'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\')">';
         }
 
         $output .=     '</td>'.
@@ -2609,8 +2609,8 @@
                                                 "text"=>$this->confirmDeleteText($atkselector),
                                                 "formstart"=>$formstart,
                                                 "formend"=>'</form>',
-                                                "okbtn"=>'<input name="confirm" type="submit" value="'.text('yes').'" style="width:80px">',
-                                                "cancelbtn"=>'<input name="cancel" type="submit" value="'.text('no').'" style="width:80px">'));
+                                                "okbtn"=>'<input name="confirm" class="btn" type="submit" value="'.text('yes').'" style="width:80px">',
+                                                "cancelbtn"=>'<input name="cancel" type="submit" class="btn_cancel" value="'.text('no').'" style="width:80px">'));
       return $ui->render("box.tpl", array("title"=>$ui->title($this->m_module, $this->m_type,'delete'),
                                           "content"=>$output));                                          
     }
@@ -3062,7 +3062,7 @@
       if (atkLevel()>0)
       {
         $g_layout->output('<br><br><form method="get">'.session_form(SESSION_BACK).
-                          '<input type="submit" value="&lt;&lt; '.text('back').'"></form>');
+                          '<input type="submit" class="btn_cancel" value="&lt;&lt; '.text('back').'"></form>');
       }
 
       $g_layout->output('<br>');
