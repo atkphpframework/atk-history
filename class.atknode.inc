@@ -1337,8 +1337,8 @@
 
       if (!empty($nav)) $g_layout->output('<br>'.$nav);
       $g_layout->output('<br><br>');
-      
-      $adminFooter = $this->adminFooter();      
+
+      $adminFooter = $this->adminFooter();
       if ($adminFooter!="")
       {
         $g_layout->output($adminFooter."<br>");
@@ -1357,11 +1357,12 @@
      * @param $suppress     an array of fields that you want to hide
      *
      * The result array contains the following information:
-     *  "heading" => for each visible row an array containing: "title" {, "url"}
-     *  "search"  => for each visible row HTML input field(s) for searching
-     *  "rows"    => list of rows, per row: "data", "actions", "mra", "record"
-     *  "total"   => for each totalisable row the sum value
-     *  "mra"     => list of all multi-record actions
+     *  "heading"  => for each visible column an array containing: "title" {, "url"}
+     *  "search"   => for each visible column HTML input field(s) for searching
+     *  "rows"     => list of rows, per row: "data", "actions", "mra", "record"
+     *  "totalraw" => for each totalisable column the sum value field(s) (raw)
+     *  "total"    => for each totalisable column the sum value (display)
+     *  "mra"      => list of all multi-record actions
      *
      * @return see above
      */
@@ -3274,7 +3275,7 @@
     {
       return "";
     }
-    
+
    /**
      * Function that is called when creating an adminPage. Developers can override
      * this function in their classes and return a string.
