@@ -126,7 +126,112 @@
   {
     global $g_error_msg;
     $g_error_msg[]="[".elapsed()."] ".$txt;    
+    
+    if(function_exists("debug_backtrace"))
+    {	
+//      atkdebug("Trace:".atk_get_trace());
+    }
   }
+  
+  /**
+  * this function returns a trace-route from all functions where-through the code
+  * has been executed
+  *
+  * @param string format (html|plaintext)
+  *
+  * @return string content(html | plaintext)
+  */
+  function atk_get_trace($format="html")
+  {	
+    if(!function_exists("debug_backtrace"))
+      return "Incorrect php-version for atk_get_trace()";
+
+    $traceArr = debug_backtrace();
+    
+    // remove call of atk_get_trace
+    array_shift($traceArr);
+
+    if($format=="html")
+    {
+      $ret = "<pre>";
+      $spacer = "&nbsp;";
+      $break = "\n";
+      $classCall = "-&gt;";
+    }
+    else
+    {
+      $spacer = " ";
+      $break = "\n";
+      $classCall = "->";
+
+    }
+    for($i=0; $i < count($traceArr); $i++)
+    {
+      if ($traceArr[$i]["function"]=="atkerror") continue; // don't display error itself.
+      $theSpacer = str_repeat($spacer, ($i*2)+3)."";
+
+      $file = $traceArr[$i]["file"];
+      $line = $traceArr[$i]["line"];
+
+      
+      $function = $traceArr[$i]["function"];
+      $class = $traceArr[$i]["class"];
+      if($class)
+        $class.=$classCall;
+      
+      if(!is_array($traceArr[$i]["args"]))
+        $traceArr[$i]["args"] = array();
+
+      $functionParamArr = array();
+
+      foreach($traceArr[$i]["args"] as $val)
+      {
+        if(is_array($val) && count($val))
+        {
+          $valArr = array();         
+          foreach($val as $name=>$value)
+          {
+            if(is_numeric($name))
+              $valArr[] = $name;
+            else
+            {
+              $valArr[] = $name."=".$value;
+            }
+
+          }
+          $val = "array(".implode(", ", $valArr).")";
+        }
+
+        if(strlen($val))
+        {	
+          if (is_array($val)) $val = str_replace("\n", "", var_export($val, true));
+          else 
+          {
+            if(strlen($val) > 120)
+            $val = substr($val, 0, 117)."...";
+            $val = '"'.$val.'"';
+          }
+          $functionParamArr[] = $theSpacer.$spacer.$spacer.$val;
+        }
+      }// end foreach(function-arg arr)
+
+      $functionParams = implode(",".$break, $functionParamArr);
+
+      if(strlen($functionParams))
+        $functionParams= $break.$functionParams.$break.$theSpacer;
+      
+      $ret .= str_repeat("&nbsp;", ($i*2))." @".$file.", line ".$line.$break.
+                                $theSpacer.$class.$function.
+           (strlen($functionParams)?"\n".$theSpacer."(".
+                                $functionParams.")":"()").$break;
+    }  // end foreach (tracepoint)
+
+    if($format=="html")
+      $ret .="</pre>";
+
+    return $ret;
+  } // end function atk_get_trace
+
 
    /**
    * Function Text
@@ -548,6 +653,7 @@
    */
   function stringfields($string)
   {
+    atkdebug("Warning: deprecated use of stringfields(). Use atkStringParser class instead");
     $tmp = "";
     $adding = false;
     for ($i=0;$i<strlen($string);$i++)
@@ -578,6 +684,7 @@
     */
   function stringparse($string, $data,$encode=false)
   {
+    atkdebug("Warning: deprecated use of stringparse(). Use atkStringParser class instead");
     $fields = stringfields($string);
     for ($i=0;$i<count($fields);$i++)
     {
