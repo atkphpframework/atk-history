@@ -322,15 +322,27 @@
 
         if (!hasFlag($flags, RL_NO_SORT) && !$this->hasFlag(AF_NO_SORT))
         {
-          $order = $this->m_ownerInstance->m_table.".".$this->fieldName();
-          if ($atkorderby == $order) $order .= " DESC";
+        	$name = $this->fieldName();
+        	$asc = !is_array($atkorderby) || $atkorderby[0] != $this->fieldName() || $atkorderby[1] == 0 ? 1 : 0;
+
+        	// atknodetype and atkaction are not posted to the url because they are already known in the session
+        	// this solves problems when using one node action to display a recordlist of another node
           $arr["heading"][$fieldprefix.$this->fieldName()]["url"] =
-            session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->m_ownerInstance->atkNodeType().'&atkaction='.$action.'&atkorderby='.rawurlencode($order));
+            session_url($_SERVER["PHP_SELF"].'?atkorderby[0]='.$name.'&atkorderby[1]='.$asc);
         }
 
         if (!hasFlag($flags, RL_NO_SEARCH) && $this->hasFlag(AF_SEARCHABLE))
           $arr["search"][$fieldprefix.$this->fieldName()] = $this->search($atksearch);
       }
+    }
+    
+    /**
+     * Add to the order by clause of the select query.
+     */
+    function addToOrderBy(&$query, $atkorderby)
+    {
+      $order = $this->m_ownerInstance->m_table.".".$this->fieldName();    	
+    	$query->addOrderBy($order." ".($atkorderby[1] == 0 ? "DESC" : "ASC"));
     }
 
     /**

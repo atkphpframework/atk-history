@@ -3355,8 +3355,6 @@
       $selectlist = array();
       $loadlist = array();
 
-      if($order=="" && $this->m_default_order!="") $order=$this->m_default_order;
-
       $name = "atk".atkconfig("database")."query";
       $query = new $name();
 
@@ -3437,7 +3435,30 @@
         }
       }
 
-      if ($order!="") $query->addOrderBy($order);
+      if (!empty($order))
+      {
+      	if (!is_array($order)) $order = array($order);
+    	  $attrName = $order[0];
+  
+    	  if (!empty($this->m_attribList[$attrName]))
+    	  {
+      	  $attr = &$this->m_attribList[$attrName];
+      	  // check if there is an <attribname>_addtoorderby function 
+      	  // that will override the default addtoorderby function
+      	  $funcname = $attr->m_name."_addtoorderby";
+      	  if (method_exists($this, $funcname)) $this->$funcname($query, $order);
+      	  else $attr->addToOrderBy($query, $order);
+    	  }
+        else if (!empty($this->m_default_order))
+        {
+          $query->addOrderBy($this->m_default_order);
+        }
+      }
+      
+      else if (!empty($this->m_default_order))
+      {
+      	$query->addOrderBy($this->m_default_order);
+      }
 
       if (is_array($limit))
       {
@@ -3454,7 +3475,7 @@
       $querystring = $query->buildSelect();
 
       $dbrecords = $g_db->getrows($querystring);
-
+      
 //      $this->setOrgKeyValue($dbrecords[0]);
 
       $recordset = array();
