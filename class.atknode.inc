@@ -340,7 +340,7 @@
      * Add an atkAttribute to the node ($attribute should be an object of type
      * atkAttribute or one of its derivatives)
      * @param $attribute the attribute you want to add
-     * @param $tab on which tab should the field be displayed?
+     * @param $tab on which tab should the field be displayed? (array for multiple tabs!)
      * @param $order override the attribute order
      */
     function add($attribute,$tab="default",$order=0)
@@ -433,8 +433,6 @@
       if ($attribute->fieldName() == 'multilanguage_select' && !$attribute->hasFlag(AF_HIDE_ADD)) $this->m_hasMlSelectAdd = 1;
       if ($attribute->fieldName() == 'multilanguage_select' && !$attribute->hasFlag(AF_HIDE_EDIT)) $this->m_hasMlSelectEdit = 1;
 
-      // which tab should the attribute be displayed?
-      if (!in_array($tab, $this->m_tabList)) $this->m_tabList[] = $tab;
 
       $attribute->init();
 
@@ -455,8 +453,13 @@
           $order=$attrib_order;
           $attrib_order+=100;
         }
+
+        // add new tab(s) to the tab list
+        if (!is_array($tab)) $tab = array($tab);
+        $this->m_tabList = atk_array_merge($this->m_tabList, $tab);
+
         $attribute->m_order = $order;
-        $this->m_attribIndexList[$attrib_index]=array("name"=>$attribute->fieldName(),"tab"=>$tab,"order"=>$attribute->m_order);
+        $this->m_attribIndexList[$attrib_index]=array("name"=>$attribute->fieldName(),"tabs"=>$tab,"order"=>$attribute->m_order);
         $attribute->m_index = $attrib_index;
         $attrib_index++;
       }
@@ -660,7 +663,7 @@
       {
         $p_attrib = &$this->m_attribList[$this->m_attribIndexList[$i]["name"]];
 
-        if (!$p_attrib->hasFlag(AF_HIDE) && $this->m_attribIndexList[$i]["tab"] == $tab)
+        if (!$p_attrib->hasFlag(AF_HIDE) && in_array($tab, $this->m_attribIndexList[$i]["tabs"]))
         {
           // fields that have not yet been initialised may be overriden in the url..
           $page.='<tr>';
@@ -930,14 +933,14 @@
       for($r=0;$r<count($this->m_attribIndexList);$r++)
       {
         $attribname = $this->m_attribIndexList[$r]["name"];
-        $attribtab = $this->m_attribIndexList[$r]["tab"];
+        $attribtabs = $this->m_attribIndexList[$r]["tabs"];
         $p_attrib = &$this->m_attribList[$attribname];
         // fields that have not yet been initialised may be overriden in the url..
         if ($defaults[$p_attrib->fieldName()]=="" && $this->m_postvars[$p_attrib->fieldName()]!="")
         {
           $defaults[$p_attrib->fieldName()] = $this->m_postvars[$p_attrib->fieldName()];
         }
-        if ((is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList)) || $attribtab != $tab)
+        if ((is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList)) || !in_array($tab, $attribtabs))
         {
           $form.=$p_attrib->hide($defaults, $fieldprefix);
         }
@@ -1005,7 +1008,7 @@
 
               if (method_exists($this,$funcname))
               {
-                $editsrc = $this->$funcname($defaults, $fieldprefix);
+                $editsrc = $this->$funcname($defaults, $fieldprefix, $tab);
               }
               else
               {
