@@ -48,7 +48,7 @@
     function display($record)
     {
       if ($this->isEmpty($record)) return "";
-	    $value = $record[$this->fieldName()];            
+      $value = $record[$this->fieldName()];            
       return sprintf("%02d:%02d:%02d", $value["hours"], $value["minutes"], $value["seconds"]);
     }
     
