@@ -25,6 +25,8 @@
                             // this to false only if you know what you're
                             // doing. When in doubt, 'true' is usually the
                             // best option.
+                            
+    var $m_hidewhenempty = false; // by default we don't hide the attribute if a relation is empty
                
     /**
      * Constructor
@@ -434,6 +436,26 @@
         return $this->m_destInstance->m_attribList[$this->m_destInstance->primaryKeyField()]->dbFieldSize();
       }
       return 0;
+    }
+    
+    function setHideWhenEmpty($hidewhenempty)
+    {
+      $this->m_hidewhenempty = $hidewhenempty;
+    }
+    
+    function addToEditArray($mode, &$arr, &$defaults, &$error, $fieldprefix)
+    {
+      global $g_db;
+      if ($this->createDestination())
+      {
+        // check if destination table is empty
+        // only check if hidewhenempty is set to true
+        if ($this->m_hidewhenempty)
+        {
+          if (count($g_db->getRows("SELECT * FROM ".$this->m_destInstance->m_table))==0) return "";
+        }
+      }
+      return parent::addToEditArray($mode, $arr, $defaults, $error, $fieldprefix);  
     }
   }
 
