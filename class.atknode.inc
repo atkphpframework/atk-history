@@ -2205,7 +2205,7 @@
             {
               // otherwise, the display function of the particular attribute
               // is called.
-              $value=$p_attrib->display($recordset[$i], "list");
+              $value=$p_attrib->display_plain($recordset[$i], "list");
             }
             $output.=$sof.($value==""?$empty:$value).$eof;
 
