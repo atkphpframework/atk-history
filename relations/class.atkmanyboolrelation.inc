@@ -75,21 +75,29 @@
      */
     function store($notused, $record, $mode)
     {
-      $this->createLink();
-      $rel = &$this->m_linkInstance;
-
-      $rel->deleteDb($this->localKey()."=".$record[$this->m_ownerInstance->primaryKeyField()]);
-
-      for ($i=0;$i<count($record[$this->fieldName()]);$i++)
+      if ($this->createDestination())
       {
-        // magical stuff..
-        $newrecord = array();
-        $newrecord[$this->remoteKey()][$this->m_destInstance->primaryKeyField()] = $record[$this->fieldName()][$i][$this->remoteKey()];
-
-        $newrecord[$this->localKey()][$this->m_ownerInstance->primaryKeyField()] = $record[$this->m_ownerInstance->primaryKeyField()];
-
-        $rel->addDb($newrecord, true, $mode);
+        $this->createLink();      
+        $rel = &$this->m_linkInstance;
+  
+        $rel->deleteDb($this->localKey()."=".$record[$this->m_ownerInstance->primaryKeyField()]);
+  
+        for ($i=0;$i<count($record[$this->fieldName()]);$i++)
+        {
+          // magical stuff..
+          $newrecord = array();
+          $newrecord[$this->remoteKey()][$this->m_destInstance->primaryKeyField()] = $record[$this->fieldName()][$i][$this->remoteKey()];
+  
+          $newrecord[$this->localKey()][$this->m_ownerInstance->primaryKeyField()] = $record[$this->m_ownerInstance->primaryKeyField()];
+  
+          $rel->addDb($newrecord, true, $mode);
+        }
       }
+    }
+    
+    function isEmpty($postvars)
+    {
+      return (!is_array($postvars[$this->fieldName()]) || count($postvars[$this->fieldName()])<=0);
     }
 
   }
