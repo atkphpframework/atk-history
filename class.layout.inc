@@ -68,7 +68,7 @@
         if($g_theme["Name"]=="") $g_theme["Name"] = $GLOBALS["config_defaulttheme"];
         if($g_theme["Name"]=="") $g_theme["Name"]="default";
         $this->initTheme();
-        $this->import_layout();        
+        $this->import_layout();
         atkdebug("Initialized GUI");
         $initialized = true;
       }
@@ -82,7 +82,7 @@
     {
       global $g_theme;
       include_once($this->m_tpldir."layout.inc");
-      
+
       // stylesheets
       if ($g_theme["css_default"]!="")
       {
@@ -181,7 +181,7 @@
     {
       $m_page = "<html>\n";
       $m_page.= $this->ret_head($title);
-      $m_page.= $this->ret_body();
+      $m_page.= $this->ret_body("onload='init()'");
       $m_page.= $this->m_content;
       $m_page.= "\n</body>\n</html>\n";
 
@@ -749,9 +749,9 @@
       }
       return "";
     }
-    
+
     function theme_style($stylesheetname)
-    {        
+    {
       if (file_exists($this->m_tpldir."styles/$stylesheetname"))
       {
         $this->register_style($this->m_tpldir."styles/$stylesheetname");
@@ -766,7 +766,7 @@
     function initTheme()
     {
       global $g_theme;
-      
+
       // dirs
 
       // First check local theme directory
@@ -785,7 +785,7 @@
       {
         halt("Theme ".$g_theme["Name"]."cannot be found, swithing to default.","warning");
         $this->m_tpldir = $atkroot."atk/themes/default/";
-      }            
+      }
     }
 
     function getImgSrc($img)
