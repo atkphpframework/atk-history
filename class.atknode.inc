@@ -1200,7 +1200,7 @@
       $limit = (int)$this->m_postvars['atklimit'];
 
       $filter = $this->validateFilter($this->m_postvars["atkfilter"]);
-
+      
       $count = (int)$this->countDb($filter, $this->m_listExcludes, "", $mode);
 
       // maximum number of bookmarks to pages.
@@ -3857,7 +3857,15 @@
     function validateFilter($filter)
     {
       list($relation, $field) = explode('.', $filter);
-      if (in_array($relation, array_keys($this->m_attribList))) return $filter;
+      if ($field != "")
+      {
+        if (in_array($relation, array_keys($this->m_attribList))) return $filter;
+      }
+      else
+      {
+        list($relation_new, $dummy) = explode('=', $relation);
+        if (in_array($relation_new, array_keys($this->m_attribList))) return $filter;
+      }
       return "";
     }
   }
