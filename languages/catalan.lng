@@ -1,0 +1,143 @@
+<?php
+
+  // To keep language files up to date, all strings that are introduced in a 
+  // new version Have to be kept in a separate section, so we can easily see 
+  // which strings need to be translated when a new version comes out.
+
+  // Note that these are ATK defaults. You can always override the defaults by 
+  // providing a languages/ dir with language files in your application.
+  
+  // Translated by:
+  //   Lluís Torrent -- JeReC <lluis6a@teleline.es>
+  // 
+  // --------==== Strings that were there from the beginning: ====---------
+
+  $txt_app_title = "Aplicació ATK ";
+  $txt_app_shorttitle = "ATKApp";
+  $txt_app_description = "Benvingut a aquesta aplicació ATK.";
+
+  $txt_yes = "Sí";
+  $txt_no = "No";
+
+  $txt_view = "Veure";
+  $txt_edit = "Editar";
+  $txt_delete = "esborrar";
+  $txt_add = "Afegir";
+  $txt_admin = "Administració";
+  $txt_search = "Cercar";
+  $txt_search_all = "Buscar tots";
+
+  $txt_next = "Següent";
+  $txt_previous = "Anterior";
+  $txt_select = "Seleccionar";
+
+  $txt_save = "Guardar";
+  $txt_close = "Tancar";
+  $txt_saveandclose = "Guardar i tancar";
+  $txt_cancel = "Cancel·lar";
+  $txt_back = "Tornar";
+
+  $txt_menu = "Menú";
+  $txt_error = "Error";
+
+  $txt_error_obligatoryfield = "aquest camp es obligatori";
+  $txt_error_formdataerror = "No s'ha pogut guardar degut a la següent causa: ";
+  $txt_error_uniquefield = "El valor per aquest camp ha d'ésser únic";
+  $txt_confirm_delete = "¿Està segur que vol esborrar aquest element?";
+  $txt_title_delete = "Confirmar esborrat";
+
+  $txt_select_none = "Cap";
+  
+  $txt_clickheretoadd_prefix = "Faci clic aquí per afegir un nou ";
+  $txt_clickheretoadd_postfix = ".";
+
+  // Specific File Attribute Text
+  $txt_no_valid_directory = "No hi ha un directori vàlid";
+  $txt_remove_current_file = "Eliminar el arxiu actual";
+  $txt_file_not_exist = "El arxiu no existeix";
+  $txt_cannot_remove_file = "No es pot eliminar el arxiu!";
+
+  // specific password attribute text
+  $txt_password_current = "Actual";
+  $txt_password_new = "Nova";
+  $txt_password_again = "Repeteixi-la";
+  $txt_password_hidden = "*****";
+  $txt_password_invalid = "La contrasenya proporcionada no es vàlida.";
+  $txt_password_incorrect = "La contrasenya ingressada no es correcta!";
+  $txt_password_nomatch = "Les contrasenyes proporcionades no coincideixen.";
+
+  // multilanguage text
+  $txt_multilanguage_select = "Seleccioni un idioma:";
+  $txt_multilanguage_choice = "Idioma seleccionat:"; 
+  
+  $txt_language_nl = "Holandès";
+  $txt_language_de = "Alemany";
+  
+  $txt_until = "fins";
+    
+  $txt_january = "Gener";
+  $txt_february = "Febrer";
+  $txt_march = "Març";
+  $txt_april = "Abril";
+  $txt_may = "Maig";
+  $txt_june = "Juny";
+  $txt_july = "Juliol";
+  $txt_august = "Agost";
+  $txt_september = "Setembre";
+  $txt_october = "Octubre";
+  $txt_november = "Novembre";
+  $txt_december = "Desembre";
+  
+  $txt_fri = "Div";
+  $txt_sat = "Dis";
+  $txt_sun = "Diu";
+  $txt_mon = "Dil";
+  $txt_tue = "Dim";
+  $txt_wed = "Dim";
+  $txt_thu = "Dij";
+  
+  $txt_menu_main = "Principal";
+  $txt_back_to = "Tornar a";
+  
+  $txt_permission_denied = "Ho sento, però no està autoritzat per a realitzar aquesta acció";
+  
+  // The charset to use.. for most languages, this is iso-8859-1 (Western European).
+  $txt_charset="iso-8859-1";
+  
+  $txt_field_obligatory = "aquest camp es obligatori";
+  
+  $txt_help = "Ajuda";
+  
+  $txt_search_extended = "Estés";
+  
+  $txt_search_exact = "Buscar coincidència exacta";
+  $txt_search_substring = "Buscar text dins de las paraules";
+  $txt_search_wildcard = "Buscar amb comodí (*)";
+  $txt_search_regexp = "Buscar amb expressions regulars (avançat)";
+  $txt_search_soundex = "Buscar un text que soni similar";
+  
+  $txt_search_mode = "Mode Buscar";
+  
+  $txt_login_failed = "No s'ha pogut iniciar la sessió";
+  $txt_auth_no_server = "No s'ha especificat un servidor. No es possible autenticar (consulti amb el seu administrador de sistemes).";
+  $txt_auth_unable_to_connect = "No s'ha pogut connectar amb un servidor per a autenticar (consulti amb el seu administrador de sistemes).";    
+ 
+  $txt_error_primarykey_exists = "Ja existeix un registre amb aquesta clau";
+  $txt_error_invalid_email = "Direcció de e-mail no vàlida";
+  $txt_error_unkown_domain = "Domini desconegut";
+  $txt_error_notnumeric = "El valor no es un número";
+  
+  // colorpicker attribute
+  $txt_colorpicker_selectcolor = "Seleccionar un color";
+  
+  $txt_check_all = "Seleccionar tot";
+  $txt_check_none = "Seleccionar cap";
+  $txt_invert_selection = "Invertir selecció";
+  
+  // Strings for atkFileEditor
+  $txt_file_exists = "Ja existeix un arxiu amb aquest nom";
+  $txt_filename_invalid = "El nom del arxiu no es vàlid";
+  $txt_filename = "Nom d'arxiu";
+  $txt_filecontent = "Contingut";
+    
+?>
