@@ -59,7 +59,7 @@
         if($g_theme["Name"]=="") $g_theme["Name"] = $GLOBALS["config_defaulttheme"];
         if($g_theme["Name"]=="") $g_theme["Name"]="default";
         $this->initTheme();
-        $this->import_layout();        
+        $this->import_layout();
         atkdebug("Initialized GUI");
         $initialized = true;
       }
@@ -73,7 +73,7 @@
     {
       global $g_theme;
       include_once($this->m_tpldir."layout.inc");
-      
+
       // stylesheets
       if ($g_theme["css_default"]!="")
       {
@@ -168,10 +168,10 @@
     /**
      * Generate a complete page..
      */
-    function page($title="")
+    function page($title="", $extra_header="")
     {
       $m_page = "<html>\n";
-      $m_page.= $this->ret_head($title);
+      $m_page.= $this->ret_head($title, $extra_header);
       $m_page.= $this->ret_body();
       $m_page.= $this->m_content;
       $m_page.= "\n</body>\n</html>\n";
@@ -292,7 +292,7 @@
      * Return a HTML header
      * @param $title Titel van het window
      */
-    function ret_head($title)
+    function ret_head($title, $extra_header="")
     {
       $res = "<head>\n  <title>$title</title>\n";
       global $config_atkroot;
@@ -300,6 +300,7 @@
       $version = atkversion();
       if ("\$Name$"!="\$"."Name:  $") $version.=" ($Name$)";
       $res.= '  <meta name="atkversion" value="'.$version.'">'."\n";
+      if ($extra_header != "") $res.= $extra_header."\n";
 
       for ($i = 0; $i < count($this->m_scripts); $i++)
         $res.='  <script language="javascript" src="'.$this->m_scripts[$i].'"></script>'."\n";
@@ -697,11 +698,11 @@
           /* does the field have a label? */
           if ($field["label"] !== NULL)
           {
-            if ($field["label"] == "") 
+            if ($field["label"] == "")
               $form .= $this->ret_td('&nbsp;');
-            elseif ($field["error"]) 
+            elseif ($field["error"])
               $form .= $this->ret_td('<span class="error">'.$field["label"].': </span>', 'valign="top"');
-            else 
+            else
               $form .= $this->ret_td($field["label"].': ','valign="top"');
           }
 
@@ -743,9 +744,9 @@
       }
       return "";
     }
-    
+
     function theme_style($stylesheetname)
-    {        
+    {
       if (file_exists($this->m_tpldir."styles/$stylesheetname"))
       {
         $this->register_style($this->m_tpldir."styles/$stylesheetname");
@@ -760,7 +761,7 @@
     function initTheme()
     {
       global $g_theme;
-      
+
       // dirs
 
       // First check local theme directory
@@ -779,7 +780,7 @@
       {
         halt("Theme ".$g_theme["Name"]."cannot be found, swithing to default.","warning");
         $this->m_tpldir = $atkroot."atk/themes/default/";
-      }            
+      }
     }
 
     function getImgSrc($img)
