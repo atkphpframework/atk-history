@@ -28,6 +28,12 @@
     var $m_lookup = Array();
 
     /**
+     * # rows to show (multiselect listbox).
+     */
+    var $m_listrows = 1;     
+
+
+    /**
      * Constructor.
      *
      * Warning: very old versions of this attribute supported passing the
@@ -43,7 +49,7 @@
      * @param $flags Flags for this attribute
      * @param $size  Size of the attribute.
      */
-    function atkListAttribute($name, $optionArray, $valueArray="", $flags=0, $size=0)
+    function atkListAttribute($name, $optionArray, $valueArray="", $flags=0, $size=0, $listrows=1)
     {
       if (!is_array($valueArray) || count($valueArray)==0)
       {
@@ -69,9 +75,13 @@
         }
       }
 
+      // Multiple rows ?
+      $this->m_listrows = $listrows;
+
       $this->atkAttribute($name, $flags, $size); // base class constructor
-      $this->m_options = $optionArray;
-      $this->m_values = $valueArray;
+      $this->m_options  = $optionArray;
+      $this->m_values   = $valueArray;
+
 
       for ($i=0, $_i=count($optionArray); $i<$_i; $i++)
       {
@@ -87,7 +97,23 @@
      */
     function display($record)
     {
-      return text($this->m_lookup[$record[$this->fieldName()]], $this->m_ownerInstance->m_type);
+      global $atkaction;
+
+      if ($this->m_listrows > 1)
+      {
+        $multiValues = $record[$this->fieldName()];
+
+        for ($i=0;$i<=count($multiValues)-1;$i++)
+        {
+          $retVal .= text($this->m_lookup[$multiValues[$i]], $this->m_ownerInstance->m_type).", ";
+        }
+        return substr($retVal,0,-2);
+
+      }
+      else
+      {
+        return text($this->m_lookup[$record[$this->fieldName()]], $this->m_ownerInstance->m_type);
+      }
     }
 
     /**
@@ -98,8 +124,16 @@
      */
     function edit($record="", $fieldprefix="")
     {
-      // todo: configurable rows
-      $result = '<select name="'.$fieldprefix.$this->formName().'">';
+      if ($this->m_listrows > 1)
+      {
+        // Add extra param
+        $multiSelect = " MULTIPLE SIZE='".$this->m_listrows."'";
+
+        // Add [] to the fieldname so an array is posted
+        $namePostFix = "[]";
+      }
+
+      $result = '<select name="'.$fieldprefix.$this->formName().$namePostFix.'" '.$multiSelect.'>';
       for ($i=0;$i<count($this->m_values);$i++)
       {
         if ($this->m_values[$i] == $record[$this->fieldName()] && $record[$this->fieldName()]!="")
@@ -187,6 +221,35 @@
       // Fieldtype was determined in the constructor.
       return $this->m_dbfieldtype;
     }
+
+
+    function value2db($rec)
+    {
+      if(is_array($rec[$this->fieldName()]) && count($rec[$this->fieldName()]>=1) && $this->m_listrows > 1)
+      {
+        return implode("|",$rec[$this->fieldName()]);
+      }
+      else
+      {
+        return $rec[$this->fieldName()];
+      }
+    }
+
+    function db2value($rec)
+    {
+      // if this is a multirow item explode the items
+      if ($this->m_listrows > 1)
+      {
+        $dummy = explode("|", $rec[$this->fieldName()]);
+      }
+      else
+      {
+        $dummy = $rec[$this->fieldName()];
+      }
+
+      return $dummy;
+    }
+
 
   }
 ?>
