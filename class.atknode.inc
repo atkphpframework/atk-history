@@ -2066,24 +2066,14 @@
       {
         $p_attrib = &$this->m_attribList[$attribname];
         $musthide=(is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList));
-        if (
-            ($p_attrib->hasFlag(AF_HIDE_LIST)==false)
-            &&
-            (
-              ($p_attrib->hasFlag(AF_HIDE_SELECT)==false)
-              ||($this->m_action!="select")
-            )
-            &&$musthide==false
-           )
+        if (!$musthide)
         {
           $output.=$sof.text($p_attrib->fieldName(),$this->m_type).$eof;
-
           // the totalisable check..
           if ($p_attrib->hasFlag(AF_TOTAL))
           {
             $totalisable = true;
           }
-
         }
       }
 
@@ -2096,15 +2086,7 @@
         {
           $p_attrib = &$this->m_attribList[$attribname];
           $musthide=(is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList));
-          if (
-              ($p_attrib->hasFlag(AF_HIDE_LIST)==false)
-              &&
-              (
-                ($p_attrib->hasFlag(AF_HIDE_SELECT)==false)
-                ||($this->m_action!="select")
-              )
-              &&$musthide==false
-             )
+          if (!$musthide)
           {
             // An <attributename>_display function may be provided in a derived
             // class to display an attribute.
@@ -2143,15 +2125,7 @@
         {
           $p_attrib = &$this->m_attribList[$attribname];
         $musthide=(is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList));
-          if (
-              ($p_attrib->hasFlag(AF_HIDE_LIST)==false)
-              &&
-              (
-                ($p_attrib->hasFlag(AF_HIDE_SELECT)==false)
-                ||($this->m_action!="select")
-              )
-              &&$musthide==false
-             )
+          if (!$musthide)
           {
             if ($p_attrib->hasFlag(AF_TOTAL))
             {
@@ -3470,7 +3444,6 @@
       // Now we call a postAdd function, that can be used to do some processing after the record
       // has been saved.
       if ($exectrigger) $this->postAdd($record, $mode);
-
       atkdebug($g_db->m_error);
     }
 
