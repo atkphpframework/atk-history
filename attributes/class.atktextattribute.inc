@@ -49,15 +49,21 @@
      * @return piece of html code with a textarea
      */
     function edit($record="", $fieldprefix="")
-    {
-      global $g_layout;
-      if ($this->m_cols != 0) $cols = $this->m_cols;
-      else $cols = $g_layout->maxInputSize();
+    {      
+      if ($this->m_cols != 0) 
+      {
+        $cols = $this->m_cols;
+      }
+      else 
+      {                
+        $cols = $this->maxInputSize();        
+      }
       $rows = $this->m_rows;
-      
+      $id = $fieldprefix.$this->fieldName();
+      $this->registerKeyListener($id, KB_CTRLCURSOR);  
       if ($rows =="" || $rows == 0) $rows = 10;
 	    // watch out, $maxsize isn't supported for a textarea.
-      $result= '<textarea name="'.$fieldprefix.$this->formName().'" rows="'.$rows.'" cols="'.$cols.'" wrap="virtual"'.               
+      $result= '<textarea id="'.$id.'" name="'.$id.'" rows="'.$rows.'" cols="'.$cols.'" wrap="virtual"'.               
                '>'.htmlspecialchars($record[$this->fieldName()]).'</textarea>';
       return $result;
     }

@@ -130,9 +130,12 @@
 			//}
 
       /* base class constructor */
-      $this->atkAttribute($name, $flags|AF_HIDE_SEARCH); // FIXME.. until the searchCondition() and
-                                                         // search() methods are fixed,
-                                                         // you can't search on dates..
+      $this->atkAttribute($name, $flags); 
+    }
+    
+    function edit($record="", $fieldprefix="", $mode="")
+    {
+      return $this->draw($record, $fieldprefix, "", $mode, $this->hasFlag(AF_OBLIGATORY));
     }
 
     /**
@@ -141,22 +144,25 @@
      * @params $record Array with 3 fields (year, month, day)
      * @return Piece a of HTML Code
      */
-    function edit($record="", $fieldprefix="", $mode="")
+    function draw($record="", $fieldprefix="", $postfix="", $mode="", $obligatory=false)
     {
-      global $g_layout;
+      $page = &atkPage::getInstance();
       
       /* register javascript */
-      $g_layout->register_script(session_url("include.php?file=atk/javascript/class.atkdateattribute.js.inc", SESSION_NEW));
+      $page->register_script(session_url("include.php?file=atk/javascript/class.atkdateattribute.js.inc", SESSION_NEW));
       
       if (!$this->hasFlag(AF_DATE_NO_CALENDAR))
       {
-        $g_layout->register_script(atkconfig("atkroot")."atk/javascript/calendar/calendar.js");
-        $g_layout->register_script(atkconfig("atkroot")."atk/javascript/calendar/calendar-runner.js");
-        $g_layout->register_script(atkconfig("atkroot")."atk/javascript/calendar/lang/calendar-nl.js");
-        $g_layout->theme_style("atkdateattribute.css");         
+        $page->register_script(atkconfig("atkroot")."atk/javascript/calendar/calendar.js");
+        $page->register_script(atkconfig("atkroot")."atk/javascript/calendar/calendar-runner.js");
+        $page->register_script(atkconfig("atkroot")."atk/javascript/calendar/lang/calendar-nl.js");
+        
+        atkimport("atk.ui.atktheme");
+        $theme = &atkTheme::getInstance();        
+        $page->register_style($theme->stylePath("atkdateattribute.css"));        
       }
       
-      $fieldname = $fieldprefix.$this->fieldName();
+      $fieldname = $fieldprefix.$this->fieldName().$postfix;
       
       /* text mode? */
       if ($this->hasFlag(AF_DATE_STRING))
@@ -164,9 +170,9 @@
         $value = &$record[$this->fieldName()];
 
         if (is_array($value)) $value = adodb_date("Y-m-d", adodb_mktime(0, 0, 0, $value["month"], $value["day"], $value["year"]));
-        elseif ($this->hasFlag(AF_OBLIGATORY)) $value = adodb_date("Y-m-d");
+        elseif ($obligatory) $value = adodb_date("Y-m-d");
         else $value = "";
-
+        $this->registerKeyListener($fieldname, KB_CTRLCURSOR|KB_UPDOWN);  
         $result = '<input type="text" id="'.$fieldname.'" name="'.$fieldname.'" value="'.$value.'" size="10">';
         
         if (!$this->hasFlag(AF_DATE_NO_CALENDAR))
@@ -240,6 +246,7 @@
             
       if (!empty($maximum) && !empty($minimum) && $str_max - $str_min < 25)
       {
+        $this->registerKeyListener($fieldname, KB_CTRLCURSOR|KB_LEFTRIGHT);  
         $result = '<select id="'.$fieldname.'" name="'.$fieldname.'">';
         for ($i = $str_min; $i <= $str_max; $i++)
         {
@@ -257,7 +264,7 @@
       {
       
         if ($this->hasFlag(AF_DATE_EMPTYFIELD))  $emptyfield=true;
-        else if (!$this->hasFlag(AF_OBLIGATORY)) $emptyfield=true;
+        else if (!$obligatory) $emptyfield=true;
         else $emptyfield=false;
         
         /* javascript method */
@@ -269,8 +276,9 @@
           /* date must be within 25 years */
           if(!empty($current["y_max"]) && !empty($current["y_min"]) && $current["y_max"] - $current["y_min"] <= 25)
           {
+            $this->registerKeyListener($fieldname.'[year]', KB_CTRLCURSOR|KB_LEFTRIGHT);  
             $result .= '<select id="'.$fieldname.'[year]" name="'.$fieldname.'[year]" onChange="'.$str_script.'">';
-            if (!$this->hasFlag(AF_OBLIGATORY) || $this->hasflag(AF_DATE_EMPTYFIELD))
+            if (!$obligatory || $this->hasflag(AF_DATE_EMPTYFIELD))
               $result .= '<option value="0"'.($current === NULL ? ' selected' : '').'></option>';
             for($j = $current["y_min"]; $j <= $current["y_max"]; $j++)
             {
@@ -282,14 +290,19 @@
           }
 
           /* normal input box */
-          else  $result .= '<input type="text" id="'.$fieldname.'[year]" name="'.$fieldname.'[year]" size="4" maxlength="4" onChange="'.$str_script.'" value="'.$current["year"].'">';
+          else  
+          {
+            $this->registerKeyListener($fieldname.'[year]', KB_CTRLCURSOR|KB_UPDOWN);  
+            $result .= '<input type="text" id="'.$fieldname.'[year]" name="'.$fieldname.'[year]" size="4" maxlength="4" onChange="'.$str_script.'" value="'.$current["year"].'">';
+          }
         }
 
         /* day input box */
         elseif ($str_format[$i] == "j" || $str_format[$i] == "d")
         {
+          $this->registerKeyListener($fieldname.'[day]', KB_CTRLCURSOR|KB_LEFTRIGHT);  
           $result .= '<select id="'.$fieldname.'[day]" name="'.$fieldname.'[day]" onChange="'.$str_script.'">';
-          if (!$this->hasFlag(AF_OBLIGATORY) || $this->hasflag(AF_DATE_EMPTYFIELD)) 
+          if (!$obligatory || $this->hasflag(AF_DATE_EMPTYFIELD)) 
             $result .= '<option value="0"'.($current === NULL ? ' selected' : '').'></option>';
           for ($j = $current["d_min"]; $j <= $current["d_max"]; $j++)
           {
@@ -306,8 +319,9 @@
         /* month input box */
         elseif($str_format[$i] == "m" || $str_format[$i] == "n" || $str_format[$i] == "M" || $str_format[$i] == "F")
         {
+          $this->registerKeyListener($fieldname.'[month]', KB_CTRLCURSOR|KB_LEFTRIGHT);  
           $result .= '<select id="'.$fieldname.'[month]" name="'.$fieldname.'[month]" onChange="'.$str_script.'">';
-          if (!$this->hasFlag(AF_OBLIGATORY) || $this->hasflag(AF_DATE_EMPTYFIELD))
+          if (!$obligatory || $this->hasflag(AF_DATE_EMPTYFIELD))
             $result .= '<option value="0"'.($current === NULL ? ' selected' : '').'></option>';
           for ($j = $current["m_min"]; $j <= $current["m_max"]; $j++)
           {
@@ -359,21 +373,54 @@
      */
     function search($record="", $extended=false)
     {
-      if (!$extended) return "&nbsp;";
+      if (!$extended) return "&nbsp;"; // Only search on dates in extended mode.
+          
+      // Set default values to null.
+      $record[$this->fieldName()]=array("year"=>0, "month"=>0, "day"=>0);
 
       // FIXME, we need a way to set the date to 'nothing' (i.e., unselected)
-      $res = $this->edit($record, "atksearch_AE_");
+      $res = $this->draw($record, "atksearch_AE_", "_AE_from", "", false);
+      $res.= "&nbsp;".text("until").": ".$this->draw($record, "atksearch_AE_", "_AE_to");
       return $res;
     }
 
     function searchCondition(&$query, $table, $value, $searchmode)
-    {
-      $dateval = $this->value2db(array($this->fieldName()=>$value));
-
-      // TODO & FIXME:
-      // databases have their own way of comparing dates. (OCI8 needs TO_CHAR etc..
-      // so we need to make some $query->dateComparison function..
-      atkdebug("Search support for DATE fields not yet supported (FIXME!)");
+    {  
+      global $g_db;      
+      // We only support searchmode 'between' for now.
+      
+      $fromval = $this->value2db(array($this->fieldName()=>$value["from"]));
+      $toval   = $this->value2db(array($this->fieldName()=>$value["to"]));            
+                  
+      $field = $g_db->func_datetochar($table.".".$this->fieldName());
+      if ($fromval!="NULL" && $toval!="NULL")
+      {     
+        if ($fromval>$toval)
+        {        
+          // User entered dates in wrong order. Let's put them in the right order.
+          $tmp=$fromval; $fromval=$toval; $toval=$tmp;
+        } 
+        $query->addSearchCondition(
+                   $query->betweenCondition(
+                      $field, 
+                      $fromval, 
+                      $toval));  
+      }
+      else if ($fromval!="NULL" && $toval=="NULL")
+      {
+        $query->addSearchCondition(
+                   $query->greaterthanequalCondition(
+                      $field,
+                      $fromval));
+      }
+      else if ($fromval=="NULL" && $toval!="NULL")
+      {
+        $query->addSearchCondition(
+                   $query->lessthanequalCondition(
+                      $field,
+                      $toval));
+      }
+      
     }
 
     /**
@@ -512,13 +559,8 @@
     }
 
     function getSearchModes()
-    {
-      // exact match and substring search should be supported by any database.
-      // (the LIKE function is ANSI standard SQL, and both substring and wildcard
-      // searches can be implemented using LIKE)
-      // Possible values
-      //"exact","substring", "wildcard","greaterthan","greaterthanequal","lessthan","lessthanequal"
-      return array("exact","greaterthan","greaterthanequal","lessthan","lessthanequal");
+    {      
+      return array("between");
     }
 
     /**
@@ -553,5 +595,6 @@
     {    
       return "date";
     }
+    
   }
 ?>

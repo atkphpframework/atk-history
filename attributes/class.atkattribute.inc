@@ -137,6 +137,8 @@
       $this->m_name = $name;
       $this->m_flags = (double)$flags;
       $this->setAttribSize($size);      
+      
+      atkimport("atk.keyboard.atkkeyboard");
     }
 
     /**
@@ -145,13 +147,13 @@
      * @return True or False
      */
     function hasFlag($flag)
-    {
+    {      
       return (($this->m_flags & $flag) == $flag);
     }
 
     /**
-     * Returns the fieldname
-     * @return fieldname
+     * Returns the (field)name of the attribute.
+     * @return fieldname       
      */
     function fieldName()
     {
@@ -217,7 +219,10 @@
      */
     function edit($record="", $fieldprefix="")
     {
-      $result = '<input type="text" name="'.$fieldprefix.$this->formName().
+      $id = $fieldprefix.$this->formName();
+      $this->registerKeyListener($id, KB_CTRLCURSOR|KB_UPDOWN);  
+    
+      $result = '<input type="text" id="'.$id.'" name="'.$id.
                 '" value="'.htmlspecialchars($record[$this->fieldName()]).'"'.
                 ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').
                 ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>';
@@ -371,7 +376,9 @@
      */
     function search($record="", $extended=false)
     {
-      $result= '<input type="text" name="atksearch['.$this->formName().']" value="'.$record[$this->fieldName()].'"'.
+      $id = "atksearch[".$this->formName()."]";
+      $this->registerKeyListener($id, KB_CTRLCURSOR|KB_UPDOWN);  
+      $result= '<input type="text" id="'.$id.'" name="'.$id.'" value="'.$record[$this->fieldName()].'"'.
                 ($this->m_searchsize > 0 ? ' size="'.$this->m_searchsize.'"' : '').
                 ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>';
       return $result;
@@ -452,10 +459,12 @@
     /**
      * delete is only of interest for special attributes like relations, or file attributes.
      * @param $record record that has to be delete
+     * @return true if successful, false otherwise
      */
     function delete($record)
     {
       // delete is only of interest for special attributes like relations, or file attributes.
+      return true;
     }
 
     /**
@@ -470,17 +479,16 @@
      * Fetch the metadata about this attrib from the table metadata
      */
     function fetchMeta($metadata)
-    {
-      global $g_layout;
+    {      
 
       $attribname = $this->fieldName();
       // Only use meta info if size is not already set manual. (constructor or setAttribSize)
       // If both are set, use the smallest value.
-      if ($this->m_size > 0) $this->m_size = min($this->m_size, $metadata[$attribname]['len'], $g_layout->maxInputSize());
-      else $this->m_size = min($metadata[$attribname]['len'], $g_layout->maxInputSize());
+      if ($this->m_size > 0) $this->m_size = min($this->m_size, $metadata[$attribname]['len'], $this->maxInputSize());
+      else $this->m_size = min($metadata[$attribname]['len'], $this->maxInputSize());
       
-      if ($this->m_searchsize > 0) $this->m_searchsize = min($this->m_searchsize, $metadata[$attribname]['len'], $g_layout->searchSize());
-      else $this->m_searchsize = min($metadata[$attribname]['len'], $g_layout->searchsize());   
+      if ($this->m_searchsize > 0) $this->m_searchsize = min($this->m_searchsize, $metadata[$attribname]['len'], 20);
+      else $this->m_searchsize = min($metadata[$attribname]['len'], 20);   
       
       if ($this->m_maxsize > 0) $this->m_maxsize = min($this->m_maxsize, $metadata[$attribname]['len']);
       else $this->m_maxsize = $metadata[$attribname]['len'];
@@ -656,6 +664,21 @@
         return true;
       else
         return false;
+    }
+    
+    /**
+     * Determine the maximum length an input field may be.
+     */
+    function maxInputSize()
+    {
+      $configsize = atkconfig("max_input_size");
+      return ($configsize==""?70:$configsize);
+    }
+    
+    function registerKeyListener($id, $navkeys=KB_CTRLCURSOR)
+    {      
+      $kb = &atkKeyboard::getInstance();
+      $kb->addFormElementHandler($id, $navkeys);
     }
 
   }

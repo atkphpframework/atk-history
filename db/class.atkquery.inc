@@ -381,7 +381,7 @@
       global $g_db;
       
       $query = $this->buildUpdate();
-      $g_db->query($query);      
+      return $g_db->query($query);      
     }
 
  /**
@@ -392,7 +392,7 @@
       global $g_db;
       
       $query = $this->buildInsert(true);
-      $g_db->query($query);      
+      return $g_db->query($query);      
     }
 
     /**
@@ -558,6 +558,21 @@
       {
         return $field." <= '".$value."'";
       }
+    }
+    
+    function betweenCondition($field, $value1, $value2)
+    {
+      return $field." BETWEEN '".$value1."' AND '".$value2."'";
+    }
+    
+    /**
+     * Static factory method. This method returns a new instance of a query 
+     * object for the current database.
+     */
+    function &create()
+    {
+      $name = "atk".atkconfig("database")."query";
+      return new $name();
     }
   }
 

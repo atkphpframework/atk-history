@@ -39,20 +39,26 @@
       $delquery = "DELETE FROM ".atkconfig("auth_accesstable")."
                    WHERE ".atkconfig("auth_levelfield")."='".$record[$this->m_ownerInstance->primaryKeyField()]."'";
 
-      $db->query($delquery);
+      if ($db->query($delquery))
+      {      
+        $checked = $record[$this->fieldName()];
 
-      $checked = $record[$this->fieldName()];
-
-      while (list($node, $actions)=each($checked))
-      {
-        for ($i=0;$i<count($actions);$i++)
+        while (list($node, $actions)=each($checked))
         {
-          $query = "INSERT INTO ".atkconfig("auth_accesstable")." (node, action, ".atkconfig("auth_levelfield").") ";
-          $query.= "VALUES ('".$node."','".$actions[$i]."','".$record[$this->m_ownerInstance->primaryKeyField()]."')";
-
-          $db->query($query);
-        }
+          for ($i=0;$i<count($actions);$i++)
+          {
+            $query = "INSERT INTO ".atkconfig("auth_accesstable")." (node, action, ".atkconfig("auth_levelfield").") ";
+            $query.= "VALUES ('".$node."','".$actions[$i]."','".$record[$this->m_ownerInstance->primaryKeyField()]."')";
+  
+            if (!$db->query($query))
+            {
+              // error.
+              return false;
+            }
+          }
+        }        
       }
+      return true;
     }
 
     function hide($record="", $fieldprefix="")
@@ -77,10 +83,11 @@
 
     function edit($record)
     {
-      global $g_modules, $g_nodes, $config_atkroot, $g_layout, $g_moduleflags;
+      global $g_modules, $g_nodes, $config_atkroot,$g_moduleflags;
       global $g_user, $g_db;
 
-      $g_layout->register_script($config_atkroot."atk/javascript/class.atkprofileattribute.js.php");
+      $page = &atkPage::getInstance();
+      $page->register_script($config_atkroot."atk/javascript/class.atkprofileattribute.js.php");
       
       /* get nodes */
       require_once($config_atkroot."atk/atknodetools.inc");
