@@ -249,10 +249,10 @@
   $txt_passchange_forgot_password="Ik ben mijn wachtwoord vergeten";
   
   $txt_passchange_subject_mail="Uw nieuwe wachtwoord instellen";
-  $txt_passchange_body_mail='Iemand, waarschijnlijk u, heeft aangegeven het wachtwoord van uw account te willen veranderen.\n
-                             Indien u dit was kunt u uw wachtwoord veranderen met de volgende ID code: "%s".\n
-                             U kunt of naar %s?user=%s&id2=%s gaan of de ID code handmatig invullen.\n
-                             Indien u dit niet gedaan heeft, gelieve contact op te nemen met ".atkconfig("mailreport").".\n';
+  $txt_passchange_body_mail='Iemand, waarschijnlijk u, heeft aangegeven het wachtwoord van uw account te willen veranderen.
+Indien u dit was kunt u uw wachtwoord veranderen met de volgende ID code: "%s".
+U kunt of naar %s?user=%s&id2=%s gaan of de ID code handmatig invullen.
+Indien u dit niet gedaan heeft, gelieve contact op te nemen met '.atkconfig("mailreport").'.';
   
   $txt_app_launcher = "ATK Applicatie Starter";
   $txt_app_reopen   = "Opnieuw starten";
