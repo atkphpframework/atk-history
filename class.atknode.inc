@@ -3437,18 +3437,19 @@
 
       if (!empty($order))
       {
-      	if (!is_array($order)) $order = array($order);
-    	  $attrName = $order[0];
+      	if (!is_array($order) && !stristr($order, ",")) $order = array($order);
+	elseif (!is_array($order)) $query->addOrderBy($order);
+    	$attrName = $order[0];
   
-    	  if (!empty($this->m_attribList[$attrName]))
-    	  {
+    	if (!empty($this->m_attribList[$attrName]))
+    	{
       	  $attr = &$this->m_attribList[$attrName];
       	  // check if there is an <attribname>_addtoorderby function 
       	  // that will override the default addtoorderby function
       	  $funcname = $attr->m_name."_addtoorderby";
       	  if (method_exists($this, $funcname)) $this->$funcname($query, $order);
       	  else $attr->addToOrderBy($query, $order);
-    	  }
+    	}
         else if (!empty($this->m_default_order))
         {
           $query->addOrderBy($this->m_default_order);
