@@ -44,12 +44,12 @@ atkRLKeyListener.prototype.do_action = function(action)
 
 atkRLKeyListener.prototype.next = function()
 {
-  rl_next(this.recordlistId);
+  return rl_next(this.recordlistId);  
 }
 
 atkRLKeyListener.prototype.previous = function()
 {
-  rl_previous(this.recordlistId);
+  return rl_previous(this.recordlistId);
 }
 
 atkRLKeyListener.prototype.focus = function(direction)
@@ -137,7 +137,11 @@ atkRLKeyListener.prototype.down = function()
   if (this.currentrec>=this.reccount) // pointer has moved beyond last record
   {
     this.currentrec = -1; // reset pointer to nothing.
-    kb_focusNext(); // pass onto next element.
+    if (!this.next())
+    {
+      // There's no next page
+      kb_focusNext(); // pass onto next element.
+    }
   }
   else
   {
@@ -161,7 +165,10 @@ atkRLKeyListener.prototype.up = function()
   if (this.currentrec<0) // pointer moved before first record
   {
     this.currentrec = -1; // reset pointer to nothing.
-    kb_focusPrevious(); // pass onto previous element.
+    if (!this.previous()) // there is no previous page
+    {
+      kb_focusPrevious(); // pass onto previous element.
+    }
   }
   else
   {

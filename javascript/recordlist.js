@@ -42,6 +42,7 @@ function rl_next(rlId)
   {
     document.location.href = rl_a[rlId]['next'];
   }
+  return false
 }
 
 function rl_previous(rlId)
@@ -49,7 +50,9 @@ function rl_previous(rlId)
   if (rl_a[rlId]['previous'])
   {
     document.location.href = rl_a[rlId]['previous'];
+    return true;
   }
+  return false;
 }
 
 rl_a = new Array();
