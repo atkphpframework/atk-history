@@ -316,10 +316,7 @@
         $result.= "\n } ";
       }
       $result.= "\n </script>";
-
       $insertat_editor = 1;
-
-
       return $result;
     }
 

@@ -38,7 +38,10 @@
      obj_editor = eval(attribute[i].editor);
      obj_editor.document.designMode = 'on';
      obj_editor.document.open();
-     obj_editor.document.write('<html><head><link rel=\"stylesheet\" type=\"text/css\" href=\"'+stylesheet+'\"></head><body>'+attribute[i].content+'</body></html>');
+     obj_editor.document.write('<html><head>'+ "<STYLE TYPE=\"text/css\">" +
+ "P { margin-bottom: 0px; " +
+ "margin-top: 0px; } " +
+ "</STYLE>"+'<link rel=\"stylesheet\" type=\"text/css\" href=\"'+stylesheet+'\"></head><body>'+attribute[i].content+'</body></html>');
      obj_editor.document.close();
    }
  }
