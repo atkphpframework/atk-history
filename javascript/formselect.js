@@ -71,15 +71,9 @@ function updateSelectable(name, form)
 function atkSubmitMRA(name, form, target)
 {
   /* some stuff we need to know */
-  var index  = form.elements[name + '_atkaction'].selectedIndex;  
-  if (typeof(index) == "undefined")
-  {
-    var atkaction = form.elements[name + '_atkaction'].value;
-  }
-  else
-  {
-    var atkaction = form.elements[name + '_atkaction'][index].value;
-  }
+  var index  = form.elements[name + '_atkaction'].selectedIndex;
+  if (typeof(index) == 'undefined') var atkaction = form.elements[name + '_atkaction'].value;
+  else var atkaction = form.elements[name + '_atkaction'][index].value;
 
   /* initial target URL */
   target += 'atkaction=' + atkaction;
@@ -122,15 +116,8 @@ function atkSubmitMRPA(name, form, target)
 {
   /* some stuff we need to know */
   var index  = form.elements[name + '_atkaction'].selectedIndex;
-  if (typeof(index) == "undefined")
-  {
-    var atkaction = form.elements[name + '_atkaction'].value;
-  }
-  else
-  {
-    var atkaction = form.elements[name + '_atkaction'][index].value;
-  }
-
+  if (typeof(index) == 'undefined') var atkaction = form.elements[name + '_atkaction'].value;
+  else var atkaction = form.elements[name + '_atkaction'][index].value;
 
   /* initial target URL */
   target += 'atkaction=' + atkaction;
