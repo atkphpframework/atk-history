@@ -2285,8 +2285,17 @@
      * The dispatcher. This functions looks at the atkaction from the postvars
      * and determines what should be done.
      * @param $postvars Posted vars
+     * @param $fullpage If true, the dispatch function renders a complete 
+     *                  html page, including <html><head><body> etc.
+     *                  This is the default. If you set this to false,
+     *                  just plain output is generated. Warning:
+     *                  If you set this to false, YOU are responsible for
+     *                  handling $g_layout->m_scripts and $g_layout->m_stylesheets 
+     *                  and $g_layout->m_submitscripts. (when $fullpage is true,
+     *                  these are automatically includedn in the head of the page.
+     * 
      */
-    function dispatch($postvars)
+    function dispatch($postvars, $fullpage=true)
     {
       global $g_securityManager, $g_db, $g_sessionManager, $g_layout;
       $this->m_postvars = $postvars;
@@ -2317,8 +2326,11 @@
         {
             $g_layout->output("Sorry, you don't have permission to perform this action");
         }
-        if ((!isset($this->m_postvars['atknoheadbody'])) && ($this->m_postvars['atknoheadbodyd'] != 1))
+        
+        if ($fullpage)
+        {
           $g_layout->page(text('app_shorttitle')." - ".$g_layout->title($this->m_module, $this->m_type,$this->m_postvars['atkaction']));
+        }
 
         // This is the end of all things for this page..
         // so we clean up some resources..
