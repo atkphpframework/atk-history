@@ -11,16 +11,16 @@
 
   $txt_app_title = "Aplicação ATK";
   $txt_app_shorttitle = "ATKApp";
-  $txt_app_description = "Benvindo a esta aplicação ATK.";
+  $txt_app_description = "Bem-vindo a esta aplicação ATK.";
 
-  $txt_yes = "Sim";
+  $txt_yes = "Sim"; 
   $txt_no = "Não";
 
   $txt_view = "Visualizar";
   $txt_edit = "Editar";
   $txt_delete = "Apagar";
   $txt_add = "Adicionar";
-  $txt_copy = "Copy";
+  $txt_copy = "Copiar";
   $txt_admin = "Administração";
   $txt_search = "Pesquisar";
   $txt_search_all = "Pesquisar tudo";
@@ -29,17 +29,17 @@
   $txt_previous = "Anterior";
   $txt_select = "Selecionar";
 
-  $txt_save = "Savar";
+  $txt_save = "Salvar";
   $txt_close = "Fechar";
-  $txt_saveandclose = "Savar e fechar";
+  $txt_saveandclose = "Salvar e fechar";
   $txt_cancel = "Cancelar";
   $txt_back = "Voltar";
 
   $txt_menu = "Menu";
   $txt_error = "Erro";
 
-  $txt_error_obligatoryfield = "Este campo é requerido";
-  $txt_error_formdataerror = "Falha no salvamento devido à seguinte razão: ";
+  $txt_error_obligatoryfield = "Este campo é obrigatório";
+  $txt_error_formdataerror = "Falha na operação em razão do seguinte motivo";
   $txt_error_uniquefield = "O valor para este campo deve ser único";
   $txt_confirm_delete = "Tem certeza que deseja apagar este item?";
   $txt_title_delete = "Confirmar apagamento";
@@ -71,94 +71,94 @@
   $txt_language_nl = "Holandês";
   $txt_language_de = "Alemão";
   
-  $txt_until = "until";
+  $txt_until = "até";
     
-  $txt_january = "January";
-  $txt_february = "February";
-  $txt_march = "March";
-  $txt_april = "April";
-  $txt_may = "May";
-  $txt_june = "June";
-  $txt_july = "July";
-  $txt_august = "August";
-  $txt_september = "September";
-  $txt_october = "October";
-  $txt_november = "November";
-  $txt_december = "December";
+  $txt_january = "jan";
+  $txt_february = "fev";
+  $txt_march = "mar";
+  $txt_april = "abr";
+  $txt_may = "mai";
+  $txt_june = "jun";
+  $txt_july = "jul";
+  $txt_august = "ago";
+  $txt_september = "set";
+  $txt_october = "out";
+  $txt_november = "nov";
+  $txt_december = "dez";
   
-  $txt_fri = "Fri";
-  $txt_sat = "Sat";
-  $txt_sun = "Sun";
-  $txt_mon = "Mon";
-  $txt_tue = "Tue";
-  $txt_wed = "Wed";
-  $txt_thu = "Thu";
+  $txt_fri = "Sex";
+  $txt_sat = "Sáb";
+  $txt_sun = "Dom";
+  $txt_mon = "Seq";
+  $txt_tue = "Ter";
+  $txt_wed = "Qua";
+  $txt_thu = "Qui";
   
-  $txt_menu_main = "Main";
-  $txt_back_to = "Back to";
+  $txt_menu_main = "Principal";
+  $txt_back_to = "Voltar para";
   
-  $txt_permission_denied = "Sorry, you don't have permission to perform this action";
+  $txt_permission_denied = "Você não tem permissão para executar este comando.";
   
   // The charset to use.. for most languages, this is iso-8859-1 (Western European).
   $txt_charset="iso-8859-1";
     
-  $txt_field_obligatory = "This field is a required field";
+  $txt_field_obligatory = "Este campo é obrigatório";
   
-  $txt_help = "Help";
+  $txt_help = "Ajuda";
   
-  $txt_search_extended = "Extended";
+  $txt_search_extended = "Avançado";
   
-  $txt_search_exact = "Search for an exact match";
-  $txt_search_substring = "Search for a substring";
-  $txt_search_wildcard = "Search with wildcards (*)";
-  $txt_search_regexp = "Search with a regular expression (advanced)";
-  $txt_search_soundex = "Search for a string that sounds similar";
+  $txt_search_exact = "Busca por Texto Exato";
+  $txt_search_substring = "Busca por substring";
+  $txt_search_wildcard = "Busca com wildcards (*)";
+  $txt_search_regexp = "Busca com uma expressão regular (avançado)";
+  $txt_search_soundex = "Busca por palavra similar";
   
-  $txt_search_mode = "Searchmode";
+  $txt_search_mode = "Modo de Busca";
   
-  $txt_login_failed = "Login failed";
-  $txt_auth_no_server = "No server specified. No authentication possible (please consult your system administrator).";
-  $txt_auth_unable_to_connect = "Unable to connect to server for authentication (please consult your system administrator).";    
+  $txt_login_failed = "Falha na autenticação";
+  $txt_auth_no_server = "Servidor não especificado. Não é possível realizar autenticação (por favor consulte o administrador do sistema).";
+  $txt_auth_unable_to_connect = "Incapaz de se conectar com o servidor para realizar autenticação (por favor consulte o administrador do sistema).";
   
-  $txt_error_primarykey_exists = "A record with this key already exists";
+  $txt_error_primarykey_exists = "Um registro com esta chave já existe";
   
   // colorpicker attribute
-  $txt_colorpicker_selectcolor = "Select a color";
+  $txt_colorpicker_selectcolor = "Selecione uma cor";
   
-  $txt_check_all = "Select all";
-  $txt_check_none = "Select none";
-  $txt_invert_selection = "Invert selection";
+  $txt_check_all = "Seleciona tudo";
+  $txt_check_none = "Seleciona nenhum";
+  $txt_invert_selection = "Inverte seleção";
   
   // Strings for atkFileEditor
-  $txt_file_exists = "A file with this name already exists";
-  $txt_filename_invalid = "This filename is invalid";
-  $txt_filename = "Filename";
-  $txt_filecontent = "Content";
+  $txt_file_exists = "Um arquivo com este nome já existe";
+  $txt_filename_invalid = "Nome de arquivo inválido";
+  $txt_filename = "Nome do arquivo";
+  $txt_filecontent = "Conteúdo";
   
-  $txt_title_session_expired = "Session expired";
-  $txt_explain_session_expired = "Your session has expired. This happens if the application is inactive for a certain amount of time. You can continue work by logging in again.";
+  $txt_title_session_expired = "Sessão encerrada";
+  $txt_explain_session_expired = "Sua sessão expirou. Isto acontece se a aplicação está inativa por algum tempo. Se você quiser continuar realize o login novamente.";
   
   // visual html editor
   $txt_ww_sourcemode = "Source mode";
   $txt_ww_visualmode = "Visual mode";
 
   // multi-record actions selection
-  $txt_select_all     = "Select all";
-  $txt_deselect_all   = "Deselect all";
-  $txt_select_invert  = "Invert selection";
-  $txt_with_selected  = "With selected";
-  $txt_submit         = "Go";
+  $txt_select_all     = "Marcar tudo";
+  $txt_deselect_all   = "Desmarcar tudo";
+  $txt_select_invert  = "Inverter sele]ção";
+  $txt_with_selected  = "Com o selecionado";
+  $txt_submit         = "Ir";
 
   // Login form
   $txt_login_form = "Login";
-  $txt_username = "Username";
-  $txt_password = "Password";
+  $txt_username = "Usuário";
+  $txt_password = "Senha";
   $txt_login = "Login";
-  $txt_auth_max_loginattempts_exceeded = "Too many retries. Login has been disabled. Please contact your system administrator.";
-  $txt_auth_mismatch = "Username and/or password are incorrect. Please try again.";
-  $txt_auth_account_locked = "This account has been locked. Try a different account if possible, or contact your system administrator.";
+  $txt_auth_max_loginattempts_exceeded = "Muitas tentativas sem sucesso. Sua conta foi desabilitada. Por favor, contacte o administrador do sistema.";
+  $txt_auth_mismatch = "Usuário e/ou senha incorretos. Tente novamente.";
+  $txt_auth_account_locked = "Esta conta está bloqueada. Tente, se possível, uma outra conta ou contacte o administrador do sistema.";
   
-  $txt_wysiwyg_fontface = "Font";
+  $txt_wysiwyg_fontface = "Fonte";
   $txt_wysiwyg_fontsize = "Pt";
 
 ?>

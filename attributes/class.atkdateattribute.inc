@@ -152,7 +152,7 @@
       {
         $g_layout->register_script(atkconfig("atkroot")."atk/javascript/calendar/calendar.js");
         $g_layout->register_script(atkconfig("atkroot")."atk/javascript/calendar/calendar-runner.js");
-        $g_layout->register_script(atkconfig("atkroot")."atk/javascript/calendar/lang/calendar-nl.js");
+        $g_layout->register_script(atkconfig("atkroot")."atk/javascript/calendar/lang/".atkconfig("languagefile").".js");
         $g_layout->theme_style("atkdateattribute.css");         
       }
       
