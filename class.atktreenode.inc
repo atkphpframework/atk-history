@@ -76,7 +76,7 @@
     function adminPage()
     {
       global $g_layout,$g_maxlevel, $PHP_SELF;
-
+      $g_layout->initGui();
       $g_layout->ui_top(text('title_'.$this->m_type.'_tree'));
       $g_layout->output($this->statusbar());
       $g_layout->output('<br>');
