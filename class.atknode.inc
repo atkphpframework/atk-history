@@ -684,6 +684,31 @@
     }
 
     /**
+     * Removes a filter
+     * @param string $filter  The fieldname you want to filter OR a where clause 
+     *                         expression
+     * @param bool $withvalue Whether or not it's a filter with a value 
+     *                         (filter as expression) 
+     */
+    function removeFilter($filter, $withvalue=false)
+    {
+      if ($withvalue)
+      {
+        unset($this->m_filters[$filter]);
+      }
+      else
+      {
+        foreach ($this->m_fuzzyFilters as $filtername => $filtervalue)
+        {
+          if ($filter == $filtervalue)
+          {
+            $this->m_fuzzyFilters[$filtername] = null;
+          }
+        }
+      }
+    }
+    
+    /**
      * Returns the form buttons for a certain page.
      */
     function getFormButtons($mode, $record)
