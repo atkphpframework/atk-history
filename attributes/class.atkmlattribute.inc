@@ -40,23 +40,23 @@
       for ($i = 1; $i < sizeof($config_language); $i++)
       {
         $result .= '<input type="hidden" name="'.$this->formName().'['.$config_language[$i].']"'.
-                   ' value="'.htmlspecialchars($record[$this->fieldName()][$config_language[$i]]).'" >';
+                   ' value="'.htmlspecialchars($record[$this->fieldName()][$config_language[$i]]).'"'.pf_endtag();
       }
 
       /* default language */
-      $result .= text('language_'.$config_language[0]).':<br>'.
+      $result .= text('language_'.$config_language[0]).':<br />'.
                  '<input type="text" name="'.$this->formName().'['.$config_language[0].']"'.
                  ' value="'.htmlspecialchars($record[$this->fieldName()][$config_language[0]]).'"'.
                  ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').
-                 ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'><br><br>';
+                 ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').pf_endtag().'<br /><br />';
 
       
       /* first language of other languages */
-      $result .= text((count($config_language)==2 ? $config_language[1] : "multilanguage_choice").'').':<br>'.
+      $result .= text((count($config_language)==2 ? $config_language[1] : "multilanguage_choice").'').':<br />'.
                  '<input type="text" name="'.$this->formName().'['.(count($config_language)==2 ? $config_language[1] : "multilanguage").']"'.
                  ' value="'.htmlspecialchars($record[$this->fieldName()][$config_language[1]]).'"'.
                  ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').
-                 ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'><br><br>';
+                 ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').pf_endtag().'<br /><br />';
 
       return $result;
     }
@@ -121,7 +121,7 @@
       for ($i = 0; $i < sizeof($config_language); $i++)
       {
         $result .= '<input type="hidden" name="'.$this->formName().'['.$config_language[$i].']"'.
-                   ' value="'.htmlspecialchars($record[$this->fieldName()][$config_language[$i]]).'">';
+                   ' value="'.htmlspecialchars($record[$this->fieldName()][$config_language[$i]]).'"'.pf_endtag();
       }
     
       return $result;             

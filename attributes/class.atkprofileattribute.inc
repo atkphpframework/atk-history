@@ -68,7 +68,7 @@
         for ($i=0;$i<=count($val)-1;$i++)
         {
           $value   = $key.".".$val[$i];
-          $rights .= '<input type="hidden" name="rights[]" value="'.$value.'">';
+          $rights .= '<input type="hidden" name="rights[]" value="'.$value.'"'.pf_endtag();
         }
       }
       return $rights;
@@ -157,30 +157,30 @@
                 {
                   $label = text($action, $node); // generic action text.
                 }
-                $html.='> '.$label.'&nbsp;&nbsp;&nbsp;';
+                $html.=pf_endtag().' '.$label.'&nbsp;&nbsp;&nbsp;';
               }
               else
               {
                 if (is_array($checked_actions)&&in_array($action, $checked_actions))
                 {
                   $html .= '<input type="hidden" name="'.$this->formName().'[]'.
-                    '" value="'.$modname.".".$node.".".$action.'">';
+                    '" value="'.$modname.".".$node.".".$action.'"'.pf_endtag();
                 }
               }
             }
             
             if($boxActive)  
             {
-              $mainHtml .="<b>".text(getNodeType($node))."</b><br>";
+              $mainHtml .="<b>".text(getNodeType($node))."</b><br />";
               $mainHtml.=$html;
-              $mainHtml.="<br><br>\n";
+              $mainHtml.="<br /><br />\n";
             }
             else $mainHtml.=$html;
           }
           if (count($g_modules)>0 && $showModule)
           {
             // only show the header if there are more than only the main module.
-            $result .= "<b>".text("app_title")."</b><br><br>".$mainHtml;
+            $result .= "<b>".text("app_title")."</b><br /><br />".$mainHtml;
           }
         }
       }
@@ -214,22 +214,22 @@
                   if (is_array($checked_actions)&&in_array($action, $checked_actions)) $html.=" checked";
 
                   $label = $this->permissionName($action, $node, $modname);
-                  $html.='> '.$label.'&nbsp;&nbsp;&nbsp;';
+                  $html .= pf_endtag().' '.$label.'&nbsp;&nbsp;&nbsp;';
                 }
                 else
                 {
                   if (is_array($checked_actions)&&in_array($action, $checked_actions))
                   {
                     $html .= '<input type="hidden" name="'.$this->formName().'[]'.
-                      '" value="'.$modname.".".$node.".".$action.'">';
+                      '" value="'.$modname.".".$node.".".$action.'"'.pf_endtag();
                   }
                 }
               }
               if($boxActive)  
               {
-                $mainHtml .="<b>".text(getNodeType($nodename))."</b><br>";
+                $mainHtml .="<b>".text(getNodeType($nodename))."</b><br />";
                 $mainHtml .=$html;
-                $mainHtml .="<br><br>\n";
+                $mainHtml .="<br /><br />\n";
               }
               else 
               {
@@ -240,7 +240,7 @@
           if ($showModule)
           {
             // only show the header if there are more than only the main module.
-            $result .= "<br><hr><b>".text("title_$modname")."</b><br><br>".$mainHtml;
+            $result .= "<br /><hr /><b>".text("title_$modname")."</b><br /><br />".$mainHtml;
           } 
           else    $result .= $mainHtml;
           

@@ -82,7 +82,7 @@
       $result = '<input type="text" name="'.$fieldprefix.$this->formName().
                 '" value="'.htmlspecialchars($record[$this->fieldName()]).'"'.
                 ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').
-                ($maxsize > 0 ? ' maxlength="'.$maxsize.'"' : '').'>';
+                ($maxsize > 0 ? ' maxlength="'.$maxsize.'"' : '').pf_endtag();
 
       return $result;
     }

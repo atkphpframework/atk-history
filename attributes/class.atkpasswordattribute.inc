@@ -56,24 +56,24 @@ class atkPasswordAttribute extends atkAttribute
     {
       if (!$this->m_generate)
       {
-        $result = text("password_new").':<br>'.
+        $result = text("password_new").':<br />'.
                   '<input type="password" name="'.$fieldprefix.$this->fieldName().'[new]"'.
                   ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').
-                  ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '')."><br><br>".
+                  ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').pf_endtag()."<br/><br/>".
 
-                  text("password_again").':<br>'.
+                  text("password_again").':<br />'.
                   '<input type="password" name="'.$fieldprefix.$this->fieldName().'[again]"'.
                   ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').
-                  ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').">";
+                  ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').pf_endtag();
       }
       else
       {
         $password = $this->makePassword();
         $result = '<input type="hidden" name="'.$fieldprefix.$this->fieldName().'[again]"'.
-                  ' value ="'.$password.'">'.
+                  ' value ="'.$password.'"'.pf_endtag().
                   '<input type="text" name="'.$fieldprefix.$this->fieldName().'[new]"'.
                   ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').
-                  ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').' value ="'.$password.'" onchange="this.form.elements[\''.$fieldprefix.$this->fieldName().'[again]\'].value=this.value">';
+                  ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').' value ="'.$password.'" onchange="this.form.elements[\''.$fieldprefix.$this->fieldName().'[again]\'].value=this.value"'.pf_endtag();
       }
     }
 
@@ -81,24 +81,24 @@ class atkPasswordAttribute extends atkAttribute
     else
     {
       $result = '<input type="hidden" name="'.$fieldprefix.$this->fieldName().'[hash]"'.
-                ' value="'.$record[$this->fieldName()]["hash"].'">';
+                ' value="'.$record[$this->fieldName()]["hash"].'"'.pf_endtag();
 
 
       if (!$this->hasFlag(AF_PASSWORD_NOVALIDATE))
-        $result .= text("password_current").':<br>'.
+        $result .= text("password_current").':<br />'.
                    '<input type="password" name="'.$fieldprefix.$this->fieldName().'[current]"'.
                    ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').
-                   ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').'><br><br>';
+                   ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').pf_endtag().'<br /><br />';
 
-      $result .= text("password_new").':<br>'.
+      $result .= text("password_new").':<br />'.
                  '<input type="password" name="'.$fieldprefix.$this->fieldName().'[new]"'.
                  ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').
-                 ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').'><br><br>'.
+                 ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').pf_endtag().'<br /><br />'.
 
-                 text("password_again").':<br>'.
+                 text("password_again").':<br />'.
                  '<input type="password" name="'.$fieldprefix.$this->fieldName().'[again]"'.
                  ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').
-                 ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').'>';
+                 ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').pf_endtag();
     }
 
     return $result;
@@ -190,7 +190,7 @@ class atkPasswordAttribute extends atkAttribute
   function hide($record="")
   {
     $result = '<input type="hidden" name="'.$fieldprefix.$this->fieldName().'[hash]"'.
-              ' value="'.$record[$this->fieldName()]["hash"].'">';
+              ' value="'.$record[$this->fieldName()]["hash"].'"'.pf_endtag();
     return $result;
   }
 

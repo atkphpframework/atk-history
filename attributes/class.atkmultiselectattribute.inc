@@ -57,7 +57,7 @@
         {
           if(in_array($this->m_values[$i],$record[$this->fieldName()]))
           $result .= '<input type="hidden" name="'.$fieldprefix.$this->fieldName().'[]"
-                      value="'.$this->m_values[$i].'">';
+                      value="'.$this->m_values[$i].'"'.pf_endtag();
         }
       } else parent::hide($record,$fieldprefix);
       return $result;
@@ -127,7 +127,7 @@
         {
           $sel = "";
         }
-        $result .= '<td class="table" valign="top"><input type="checkbox" name="'.$fieldprefix.$this->fieldName().'[]" value="'.$this->m_values[$i].'" '.$sel.'>'.text($this->m_options[$i]).'</td>';
+        $result .= '<td class="table" valign="top"><input type="checkbox" name="'.$fieldprefix.$this->fieldName().'[]" value="'.$this->m_values[$i].'" '.$sel.pf_endtag().text($this->m_options[$i]).'</td>';
         if ($i%$cols == $modcols) $result .="</tr><tr>\n";
         
       }

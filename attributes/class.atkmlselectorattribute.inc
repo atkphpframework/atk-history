@@ -24,7 +24,7 @@ class atkMlSelectorAttribute extends atkAttribute
       return text("multilanguage_error_config");
 
     /* first selected other language */
-    $result = '<input type="hidden" name="multilanguage_current" value="'.$config_language[1].'">';
+    $result = '<input type="hidden" name="multilanguage_current" value="'.$config_language[1].'"'.pf_endtag();
 
     /* build selection list */
     $result .= '<select onchange="changeLanguage(this)">';

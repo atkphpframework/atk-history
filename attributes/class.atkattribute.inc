@@ -61,9 +61,6 @@
   define("AF_SPECIFIC_3",                   134217728); // specific attribute flag 3
   define("AF_SPECIFIC_4",                   268435456); // specific attribute flag 4
   define("AF_SPECIFIC_5",                   536870912); // specific attribute flag 5  
-  
-  define("SORT_ASCENDING", 1);
-  define("SORT_DESCENDING", 0);
 
   /**
    * The atkAttribute class represents an attribute of an atkNode.
@@ -150,30 +147,6 @@
     function hasFlag($flag)
     {
       return (($this->m_flags & $flag) == $flag);
-    }
-
-    /**
-     * Adds a flag to the attribute
-     * Note that adding flags at any time after the constructor might not 
-     * always work. There are flags that are processed only at 
-     * constructor time.
-     * @param $flag the flag you want to add
-     */
-    function addFlag($flag)
-    {
-      $this->m_flags |= $flag;
-    }
-
-    /**
-     * Removes a flag from the attribute
-     * Note that removing flags at any time after the constructor might not
-     * always work. There are flags that have already been processed at 
-     * constructor time, so removing them will be futile.
-     * @param $flag The flag that you want to remove
-     */
-    function removeFlag($flag)
-    {
-      $this->m_flags ^= $flag;
     }
 
     /**
@@ -328,6 +301,11 @@
         $arr["fields"][] = $entry;
       }
     }
+    
+    function getOrderByStatement()
+    {
+      return $this->m_ownerInstance->m_table.".".$this->fieldName();
+    }
 
     /**
      * Adds the attribute / field to the list header. This includes the column name and search field.
@@ -339,36 +317,109 @@
      * @param $atkorderby the current ATK orderby string (if not empty)
      * @see atkNode::listArray
      */
-    function addToListArrayHeader($action, &$arr, $fieldprefix, $flags, $atksearch, $atkorderby)
+    function addToListArrayHeader($action, &$arr, $fieldprefix, $flags, $atksearch, &$columnConfig)
     {
-      global $g_sessionManager;
+      global $g_sessionManager, $ATK_VARS;     
 
       if (!$this->hasFlag(AF_HIDE_LIST) && !($this->hasFlag(AF_HIDE_SELECT) && $action == "select"))
       {
-        $arr["heading"][$fieldprefix.$this->fieldName()]["title"] = text($this->fieldName(), $this->m_ownerInstance->m_type);
+        $key = $fieldprefix.$this->fieldName();
+        
+        $arr["heading"][$key]["title"] = $this->listHeaderTitle();
 
         if (!hasFlag($flags, RL_NO_SORT) && !$this->hasFlag(AF_NO_SORT))
-        {
-          $name = $this->fieldName();
-        	$asc = !is_array($atkorderby) || $atkorderby[0] != $this->fieldName() || $atkorderby[1] == SORT_DESCENDING ? SORT_ASCENDING : SORT_DESCENDING;
-
-        	// atknodetype and atkaction are not posted to the url because they are already known in the session
-        	// this solves problems when using one node action to display a recordlist of another node
-          $arr["heading"][$fieldprefix.$this->fieldName()]["url"] = session_url($_SERVER["PHP_SELF"].'?atkorderby[0]='.$name.'&atkorderby[1]='.$asc);
+        {          
+         $arr["heading"][$key]["url"] = $this->listHeaderSortUrl($atkorderby);
+        
+         if (hasFlag($flags, RL_EXT_SORT))
+         {
+           $arr["sort"][$key] = $this->extendedSort($columnConfig);
+         }         
         }
 
         if (!hasFlag($flags, RL_NO_SEARCH) && $this->hasFlag(AF_SEARCHABLE))
-          $arr["search"][$fieldprefix.$this->fieldName()] = $this->search($atksearch);
+          $arr["search"][$key] = $this->search($atksearch);
+                  
       }
     }
     
-    /**
-     * Add to the order by clause of the select query.
-     */
-    function addToOrderBy(&$query, $atkorderby)
+    function listHeaderTitle()
     {
-      $order = $this->m_ownerInstance->m_table.".".$this->fieldName();    	
-    	$query->addOrderBy($order." ".($atkorderby[1] == SORT_DESCENDING ? "DESC" : "ASC"));
+      return text($this->fieldName(), $this->m_ownerInstance->m_type, $this->m_ownerInstance->m_module);
+    }
+        
+    function listHeaderSortUrl($atkorderby)
+    {
+      global $ATK_VARS;
+      $order = $this->fieldName();
+      if ($atkorderby == $order) $order .= " DESC";      
+      
+      return session_url($_SERVER["PHP_SELF"].'?atknodetype='.$ATK_VARS["atknodetype"].'&atkaction='.$ATK_VARS["atkaction"].'&atkorderby='.rawurlencode($order));
+    }
+    
+    function extendedSort(&$columnConfig)
+    {
+      $res = '<table brder="0" cellspacing="0" cellpadding="0" width="100%"><tr>';
+      
+      /*
+      if (!$columnConfig->isFirst($this->fieldName()))
+      {
+        $left = '&lt;';
+      }
+      if (!$columnConfig->isLast($this->fieldName()))
+      {
+        $right = '&gt;';
+      }
+      
+      
+      $res.= '<td align="left" class="table"><b>'.$left.' '.$right.'</b></td>';
+      */
+      $specificOptions = $this->sortOptions($columnConfig);
+      if ($specificOptions!="")
+      {
+        $res.= '<td align="left" class="table" nowrap>'.$specificOptions.'&nbsp;</td>';
+      }
+      $res.= '<td align="right" class="table" nowrap> '.$this->sortOrder($columnConfig).'</td>';
+      $res.= '</tr></table>';
+      return $res;
+    }
+      
+    /** 
+     * Default atkAttribute does not have fancy sort options.
+     */
+    function sortOptions(&$columnConfig)
+    {
+      if (!$this->hasFlag(AF_TOTAL) && $columnConfig->totalizable())
+      {
+        // if we are not the sumcolumn itself, but there are totalcolumns present, we can perform subtotalling
+        $cmd = ($columnConfig->hasSubTotal($this->fieldName())?"unsubtotal":"subtotal");
+        return href('dispatch.php?'.$columnConfig->getUrlCommand($this->fieldName(), $cmd), text("column_".$cmd)).' ';
+      }
+      return "";
+    }
+    
+    function sortOrder(&$columnConfig)
+    {
+      $fieldname = $this->fieldName();
+      $currentOrder = $columnConfig->getOrder($fieldname);
+      
+      $res="";
+      if ($currentOrder>0)
+      {        
+        $direction = ($columnConfig->getSortDirection($this->fieldName())=="desc" ? "asc":"desc");            
+        $res= href('dispatch.php?'.$columnConfig->getUrlCommand($fieldname, $direction), text("column_".$direction)).' ';
+      }
+      
+      $res.= '<select name="atkcolcmd[][setorder]['.$fieldname.']">';
+      $res.= '<option value="">';
+      for ($i=1; $i<6; $i++)
+      {
+        $selected = ($currentOrder==$i?"selected":"");
+        $res.='<option value="'.$i.'" '.$selected.'>'.$i;
+      }
+      $res.= '</select>';      
+      
+      return $res;
     }
 
     /**
@@ -557,24 +608,6 @@
       return (!$this->hasFlag(AF_READONLY_EDIT) && !$this->hasFlag(AF_HIDE_EDIT));
     }
 
-    /**
-     * This function is called by atkNode to determine if a field
-     * needs to be saved to the database in an addDb call.
-     *
-     * @param $record The record that is about to be saved
-     */
-    function needsInsert($record)
-    {
-      return (!$this->hasFlag(AF_HIDE_ADD) || 
-              $this->hasFlag(AF_AUTO_INCREMENT) || 
-              !$this->isEmpty($record));
-
-      // If we are set to hide_add, we will only insert into the
-      // db if a value has been set (for example by an initial_values
-      // method). Also, autoincrement fields might be hidden, and their
-      // value is still empty, but they do need to be inserted lateron.
-    }
-
     function getSearchModes()
     {
       // exact match and substring search should be supported by any database.
@@ -698,7 +731,7 @@
     /**
      * Return the label of the field.
      */
-    function label($record = array())
+    function label($record)
     {    
       return text($this->fieldName(),$this->m_ownerInstance->m_type, $this->m_ownerInstance->m_module);
     }

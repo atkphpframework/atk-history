@@ -167,11 +167,11 @@
         elseif ($this->hasFlag(AF_OBLIGATORY)) $value = adodb_date("Y-m-d");
         else $value = "";
 
-        $result = '<input type="text" id="'.$fieldname.'" name="'.$fieldname.'" value="'.$value.'" size="10">';
+        $result = '<input type="text" id="'.$fieldname.'" name="'.$fieldname.'" value="'.$value.'" size="10"'.pf_endtag();
         
         if (!$this->hasFlag(AF_DATE_NO_CALENDAR))
         {
-          $result.=' <input type="reset" value="..." onclick="return showCalendar(\''.$fieldname.'\', \''.$fieldname.'\', \'y-mm-dd\', false);">';
+          $result .= ' <input type="reset" value="..." onclick="return showCalendar(\''.$fieldname.'\', \''.$fieldname.'\', \'y-mm-dd\', false);"'.pf_endtag();
         }
         return $result;
       }
@@ -269,7 +269,7 @@
           /* date must be within 25 years */
           if(!empty($current["y_max"]) && !empty($current["y_min"]) && $current["y_max"] - $current["y_min"] <= 25)
           {
-            $result .= '<select id="'.$fieldname.'[year]" name="'.$fieldname.'[year]" onChange="'.$str_script.'">';
+            $result .= '<select id="'.$fieldname.'[year]" name="'.$fieldname.'[year]" onchange="'.$str_script.'">';
             if (!$this->hasFlag(AF_OBLIGATORY) || $this->hasflag(AF_DATE_EMPTYFIELD))
               $result .= '<option value="0"'.($current === NULL ? ' selected' : '').'></option>';
             for($j = $current["y_min"]; $j <= $current["y_max"]; $j++)
@@ -282,13 +282,13 @@
           }
 
           /* normal input box */
-          else  $result .= '<input type="text" id="'.$fieldname.'[year]" name="'.$fieldname.'[year]" size="4" maxlength="4" onChange="'.$str_script.'" value="'.$current["year"].'">';
+          else  $result .= '<input type="text" id="'.$fieldname.'[year]" name="'.$fieldname.'[year]" size="4" maxlength="4" onChange="'.$str_script.'" value="'.$current["year"].'"'.pf_endtag();
         }
 
         /* day input box */
         elseif ($str_format[$i] == "j" || $str_format[$i] == "d")
         {
-          $result .= '<select id="'.$fieldname.'[day]" name="'.$fieldname.'[day]" onChange="'.$str_script.'">';
+          $result .= '<select id="'.$fieldname.'[day]" name="'.$fieldname.'[day]" onchange="'.$str_script.'">';
           if (!$this->hasFlag(AF_OBLIGATORY) || $this->hasflag(AF_DATE_EMPTYFIELD)) 
             $result .= '<option value="0"'.($current === NULL ? ' selected' : '').'></option>';
           for ($j = $current["d_min"]; $j <= $current["d_max"]; $j++)
@@ -324,7 +324,7 @@
             
       if (!$this->hasFlag(AF_DATE_NO_CALENDAR))
       {
-        $result.=' <input type="reset" value="..." onclick="return showCalendar(\''.$fieldname.'\', \''.$fieldname.'[year]\', \'y-mm-dd\', true);">';
+        $result.= ' <input type="reset" value="..." onclick="return showCalendar(\''.$fieldname.'\', \''.$fieldname.'[year]\', \'y-mm-dd\', true);"'.pf_endtag();
       }
 
       /* return result */
@@ -343,10 +343,10 @@
 
       if (is_array($field))
         foreach ($field as $key => $value)
-          $result .= '<input type="hidden" name="'.$fieldprefix.$this->formName().'['.$key.']" '.'value="'.$value.'">';
+          $result .= '<input type="hidden" name="'.$fieldprefix.$this->formName().'['.$key.']" '.'value="'.$value.'"'.pf_endtag();
 
       else
-        $result = '<input type="hidden" name="'.$fieldprefix.$this->formName().'" value="'.$field.'">';
+        $result = '<input type="hidden" name="'.$fieldprefix.$this->formName().'" value="'.$field.'"'.pf_endtag();
 
       return $result;
     }

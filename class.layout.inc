@@ -675,7 +675,7 @@
       }
 
       // load images
-      $reqimg = '<img align="top" onMouseOver="javascript:window.status=\''.addslashes(text("field_obligatory")).'\';" src="'.$this->getImgSrc("required_field.gif").'" border="0" alt="'.text("field_obligatory").'">&nbsp;';
+      $reqimg = '<img align="top" onmouseover="javascript:window.status=\''.addslashes(text("field_obligatory")).'\';" src="'.$this->getImgSrc("required_field.gif").'" border="0" alt="'.text("field_obligatory").'">&nbsp;';
       $tipimg = $this->getImgSrc("help.gif");
 
       /* display the edit fields */
@@ -728,7 +728,7 @@
           $ttip = "txt_".$node->m_type."_".$field["name"]."_tooltip";
           if ($GLOBALS[$ttip] != "")
           {
-            $editsrc.= '<img align="top" src="'.$tipimg.'" border="0" alt="'.$GLOBALS[$ttip].'" onClick="javascript:alert(\''.addslashes($GLOBALS[$ttip]).'\')" onMouseOver="javascript:window.status=\''.addslashes($GLOBALS[$ttip]).'\';">&nbsp;';
+            $editsrc.= '<img align="top" src="'.$tipimg.'" border="0" alt="'.$GLOBALS[$ttip].'" onClick="javascript:alert(\''.addslashes($GLOBALS[$ttip]).'\')" onmouseover="javascript:window.status=\''.addslashes($GLOBALS[$ttip]).'\';">&nbsp;';
           }
 
           $form.=$this->ret_td($editsrc,'colspan="'.$tdcount.'" valign="top"');

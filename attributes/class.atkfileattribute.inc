@@ -118,12 +118,12 @@
       if ($result!="")
       {
         $result.="<br>";
-        $result.='<input type="hidden" name="'.$fieldprefix.$this->fieldName().'_orgfilename" value="'.$record[$this->fieldName()]['orgfilename'].'">';
+        $result.='<input type="hidden" name="'.$fieldprefix.$this->fieldName().'_orgfilename" value="'.$record[$this->fieldName()]['orgfilename'].'"'.pf_endtag();
       }
       
-      $result.='<input type="hidden" name="'.$fieldprefix.$this->fieldName().'_postfileskey" value="'.$fieldprefix.$this->fieldName().'">';
+      $result.='<input type="hidden" name="'.$fieldprefix.$this->fieldName().'_postfileskey" value="'.$fieldprefix.$this->fieldName().'"'.pf_endtag();
 
-      if(!$this->hasFlag(AF_FILE_NO_UPLOAD)) $result .= '<input type="file" name="'.$fieldprefix.$this->fieldName().'">';
+      if(!$this->hasFlag(AF_FILE_NO_UPLOAD)) $result .= '<input type="file" name="'.$fieldprefix.$this->fieldName().'"'.pf_endtag();
 
       if(!$this->hasFlag(AF_FILE_NO_SELECT) AND count($file_arr) > 0)
       {
@@ -138,7 +138,7 @@
       }
       if(!$this->hasFlag(AF_FILE_NO_DELETE) && $record[$this->fieldname()]['filename']!='')
       {      
-       $result .= '<br><input type="checkbox" name="del['.$fieldprefix.$this->fieldName().']">&nbsp;'.text("remove_current_file");
+       $result .= '<br><input type="checkbox" name="del['.$fieldprefix.$this->fieldName().']"'.pf_endtag().'&nbsp;'.text("remove_current_file");
       }
       return $result;
     }
@@ -372,10 +372,10 @@
 
       if (is_array($field))
         foreach ($field as $key => $value)
-          $result .= '<input type="hidden" name="'.$fieldprefix.$this->formName().'['.$key.']" '.'value="'.$value.'">';
+          $result .= '<input type="hidden" name="'.$fieldprefix.$this->formName().'['.$key.']" '.'value="'.$value.'"'.pf_entag();
 
       else
-        $result = '<input type="hidden" name="'.$fieldprefix.$this->formName().'" value="'.$field.'">';
+        $result = '<input type="hidden" name="'.$fieldprefix.$this->formName().'" value="'.$field.'"'.pf_endtag();
 
       return $result;
     }

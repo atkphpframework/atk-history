@@ -72,10 +72,10 @@
 
       if (is_array($field))
         foreach ($field as $key => $value)
-          $result .= '<input type="hidden" name="'.$fieldprefix.$this->formName().'['.$key.']" '.'value="'.$value.'">';
+          $result .= '<input type="hidden" name="'.$fieldprefix.$this->formName().'['.$key.']" '.'value="'.$value.'"'.pf_endtag();
 
       else
-        $result = '<input type="hidden" name="'.$fieldprefix.$this->formName().'" value="'.$field.'">';
+        $result = '<input type="hidden" name="'.$fieldprefix.$this->formName().'" value="'.$field.'"'.pf_endtag();
 
       return $result;
     }

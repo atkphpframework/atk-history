@@ -57,8 +57,14 @@
       
       if ($rows =="" || $rows == 0) $rows = 10;
 	    // watch out, $maxsize isn't supported for a textarea.
-      $result= '<textarea name="'.$fieldprefix.$this->formName().'" rows="'.$rows.'" cols="'.$cols.'" wrap="virtual"'.               
-               '>'.htmlspecialchars($record[$this->fieldName()]).'</textarea>';
+      $result = '<textarea name="'.$fieldprefix.$this->formName().'" rows="'.$rows.'" cols="'.$cols.'"';
+
+      if (atkconfig("doctype_compliance") != "xhtml")
+      {
+        $result .= ' wrap="virtual"';
+      }
+                     
+      $result .= '>'.htmlspecialchars($record[$this->fieldName()]).'</textarea>';
       return $result;
     }
 

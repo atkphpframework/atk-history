@@ -66,6 +66,10 @@
   // might try the option "both".
   $config_recordlist_orientation = "right";
   
+  // This configures whether the buttons on a add/edit/view page
+  // appear on the bottom, top or both.
+  $config_buttons_pos = "bottom";
+  
   //----------------- SECURITY CONFIGURATION --------------------
 
   // The type of authentication (user/password verification) to use.

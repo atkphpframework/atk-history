@@ -223,28 +223,32 @@
 
     $res = "";
 
+    // XHTML stuff
+    $fieldWrapBegin    = atkconfig("doctype_compliance")=="xhtml"?"<p>":"";
+    $fieldWrapEnd      = atkconfig("doctype_compliance")=="xhtml"?"</p>":"";
+
     $newlevel = session_level($sessionstatus);
 
     if ($newlevel!=0)
     {
-      $res= '<input type="hidden" name="atklevel" value="'.$newlevel.'">';
+      $res = $fieldWrapBegin.'<input type="hidden" name="atklevel" value="'.$newlevel.'" />'.$fieldWrapEnd."\n";
     }
-    $res.='<input type="hidden" name="atkprevlevel" value="'.atkLevel().'">';
+    $res .= $fieldWrapBegin.'<input type="hidden" name="atkprevlevel" value="'.atkLevel().'" />'.$fieldWrapEnd."\n";
 
     if ($sessionstatus!=SESSION_NEW)
     {
-      $res.='<input type="hidden" name="atkstackid" value="'.atkStackID().'">';
+      $res .= $fieldWrapBegin.'<input type="hidden" name="atkstackid" value="'.atkStackID().'" />'.$fieldWrapEnd."\n";
     }
     
-    $res .= '<input type="hidden" name="'.session_name().'" value="'.session_id().'">';
-    $res .= '<input type="hidden" name="atkescape" value="">';
+    $res .= $fieldWrapBegin.'<input type="hidden" name="'.session_name().'" value="'.session_id().'" />'.$fieldWrapEnd."\n";
+    $res .= $fieldWrapBegin.'<input type="hidden" name="atkescape" value="" />'.$fieldWrapEnd."\n";
 
     for ($i=0;$i<count($g_stickyurl);$i++)
     {
       $value = $GLOBALS[$g_stickyurl[$i]];
       if ($value!="")
       {
-        $res.="\n".'<input type="hidden" name="'.$g_stickyurl[$i].'" value="'.$value.'">';
+        $res .= "\n".$fieldWrapBegin.'<input type="hidden" name="'.$g_stickyurl[$i].'" value="'.$value.'" />'.$fieldWrapEnd."\n";
       }
     }
 
@@ -1026,7 +1030,14 @@
    */
   function atkHost()
   {    
-    return ($_SERVER["HTTP_HOST"]!=""?$_SERVER["HTTP_HOST"]:$_SERVER["SERVER_NAME"]);
+    $atkHost = $_SERVER["HTTP_HOST"]!=""?$_SERVER["HTTP_HOST"]:$_SERVER["SERVER_NAME"];
+
+    // if we're running on our cluster environment
+    // we seem to have a specific portid within the HTTP_HOST
+    // If so, remove it from the hostname
+
+    $dummy = explode(":", $atkHost);
+    return $dummy[0];
   }
 
   /**
