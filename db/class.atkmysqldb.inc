@@ -132,7 +132,7 @@
         /* return query id */
         return true;
       }
-      return 0;
+      return false;
     }
 
     /**
