@@ -3240,6 +3240,10 @@
 
       $query->addTable($this->m_table);
       $query->addCondition($selector);
+
+      if(array_key_exists("atkfilter", $this->m_postvars))
+                 $query->addCondition($this->m_postvars["atkfilter"]);
+
       $query->m_searchmethod = $this->m_postvars['atksearchmethod'];
 
       if (!$this->hasFlag(NF_NO_FILTER))
@@ -3317,7 +3321,14 @@
       $querystring = $query->buildCount();
       //$g_db->query($querystring);
       $result = $g_db->getrows($querystring);
-      return $result[0]["count"];
+
+      // group by fix:
+      // if there exists a group by (added by atk/filters) the 'else' situation occurs
+      if(count($result)==1)
+        return $result[0]["count"];
+      else
+        return count($result);
+
     }
 
    /** Copies a record
