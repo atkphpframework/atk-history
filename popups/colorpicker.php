@@ -12,7 +12,7 @@
   * $Id$
   *
   */
-
+  $config_atkroot = "../../";
   include($config_atkroot."atk.inc");  
   
   atksession();
