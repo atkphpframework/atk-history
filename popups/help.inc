@@ -30,6 +30,7 @@
   $g_layout->head("Help: ".$txt_app_shorttitle);
   $g_layout->body();
   $g_layout->output("<br>");
+  $g_layout->initGui();
   $g_layout->ui_top($title);
   $g_layout->output ($data);
   $g_layout->ui_bottom();
