@@ -28,7 +28,7 @@
             {$liststart}
               
             {foreach from=$rows item=row}
-              <tr class="row{if $row.rownum % 2 == 0 }1{else}2{/if}" {if $row.background!=""}style="background-color:{$row.background}" {/if}
+              <tr id="{$row.id}" class="row{if $row.rownum % 2 == 0 }1{else}2{/if}" {if $row.background!=""}style="background-color:{$row.background}" {/if}
                    onmouseover="if (typeof(this.style) != 'undefined') this.style.backgroundColor = '{$row.highlight}'"
                    onmouseout="if (typeof(this.style) != 'undefined') this.style.backgroundColor = '{$row.background}'">
               {foreach from=$row.cols item=col}

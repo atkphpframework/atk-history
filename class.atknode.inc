@@ -1891,7 +1891,13 @@
       
       atkimport("atk.ui.atktheme");
       $theme = &atkTheme::getInstance();
-     
+      
+      $listName = "atkrl_".getUniqueId("normalRecordList");
+      
+      $page = &$this->getPage();
+      $page->register_script(atkconfig("atkroot")."atk/keyboard/javascript/class.atkrlkeylistener.js");
+                        
+      $defaulthighlight = $theme->getAttribute("highlight");                 
 
       /* retrieve list array */
       $list = $this->listArray($recordset, $flags, "", $actions, $suppressList);
@@ -1912,8 +1918,7 @@
         $vorientation = atkconfig("recordlist_vorientation");
       else $vorientation = 'top';
       
-      $ui = &$this->getUi();
-      $page = &$this->getPage();
+      $ui = &$this->getUi();      
       if (is_object($ui) && is_object($page))
       {                
 
@@ -2018,9 +2023,7 @@
         /*******************************************/
         if (hasFlag($flags, RL_MRA) || hasFlag($flags, RL_MRPA))
         {  
-          $page->register_script(atkconfig("atkroot")."atk/javascript/formselect.js");          
-  
-          $listName = "atkrl_".getUniqueId("normalRecordList");
+          $page->register_script(atkconfig("atkroot")."atk/javascript/formselect.js");                  
   
           if (!hasFlag($flags, RL_EMBED))
           {
@@ -2054,7 +2057,7 @@
            * row color, example: function rowColor(&$record, $num) { return array('red', 'blue'); }
            */
           $method = "rowColor";          
-          $bgh = $theme->getAttribute("highlight");
+          $bgh = $defaulthighlight;
           if (method_exists($this, $method))
           {
             $bgn = $this->$method($recordset[$i], $i);
@@ -2066,6 +2069,7 @@
           $record["background"] = $bgn;
           $record["highlight"] = $bgh;
           $record["rownum"] = $i;
+          $record["id"] = $listName.'_'.$i;
   
           /* multi-record-priority-actions -> priority selection */
           if (hasFlag($flags, RL_MRPA))
@@ -2216,6 +2220,10 @@
   
           if (!hasFlag($flags, RL_EMBED)) $listend = '</form>';
         }
+        
+        $kb = &atkKeyboard::getInstance();
+        $kb->addRecordListHandler($listName, $defaulthighlight, count($records));
+        
         $res = $ui->render("recordlist.tpl", array("vorientation"=>$vorientation,
                                                    "rows"=>$records,
                                                    "header"=>$headercols,

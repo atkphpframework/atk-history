@@ -5,6 +5,10 @@ KEY_RIGHT = 39;
 KEY_UP    = 38;
 KEY_LEFT  = 37;
 
+// Directions
+DIR_DOWN = 1;
+DIR_UP   = 2;
+
 // Detect if we are dealing with netscape/mozilla.
 var ver = navigator.appVersion; 
 var len = ver.length;
@@ -31,9 +35,14 @@ atkGKeyListener.prototype.handleKey = function(key, ctrl, shift)
   alert("you pressed "+key+" ctrl: "+ctrl+" shift: "+shift);
 }
 
-atkGKeyListener.prototype.focus = function()
+atkGKeyListener.prototype.focus = function(direction)
 {
   // Default listener does not know how to receive focus.
+}
+
+atkGKeyListener.prototype.blur = function()
+{
+  // Default listener does not know how to lose focus.
 }
 
 /**
@@ -47,6 +56,12 @@ function atkFEKeyListener(elementId, onUp, onDown, onLeft, onRight, onCtrl)
   this.onLeft = onLeft;
   this.onRight = onRight;
   this.onCtrl = onCtrl;
+  this.id = -1;
+  
+  // Hook ourselves an onfocus event to keep track of focus, when using the mouse.
+  var el = document.getElementById(this.elementId);
+  el.listener = this; // Give the element a pointer to the listener, so we can always access it. 
+  el.onfocus = function() { focussedListener = this.listener.id; }
 }
 
 atkFEKeyListener.prototype = new atkGKeyListener();
@@ -68,7 +83,13 @@ atkFEKeyListener.prototype.handleKey = function(key, ctrl, shift)
   }
 }
 
-atkFEKeyListener.prototype.focus = function()
+atkFEKeyListener.prototype.blur = function()
+{
+  var el = document.getElementById(this.elementId);
+  if (el) el.blur();
+}
+
+atkFEKeyListener.prototype.focus = function(direction)
 {
   var el = document.getElementById(this.elementId);
   if (el)
@@ -87,7 +108,8 @@ atkFEKeyListener.prototype.focus = function()
 
 function kb_addListener(listener)
 {
-  keyListeners[keyListeners.length] = listener;
+  listener.id = keyListeners.length; // Let the listener know it's position in the array.
+  keyListeners[keyListeners.length] = listener;  
 }
 
 function kb_init()
@@ -133,26 +155,39 @@ function kb_handleKey(e)
 
 function kb_focusFirst()
 {
+  if (focussedListener>-1) keyListeners[focussedListener].blur();
   if (keyListeners.length>0) focussedListener = 0;
-  keyListeners[focussedListener].focus();
+  keyListeners[focussedListener].focus(DIR_DOWN);
 }
 
 function kb_focusLast()
 {
+  if (focussedListener>-1) keyListeners[focussedListener].blur();
   if (keyListeners.length>0) focussedListener = keyListeners.length-1;
-  keyListeners[focussedListener].focus();
+  keyListeners[focussedListener].focus(DIR_UP);
 }
 
 function kb_focusPrevious()
 {
-  if (focussedListener>0) focussedListener--;
-  else kb_focusLast();
-  keyListeners[focussedListener].focus();
+  if (focussedListener>0) 
+  {
+    keyListeners[focussedListener].blur(); // blur the previous one (we must do this, because
+                                           // we cannot assume that it is done automatically by 
+                                           // the browser, since we focus things that the browser
+                                           // cannot focus.
+    focussedListener--;
+    keyListeners[focussedListener].focus(DIR_UP);
+  }
+  else kb_focusLast();  
 }
 
 function kb_focusNext()
 {
-  if (focussedListener<keyListeners.length-1) focussedListener++;
-  else kb_focusFirst();
-  keyListeners[focussedListener].focus();
+  if (focussedListener<keyListeners.length-1) 
+  {
+    keyListeners[focussedListener].blur(); // blur the previous one.
+    focussedListener++;
+    keyListeners[focussedListener].focus(DIR_DOWN);
+  }
+  else kb_focusFirst();  
 }

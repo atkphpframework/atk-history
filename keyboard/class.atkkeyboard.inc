@@ -37,6 +37,14 @@
       $this->addHandler("atkFEKeyListener", $params);      
     }
     
+    function addRecordListHandler($id, $highlight, $reccount)
+    {
+      // TODO/FIXME: we can't handle a highlight color per row yet, because javascript
+      // does not know the highlight color of each row.
+      $params = array("'".$id."'", "'".$highlight."'", $reccount);
+      $this->addHandler("atkRLKeyListener", $params);
+    }
+    
     function addHandler($handlertype, $params)
     {    
       $page = &atkPage::getInstance();
