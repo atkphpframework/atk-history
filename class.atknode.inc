@@ -1382,7 +1382,7 @@
             $field = array();
             // We must perform an array_values over array_intersect, to maintain a
             // correct numeric array index (array_intersect mangles those)
-            $searchModes = array_values(array_intersect($dbSearchModes,$attribSearchModes));
+            $searchModes = array_values(array_intersect($attribSearchModes, $dbSearchModes));
   
             if (count($searchModes)>0) // Don't display this attribute if it doesn't support searching.
             {

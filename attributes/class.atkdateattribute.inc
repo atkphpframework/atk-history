@@ -130,9 +130,12 @@
 			//}
 
       /* base class constructor */
-      $this->atkAttribute($name, $flags|AF_HIDE_SEARCH); // FIXME.. until the searchCondition() and
-                                                         // search() methods are fixed,
-                                                         // you can't search on dates..
+      $this->atkAttribute($name, $flags); 
+    }
+    
+    function edit($record="", $fieldprefix="", $mode="")
+    {
+      return $this->draw($record, $fieldprefix, "", $mode);
     }
 
     /**
@@ -141,7 +144,7 @@
      * @params $record Array with 3 fields (year, month, day)
      * @return Piece a of HTML Code
      */
-    function edit($record="", $fieldprefix="", $mode="")
+    function draw($record="", $fieldprefix="", $postfix="", $mode="")
     {
       $page = &atkPage::getInstance();
       
@@ -159,7 +162,7 @@
         $page->register_style($theme->stylePath("atkdateattribute.css"));        
       }
       
-      $fieldname = $fieldprefix.$this->fieldName();
+      $fieldname = $fieldprefix.$this->fieldName().$postfix;
       
       /* text mode? */
       if ($this->hasFlag(AF_DATE_STRING))
@@ -370,21 +373,40 @@
      */
     function search($record="", $extended=false)
     {
-      if (!$extended) return "&nbsp;";
+      if (!$extended) return "&nbsp;"; // Only search on dates in extended mode.
+          
+      // Set default values to null.
+      $record[$this->fieldName()]=array("year"=>0, "month"=>0, "day"=>0);
 
       // FIXME, we need a way to set the date to 'nothing' (i.e., unselected)
-      $res = $this->edit($record, "atksearch_AE_");
+      $res = $this->draw($record, "atksearch_AE_", "_AE_from");
+      $res.= "&nbsp;".text("until").": ".$this->draw($record, "atksearch_AE_", "_AE_to");
       return $res;
     }
 
     function searchCondition(&$query, $table, $value, $searchmode)
-    {
-      $dateval = $this->value2db(array($this->fieldName()=>$value));
-
-      // TODO & FIXME:
-      // databases have their own way of comparing dates. (OCI8 needs TO_CHAR etc..
-      // so we need to make some $query->dateComparison function..
-      atkdebug("Search support for DATE fields not yet supported (FIXME!)");
+    {  
+      global $g_db;      
+      // We only support searchmode 'between' for now.
+      
+      $fromval = $this->value2db(array($this->fieldName()=>$value["from"]));
+      $toval   = $this->value2db(array($this->fieldName()=>$value["to"]));
+      
+      if ($fromval>$toval)
+      {
+        // User entered dates in wrong order. Let's put them in the right order.
+        $tmp=$fromval; $fromval=$toval; $toval=$tmp;
+      }
+      
+      if ($fromval!="NULL" && $toval!="NULL")
+      {      
+        $query->addSearchCondition(
+                   $query->betweenCondition(
+                      $g_db->func_datetochar($table.".".$this->fieldName()), 
+                      $fromval, 
+                      $toval));  
+      }
+      
     }
 
     /**
@@ -523,13 +545,8 @@
     }
 
     function getSearchModes()
-    {
-      // exact match and substring search should be supported by any database.
-      // (the LIKE function is ANSI standard SQL, and both substring and wildcard
-      // searches can be implemented using LIKE)
-      // Possible values
-      //"exact","substring", "wildcard","greaterthan","greaterthanequal","lessthan","lessthanequal"
-      return array("exact","greaterthan","greaterthanequal","lessthan","lessthanequal");
+    {      
+      return array("between");
     }
 
     /**
@@ -564,5 +581,6 @@
     {    
       return "date";
     }
+    
   }
 ?>

@@ -50,7 +50,7 @@
       // searches can be implemented using LIKE)
       // Possible values
       //"regexp","exact","substring", "wildcard","greaterthan","greaterthanequal","lessthan","lessthanequal"
-      return array("exact","greaterthan","greaterthanequal","lessthan","lessthanequal");
+      return array("between", "exact","greaterthan","greaterthanequal","lessthan","lessthanequal");
     }
   
     function dbFieldType()
@@ -86,6 +86,54 @@
                 ($maxsize > 0 ? ' maxlength="'.$maxsize.'"' : '').'>';
 
       return $result;
+    }
+    
+   /**
+     * Returns a piece of html code that can be used to search for an
+     * attribute's value.
+     * @param $record Array with values
+     * @return Piece of htmlcode
+     */
+    function search($record="", $extended=false)
+    {
+      if (!$extended) return parent::search($record, $extended);
+      else
+      {
+        $id = "atksearch[".$this->formName()."][from]";
+        $this->registerKeyListener($id, KB_CTRLCURSOR|KB_UPDOWN);  
+        $result= '<input type="text" id="'.$id.'" name="'.$id.'" value="'.$record[$this->fieldName()].'"'.
+                  ($this->m_searchsize > 0 ? ' size="'.$this->m_searchsize.'"' : '').
+                  ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>';
+                  
+        $id = "atksearch[".$this->formName()."][to]";
+        $this->registerKeyListener($id, KB_CTRLCURSOR|KB_UPDOWN);  
+        $result.= " ".text("until").' <input type="text" id="'.$id.'" name="'.$id.'" value="'.$record[$this->fieldName()].'"'.
+                  ($this->m_searchsize > 0 ? ' size="'.$this->m_searchsize.'"' : '').
+                  ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>';                  
+        return $result;
+      }
+    }
+    
+   /**
+     * Creates an search condition for a given search value
+     * @param $table the table name
+     * @param $value the search value
+     * @return a piece of the SQL where clause
+     */
+    function searchCondition(&$query, $table, $value, $searchmode)
+    {
+      if ($searchmode!="between") 
+      {
+        // Use default handler, and use only the first field.
+        return parent::searchCondition($query, $table, $value["from"], $searchmode);
+      }
+      else
+      {       
+        if ($value["from"]!="" && $value["to"]!="")
+        {
+          $query->addSearchCondition($query->betweenCondition($table.".".$this->fieldName(),escapeSQL($value["from"]), escapeSQL($value["to"])));       
+        }
+      }
     }
       
   }

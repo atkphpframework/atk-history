@@ -126,7 +126,6 @@
       {
         $tmp = text('db_'.$this->getDbErrno());
         if($tmp==$this->m_errno) { $this->m_error = text('unknown_error').": ".$this->getDbErrno()." (".$this->getDbError().")"; } else { $this->m_error=$tmp; }
-        atkerror($this->m_error);
         return $this->m_error;
       }
       else
@@ -144,7 +143,6 @@
                                break;
         }
         $this->m_error = $tmp_error;
-        atkerror($this->m_error);
         return $this->m_error;
       }
     }
@@ -375,7 +373,7 @@
       // exact match and substring search should be supported by any database.
       // (the LIKE function is ANSI standard SQL, and both substring and wildcard
       // searches can be implemented using LIKE)
-      return array("exact","substring", "wildcard","greaterthan","greaterthanequal","lessthan","lessthanequal");
+      return array("exact","substring", "wildcard","greaterthan","greaterthanequal","lessthan","lessthanequal","between");
     }
     
     function tableMeta($table)
@@ -410,6 +408,16 @@
     function func_substring($fieldname, $startat=0, $length=0)
     {
       return "SUBSTRING($fieldname, $startat".($length!=0?", $length":"").")";
+    }
+    
+    /** 
+      * Get TO_CHAR() equivalent for the current database.
+      *
+      * TODO/FIXME: add format paramater. Current format is always yyyy-mm-dd.
+      */
+    function func_datetochar($fieldname)
+    {
+      return "TO_CHAR($fieldname, 'YYYY-MM-DD')";
     }
     
     /**
