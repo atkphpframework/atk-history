@@ -38,6 +38,8 @@
      */
     function connect()
     {          
+      static $s_connecting=0;
+
       /* establish connection */
       if (empty($this->m_link_id))
       {
@@ -52,9 +54,24 @@
       /* select database */
       if (!@mysql_select_db($this->m_database, $this->m_link_id))
       {
-        $this->halt("cannot use database ".$this->m_database.".");
-        return $this->_translateError(mysql_errno());
+        $errno=mysql_errno();
+        if($errno==2013 && $s_connecting<2) // lost connection; this could happen if the idle timeout has reached. a reconnect should solve this
+        { 
+          $s_connecting++;
+          unset($this->m_link_id); // this should be a disconnect?
+          if ($this->connect()==DB_SUCCESS)
+          {
+            return DB_SUCCESS;
+          }
+        }
+        else
+        {
+          $this->halt("cannot use database ".$this->m_database.".");
+          return $this->_translateError($errno);
+          $_connecting=0;
+        }
       }
+      $s_connecting=0;
         
       /* return link identifier */
       return DB_SUCCESS;
@@ -249,7 +266,7 @@
         if ($this->lock($this->m_seq_table))
         {
           /* get sequence number (locked) and increment */
-          $query = "SELECT ".$this->m_seq_field." FROM ".$this->m_seq_table." WHERE ".$this->m_seq_namefield." = '$sequence'";       
+          $query = "SELECT ".$this->m_seq_field." FROM ".$this->m_seq_table." WHERE ".$this->m_seq_namefield." = '$sequence'";
           atkdebug("atkmysqldb::nextid() query is ".$query);
         
           $id = @mysql_query($query, $this->m_link_id);
