@@ -5,7 +5,7 @@
 
   /**
    * The atkDateTimeAttribute class can be used for date and time entry.
-   * It corresponds to a DATETIME field in the database.   
+   * It corresponds to a DATETIME field in the database.
    *
    * @author Sandy Pleyte <sandy@achievo.org>
    * @version $Revision$
@@ -17,7 +17,7 @@
   {
     var $m_time = "";
     var $m_date = "";
-    
+
     /**
      * Constructor
      * @param $name        Name of the attribute
@@ -34,15 +34,15 @@
 			}
 			if($default_date=="") { $default_date = ""; }
 			if($default_time=="") { $default_time = date("H:i"); }
-			
+
 		  $this->m_time = new atkTimeattribute($name,0,23,$default_steps,$default_time);
-			$this->m_date = new atkDateattribute($name,$default_date);
+			$this->m_date = new atkDateattribute($name,$default_date, array(), array(), array(), AF_DATE_NO_CALENDAR);
       $this->atkAttribute($name,$flags); // base class constructor
     }
 
     function init()
 		{
-		  
+
 		  $this->m_time->m_owner=$this->m_owner;
 		  $this->m_date->m_owner=$this->m_owner;
 		  $this->m_time->m_ownerInstance=&$this->m_ownerInstance;
@@ -62,7 +62,7 @@
      * @return text string of $record
      */
     function display($record)
-    { 
+    {
       $date = $this->m_date->display($record);
 			$time = $this->m_time->display($record);
       if($date!='' && $time!='')
@@ -75,8 +75,8 @@
     {
       $result = $postvars[$this->formName()];
       return $result;
-    } 
-		
+    }
+
     /**
      * Returns a piece of html code that can be used in a form to edit this
      * attribute's value.
@@ -85,7 +85,7 @@
      */
     function edit($record="", $fieldprefix="")
     {
-      return $this->m_date->edit($record,$fieldprefix)."&nbsp;&nbsp;-&nbsp;&nbsp;".$this->m_time->edit($record,$fieldprefix);  
+      return $this->m_date->edit($record,$fieldprefix)."&nbsp;&nbsp;-&nbsp;&nbsp;".$this->m_time->edit($record,$fieldprefix);
     }
 
 
@@ -96,11 +96,11 @@
 			//$tmp_rec = $rec;
 			//$tmp_rec[$this->fieldname()]=$datetime[0];
       $date=$this->m_date->value2db($rec);
-			
+
 			//$tmp_rec = $rec;
 			//$tmp_rec[$this->fieldname()]=$datetime[1];
 			$time=$this->m_time->value2db($rec);
-      
+
       if($time!='NULL' && $date!='NULL')
         $result = $date." ".$time;
       else
@@ -114,7 +114,7 @@
      */
     function db2value($rec)
     {
-		   
+
 			$datetime = split(" ",$rec[$this->fieldname()]);
 			$tmp_rec = $rec;
 			$tmp_rec[$this->fieldname()]=$datetime[0];
@@ -125,7 +125,7 @@
 			//var_dump(array_merge($result_date,$result_time));
 			return array_merge($result_date,$result_time);
     }
-	
+
     /**
      * Add's fields to query
      * @param $query The SQL query
@@ -140,7 +140,7 @@
       if ($mode == "add" || $mode == "update")
       {
         if($this->value2db($rec) == '' || $this->value2db($rec) == 'NULL')
-        {          
+        {
           $query->addField($this->fieldName(),'NULL','','',false);
         }
         else
@@ -150,7 +150,7 @@
           else
           {
             $value = $this->value2db($rec);
-            $query->addField($this->fieldName(),$value,"","",!$this->hasFlag(AF_NO_QUOTES), $mode, "DATETIME");      
+            $query->addField($this->fieldName(),$value,"","",!$this->hasFlag(AF_NO_QUOTES), $mode, "DATETIME");
           }
         }
       }
@@ -160,21 +160,21 @@
           $query->addField($this->fieldName(),"",$tablename,$fieldaliasprefix,!$this->hasFlag(AF_NO_QUOTES));
         else
         {
-          $query->addField($this->fieldName(),"",$tablename,$fieldaliasprefix,!$this->hasFlag(AF_NO_QUOTES), $mode, "DATETIME");      
+          $query->addField($this->fieldName(),"",$tablename,$fieldaliasprefix,!$this->hasFlag(AF_NO_QUOTES), $mode, "DATETIME");
         }
       }
     }
 
     /**
-     * Returns a piece of html code that can be used in a form to search values   
+     * Returns a piece of html code that can be used in a form to search values
      * @param $record Array with fields
      * @return piece of html code with a checkbox
      */
     function search($record="")
-    {      
+    {
      return "";
     }
-    
+
     function hide($record="", $fieldprefix="")
     {
       // we only need to return the date part, because the dateattribute also
@@ -182,7 +182,7 @@
       // a bug of the dateattribute?)
       return $this->m_date->hide($record, $fieldprefix);
     }
-    
+
     function getSearchModes()
     {
       // exact match and substring search should be supported by any database.
@@ -192,13 +192,13 @@
       //"regexp","exact","substring", "wildcard","greaterthan","greaterthanequal","lessthan","lessthanequal"
       return array("exact","greaterthan","greaterthanequal","lessthan","lessthanequal");
     }
-    
+
     function dbFieldType()
     {
       // TODO FIXME: Is this correct? Or does the datetimeattribute currently only support varchar fields?
       return "datetime";
     }
-    
-    
+
+
   }
 ?>
