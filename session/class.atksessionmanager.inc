@@ -340,7 +340,7 @@
       
       $ui = &atknew("atk.ui.atkui");   
       
-      $res = "";
+      $res = array();
       $stack = $g_sessionData[$this->m_namespace]["stack"][atkStackID()];
 
       // we only show the last 4 elements of the stack
@@ -353,11 +353,12 @@
         $title = text($ui->title($mod, $node, $stack[$i]["atkaction"]));
         if ($i<count($stack)-1)
         {
-          $res.='<a href="'.session_url('dispatch.php?atklevel='.$i).'">'.$title.'</a> | ';
+          $res[]=array("url"=>session_url('dispatch.php?atklevel='.$i),
+                       "title"=>$title);
         }
         else
         {
-          $res.=$title;
+          $res[]=array("url"=>"", "title"=>$title);
         }
       }
       return $res;

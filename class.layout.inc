@@ -584,7 +584,7 @@
         $pk_err = array();
         foreach ($data["error"] as $error)
         {
-          if ($error['err'] == error_primarykey_exists)
+          if ($error['err'] == "error_primarykey_exists")
           {
             $pk_err_attrib[] = $error['attrib_name'];
           }

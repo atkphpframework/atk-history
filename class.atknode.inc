@@ -697,10 +697,10 @@
         // which means that 'saveandclose' doesn't close anyway, so we leave out
         // the 'saveandclose' button. Unless, a feedback screen is configured.
         if (atkLevel() >0 || hasFlag($this->m_feedback["update"], ACTION_SUCCESS))
-          $result = '&nbsp;<input type="submit" value="'.text('saveandclose').'">&nbsp;';
+          $result = '&nbsp;<input type="submit" class="btn_saveandclose" value="'.text('saveandclose').'">&nbsp;';
 
-        $result .= '&nbsp;<input type="submit" name="atknoclose" value="'.text('save').'">&nbsp;'.
-                   '&nbsp;<input type="submit" name="atkcancel" value="'.text('cancel').'">&nbsp;';
+        $result .= '&nbsp;<input type="submit" class="btn_save" name="atknoclose" value="'.text('save').'">&nbsp;'.
+                   '&nbsp;<input type="submit" class="btn_cancel" name="atkcancel" value="'.text('cancel').'">&nbsp;';
       }
 
       return $result;
@@ -734,7 +734,8 @@
       global $config_atkroot;
       
       $page = &$this->getPage();
-      $page->register_script($config_atkroot."atk/javascript/formfocus.js");
+      $page->register_script($config_atkroot."atk/javascript/formfocus.js");      
+      $this->setStyle("style.css");
 
       $output = $this->statusbar($locked);
       $output.= '<form name="entryform" enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?'.SID.'"'.
@@ -780,6 +781,7 @@
     {
       global $g_layout;
       $ui = &atknew("atk.ui.atkui");
+      $this->setStyle("style.css");
       
       if (is_object($ui))
       {
@@ -885,6 +887,7 @@
       $page = &$this->getPage();
             
       $page->register_script($config_atkroot."atk/javascript/formfocus.js");
+      $this->setStyle("style.css");
       
       $output = $this->statusbar();
 
@@ -1137,9 +1140,145 @@
       global $g_layout;
 
       /* get data, transform into form, return */            
-      $data = $this->editArray($mode, $record, $forceList, $suppressList, $fieldprefix);      
-      $form = $g_layout->ret_editForm($data, $this);
-      return $form;
+      $data = $this->editArray($mode, $record, $forceList, $suppressList, $fieldprefix);                        
+      
+      // Format some things for use in tpl.
+      /* check for errors and display them */
+      $tab = $this->getActiveTab();
+      $error_title = "";
+      
+      // Handle errors
+      $errors = array();
+      if (count($data['error']) > 0)
+      {      
+        $error_title = '<b>'.text('error_formdataerror').'</b>';
+        $errormsg = "";
+
+        $pk_err = array();        
+        foreach ($data["error"] as $error)
+        {
+          if ($error['err'] == "error_primarykey_exists")
+          {
+            $pk_err_attrib[] = $error['attrib_name'];
+          }
+          else
+          {
+            $type = (empty($error["node"]) ? $this->m_type : $error["node"]);
+            $index = $this->m_attribList[$error['attrib_name']]->m_index;
+            $tabs  = $this->m_attribIndexList[$index]["tabs"];
+            if (($this->m_action == "add" && count($this->m_tabListAdd) > 1 ||
+                 $this->m_action == "edit" && count($this->m_tabListEdit) > 1) &&
+                 $tabs != "*" && !atk_in_array($tab, $tabs))
+              $error_tab = ' ('.text("error_tab").' '.href($_SERVER["PHP_SELF"]."?atktab=".$tabs[0],text("tab_".$tabs[0], $node->m_type),SESSION_DEFAULT,true).')';
+            else $error_tab = "";
+            
+            $errors[] = array("msg"=>$error['msg'].$error_tab,
+                              "label"=>text($error['attrib_name'], $type));
+          }
+        }
+        if (count($pk_err_attrib)>0) // Make primary key error message
+        {                  
+          for($i=0;$i<count($pk_err_attrib); $i++)
+          {
+            $pk_err_msg .= text($pk_err_attrib[$i]);
+            if (($i+1) < count($pk_err_attrib)) $pk_err_msg .= ", ";
+          }
+          $form.=$this->ret_td($error_title.$pk_err_msg.$errormsg.'<br><br>','colspan="2"');
+          $errors[] = array("label"=>text("error_primarykey_exists"),
+                            "msg"=>$pk_err_msg);
+        }        
+        
+      }
+      
+      // Handle fields
+      // load images
+      $theme = &atkTheme::getInstance();
+      $tipimg = $theme->imgPath("help.gif");
+      $reqimg = '<img align="top" onMouseOver="javascript:window.status=\''.
+                   addslashes(text("field_obligatory")).'\';" src="'.$theme->imgPath("required_field.gif").'" border="0" alt="'.
+                   text("field_obligatory").'">';
+      atkimport("atk.ui.atktheme");
+      
+
+      /* display the edit fields */
+      $fields = array();
+      for ($i = 0, $_i= count($data["fields"]); $i<$_i; $i++)
+      {
+        $field = &$data["fields"][$i];
+        
+        $tplfield = array();
+
+        /* check for seperator */
+        if (!is_array($field) && $field == "-" && $i > 0 && $data["fields"][$i-1] != "-")
+        {
+          $tplfield["line"] = "<hr>"; 
+        }
+        /* double seperator, ignore */
+        elseif (!is_array($field) && $field == "-")
+        {
+        }        
+        /* only HTML */
+        elseif (!is_array($field))
+        {
+          $tplfield["line"] = $field;
+        }
+        /* edit field */
+        else
+        {                  
+          /* does the field have a label? */
+          if ($field["label"] !== NULL)
+          {
+            if ($field["label"] == "") 
+            {
+              $tplfield["label"] = "";
+            }
+            else
+            {
+              $tplfield["label"] =  $field["label"];
+              if ($field["error"]) 
+              {
+                $tplfield["error"] = $field["error"];
+              }
+            }            
+          }
+          
+          /* html source */
+          $tplfield["widget"] = $field["html"];
+          $editsrc = $field["html"];
+
+          /* obligatory indicator */
+          if ($field["obligatory"]) 
+          {
+            $editsrc.= $reqimg."&nbsp;";
+            $tplfield["obligatory"] = $reqimg;
+          }
+
+          /* tooltip */
+          $ttip = "txt_".$this->m_type."_".$field["name"]."_tooltip";
+          if ($GLOBALS[$ttip] != "")
+          {
+            $tooltip = '<img align="top" src="'.$tipimg.'" border="0" alt="'.$GLOBALS[$ttip].'" onClick="javascript:alert(\''.addslashes($GLOBALS[$ttip]).'\')" onMouseOver="javascript:window.status=\''.addslashes($GLOBALS[$ttip]).'\';">';
+            $tplfield["tooltip"] = $tooltip;
+            $editsrc.=$tooltip."&nbsp;";
+          }
+
+          $tplfield["full"] = $editsrc;        
+        }
+        $fields[] = $tplfield;
+      }
+      
+      $ui = &atknew("atk.ui.atkui");
+      $page = &$this->getPage();
+      $page->register_script(atkconfig("atkroot")."atk/javascript/formsubmit.js");
+      foreach ($data["hide"] as $hidden)
+      {
+        $result.= $hidden;
+      }
+      $result.= $ui->render("editform.tpl", array("fields"=>$fields,
+                                                  "errortitle"=>$error_title,
+                                                  "errors"=>$errors));
+      return $result;
+            
     }
 
     /**
@@ -1402,6 +1541,8 @@
     function adminPage($actions="")
     {
       global $atksearch, $config_atkroot;            
+      
+      $this->setStyle("style.css");
 
       // When there's a lot of data, records will be spread across multiple
       // pages.
@@ -2450,35 +2591,28 @@
      * @param $atkselector Selected record you want to delete
      */
     function confirmDelete($atkselector, $locked=FALSE)
-    {
-      global $g_layout;
-      $g_layout->initGui();
-      
+    {    
       $ui = &atknew("atk.ui.atkui");
+      
+      $this->setStyle("style.css");
 
       if (is_array($atkselector))
         $atkselector_str = '(('. implode($atkselector, ') OR (').'))';
-      else $atkselector_str = $atkselector;
-
-      $g_layout->ui_top($ui->title($this->m_module, $this->m_type,'delete'));
-      $g_layout->output($this->statusbar($locked));
-
-      $g_layout->output('<form action="'.$_SERVER["PHP_SELF"].'?"'.SID.' method="post">');
-      $g_layout->output(session_form());
-      $g_layout->output('<input type="hidden" name="atkaction" value="delete">');
-      $g_layout->output('<input type="hidden" name="atknodetype" value="'.$this->atknodetype().'">');
-      $g_layout->output('<input type="hidden" name="atkselector" value="'.$atkselector_str.'">');
-
-      $g_layout->table_simple();
-
-      $g_layout->output('<tr>');
-      $text = $this->confirmDeleteText($atkselector);
-      $g_layout->td(text($text), 'align="center"');
-      $g_layout->output('</tr><tr>');
-      $g_layout->td('<input name="confirm" type="submit" value="'.text('yes').'" style="width:80px">&nbsp;&nbsp;<input name="cancel" type="submit" value="'.text('no').'" style="width:80px">','align="center"');
-      $g_layout->output('</tr></table></form>');
-
-      $g_layout->ui_bottom();
+      else $atkselector_str = $atkselector;            
+      $formstart ='<form action="'.$_SERVER["PHP_SELF"].'?"'.SID.' method="post">';
+      $formstart.=session_form();
+      $formstart.='<input type="hidden" name="atkaction" value="delete">';
+      $formstart.='<input type="hidden" name="atknodetype" value="'.$this->atknodetype().'">';
+      $formstart.='<input type="hidden" name="atkselector" value="'.$atkselector_str.'">';            
+      
+      $output.=$ui->render("confirm.tpl", array("statusbar"=>$this->statusbar($locked),
+                                                "text"=>$this->confirmDeleteText($atkselector),
+                                                "formstart"=>$formstart,
+                                                "formend"=>'</form>',
+                                                "okbtn"=>'<input name="confirm" type="submit" value="'.text('yes').'" style="width:80px">',
+                                                "cancelbtn"=>'<input name="cancel" type="submit" value="'.text('no').'" style="width:80px">'));
+      return $ui->render("box.tpl", array("title"=>$ui->title($this->m_module, $this->m_type,'delete'),
+                                          "content"=>$output));                                          
     }
 
     // function to show delete confirmation message
@@ -2676,7 +2810,8 @@
         if ($error)
         {
           $this->m_action="edit";
-          $res = $this->editPage($record);
+          $page = &$this->getPage();
+          $page->addContent($this->editPage($record));
         }
         else
         {
@@ -2700,13 +2835,15 @@
               if ($this->m_lock->lock($record["atkprimkey"], $this->m_table)) $locked = TRUE;
               else
               {
-                $this->lockPage();
+                $page = &$this->getPage();
+                $page->addContent($this->lockPage());
                 return;
               }
             }
 
             //$this->setOrgKeyValue($record);
-            $this->editPage($record, $locked);
+            $page = &$this->getPage();
+            $page->addContent($this->editPage($record, $locked));
           }
         }
       }
@@ -2736,7 +2873,8 @@
         if ($error)
         {
           $this->m_action="add";
-          $this->addPage($record);
+          $page = &$this->getPage();
+          $page->addContent($this->addPage($record));
         }
         else
         {
@@ -2763,7 +2901,7 @@
     }
 
     function action_delete()
-    {
+    {    
       if (!empty($this->m_postvars['confirm']))
       {
         // Confirmation page was displayed and 'yes' was clicked
@@ -2785,21 +2923,22 @@
           elseif (!$this->m_lock->lock($this->m_postvars['atkselector'], $this->m_table)) $locked = FALSE;
 
           if (!$locked)
-          {
-            $this->lockPage();
+          {          
+            $page = &$this->getPage();
+            $page->addContent($this->lockPage());
             return;
           }
         }
-
         // Confirmation page was not displayed
-        $this->confirmDelete($this->m_postvars['atkselector'], $locked, $this->m_postvars["indexWarning"]);
+        $page = &$this->getPage();        
+        $page->addContent($this->confirmDelete($this->m_postvars['atkselector'], $locked, $this->m_postvars["indexWarning"]));        
       }
       else
       {
         // Confirmation page was displayed and 'no' was clicked
         $location = $this->feedbackUrl("delete", ACTION_CANCELLED);
         $this->redirect($location);
-      }
+      }      
     }
 
     function action_copy()
@@ -3914,28 +4053,35 @@
      * @param $locked is the currently displayed item locked or not?
      */
     function statusbar($locked=FALSE)
-    {
-      global $g_sessionManager, $g_layout, $config_atkroot;
+    {      
       if (!$this->m_statusbarDone)
       {
-        $this->m_statusbarDone = true;
+        global $g_sessionManager, $config_atkroot;
+        $ui = &atknew("atk.ui.atkui");
+        
+        $params = array();
+                
+        $this->m_statusbarDone = true;        
         if (atkconfig("stacktrace"))
         {
-          $statusbar.= $g_layout->ret_td('<i>'.$g_sessionManager->stackTrace().'</i>','align="left"');
+          $params["stacktrace"] = $g_sessionManager->stackTrace();
         }
-
-        $td = "";
-        $helpurl = $this->helpUrl();
-        if ($helpurl!="")
+                
+        $params["helpurl"] = $this->helpUrl();
+        if ($params["helpurl"]!="")
         {
-          $g_layout->register_script($config_atkroot."atk/javascript/newwindow.js");
-          $td = '<i><a href="'.$helpurl.'">'.text("help").'</a></i>';
+          $page = &$this->getPage();
+          $page->register_script($config_atkroot."atk/javascript/newwindow.js");          
+          $params["helplabel"] = text("help");
+          $params["helplink"] = '<a href="'.$params["helpurl"].'">'.$params["helplabel"].'</a>';
         }
-
-        if ($locked) $td = '&nbsp;<img src="'.atkconfig("atkroot").'atk/images/lock.gif" name="_lock_">';
-        if (!empty($td)) $statusbar .= $g_layout->ret_td($td, 'align="right"');
-
-        if ($statusbar!="") return $g_layout->ret_table_simple(0,true).'<tr>'.$statusbar.'</tr></table><br>';
+        
+        if ($locked) 
+        {
+          $params["lockstatus"] = '<img src="'.atkconfig("atkroot").'atk/images/lock.gif" name="_lock_">';
+        }
+        
+        return $ui->render("statusbar.tpl", $params);        
       }
       return "";
     }
@@ -4077,6 +4223,14 @@
         if (in_array($relation_new, array_keys($this->m_attribList))) return $filter;
       }
       return "";
+    }
+    
+    function setStyle($style)
+    {
+      atkimport("atk.ui.atktheme");
+      $theme = &atkTheme::getInstance();
+      $page = &$this->getPage();
+      $page->register_style($theme->stylePath($style));
     }
   }
 ?>

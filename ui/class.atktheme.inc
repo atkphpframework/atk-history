@@ -54,12 +54,14 @@
         }
         
         // Include themedef.inc file (newstyle)
+        // firstly, always include the default
+        include_once($atkroot."atk/themes/default/themedef.inc");
         if (file_exists($this->m_themedir."themedef.inc"))
         {
           include_once($this->m_themedir."themedef.inc");
           $this->m_def = $theme;
         }        
-        
+                
         $this->m_initialized = true;          
       }
     }
@@ -71,6 +73,24 @@
         return $this->themeDir()."templates/".$tpl;
       }
       return atkconfig("atkroot")."atk/themes/default/templates/".$tpl;
+    }
+    
+    function imgPath($img)
+    {      
+      if (atk_in_array($img, $this->m_def["customimgs"]))
+      {
+        return $this->themeDir()."images/".$img;
+      }
+      return atkconfig("atkroot")."atk/themes/default/images/".$img;      
+    }
+    
+    function stylePath($style)
+    {
+      if (atk_in_array($style, $this->m_def["customstyles"]))
+      {
+        return $this->themeDir()."styles/".$style;
+      }
+      return atkconfig("atkroot")."atk/themes/default/styles/".$style;
     }
     
     function themeDir()

@@ -49,10 +49,16 @@
      * @return piece of html code with a textarea
      */
     function edit($record="", $fieldprefix="")
-    {
-      global $g_layout;
-      if ($this->m_cols != 0) $cols = $this->m_cols;
-      else $cols = $g_layout->maxInputSize();
+    {      
+      if ($this->m_cols != 0) 
+      {
+        $cols = $this->m_cols;
+      }
+      else 
+      {        
+        global $g_layout;
+        $cols = $g_layout->maxInputSize();        
+      }
       $rows = $this->m_rows;
       
       if ($rows =="" || $rows == 0) $rows = 10;

@@ -9,15 +9,14 @@
             <table border="0" cellspacing="0" cellpadding="0">
               <tr>
                 <td><img src="{$themedir}images/tab_left{if $tabs[i].selected}_s{/if}.gif"></td>
-                <td height="22" valign="middle" background="{$themedir}images/tab_back{if $tabs[i].selected}_s{/if}.gif" align="left" nowrap>
-                  <b><small style="color:{if $tabs[i].selected}black{else}{/if};font-size:9pt">
+                <td height="22" valign="middle" background="{$themedir}images/tab_back{if $tabs[i].selected}_s{/if}.gif" align="center" nowrap>
+                  <span class="{if $tabs[i].selected}tab_selected{else}tab{/if}">
                   {if $tabs[i].selected}
                     {$tabs[i].title}
                   {else}
                     <a href="{$tabs[i].link}" style="color:#ffffff;text-decoration:none">{$tabs[i].title}</a>
                   {/if}
-                  &nbsp;
-                    </b>
+                    </span>
                 </td>
                 <td><img src="{$themedir}images/tab_right{if $tabs[i].selected}_s{/if}.gif"></td>
               </tr>
