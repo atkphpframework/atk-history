@@ -58,8 +58,9 @@
         fwrite($fp, $contents);
         fclose($fp);
         atkdebug("[".$this->fieldName()."] succesfully wrote $filename..");
-      }      
-      return escapeSQL($contents);
+      }
+      return $contents;      
+      //return escapeSQL($contents);
     }
     
     function db2value($record)
