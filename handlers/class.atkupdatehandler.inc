@@ -7,7 +7,6 @@
     {
       global $g_db;
       
-      
       $record = $this->m_node->updateRecord();
 
       if ($this->m_postvars['atkcancel']=="")
@@ -50,7 +49,7 @@
           }
           else
           {
-            $g_db->commit();            
+            $g_db->commit();
             
             if ($this->m_postvars['atknoclose']=="")
             {

@@ -15,6 +15,11 @@
    *
    * $Id$
    */
+   
+  /* flag(s) specific for atkOneToOneRelation */
+  define("AF_ONETOONE_ADD",             AF_SPECIFIC_1); // override the default no add flag
+  define("AF_ONETOONE_ERROR",           AF_SPECIFIC_2); // enable error notifications / triggers  
+   
   class atkOneToOneRelation extends atkRelation
   {
     /* The referential key in the target node */

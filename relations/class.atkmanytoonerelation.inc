@@ -17,6 +17,10 @@
    *
    * $Id$
    */
+   
+/* flag(s) specific for atkManyToOneRelation */
+  define("AF_RELATION_AUTOLINK",        AF_SPECIFIC_1); // create edit/view links for the items in a manytoonerelation dropdown.
+   
   class atkManyToOneRelation extends atkRelation
   {  
     var $m_leftjoin = true; // by default, we do a left join. this means that

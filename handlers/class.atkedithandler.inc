@@ -33,7 +33,7 @@
      */
     function editPage($record, $locked=FALSE)
     {        
-      $node = &$this->m_node;            
+      $node = &$this->m_node;      
       $page = &$this->getPage();
       $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");            
       $node->addStyle("style.css");
@@ -57,6 +57,7 @@
         $params["buttons"] = $node->getFormButtons("edit", $record);
         
         $output = $ui->renderAction("edit", $params);
+	$output .= "<BLA>"; 
               
         return $ui->renderBox(array("title"=>$node->actionTitle('edit', $record),
                                       "content"=>$output));        

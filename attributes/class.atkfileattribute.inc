@@ -19,6 +19,7 @@
    * $Id$
    *     
    */        
+
   class atkFileAttribute extends atkAttribute
   {
     /** 
