@@ -14,15 +14,14 @@
   */
   
   include_once($config_atkroot."atk.inc");  
-  
+   
   atksession();
   atksecure();  
-
 //  Renders the help screen
   $language = strtok(atkconfig("languagefile"),".");
-  $title1 ="txt_title_".$node;
+  $title1 ="txt_title_".$_REQUEST['node'];
   $title = $$title1;
-  $file   = $config_atkroot."help/".$language."/help.".$node.".inc";
+  $file   = $config_atkroot."help/".$language."/help.".$_REQUEST['node'].".inc";
   $data = '<div align="left">';
   $data .= implode("<br>",file($file));
   $data .='</div>';
