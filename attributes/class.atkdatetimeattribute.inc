@@ -4,7 +4,7 @@
    * The atkDateTimeAttribute class can be used for date and time entry.
    * It corresponds to a DATETIME field in the database.   
    *
-   * @author Sandy Pleyte <sandy@achievo.com>
+   * @author Sandy Pleyte <sandy@achievo.org>
    * @version $Revision$
    *
    * $Id$
