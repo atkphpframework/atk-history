@@ -3592,7 +3592,6 @@
           $p_attrib = &$this->m_attribList[$storelist[$i]];
           if (!$p_attrib->store($g_db, $record,"update"))
           {
-          echo '  jo2'.$p_attrib->m_name;
             // something went wrong.
             return false;
           }
