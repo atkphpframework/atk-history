@@ -11,15 +11,23 @@
    */
   class atkBoolAttribute extends atkAttribute
   {
+    var $m_onvalue = 1;
+    var $m_offvalue = 0;
+    
     /**
      * Constructor
-     * @param $name Name of the attribute
-     * @param $flags Flags for this attribute
+     * @param String $name Name of the attribute
+     * @param Flags $flags Flags for this attribute
+     * @param Mixed $onvalue Value set when box is checked (default: 1)
+     * @param Mixed $offvalue Value set when box is unchecked (default: 0)
      */
-    function atkBoolAttribute($name, $flags=0)
+    function atkBoolAttribute($name, $flags=0, $onvalue=1, $offvalue=0)
     {
       //Setting AF_OBLIGATORY has no use, so prevent setting it.
       if (($flags & AF_OBLIGATORY) == AF_OBLIGATORY) $flags &= (~ AF_OBLIGATORY);          
+      
+      $this->m_onvalue = $onvalue;
+      $this->m_offvalue = $offvalue;
             
      // Call base class constructor. Size of boolean value is always 1.
       $this->atkAttribute($name,$flags, 1); 
@@ -34,8 +42,8 @@
     function edit($record="", $fieldprefix="")
     {
       $checked = "";
-      if ($record[$this->fieldName()]>0) $checked="checked";
-      return '<input type="checkbox" id="'.$fieldprefix.$this->formName().'" name="'.$fieldprefix.$this->formName().'" value="1" '.$checked.'>';
+      if ($record[$this->fieldName()]==$this->m_onvalue) $checked="checked";
+      return '<input type="checkbox" id="'.$fieldprefix.$this->formName().'" name="'.$fieldprefix.$this->formName().'" value="'.$this->m_onvalue.'" '.$checked.'>';
     }
     
 
@@ -46,8 +54,7 @@
      */
     function value2db($rec)
     {   
-      (isset($rec[$this->fieldName()]) ? $ret =  $rec[$this->fieldName()]: $ret = 0);
-      return $ret;
+      return ($rec[$this->fieldName()]==$this->m_onvalue ? $this->m_onvalue: $this->m_offvalue);      
     }
 
 
@@ -60,11 +67,11 @@
     {
       $result = '<select name="atksearch['.$this->formName().']">';
       $result.= '<option value="">'.text('search_all');
-      $result.= '<option value="0" ';
-      if($record[$this->fieldName()]==0 && !empty($record)) $result.="selected";
+      $result.= '<option value="'.$this->m_offvalue.'" ';
+      if($record[$this->fieldName()]!=$this->m_onvalue && !empty($record)) $result.="selected";
       $result.= '>'.text('no');
-      $result.= '<option value="1" ';
-      if($record[$this->fieldName()]==1) $result.="selected";
+      $result.= '<option value="'.$this->m_onvalue.'" ';
+      if($record[$this->fieldName()]==$this->m_onvalue) $result.="selected";
       $result.= '>'.text('yes');
       $result.='</select>';
       return $result;
@@ -90,10 +97,10 @@
     function display($record)
     {
 	    // We display true (1) as 'Yes' and false as 'No'
-	    if ($record[$this->fieldName()]>0) return text("yes");
+	    if ($record[$this->fieldName()]==$this->m_onvalue) return text("yes");
 	    return text("no");
     }
-  
+    
     function getSearchModes()
     {
       // exact match and substring search should be supported by any database.
@@ -106,6 +113,7 @@
 
     function dbFieldType()
     {
+      // TODO/FIXME: this must be dependend on onvalue/offvalue
       return "number";
     }
     
