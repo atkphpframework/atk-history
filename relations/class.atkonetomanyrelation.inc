@@ -32,8 +32,9 @@
      */
     function atkOneToManyRelation($name, $destination, $refKey="", $flags=0)
     {
-      $this->atkRelation($name, $destination, $flags|AF_HIDE_ADD|AF_HIDE_SEARCH); // 1toM Relations are NEVER edited when adding a rec.
-                                                                                 // and for now, we cannot search them.
+      $this->atkRelation($name, $destination, $flags|AF_HIDE_ADD|AF_HIDE_SEARCH|AF_NO_SORT); 
+      // 1toM Relations are NEVER edited when adding a rec. And for now, we 
+      // cannot search or sort them.
                                                                                  
       if (is_array($refKey))
       {
