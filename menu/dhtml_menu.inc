@@ -16,7 +16,7 @@
 	<small style="color:#666666;font-size:8pt;font-family: Verdana,Helvetica,Arial">Logged in as: '.$g_user["name"].'</small></div>
 	</TD>
 	</TR>
-	</TABLE><script language="JavaScript" src="'.atkconfig("atkroot").'javascript/dhtml_menu_events.js" type="text/javascript">
+	</TABLE>
   ';
   
   $page->addContent($dhtml_menu);
