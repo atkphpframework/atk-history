@@ -185,10 +185,10 @@
           $this->m_destInstance->m_postvars = $vars;
           $this->m_destInstance->updateDb($vars);
         }
-        elseif ($vars["mode"]=="add" || $mode == "add")
+        elseif ($vars["mode"]=="add" || $mode == "add" || $mode == "copy")
         {
           atkdebug("Adding new one2one record");
-          $this->m_destInstance->addDb($vars);
+          $this->m_destInstance->addDb($vars, true, $mode);
         }
         else
         {
