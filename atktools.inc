@@ -646,17 +646,18 @@
           $body.=_wordwrap($key.str_repeat(" ",max(1,20-strlen($key)))." = ".$value)."\n";
         }
       }
-
-      $request = getallheaders();
-      if (count($request)>0)
+      if (function_exists("getallheaders"))
       {
-        $body.= "\n\nREQUEST INFORMATION\n".str_repeat("-",70)."\n";
-        foreach($request as $key=>$value)
+        $request = getallheaders();
+        if (count($request)>0)
         {
-          $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value)."\n";
+          $body.= "\n\nREQUEST INFORMATION\n".str_repeat("-",70)."\n";
+          foreach($request as $key=>$value)
+          {
+            $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value)."\n";
+          }
         }
       }
-
       if (count($_POST)>0)
       {
         $body.= "\n\n_POST\n".str_repeat("-",70)."\n";
