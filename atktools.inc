@@ -691,7 +691,7 @@
    */   
   function atkPopup($target,$params,$winName,$width,$height,$scroll='no',$resize='no')
   {
-    $url ="javascript:NewWindow('popup.php?target=".$target."&".$params."','".$winName."',".$height.",".$width.",'".$scroll."','".$resize."')";
+    $url ="javascript:NewWindow('atk/popups/".$target."&".$params."','".$winName."',".$height.",".$width.",'".$scroll."','".$resize."')";
     return $url;
   }
 
