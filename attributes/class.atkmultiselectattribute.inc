@@ -130,7 +130,7 @@
           $sel = "";
         }
         $this->registerKeyListener($id.'_'.$i, KB_CTRLCURSOR|KB_UPDOWN);  
-        $result .= '<td class="table" valign="top"><input type="checkbox" id="'$id.'_'.$i.'" name="'.$id.'[]" value="'.$this->m_values[$i].'" '.$sel.'>'.text($this->m_options[$i]).'</td>';
+        $result .= '<td class="table" valign="top"><input type="checkbox" id="'.$id.'_'.$i.'" name="'.$id.'[]" value="'.$this->m_values[$i].'" '.$sel.'>'.text($this->m_options[$i]).'</td>';
         if ($i%$cols == $modcols) $result .="</tr><tr>\n";
         
       }
