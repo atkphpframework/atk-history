@@ -131,8 +131,7 @@
     function display($record)
     {      
       if ($this->createDestination())      
-      {
-        atk_var_dump($record[$this->fieldName()], "display rec");
+      {        
       
         if (count($record[$this->fieldName()])==1)
         {
