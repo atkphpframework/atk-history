@@ -191,12 +191,26 @@
     
     function _getHourPart($minutes)
     {
-      return floor($minutes/60);
+      if(!is_array($minutes))
+      {
+        return floor($minutes/60);
+      }
+      else
+      {
+        return $minutes["hours"]; 
+      }
     }
     
     function _getMinutePart($minutes)
     {
-      return ($minutes-(floor($minutes/60)*60));
+      if(!is_array($minutes))
+      {
+        return ($minutes-(floor($minutes/60)*60));
+      }
+      else 
+      {
+        return $minutes["minutes"]; 
+      }
     }
     
     /**

@@ -213,9 +213,26 @@
         }
         $recordset = $this->getSelectableRecords();
 
+        
+        $autolink = "";
+        if ($this->hasFlag(AF_RELATION_AUTOLINK)) // auto edit/view link
+        {
+          global $g_layout;
+          $g_layout->register_script(atkconfig("atkroot")."atk/javascript/class.atkmanytoonerelation.js");
+          $editlink = session_url("dispatch.php?atknodetype=".$this->m_destination."&atkaction=edit&atkselector=REPLACEME",SESSION_NESTED);
+          if(count($recordset)>0)
+          {
+            $autolink = "<a href='javascript:atkSubmit(mto_parse(\"".atkurlencode($editlink)."\", document.entryform.".$fieldprefix.$this->fieldName().".value))'>".text('edit')."</a>&nbsp;";
+          }
+          $autolink.= href("dispatch.php?atknodetype=".$this->m_destination."&atkaction=add".($filter!=""?"&atkfilter=".rawurlencode($filter):""),text("new"),SESSION_NESTED,true);
+        }
+        
+        
         // autoselect if there is only one record (if obligatory is not set,
         // we don't autoselect, since user may wist to select 'none' instead
         // of the 1 record.
+        
+        
         if (count($recordset)==1&&$this->hasFlag(AF_OBLIGATORY))
         {
           $result = $this->m_destInstance->descriptor($recordset[0])."&nbsp;&nbsp;";
@@ -223,16 +240,6 @@
         }
         else
         {
-          $autolink = "";
-          if ($this->hasFlag(AF_RELATION_AUTOLINK)) // auto edit/view link
-          {
-            global $g_layout;
-            $g_layout->register_script(atkconfig("atkroot")."atk/javascript/class.atkmanytoonerelation.js");
-            $editlink = session_url("dispatch.php?atknodetype=".$this->m_destination."&atkaction=edit&atkselector=REPLACEME",SESSION_NESTED);
-
-            $autolink = "<a href='javascript:atkSubmit(mto_parse(\"".atkurlencode($editlink)."\", document.entryform.".$fieldprefix.$this->fieldName().".value))'>".text('edit')."</a>";
-            $autolink.= "&nbsp;".href("dispatch.php?atknodetype=".$this->m_destination."&atkaction=add".($filter!=""?"&atkfilter=".rawurlencode($filter):""),text("new"),SESSION_NESTED,true);
-          }
           $result.= '<select name="'.$fieldprefix.$this->formName().'">';
           if ($this->hasFlag(AF_OBLIGATORY)==false)
           {
@@ -248,8 +255,8 @@
           }
           $result.='</select>';
 
-          $result.=$autolink;
         }
+        $result.=$autolink;
       }
       else
       {
