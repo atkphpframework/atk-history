@@ -41,6 +41,7 @@
       if (empty($this->m_link_id))
       {
         $this->m_link_id = OCIplogon($this->m_user, $this->m_password, $this->m_database);
+
         if (!$this->m_link_id) 
         {
           $this->halt("connect using ".$this->m_user." / ***** on ".$this->m_database." failed.");     
