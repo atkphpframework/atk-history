@@ -748,14 +748,16 @@
       $g_layout->output('<form name="entryform" enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?'.SID.'"'.
                                    ' method="post" onsubmit="return globalSubmit(this)">');
       $g_layout->output(session_form());
-
+      if(atkconfig("buttons_pos")=="top" || atkconfig("buttons_pos")=="both")
+        $g_layout->output($this->getFormButtons("edit", $record)."<br><br>");
       if (count($this->m_tabListEdit) > 1) $g_layout->tabs_top($this->buildTabs());
       $forceList = decodeKeyValueSet($this->m_postvars['atkfilter']);      
       $g_layout->output($this->editForm("edit",$record,$forceList,$this->m_postvars['atksuppress']));
       if (count($this->m_tabListEdit) > 1) $g_layout->tabs_bottom();
 
       $g_layout->output('<br>');
-      $g_layout->output($this->getFormButtons("edit", $record));
+      if(atkconfig("buttons_pos")=="bottom" || atkconfig("buttons_pos")=="both" || atkconfig("buttons_pos")=="")
+        $g_layout->output($this->getFormButtons("edit", $record));
       $g_layout->output('</form>');
       $g_layout->ui_bottom();      
     }
@@ -767,10 +769,24 @@
     {
       global $g_layout;
       $g_layout->initGui();
-
+      
+      $buttons = '<br><form method="get">'.session_form(SESSION_NESTED).
+                        '&nbsp;<input type="submit" name="atkback" value="&lt;&lt; '.text('back').'">&nbsp;';
+      // if appropriate, display an edit button.
+      if (!$this->hasFlag(NF_NO_EDIT)&&$this->allowed("edit", $record))
+      {        
+        $buttons.= '<input type="hidden" name="atkaction" value="edit">'.
+                   '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">'.
+                   '&nbsp;<input type="submit" value="'.text('edit').'">&nbsp;';
+      }      
+      $buttons.= '</form>';
+      
       $g_layout->ui_top($this->actionTitle('view', $record));
       $g_layout->output($this->statusbar());
-
+      
+      if(atkconfig("buttons_pos")=="top" || atkconfig("buttons_pos")=="both")
+        $g_layout->output($buttons."<br>");
+        
       $page.=$g_layout->ret_table_simple();
 
       // get active tab
@@ -828,21 +844,10 @@
       if (count($this->m_tabListView) > 1) $g_layout->tabs_top($this->buildTabs());
       $g_layout->output($page);
       if (count($this->m_tabListView) > 1) $g_layout->tabs_bottom();
-
-      $buttons = '<br><form method="get">'.session_form(SESSION_NESTED).
-                        '&nbsp;<input type="submit" name="atkback" value="&lt;&lt; '.text('back').'">&nbsp;';
-                        
-      // if appropriate, display an edit button.
-      if (!$this->hasFlag(NF_NO_EDIT)&&$this->allowed("edit", $record))
-      {        
-        $buttons.= '<input type="hidden" name="atkaction" value="edit">'.
-                   '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">'.
-                   '&nbsp;<input type="submit" value="'.text('edit').'">&nbsp;';
-      }      
-    
-      $buttons.= '</form>';
       
-      $g_layout->output($buttons."<br>");
+      if(atkconfig("buttons_pos")=="bottom" || atkconfig("buttons_pos")=="both" || atkconfig("buttons_pos")=="")
+        $g_layout->output($buttons."<br>");
+
 
       $g_layout->ui_bottom();
     }
@@ -857,10 +862,19 @@
       $g_layout->register_script($config_atkroot."atk/javascript/formfocus.js");
       $g_layout->ui_top($this->actionTitle('add'));
       $g_layout->output($this->statusbar());
-
+        
       $g_layout->output('<form name="entryform" enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?'.SID.'"'.
                                    ' method="post" onsubmit="return globalSubmit(this)">');
+      $buttons = '<br>&nbsp;<input type="submit" value="'.text('save').'&nbsp;">';
+      if ($this->m_action=="add")
+      {
+        // if action is admin, we don't show the cancelbutton..
+        $buttons.='&nbsp;<input type="submit" name="atkcancel" value="'.text('cancel').'">&nbsp;';
+      }
 
+      if(atkconfig("buttons_pos")=="top" || atkconfig("buttons_pos")=="both")
+        $g_layout->output($buttons);   
+      
       /* if we are on an admin page we would like to stay on the admin page after adding a new record */
       if ($this->m_action == "admin") $g_layout->output(session_form(SESSION_NESTED));
       else $g_layout->output(session_form());
@@ -870,13 +884,10 @@
       $forceList = decodeKeyValueSet($this->m_postvars['atkfilter']);
       $g_layout->output($this->editForm("add",$record,$forceList));
       if (count($this->m_tabListAdd) > 1) $g_layout->tabs_bottom();
-
-      $g_layout->output('<br>&nbsp;<input type="submit" value="'.text('save').'&nbsp;">');
-      if ($this->m_action=="add")
-      {
-        // if action is admin, we don't show the cancelbutton..
-        $g_layout->output('&nbsp;<input type="submit" name="atkcancel" value="'.text('cancel').'">&nbsp;');
-      }
+      
+      if(atkconfig("buttons_pos")=="bottom" || atkconfig("buttons_pos")=="both" || atkconfig("buttons_pos")=="")
+        $g_layout->output($buttons);    
+        
       $g_layout->output('</form>');
       $g_layout->ui_bottom();
       $g_layout->output('<SCRIPT LANGUAGE="JavaScript">placeFocus()</SCRIPT>');
