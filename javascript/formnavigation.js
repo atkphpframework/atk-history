@@ -12,7 +12,7 @@ netscape = (ver.charAt(iln+1).toUpperCase() != "C");
 
 
 // this function sets the current focus
-// this has to be a function because of the inputField.onfocus event in function init()
+// this has to be a function because of the inputField.onfocus event in function init_nav()
 function registerFocus(comp)
 {
   currentFocus = comp;
@@ -20,7 +20,7 @@ function registerFocus(comp)
 
 // this function gives every field an onfocus event so we know which field has the focus
 // thereby is the focus set on the first not hidden field
-function init()
+function init_nav()
 {
   document.onkeydown = keyDown;
   for (var i = 0; i < document.entryform.elements.length; i++)

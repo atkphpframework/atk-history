@@ -53,8 +53,7 @@
      * @return a displayable string
      */
     function display($record, $mode="list")
-    {
-      global $g_layout;
+    {      
 
       $myrecords = $record[$this->fieldName()];
       $result = text("none"); // default result
@@ -105,13 +104,9 @@
         $myrecords = $this->load(NULL, $record, "admin");
 
         $output.=$this->editHeader($record, $myrecords);
-        $output =$GLOBALS['g_layout']->ret_table_simple(0,true);
-
+     
         if (count($myrecords)!=0)
-        {
-          $output.="<tr>";
-          $cell="";
-
+        {     
           $actions = array();
           $params = array();
           
@@ -125,10 +120,8 @@
           $flags = RL_EMBED;
           $flags |= $this->m_destInstance->hasFlag(NF_MRA) ? RL_MRA : 0;
           $flags |= $this->m_destInstance->hasFlag(NF_MRPA) ? RL_MRPA : 0;
-          $cell.=$this->m_destInstance->normalRecordList($myrecords, $actions, $flags, $this->m_refKey, "entryform");
-
-          $output.=$GLOBALS['g_layout']->ret_td($cell);
-          $output.="</tr>";
+          $output.=$this->m_destInstance->normalRecordList($myrecords, $actions, $flags, $this->m_refKey, "entryform");
+          
         }
         if (($this->m_maxRecords==0||$this->m_maxRecords>count($myrecords))&&!$this->m_destInstance->hasFlag(NF_NO_ADD))
         {
@@ -169,9 +162,9 @@
               $label = text($key);
           }
           } 
-          $output.="<tr><td>".href($add_url,$label,SESSION_NESTED,true)."</td></tr>";
+          $output.= href($add_url,$label,SESSION_NESTED,true);
         }
-        $output.="</table>";
+        
         $output.=$this->editFooter($record, $myrecords);
         $output.="<br>";
         return $output;

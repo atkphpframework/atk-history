@@ -1,21 +1,27 @@
 <?php
 
-
   $config_atkroot = "./";
   include_once("atk.inc"); 
+
   atksession();
-  atksecure();
-   
+  atksecure();   
   
-  $g_layout->initGui();
-  $g_layout->output("<html>");
-  $g_layout->head($txt_app_title);
-  $g_layout->body();
-  $g_layout->ui_top("Top Frame");
+  $page = &atknew("atk.ui.atkpage");  
+  $ui = &atknew("atk.ui.atkui");  
+  $theme = &atkTheme::getInstance();
+  $output = &atkOutput::getInstance();
   
-  $loggedin = "Ingelogde gebruiker: <b>".$g_user["name"]."</b>";
+  $page->register_style($theme->stylePath("style.css"));
   
-  $g_layout->output('<br>'.$loggedin.' &nbsp; <a href="app.php?atklogout=1" target="_top">Uitloggen</a><br>&nbsp;');
-  $g_layout->ui_bottom();
-  $g_layout->outputFlush();
+  $loggedin = "Ingelogde gebruiker: <b>".$g_user["name"]."</b>";  
+  $content = '<br>'.$loggedin.' &nbsp; <a href="app.php?atklogout=1" target="_top">Uitloggen</a><br>&nbsp;';
+  
+  $box = $ui->renderBox(array("title"=>text("topframe"),
+                                            "content"=>$content));
+ 
+  $page->addContent($box);
+
+  $output->output($page->render(text('txt_app_title'), true));
+  
+  $output->outputFlush();
 ?>

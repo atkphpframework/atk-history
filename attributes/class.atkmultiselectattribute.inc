@@ -98,11 +98,12 @@
      */
     function edit($record="", $fieldprefix="")
     {
-      global $g_layout,$config_atkroot;
+      global $config_atkroot;
       $cols = $this->m_cols;
       $modcols =$cols-1;
-      $g_layout->register_script($config_atkroot."atk/javascript/class.atkprofileattribute.js.php");
-      // todo: configurable cols
+      $page = &atkPage::getInstance();
+      $page->register_script($config_atkroot."atk/javascript/class.atkprofileattribute.js.php");      
+
       if (count($this->m_values)>4)
       {
         $result.='<div align="left"><font size="-2">
