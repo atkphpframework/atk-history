@@ -2925,11 +2925,10 @@
 
               //$this->setOrgKeyValue($record);
               $this->editPage($record, $locked);
+              $page = &$this->getPage();
+              $page->addContent($this->editPage($record, $locked));
             }
 
-            //$this->setOrgKeyValue($record);
-            $page = &$this->getPage();
-            $page->addContent($this->editPage($record, $locked));
           }
         }
       }
