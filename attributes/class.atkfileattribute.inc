@@ -139,9 +139,9 @@
      */
     function value2db($rec)
     {
-      global $del,$select;            
+      global $del,$select;
 
-      if($select[$this->fieldName()] != "" && !$this->hasFlag(AF_FILE_NO_SELECT) && $del[$this->fieldName()]!="on")
+      if($rec[$this->fieldName()]["tmpfile"]=="" && $select[$this->fieldName()] != "" && !$this->hasFlag(AF_FILE_NO_SELECT) && $del[$this->fieldName()]!="on")
       {
         return $select[$this->fieldName()];
       }
@@ -151,9 +151,9 @@
       if($del[$this->fieldName()] == "on")
       {    
         if($this->hasFlag(AF_FILE_PHYSICAL_DELETE))
-	      {
-	        unlink($this->m_dir.$rec[$this->fieldName()]["orgfilename"]);
-	      }
+        {
+          unlink($this->m_dir.$rec[$this->fieldName()]["orgfilename"]);
+        }
         return '';
       }
       else
@@ -163,11 +163,12 @@
         {
           if (@copy($rec[$this->fieldName()]["tmpfile"],$this->m_dir.$filename))
           {
+            atkdebug("FILE OPGESLAGEN: ".$rec[$this->fieldName()]["tmpfile"]." -> ".$this->m_dir.$filename);
             return $filename;
           }
           else
           {
-            atkerror("File kon niet worden opgeslagen");
+            atkerror("File ($filename) kon niet worden opgeslagen");
             return "";
           }
         }
@@ -193,28 +194,31 @@
     function fetchValue($rec)
     {    
       global $HTTP_POST_FILES,$select,$del;          
-      
+
       $postfiles_basename = $rec[$this->fieldName()."_postfileskey"];
      
       $basename = $this->fieldName();      
       if (is_array($HTTP_POST_FILES)||($select[$this->fieldName()] != "" && !$this->hasFlag(AF_FILE_NO_SELECT))) // php4
       {   
         // if no new file has been uploaded..    
-        if($select[$this->fieldName()] != "" && !$this->hasFlag(AF_FILE_NO_SELECT))
-        {
-          ($del[$this->fieldName()]=="on") ? $filename='' : $filename=$select[$this->fieldName()];
-          $result = array("tmpfile"=>"",
+        if (count($HTTP_POST_FILES)==0||$HTTP_POST_FILES[$postfiles_basename]["tmp_name"]=="none"||$HTTP_POST_FILES[$postfiles_basename]["tmp_name"]=="")
+        { 
+           // No file to upload, then check if the select box is filled
+          if($select[$this->fieldName()] != "" && !$this->hasFlag(AF_FILE_NO_SELECT))
+          {
+            ($del[$this->fieldName()]=="on") ? $filename='' : $filename=$select[$this->fieldName()];
+            $result = array("tmpfile"=>"",
                           "filename"=>$filename,
                           "filesize"=>0,
-                          "orgfilename"=>'');
-        
-        }
-        elseif (count($HTTP_POST_FILES)==0||$HTTP_POST_FILES[$postfiles_basename]["tmp_name"]=="none"||$HTTP_POST_FILES[$postfiles_basename]["tmp_name"]=="")
-        { 
-          $result = array("tmpfile"=>"",
+                          "orgfilename"=>$filename);
+          }
+          else
+          {
+            $result = array("tmpfile"=>"",
                           "filename"=>"",
                           "filesize"=>0,
                           "orgfilename"=>$rec[$basename."_orgfilename"]);
+          }
         }
         else
         {    
@@ -223,7 +227,7 @@
                           "filename"=>$realname,
                           "filesize"=>$HTTP_POST_FILES[$postfiles_basename]["size"],
                           "orgfilename"=>$realname);
-        }                      
+        }
         return $result;
       }      
     }
@@ -271,7 +275,7 @@
     function display($record)
     {
       $filename    = $record[$this->fieldName()]["orgfilename"];
-
+      atkdebug($this->fieldname()." - File: $filename");
       $prev_type     = Array("jpg","jpeg","gif","tif","png","bmp","htm","html","txt");  // file types for preview
       $imgtype_prev = Array("jpg","jpeg","gif","png");  // types whitch are supported by GetImageSize
       if($filename != "")
