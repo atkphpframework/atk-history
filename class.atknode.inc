@@ -855,14 +855,14 @@
         }
   
         $params["formstart"] = '<form method="get">'.session_form(SESSION_NESTED);
-        $params["backbtn"] = '<input type="submit" class="btn_cancel" name="atkback" value="&lt;&lt; '.text('back').'">';
+        $params["buttons"][] = '<input type="submit" class="btn_cancel" name="atkback" value="&lt;&lt; '.text('back').'">';
                           
         // if appropriate, display an edit button.
         if (!$this->hasFlag(NF_NO_EDIT)&&$this->allowed("edit", $record))
         {        
-          $params["editbtn"] = '<input type="hidden" name="atkaction" value="edit">'.
+          $params["buttons"][] = '<input type="hidden" name="atkaction" value="edit">'.
                      '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">'.
-                     '&nbsp;<input type="submit" class="btn" value="'.text('edit').'">';
+                     '<input type="submit" class="btn" value="'.text('edit').'">';
         }      
       
         $params["formend"] = '</form>';                

@@ -5,7 +5,10 @@
     <td valign="top">{$content}<br></td>
   </tr>
   <tr>
-    <td align="center" valign="top">{$backbtn}{if $editbtn!=""} &nbsp; &nbsp;{$editbtn}{/if}<br><br></td>
+    <td align="center" valign="top">
+      {foreach from=$buttons item=button}
+        &nbsp;{$button}&nbsp;        
+      {/foreach}<br><br></td>
   </tr>
 </table>
 {$formend}
