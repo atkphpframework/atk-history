@@ -1739,9 +1739,13 @@
                        '</td>'.
                        $g_layout->ret_td
                        (
-                         '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'all\')">'.text("select_all").'</a> / '.
-                         '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'none\')">'.text("deselect_all").'</a> / '.
-                         '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'invert\')">'.text("select_invert").'</a>',
+                         count($list["rows"]) > 1 ?
+                           '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'all\')">'.text("select_all").'</a> / '.
+                           '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'none\')">'.text("deselect_all").'</a> / '.
+                           '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'invert\')">'.text("select_invert").'</a>'
+                         :
+                           '<img src="'.atkconfig("atkroot").'atk/images/dummy.gif" border="0" height="1" width="1">'
+                         ,
                          'align="center"'
                        ).
                      '</tr>'.
