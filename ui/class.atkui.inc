@@ -13,10 +13,7 @@
       
       atkimport("atk.ui.atksmarty");
       $this->m_smarty = &atkSmarty::getInstance();          
-      
-      $this->m_smarty->assign("themedir", $this->m_theme->themeDir());
 
-      $this->m_smarty->assign("atkroot", atkconfig("atkroot"));
       atkdebug("Created a new atkUI");            
     }        
     
@@ -54,7 +51,13 @@
       
       // First clear any existing smarty var.
       $this->m_smarty->clear_all_assign();
+      
+      // Then set some defaults that we need in all templates.
+      $this->m_smarty->assign("themedir", $this->m_theme->themeDir());
 
+      $this->m_smarty->assign("atkroot", atkconfig("atkroot"));
+
+      // Finally assign the passed vars.
       $this->m_smarty->assign($vars);              
       
       // if $tplname contains a full pathname, the template
