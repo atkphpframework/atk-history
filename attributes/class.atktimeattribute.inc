@@ -47,10 +47,15 @@
      */
     function display($record)
     {
-	  	$value = $record[$this->fieldName()];
-      if (empty($value["hours"]) ) return "";
-      $tmp_time = $value["hours"].":".$value["minutes"].":".$value["seconds"];			
-      return $tmp_time;
+      if ($this->isEmpty($record)) return "";
+	    $value = $record[$this->fieldName()];            
+      return sprintf("%02d:%02d:%02d", $value["hours"], $value["minutes"], $value["seconds"]);
+    }
+    
+    function isEmpty($postvars)
+    {
+      $value = $postvars[$this->fieldName()];
+      return ($value["hours"]==""&&$value["minutes"]==""&&$value["seconds"]=="");
     }
 
     function fetchValue($postvars)
