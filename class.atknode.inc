@@ -1330,17 +1330,47 @@
 
       /* display the edit fields */
       $fields = array();
-
+      
       for ($i = 0, $_i= count($data["fields"]); $i<$_i; $i++)
       {
         $field = &$data["fields"][$i];
 	$field_name = $field['name'];
 
-	$tab_name = $field["attribute"]->m_ownerInstance->m_attribList[$field_name]->m_tabs[0];
-
+	// elementen die bij een selectie van tabs horen
+	$tabnumber = count($field["attribute"]->m_ownerInstance->m_attribList[$field_name]->m_tabs);
+	if($tabnumber > 1)
+	{
+		$tab_name = "tab_";
+		for($j = 0; $j < $tabnumber; $j++)
+		{
+			$tab_name .= $field["attribute"]->m_ownerInstance->m_attribList[$field_name]->m_tabs[$j];
+			$tab_name .= ".";
+		}
+		// staat het element op de initieel geselecteerde tab?
+		if (strstr($tab_name,$tab)){ $initial_on_tab = "yes"; } else { $initial_on_tab = "no"; }
+	}
+	
+	// elementen die bij 1 of alle tabs horen
+	else
+	{
+		$tab_name = "tab_";
+		$tab_name .= $field["attribute"]->m_ownerInstance->m_attribList[$field_name]->m_tabs[0];
+		
+		// Van deze elementen kijken welke bij de tab horen die moet worden weergegeven
+		if (strstr($tab_name,$tab)){ $initial_on_tab = "yes"; } else { $initial_on_tab = "no"; }	
+		
+		// elementen die bij alle tabs horen
+		if ($tab_name == "*")
+		{
+			$tab_name = "alltabs";
+			$initial_on_tab = "yes";
+		}
+	}
+	
 	$tplfield = array();
 	
 	$tplfield["tab"] = $tab_name;
+	$tplfield["initial_on_tab"] = $initial_on_tab;
 	
         /* check for seperator */
         if (!is_array($field) && $field == "-" && $i > 0 && $data["fields"][$i-1] != "-")
@@ -1416,6 +1446,8 @@
       $params["errors"] = $errors; // Add the list of errors.
       
       $result.= $ui->render($this->getTemplate($mode, $record, $tab), $params);
+     
+      $result .= $test;
       
       return $result;
     }
