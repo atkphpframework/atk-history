@@ -98,8 +98,7 @@
       {
        sessionStore("atktree",$postTree); // new in the session
        $realTree = $postTree;
-      }
-      else
+      }      else
       {
        $realTree = $sessionTree; // use the last known tree
       }

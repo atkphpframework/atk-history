@@ -253,8 +253,7 @@
 
       if ($this->createDestination())
       {
-        if ($record[$this->fieldName()]!=NULL)
-      {
+        if ($record[$this->fieldName()]!=NULL)      {
           $myrecord = $record[$this->fieldName()];
   
           if ($myrecord[$this->m_destInstance->primaryKeyField()]==NULL)
@@ -265,8 +264,7 @@
           else
           {
             $mode = "edit";
-            $myrecord["atkprimkey"] = $this->m_destInstance->primaryKey($myrecord);
-        }
+            $myrecord["atkprimkey"] = $this->m_destInstance->primaryKey($myrecord);        }
         }
         else
         {

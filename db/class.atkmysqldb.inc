@@ -250,6 +250,7 @@
         {
           /* get sequence number (locked) and increment */
           $query = "SELECT ".$this->m_seq_field." FROM ".$this->m_seq_table." WHERE ".$this->m_seq_namefield." = '$sequence'";       
+          atkdebug("atkmysqldb::nextid() query is ".$query);
         
           $id = @mysql_query($query, $this->m_link_id);
           $result = @mysql_fetch_array($id);

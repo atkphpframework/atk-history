@@ -13,8 +13,7 @@ class atkLock
 {
   var $m_id = NULL;
 
-  /**
-   * Returns the *only* lock instance, based on the settings in the
+  /**   * Returns the *only* lock instance, based on the settings in the
    * configuration file (if no settings found -> default is dummy!).
    *
    * @return reference to the *only* lock instance

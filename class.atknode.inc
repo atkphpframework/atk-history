@@ -3413,9 +3413,10 @@
           }
         }
       }      
+
       foreach (array_keys($this->m_attribList) as $attribname)
       {
-        $p_attrib = &$this->m_attribList[$attribname];        
+        $p_attrib = &$this->m_attribList[$attribname];     
         if (
              (
                 ((is_array($includeList) && in_array($attribname,$includeList))

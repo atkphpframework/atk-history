@@ -161,10 +161,10 @@
           $res.='<br>dbg: '.implode("<br>\ndbg: ",$g_debug_msg);
         }
       }
-         if ($gzip && phpversion() >= '4.0.4pl1' 
-              && (strstr($_SERVER["HTTP_USER_AGENT"],'compatible') || strstr($_SERVER["HTTP_USER_AGENT"],'Gecko')) 
-              && strstr($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip')
-       )
+
+      if ($gzip && phpversion() >= '4.0.4pl1' 
+                && (strstr($_SERVER["HTTP_USER_AGENT"],'compatible') || strstr($_SERVER["HTTP_USER_AGENT"],'Gecko')) 
+                && strstr($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip'))
 
       {
         header('Content-Encoding: gzip');

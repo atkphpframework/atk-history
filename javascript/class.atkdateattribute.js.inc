@@ -261,8 +261,7 @@ function AdjustDate(el, arr, format, str_min, str_max, emptyfield)
   else input["y"].value = current["y"];
 }
 
-function dateAttribute_getValue(id)
-{
+function dateAttribute_getValue(id){
   var dayel = document.getElementById(id+"[day]");
   var monthel = document.getElementById(id+"[month]");
   var yearel = document.getElementById(id+"[year]");
