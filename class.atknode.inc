@@ -1200,7 +1200,7 @@
       $limit = (int)$this->m_postvars['atklimit'];
 
       $filter = $this->validateFilter($this->m_postvars["atkfilter"]);
-      
+
       $count = (int)$this->countDb($filter, $this->m_listExcludes, "", $mode);
 
       // maximum number of bookmarks to pages.
@@ -2913,7 +2913,7 @@
 
         // parse fields from descriptordef
         $fields = stringfields($descriptordef);
-        
+
         // There might be fields that have a '.' in them. These fields are
         // a concatenation of an attributename (probably a relation), and a subfield
         // (a field of the destination node).
@@ -2925,7 +2925,7 @@
           {
             // dot found. attribute is the first item.
             $fields[$i] = $elems[0];
-            
+
           }
         }
       }
@@ -3066,7 +3066,7 @@
           $p_attrib = &$this->m_attribList[$attribname];
           if ($p_attrib->needsUpdate($record))
           {
-            if (method_exists($p_attrib,"store"))
+            if ($p_attrib->hasStore($mode))
             {
               $storelist[]=$attribname;
             }
@@ -3429,7 +3429,7 @@
       foreach (array_keys($this->m_attribList) as $attribname)
       {
         $p_attrib = &$this->m_attribList[$attribname];
-        if (method_exists($p_attrib,"store"))
+        if ($p_attrib->hasStore($mode))
         {
           $storelist[]=$attribname;
         }
@@ -3513,7 +3513,7 @@
      * after you saved a record.
      *
      * @param $record The record that has just been saved.
-     * @param $mode   The 'mode' indicates whether this is a completely new 
+     * @param $mode   The 'mode' indicates whether this is a completely new
      *                record ("add") or a copy ("copy").
      */
     function postAdd($record, $mode="add")
