@@ -1575,7 +1575,7 @@
 
         $output .= '<input type="hidden" name="'.$listName.'_atknodetype" value="'.$this->atknodetype().'">';
         if (hasFlag($flags, RL_MRA))
-          $output .= '<script language="javascript">'.$listName.' = new Object();</script>';
+          $output .= '<script language="javascript">var '.$listName.' = new Object();</script>';
       }
 
       /********/
@@ -1609,7 +1609,7 @@
           for ($j = $this->m_priority_min; $j <= $this->m_priority_max; $j++)
             $select .= '<option value="'.$j.'">'.$j.'</option>';
           $select .= '</select>';
-          $output .= $g_layout->ret_td($select);
+          $output .= $g_layout->ret_td($select, $vorientation);
         }
 
         /* multi-record-actions -> checkbox */
@@ -1618,7 +1618,8 @@
           if (count($list["rows"][$i]["mra"]) > 0)
             $output .= $g_layout->ret_td(
                          '<input type="checkbox" name="'.$listName.'_atkselector[]" value="'.rawurlencode($list["rows"][$i]["selector"]).'" onclick="if (this.disabled) this.checked = false">'.
-                         '<script language="javascript">'.$listName.'["'.rawurlencode($list["rows"][$i]["selector"]).'"] = new Array("'.implode($list["rows"][$i]["mra"], '","').'");</script>'
+                         '<script language="javascript">'.$listName.'["'.rawurlencode($list["rows"][$i]["selector"]).'"] = new Array("'.implode($list["rows"][$i]["mra"], '","').'");</script>',
+                         $vorientation
                         );
 
           else $output .= '<td>&nbsp;</td>';
@@ -2285,15 +2286,15 @@
      * The dispatcher. This functions looks at the atkaction from the postvars
      * and determines what should be done.
      * @param $postvars Posted vars
-     * @param $fullpage If true, the dispatch function renders a complete 
+     * @param $fullpage If true, the dispatch function renders a complete
      *                  html page, including <html><head><body> etc.
      *                  This is the default. If you set this to false,
      *                  just plain output is generated. Warning:
      *                  If you set this to false, YOU are responsible for
-     *                  handling $g_layout->m_scripts and $g_layout->m_stylesheets 
+     *                  handling $g_layout->m_scripts and $g_layout->m_stylesheets
      *                  and $g_layout->m_submitscripts. (when $fullpage is true,
      *                  these are automatically includedn in the head of the page.
-     * 
+     *
      */
     function dispatch($postvars, $fullpage=true)
     {
@@ -2326,7 +2327,7 @@
         {
             $g_layout->output("Sorry, you don't have permission to perform this action");
         }
-        
+
         if ($fullpage)
         {
           $g_layout->page(text('app_shorttitle')." - ".$g_layout->title($this->m_module, $this->m_type,$this->m_postvars['atkaction']));
