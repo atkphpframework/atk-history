@@ -798,7 +798,10 @@
      */
     function editForm($mode="add",$record = NULL, $forceList="",$suppressList="", $fieldprefix="")
     {
-      global $g_layout, $config_atkroot,$g_sessionData,$atklevel;
+      global $g_layout, $config_atkroot,$g_sessionData,$atklevel, $PHP_SELF;
+
+      // which tab should we display?
+      $tab = $this->getActiveTab();
 
       // read metadata
       $this->setAttribSizes();
@@ -908,7 +911,12 @@
           }
           else
           {
-            $errormsg.="<br>".text($data['attrib_name']).': '.$data['msg'];
+            $index = $this->m_attribList[$data['attrib_name']]->m_index;
+            $tabs  = $this->m_attribIndexList[$index]["tabs"];
+            if ($tabs != "all" && !in_array($tab, $tabs))
+              $errot_tab = ' ('.text("error_tab").' '.href("$PHP_SELF?atktab=".$tabs[0],text("tab_".$tabs[0]),SESSION_DEFAULT,true).')';
+            else $error_tab = "";
+            $errormsg.="<br>".text($data['attrib_name']).': '.$data['msg'].$error_tab;
           }
         }
         if (count($pk_err_attrib)>0) // Make primary key error message
@@ -919,11 +927,11 @@
             $pk_err_msg .= text($pk_err_attrib[$i]);
             if (($i+1) < count($pk_err_attrib)) $pk_err_msg .= ", ";
           }
-          $form.=$g_layout->ret_td($error_title.$pk_err_msg.$errormsg,'colspan="2"');
+          $form.=$g_layout->ret_td($error_title.$pk_err_msg.$errormsg.'<br><br>','colspan="2"');
         }
         else
         {
-          $form.=$g_layout->ret_td($error_title.$errormsg,'colspan="2"');
+          $form.=$g_layout->ret_td($error_title.$errormsg.'<br><br>','colspan="2"');
         }
 
         $form.='</tr>';
@@ -932,9 +940,6 @@
       // load images
       $reqimg     = '<img align="top" onMouseOver="javascript:window.status=\''.addslashes(text("field_obligatory")).'\';" src="'.$g_layout->getImgSrc("required_field.gif").'" border="0" alt="'.text("field_obligatory").'">&nbsp;';
       $tipimg     = $g_layout->getImgSrc("help.gif");
-
-      // which tab should we display?
-      $tab = $this->getActiveTab();
 
       // For all attributes we use the edit() function to display an
       // appropriate way to edit the data. This may be overridden by supplying
