@@ -169,6 +169,8 @@ class atkPasswordAttribute extends atkAttribute
     /* new password? */
     if (!$error && strlen($value["new"]) > 0)
       $record[$this->fieldName()]["hash"] = md5($record[$this->fieldName()]["new"]);
+      header("Location: welcome.php"); 
+      
   }
 
   /**
