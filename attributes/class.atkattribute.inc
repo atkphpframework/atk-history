@@ -307,11 +307,13 @@
      * @param $arr reference to the the recordlist array
      * @param $fieldprefix the fieldprefix
      * @param $flags the recordlist flags
+     * @param $atksearch the current ATK search list (if not empty)
+     * @param $atkorderby the current ATK orderby string (if not empty)
      * @see atkNode::listArray
      */
-    function addToListArrayHeader($action, &$arr, $fieldprefix, $flags)
+    function addToListArrayHeader($action, &$arr, $fieldprefix, $flags, $atksearch, $atkorderby)
     {
-      global $PHP_SELF;
+      global $PHP_SELF, $g_sessionManager;
 
       if (!$this->hasFlag(AF_HIDE_LIST) && !($this->hasFlag(AF_HIDE_SELECT) && $action == "select"))
       {
@@ -320,13 +322,13 @@
         if (!hasFlag($flags, RL_NO_SORT) && !$this->hasFlag(AF_NO_SORT))
         {
           $order = $this->m_ownerInstance->m_table.".".$this->fieldName();
-          if ($this->m_ownerInstance->m_postvars["atkorderby"] == $order) $order .= " DESC";
+          if ($atkorderby == $order) $order .= " DESC";
           $arr["heading"][$fieldprefix.$this->fieldName()]["url"] =
             session_url($PHP_SELF.'?atknodetype='.$this->m_ownerInstance->atkNodeType().'&atkaction='.$action.'&atkorderby='.rawurlencode($order));
         }
 
         if (!hasFlag($flags, RL_NO_SEARCH) && $this->hasFlag(AF_SEARCHABLE))
-          $arr["search"][$fieldprefix.$this->fieldName()] = $this->search($this->m_ownerInstance->m_postvars['atksearch']);
+          $arr["search"][$fieldprefix.$this->fieldName()] = $this->search($atksearch);
       }
     }
 

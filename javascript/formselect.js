@@ -130,7 +130,7 @@ function atkSubmitMRPA(name, form, target)
 
   /* add the selectors to the target URL */
   var selectorLength = 0;
-  if (typeof(list.length) == 'undefined') list = new Array(list);
+  if (typeof(list.selectedIndex) != 'undefined') list = new Array(list);
   for (var i = 0; i < list.length; i++)
     if (list[i].selectedIndex != 0)
     {

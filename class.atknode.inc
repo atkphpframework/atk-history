@@ -1370,7 +1370,8 @@
         if (!in_array($name, $suppress))
         {
           $attribute = &$this->m_attribList[$name];
-          $attribute->addToListArrayHeader($this->m_action, $result, $prefix, $flags);
+          $attribute->addToListArrayHeader($this->m_action, $result, $prefix, $flags,
+                                           $this->m_postvars["atksearch"], $this->m_postvars["atkorderby"]);
         }
       }
 
@@ -1483,9 +1484,9 @@
        * there aren't any multi-record actions. It has no use to display the search row if
        * there aren't any search boxes to display.
        */
-      if ($this->hasFlag(NF_MRA) && count($list["mra"]) == 0) $flags ^= RL_MRA;
+      if ($this->hasFlag(NF_MRA) && (count($list["mra"]) == 0 || count($list["rows"]) == 0)) $flags ^= RL_MRA;
       if (!hasFlag($flags, RL_NO_SEARCH) && count($list["search"]) == 0) $flags |= RL_NO_SEARCH;
-      if ($this->hasFlag(NF_MRPA) && count($this->m_priority_actions) > 0)
+      if ($this->hasFlag(NF_MRPA) && count($this->m_priority_actions) > 0 && count($list["rows"]) > 0)
       {
         $flags = ($flags | RL_MRA | RL_MRPA ) ^ RL_MRA;
         if ($this->m_priority_max == 0)
