@@ -96,4 +96,7 @@
   // NOTE: this has nothing to do with useattrib and userelation etc.!
   $config_allowed_includes = array("atk/lock/lock.php", "atk/lock/lock.js.php", "atk/javascript/class.atkdateattribute.js.inc",
                                                "atk/popups/help.inc", "atk/popups/colorpicker.inc");
+
+  // fullscreen mode (IE only)
+  $config_fullscreen = false;
 ?>
