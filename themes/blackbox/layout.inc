@@ -24,10 +24,10 @@
   $g_theme["FgColor"] = "#000000"; // text color
   
   // Link settings
-  $g_theme["LinkColor"] = "#cccccc"; // link color
-  $g_theme["VisitedColor"] = "#cccccc"; // Visited color
-  $g_theme["HoverColor"] = "#cccccc"; // Hover color (IE4 Only)
-  $g_theme["ActiveColor"] = "#cccccc"; // Active color (IE4 Only)
+  $g_theme["LinkColor"] = "#660000"; // link color
+  $g_theme["VisitedColor"] = "#660000"; // Visited color
+  $g_theme["HoverColor"] = "#660000"; // Hover color (IE4 Only)
+  $g_theme["ActiveColor"] = "#660000"; // Active color (IE4 Only)
 
   // Table header settings
   $g_theme["TableHeaderFontFamily"] = "Helvetica,Lucida,sans-serif"; // Font
