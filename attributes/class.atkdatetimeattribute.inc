@@ -86,12 +86,6 @@
     {
       $result = $postvars[$this->formName()];
       return $result;
-    } 
-
-    function fetchValue($postvars)
-    {
-      $result = $postvars[$this->formName()];
-      return $result;
     }
 
     /**
