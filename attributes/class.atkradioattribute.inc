@@ -104,7 +104,8 @@
         }
         if($record[$this->fieldName()]=="" && $i==0 && $this->hasFlag(AF_OBLIGATORY))
         {
-          $sel = "checked";
+	  // uitgezet ivm ticket 2044, dit kan geen kwaad want in M3 werd dit ook niet gedaan
+          //$sel = "checked";
         }
         
 
