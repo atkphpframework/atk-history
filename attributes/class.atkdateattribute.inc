@@ -188,9 +188,12 @@
           $current = NULL; /* NULL date selected (normal date selection) */
         elseif (!is_array($field) && empty($field))
           $current = NULL; /* NULL date selected (NULL value in database) */
-        elseif (is_array($field) && checkdate($field["month"], $field["day"], $field["year"]))
-          $current = adodb_mktime(0, 0, 0, $field["month"], $field["day"], $field["year"]);
-        else
+        elseif (is_array($field))
+	{	
+	  if (checkdate($field["month"], $field["day"], $field["year"]))
+            $current = adodb_mktime(0, 0, 0, $field["month"], $field["day"], $field["year"]);
+	}
+        elseif (!is_string($field))
         {
           $date = $this->dateArray($field);
           if (checkdate($date["month"], $date["day"], $date["year"]))
