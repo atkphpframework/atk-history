@@ -102,6 +102,22 @@
     {
       return array();
     }
+    
+    /**
+     * This function resets the password of $user to $password
+     */
+    function setPassword($user, $password)
+    {
+    }
+    
+    /**
+     * This function returns a boolean that is true when the class allows the
+     * resetting of the password of a user.
+     */
+    function setPasswordAllowed()
+    {
+      return false;
+    }
   }
 
 ?>

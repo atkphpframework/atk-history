@@ -202,5 +202,16 @@
        }
        return $userlist;
      }
+     
+     function setPassword($user, $password)
+     {
+	global $g_db;
+        $g_db->query("UPDATE user_user SET password = '".md5($password)."' WHERE userid = '$user'");
+     }
+     
+     function setPasswordAllowed()
+     {
+        return true;
+     }
    }
 ?>

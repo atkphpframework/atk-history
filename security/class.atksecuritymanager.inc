@@ -426,7 +426,10 @@
       }
       
       $output.='</table></form>';
-      $output.='<tr><td class=table align=left valign=bottom><a href="passchange.php"><small style="color:#FFFFFF;font-size:9pt">&nbsp;Ik ben mijn wachtwoord vergeten</small></a></td></tr>';
+      if ($this->m_authorization->setPasswordAllowed())
+      {
+        $output.='<tr><td class=table align=left valign=bottom><a href="passchange.php"><small style="color:#FFFFFF;font-size:9pt">&nbsp;'.text(passchange_forgot_password).'</small></a></td></tr>';
+      }
       $output.='<SCRIPT LANGUAGE="JavaScript">placeFocus()</SCRIPT>';
       
       $page->addContent($ui->render("login.tpl", array("title"=>text('login_form'),
