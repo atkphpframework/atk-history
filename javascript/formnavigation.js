@@ -8,7 +8,7 @@ var currentFocus;
 //support for Netscape/Mozilla browsers, not fully functional
 ver = navigator.appVersion; len = ver.length;
 for(iln = 0; iln < len; iln++) if (ver.charAt(iln) == "(") break;
-netscape = (ver.charAt(iln+1).toUpperCase() != "C");
+isNetscape = (ver.charAt(iln+1).toUpperCase() != "C");
 
 
 // this function sets the current focus
@@ -46,11 +46,27 @@ function init_nav()
   }
 }
 
-function keyDown(DnEvents)
+function keyDown(e)
 { // handles a keypress
-  k = (netscape) ? DnEvents.which : window.event.keyCode;
+  var k = 0;
+  var ctrl = false;
+  var shift = false;  
+  
+  if (isNetscape)
+  {
+    k = e.which;
+    var mod = parseInt(e.modifiers)
+    ctrl = (mod & 2)==2;
+    shift = (mod & 4)==4;  
+  }
+  else
+  {
+    k = window.event.keyCode;
+    ctrl = window.event.ctrlKey;
+    shift = window.event.shiftKey;
+  }
 
-  if (k == 39 || (k == 40 && window.event.ctrlKey))
+  if (k == 39 || (k == 40 && ctrl))
   {
     // (CTRL + arrow down) or arrow right is pressed
     for (var i = 0; i < document.entryform.elements.length; i++)
@@ -94,7 +110,7 @@ function keyDown(DnEvents)
         if ((i < document.entryform.elements.length - 1)
         && (document.entryform.elements[i].type == "text"
         || document.entryform.elements[i].type == "checkbox"
-        || (document.entryform.elements[i].type == "textarea" && window.event.ctrlKey)
+        || (document.entryform.elements[i].type == "textarea" && ctrl)
         || document.entryform.elements[i].type == "password"
         || document.entryform.elements[i].type == "submit"
         || document.entryform.elements[i].type == "reset"))
@@ -117,7 +133,7 @@ function keyDown(DnEvents)
 
         if (( i < document.entryform.elements.length - 1) && document.entryform.elements[i].type == "radio")
         {
-          while (document.entryform.elements[i+1].type == "radio" && window.event.ctrlKey && (i + 1)<= document.entryform.elements.length)
+          while (document.entryform.elements[i+1].type == "radio" && ctrl && (i + 1)<= document.entryform.elements.length)
           {
             i++;
           }
@@ -132,7 +148,7 @@ function keyDown(DnEvents)
     }
   }
 
-  if (k == 37 || (k == 38 && window.event.ctrlKey))
+  if (k == 37 || (k == 38 && ctrl))
   { // (CTRL + arrow up) or arrow left is pressed
     for (var i = 0; i < document.entryform.elements.length; i++)
     {
@@ -175,7 +191,7 @@ function keyDown(DnEvents)
         if ((i >= 1)
         && (document.entryform.elements[i].type == "text"
         || document.entryform.elements[i].type == "checkbox"
-        || (document.entryform.elements[i].type == "textarea" && window.event.ctrlKey)
+        || (document.entryform.elements[i].type == "textarea" && ctrl)
         || document.entryform.elements[i].type == "password"
         || document.entryform.elements[i].type == "submit"
         || document.entryform.elements[i].type == "reset"))
@@ -198,7 +214,7 @@ function keyDown(DnEvents)
 
         if (( i > 0) && document.entryform.elements[i].type == "radio")
         {
-          while (document.entryform.elements[i-1].type == "radio" && window.event.ctrlKey && (i-1)>= 0)
+          while (document.entryform.elements[i-1].type == "radio" && ctrl && (i-1)>= 0)
           {
             i--;
           }
