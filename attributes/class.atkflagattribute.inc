@@ -44,6 +44,7 @@
     function edit($record="", $fieldprefix="")
     {
       $result = "";
+      $id = $fieldprefix.$this->fieldName();
       for ($i=0;$i<count($this->m_values);$i++)
       {
         if ((hasFlag($record[$this->fieldName()], $this->m_values[$i])) && $record[$this->fieldName()]!="")
@@ -54,7 +55,8 @@
         {
           $sel = "";
         }
-        $result.= '<input type=checkbox name="'.$fieldprefix.$this->formName().'[]" value="'.$this->m_values[$i].'" '.$sel.'>'.text($this->m_options[$i], $this->m_ownerInstance->m_type);
+        $this->registerKeyListener($id.'['.$i.']', KB_CTRLCURSOR|KB_CURSOR);  
+        $result.= '<input type=checkbox id="'.$id.'['.$i.']" name="'.$id.'[]" value="'.$this->m_values[$i].'" '.$sel.'>'.text($this->m_options[$i], $this->m_ownerInstance->m_type);
       }
       return $result;
     }

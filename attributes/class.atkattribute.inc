@@ -137,6 +137,8 @@
       $this->m_name = $name;
       $this->m_flags = (double)$flags;
       $this->setAttribSize($size);      
+      
+      atkimport("atk.keyboard.atkkeyboard");
     }
 
     /**
@@ -217,7 +219,10 @@
      */
     function edit($record="", $fieldprefix="")
     {
-      $result = '<input type="text" name="'.$fieldprefix.$this->formName().
+      $id = $fieldprefix.$this->formName();
+      $this->registerKeyListener($id, KB_CTRLCURSOR|KB_UPDOWN);  
+    
+      $result = '<input type="text" id="'.$id.'" name="'.$id.
                 '" value="'.htmlspecialchars($record[$this->fieldName()]).'"'.
                 ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').
                 ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>';
@@ -666,6 +671,12 @@
     {
       $configsize = atkconfig("max_input_size");
       return ($configsize==""?70:$configsize);
+    }
+    
+    function registerKeyListener($id, $navkeys=KB_CTRLCURSOR)
+    {      
+      $kb = &atkKeyboard::getInstance();
+      $kb->addFormElementHandler($id, $navkeys);
     }
 
   }

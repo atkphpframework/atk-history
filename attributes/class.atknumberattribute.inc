@@ -78,8 +78,9 @@
       {
         $maxsize += ($this->m_decimals+1); // make room for the number of decimals
       }
-    
-      $result = '<input type="text" name="'.$fieldprefix.$this->formName().
+      $id = $fieldprefix.$this->fieldName();      
+      $this->registerKeyListener($id, KB_CTRLCURSOR|KB_UPDOWN);  
+      $result = '<input type="text" id="'.$id.'" name="'.$id.
                 '" value="'.htmlspecialchars($record[$this->fieldName()]).'"'.
                 ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').
                 ($maxsize > 0 ? ' maxlength="'.$maxsize.'"' : '').'>';

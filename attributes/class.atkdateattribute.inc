@@ -169,7 +169,7 @@
         if (is_array($value)) $value = adodb_date("Y-m-d", adodb_mktime(0, 0, 0, $value["month"], $value["day"], $value["year"]));
         elseif ($this->hasFlag(AF_OBLIGATORY)) $value = adodb_date("Y-m-d");
         else $value = "";
-
+        $this->registerKeyListener($fieldname, KB_CTRLCURSOR|KB_UPDOWN);  
         $result = '<input type="text" id="'.$fieldname.'" name="'.$fieldname.'" value="'.$value.'" size="10">';
         
         if (!$this->hasFlag(AF_DATE_NO_CALENDAR))
@@ -243,6 +243,7 @@
             
       if (!empty($maximum) && !empty($minimum) && $str_max - $str_min < 25)
       {
+        $this->registerKeyListener($fieldname, KB_CTRLCURSOR|KB_LEFTRIGHT);  
         $result = '<select id="'.$fieldname.'" name="'.$fieldname.'">';
         for ($i = $str_min; $i <= $str_max; $i++)
         {
@@ -272,6 +273,7 @@
           /* date must be within 25 years */
           if(!empty($current["y_max"]) && !empty($current["y_min"]) && $current["y_max"] - $current["y_min"] <= 25)
           {
+            $this->registerKeyListener($fieldname.'[year]', KB_CTRLCURSOR|KB_LEFTRIGHT);  
             $result .= '<select id="'.$fieldname.'[year]" name="'.$fieldname.'[year]" onChange="'.$str_script.'">';
             if (!$this->hasFlag(AF_OBLIGATORY) || $this->hasflag(AF_DATE_EMPTYFIELD))
               $result .= '<option value="0"'.($current === NULL ? ' selected' : '').'></option>';
@@ -285,12 +287,17 @@
           }
 
           /* normal input box */
-          else  $result .= '<input type="text" id="'.$fieldname.'[year]" name="'.$fieldname.'[year]" size="4" maxlength="4" onChange="'.$str_script.'" value="'.$current["year"].'">';
+          else  
+          {
+            $this->registerKeyListener($fieldname.'[year]', KB_CTRLCURSOR|KB_UPDOWN);  
+            $result .= '<input type="text" id="'.$fieldname.'[year]" name="'.$fieldname.'[year]" size="4" maxlength="4" onChange="'.$str_script.'" value="'.$current["year"].'">';
+          }
         }
 
         /* day input box */
         elseif ($str_format[$i] == "j" || $str_format[$i] == "d")
         {
+          $this->registerKeyListener($fieldname.'[day]', KB_CTRLCURSOR|KB_LEFTRIGHT);  
           $result .= '<select id="'.$fieldname.'[day]" name="'.$fieldname.'[day]" onChange="'.$str_script.'">';
           if (!$this->hasFlag(AF_OBLIGATORY) || $this->hasflag(AF_DATE_EMPTYFIELD)) 
             $result .= '<option value="0"'.($current === NULL ? ' selected' : '').'></option>';
@@ -309,6 +316,7 @@
         /* month input box */
         elseif($str_format[$i] == "m" || $str_format[$i] == "n" || $str_format[$i] == "M" || $str_format[$i] == "F")
         {
+          $this->registerKeyListener($fieldname.'[month]', KB_CTRLCURSOR|KB_LEFTRIGHT);  
           $result .= '<select id="'.$fieldname.'[month]" name="'.$fieldname.'[month]" onChange="'.$str_script.'">';
           if (!$this->hasFlag(AF_OBLIGATORY) || $this->hasflag(AF_DATE_EMPTYFIELD))
             $result .= '<option value="0"'.($current === NULL ? ' selected' : '').'></option>';

@@ -752,8 +752,6 @@
     {        
       $page = &$this->getPage();
       $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");      
-      $page->register_script(atkconfig("atkroot")."atk/javascript/formnavigation.js");
-      $page->register_loadscript("init_nav();");
       $this->addStyle("style.css");
       
       $params = $this->getDefaultActionParams($locked);
@@ -907,9 +905,7 @@
     {            
       $page = &$this->getPage();
             
-      $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
-      $page->register_script(atkconfig("atkroot")."atk/javascript/formnavigation.js");
-      $page->register_loadscript("init_nav();");
+      $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");      
       $this->addStyle("style.css");
       
       $params = $this->getDefaultActionParams();
@@ -957,9 +953,7 @@
       $this->addStyle("style.css");      
       
       $page = &$this->getPage();
-      $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
-      $page->register_script($config_atkroot."atk/javascript/formnavigation.js");
-      $page->register_loadscript("init_nav();");
+      $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");      
       $ui = &$this->getUi();
       if (is_object($ui))
       {        
