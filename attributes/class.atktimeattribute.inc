@@ -9,6 +9,10 @@
    * $Id$
    *
    */
+   
+  /* flag(s) specific for atkTimeAttribute */      
+  define("AF_TIME_EMTPYFIELD", AF_SPECIFIC_1); // Fields have one empty option
+   
   class atkTimeAttribute extends atkAttribute
   {
     var $m_beginTime = 0;
@@ -68,7 +72,7 @@
       // set vars for hour / minutes dropdowns
       $m_hourBox = "<select name=\"".$fieldprefix.$this->fieldName()."[hours]\">\n";
       $m_minBox  = "<select name=\"".$fieldprefix.$this->fieldName()."[minutes]\">\n";
-
+atk_var_dump($field);
       // set default values for both boxes
       // depends upon atkaction
       // if add/admin, use $default param, else use time in $record
@@ -84,7 +88,10 @@
       }
 
       // generate hour dropdown
-      for ($i=$this->m_beginTime;$i<=$this->m_endTime;$i++)
+      
+      if ($this->hasflag(AF_TIME_EMPTYFIELD))
+        $m_hourBox .= '<option value="-1"'.($m_defHour == -1 ? ' selected' : '').'></option>';
+      for ($i=$this->m_beginTime;$i<$this->m_endTime;$i++)
       {
         if ($i == $m_defHour)
         {
@@ -98,9 +105,10 @@
       }
 
       // generate minute dropdown
+      if ($this->hasflag(AF_TIME_EMPTYFIELD))
+        $m_minBox .= '<option value="-1"'.($m_defMin == -1 ? ' selected' : '').'></option>';
       for ($i=0;$i<=count($this->m_steps)-1;$i++)
       {
-
        if ($this->m_steps[$i] == $m_defMin)
        {
         $sel = " selected";
@@ -168,6 +176,16 @@
       // Possible values
       //"regexp","exact","substring", "wildcard","greaterthan","greaterthanequal","lessthan","lessthanequal"
       return array("exact");
+    }
+    
+    function validate(&$rec, $mode)
+    {
+      $value = $rec[$this->fieldName()];
+      if ($this->hasFlag(AF_OBLIGATORY) && ($value["hours"]==-1 || $value['minutes']==-1))
+      {
+        triggerError($rec, $this->fieldName(), 'error_obligatoryfield');
+      }
+      
     }
 
 

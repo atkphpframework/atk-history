@@ -192,11 +192,12 @@
       elseif (empty($current)  && !empty($maximum) && mktime() > $maximum) $current = $maximum;
       elseif (empty($current)) $current = mktime();
 
+
       /* if for some weird reason $current is still not set, assign current time */
-      if (!isset($current))
-      {
-        $current = mktime();
-      }
+      //if (!isset($current))
+      //{
+      //  $current = mktime();
+      //}
 
       /* get dates in array format */
       if ($current !== NULL) $current = getdate($current);
@@ -210,7 +211,7 @@
       $current["m_max"] = (!empty($maximum) && $current["year"] == $maximum["year"] ? $maximum["mon"] : 12);
       $current["y_min"] = (!empty($minimum) ? $minimum["year"] : 0);
       $current["y_max"] = (!empty($maximum) ? $maximum["year"] : 0);
-
+      
       /* small date selections, never possible is field isn't obligatory (no min/max date) */
       if (!empty($maximum) && !empty($minimum) && $str_max - $str_min < 25)
       {
@@ -404,18 +405,30 @@
 
       /* if not obligatory and one of the fields is null then the date will be saved as null */
       if (!$this->hasFlag(AF_OBLIGATORY) && (empty($value["year"]) || empty($value["month"]) || empty($value["day"]))) return;
-
-      /* currently selected date */
-      if (checkdate($value["month"], $value["day"], $value["year"]))
-        $current = mktime(0, 0, 0, $value["month"], $value["day"], $value["year"]);
-      else
+      
+      // If one of the fields is not filled, we don't check
+      if(!($value["year"]=='' || $value['month']==0 || $value['day']==0)) 
       {
-        triggerError($record, $this->fieldName(), 'error_date_invalid');
-        return;
+        /* currently selected date */
+        if (checkdate($value["month"], $value["day"], $value["year"]))
+          $current = mktime(0, 0, 0, $value["month"], $value["day"], $value["year"]);
+        else
+        {
+          triggerError($record, $this->fieldName(), 'error_date_invalid');
+          return;
+        }
       }
 
       /* allright, if not obligatory, and we have come all this way, we'll bail out */
 			if (!$this->hasFlag(AF_OBLIGATORY)) return;
+      else
+      {
+        if($value["year"]=='' || $value['month']==0 || $value['day']==0)
+        {
+          triggerError($record, $this->fieldName(), 'error_obligatoryfield');
+          return;
+        }
+      }
 
       /* minimum date */
       $minimum = 0;
