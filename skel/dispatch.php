@@ -3,6 +3,9 @@
   $config_atkroot = "./";
   include_once("atk.inc");
 
+  if (file_exists(atkconfig(default_home)."/ADMINCLOSED"))
+  header("index.php?logout=1");
+  
   atksession();
   
   $session = &atkSessionManager::getSession(); 
