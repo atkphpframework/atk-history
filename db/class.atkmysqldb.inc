@@ -1,6 +1,8 @@
 <?php
 
   require_once(atkconfig("atkroot")."atk/db/class.atkdb.inc");
+  //Mysql errors includen
+  include_once(atkconfig("atkroot")."atk/db/languages/mysql_".atkconfig('languagefile'));
 
   /**
    * Handles database connectivity and database interaction
@@ -29,7 +31,10 @@
      */
     function atkmysqldb()
     {
-      /* do nothing */
+      // set the user error's
+      $this->m_user_error=array();   
+      // set critical error's      
+      $this->m_critical_error = array(1044,1045,1049,1054,1146,1130,2002,2005);
     }
   
     /**
@@ -44,35 +49,39 @@
         $this->m_link_id = @mysql_pconnect($this->m_host, $this->m_user, $this->m_password);
         if (!$this->m_link_id) 
         {
-          $this->halt("connect using ".$this->m_host.", ".$this->m_user.", ***** failed.");
-          return $this->_translateError(mysql_errno());
+          //$this->halt("connect using ".$this->m_host.", ".$this->m_user.", ***** failed.");
+          $this->halt($this->_translateError());
         }
       }
 
       /* select database */
       if (!@mysql_select_db($this->m_database, $this->m_link_id))
       {
-        $this->halt("cannot use database ".$this->m_database.".");
-        return $this->_translateError(mysql_errno());
+        //$this->halt("cannot use database ".$this->m_database.".");
+        $this->halt($this->_translateError());
+        //return $this->_translateError(mysql_errno());
       }
         
       /* return link identifier */
       return DB_SUCCESS;
     }
     
-    function _translateError($errno)
-    {      
-      switch ($errno)
+    function _translateError()
+    { 
+      $this->m_errno = mysql_errno();
+      $this->m_error = mysql_error();    
+      switch ($this->m_errno)
       {
         case    0: return DB_SUCCESS;
-        case 1044: return DB_ACCESSDENIED_DB;  // todofixme: deze komt bij mysql pas na de eerste query. 
-        case 1045: return DB_ACCESSDENIED_USER;
-        case 1049: return DB_UNKNOWNDATABASE;
-        case 2002: return DB_UNKNOWNHOST; // Same as 2005, but for local connection.
-        case 2005: return DB_UNKNOWNHOST;
+        case 1044: return sprintf(text("access_denied_database"),$this->m_user,$this->m_database);  // todofixme: deze komt bij mysql pas na de eerste query. 
+        case 1045: return sprintf(text("access_denied_user"),$this->m_user,$this->m_database);
+        case 1049: return sprintf(text("unknown_database"),$this->m_database);
+        case 2002: // Same as 2005, but for local connection.
+        case 2005: return sprintf(text("unknown_host"),$this->m_host);
         default: 
-          atkdebug("Unknown error: $errno (".mysql_error().")");
-          return DB_UNKNOWNERROR;
+          // Get error
+          $tmp = text($this->m_errno);
+          if($tmp==$this->m_errno) { return "Unknown error: ".$this->errno." (".$this->m_error.")"; } else { return $tmp; }
       }
     }
 
@@ -112,13 +121,16 @@
         /* query database */
         $this->m_query_id = @mysql_query($query, $this->m_link_id);
         $this->m_row = 0;
-        $this->m_errno = mysql_errno();
-        $this->m_error = mysql_error();
+        //$this->m_errno = mysql_errno();
+        //$this->m_error = mysql_error();
         $this->m_affected_rows = mysql_affected_rows();
     
         /* invalid query */
         if (!$this->m_query_id)
+        {
           $this->halt("Invalid SQL: $query");
+          $this->halt($this->_translateError());
+        }
         
         /* return query id */
         return $this->m_query_id;

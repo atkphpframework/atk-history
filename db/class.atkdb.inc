@@ -55,6 +55,9 @@
     
     /* set to 1 to set debugging on */    
     var $m_debug = 0; 
+    
+    var $m_user_error = array();
+    var $m_critical_error = array();
 
     /**
      * Get the current link id
@@ -72,18 +75,37 @@
     {      
       if ($this->m_error!="" || $this->m_errno!=0)
       {
-        return $this->m_error." (errno: ".$this->m_errno.")"; 
+        $error = $this->_translateError(array("code"=>$this->m_errno,"message"=>$this->m_error));
+        return $error." (errno: ".$this->m_errno.")"; 
       }
       return "";
+    }
+    
+    function getErrorType()
+    {
+      if(in_array($this->m_errno,$this->m_user_error))
+      {
+        return "user";   
+      }
+      return "system";
+    }
+    
+    function setUserError($errno)
+    {
+      $this->m_user_error[]=$errno;
     }
     
     function halt($message)
     {
       if ($this->m_haltonerror)
-      {      
-        $dbmsg = $this->getError();
-        if ($dbmsg!="") atkerror($dbmsg);
-        halt($message);
+      { 
+        if($this->getErrorType()=="system")
+        {        
+          $dbmsg = $this->getError();
+          if ($dbmsg!="") atkerror($dbmsg);
+          if(in_array($this->m_errno,$this->m_critical_error)) $level='critical';
+          halt($message,$level);
+        }
       }
     }
 
@@ -125,6 +147,20 @@
      * Disconnect from database
      */
     function disconnect()
+    {
+    }
+
+    /**
+     * Commit
+     */
+    function commit()
+    {
+    }
+
+    /**
+     * Rollback
+     */
+    function rollback()
     {
     }
 

@@ -1,0 +1,7 @@
+<?php
+// Language file for the mysql errors
+
+$txt_1130 = "Host is not allowed to connect to this MySQL server";
+$txt_1146 = "Table doesn't exist";
+$txt_1054 = "Unknown column name";
+?>

@@ -2551,7 +2551,6 @@
 
       // This is the end of all things for this page..
       // so we clean up some resources..
-
       $g_db->disconnect();
       atkdebug("disconnected from the database");
     }
@@ -2573,6 +2572,8 @@
 
     function action_update()
     {
+      global $g_db;
+      
       if ($this->m_postvars['atkcancel']=="")
       {
         $record = $this->updateRecord();
@@ -2594,32 +2595,51 @@
         else
         {
           $this->updateDb($record);
-          if ($this->m_postvars['atknoclose']=="")
+          if($g_db->getError()!="")
           {
-            // 'save and close' was clicked
-            $location = $this->feedbackUrl("update", ACTION_SUCCESS);
-            $this->redirect($location);
+            $g_db->rollback();
+            if($g_db->getErrorType()=="user")
+            {
+              triggerError($record, 'Error', $g_db->getError(), '', '');
+              $this->m_action="edit";
+              $this->editPage($record);
+            }
+            else
+            {
+              $location = $this->feedbackUrl("update",ACTION_FAILED,$g_db->getError());
+              $this->redirect($location);
+            }
           }
           else
           {
-            // 'save' was clicked
-            $this->m_action="edit";
-            //update succesful, pk value might be changed so update m_orgkey
-            $record["atkprimkey"] = $this->primaryKey($record);
-
-            $locked = FALSE;
-            if ($this->hasFlag(NF_LOCK))
+            $g_db->commit();
+            if ($this->m_postvars['atknoclose']=="")
             {
-              if ($this->m_lock->lock($record["atkprimkey"], $this->m_table)) $locked = TRUE;
-              else
-              {
-                $this->lockPage();
-                return;
-              }
+              // 'save and close' was clicked
+              $location = $this->feedbackUrl("update", ACTION_SUCCESS);
+              $this->redirect($location);
             }
-
-            //$this->setOrgKeyValue($record);
-            $this->editPage($record, $locked);
+            else
+            {
+              // 'save' was clicked
+              $this->m_action="edit";
+              //update succesful, pk value might be changed so update m_orgkey
+              $record["atkprimkey"] = $this->primaryKey($record);
+  
+              $locked = FALSE;
+              if ($this->hasFlag(NF_LOCK))
+              {
+                if ($this->m_lock->lock($record["atkprimkey"], $this->m_table)) $locked = TRUE;
+                else
+                {
+                  $this->lockPage();
+                  return;
+                }
+              }
+  
+              //$this->setOrgKeyValue($record);
+              $this->editPage($record, $locked);
+            }
           }
         }
       }
@@ -2633,6 +2653,7 @@
 
     function action_save()
     {
+      global $g_db;
       if ($this->m_postvars['atkcancel']=="")
       {
         $record = $this->updateRecord();
@@ -2654,17 +2675,35 @@
         else
         {
           $this->addDb($record, true, "add");
-
-          $location="";
-          if ($this->hasFlag(NF_EDITAFTERADD))
+          if($g_db->getError()!="")
           {
-            $location = session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->atknodetype().'&atkaction=edit&atkselector='.rawurlencode($this->primaryKey($record)), SESSION_REPLACE);
+            $g_db->rollback();
+            if($g_db->getErrorType()=="user")
+            {
+              triggerError($record, 'Error', $g_db->getError(), '', '');
+              $this->m_action="add";
+              $this->addPage($record);
+            }
+            else
+            {
+              $location = $this->feedbackUrl("save",ACTION_FAILED,$g_db->getError());
+              $this->redirect($location);
+            }
           }
           else
           {
-            $location = $this->feedbackUrl("save", ACTION_SUCCESS);
+            $g_db->commit();
+            $location="";
+            if ($this->hasFlag(NF_EDITAFTERADD))
+            {
+              $location = session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->atknodetype().'&atkaction=edit&atkselector='.rawurlencode($this->primaryKey($record)), SESSION_REPLACE);
+            }
+            else
+            {
+              $location = $this->feedbackUrl("save", ACTION_SUCCESS);
+            }
+            $this->redirect($location);
           }
-          $this->redirect($location);
         }
       }
       else
@@ -2681,8 +2720,27 @@
       {
         // Confirmation page was displayed and 'yes' was clicked
         $recordset = $this->deleteDb($this->m_postvars['atkselector']);
-        $location = $this->feedbackUrl("delete", ACTION_SUCCESS);
-        $this->redirect($location);
+        if($g_db->getError()!="")
+        {
+          $g_db->rollback();
+          if($g_db->getErrorType()=="user")
+          {
+            triggerError($record, 'Error', $g_db->getError(), '', '');
+            $this->m_action="admin";
+            $this->adminPage();
+          }
+          else
+          {
+            $location = $this->feedbackUrl("delete",ACTION_FAILED,$g_db->getError());
+            $this->redirect($location);
+          }
+        }
+        else
+        {
+          $g_db->commit();
+          $location = $this->feedbackUrl("delete", ACTION_SUCCESS);
+          $this->redirect($location);
+        }
       }
       elseif (empty($this->m_postvars['cancel']))
       {
@@ -2717,10 +2775,21 @@
 
     function action_copy()
     {
+      global $g_db;
       $recordset = $this->selectDb($this->m_postvars['atkselector'],"","","","","copy");
       if(count($recordset)>0)
       {
         $this->copyDb($recordset[0]);
+        if($g_db->getError()!="")
+        {
+          $g_db->rollback();
+          $location = $this->feedbackUrl("save",ACTION_FAILED,$g_db->getError());
+          $this->redirect($location);
+        }
+        else
+        {
+          $g_db->commit();
+        }
       }
       else
       {
@@ -2737,8 +2806,18 @@
       if(count($recordset) > 0)
       {
         $this->copyDb($recordset[0]);
-        $location = session_url(dispatch_url($this->atknodetype(), "edit", array("atkselector" => $this->primaryKey($recordset[0]))), SESSION_REPLACE);
-        $this->redirect($location);
+        if($g_db->getError()!="")
+        {
+          $g_db->rollback();
+          $location = $this->feedbackUrl("editcopy",ACTION_FAILED,$g_db->getError());
+          $this->redirect($location);
+        }
+        else
+        {
+          $g_db->commit();
+          $location = session_url(dispatch_url($this->atknodetype(), "edit", array("atkselector" => $this->primaryKey($recordset[0]))), SESSION_REPLACE);
+          $this->redirect($location);
+        }
       }
 
       else
@@ -2806,10 +2885,10 @@
 
     function action_feedback()
     {
-      $this->feedbackPage($this->m_postvars["atkfbaction"], $this->m_postvars["atkactionstatus"]);
+      $this->feedbackPage($this->m_postvars["atkfbaction"], $this->m_postvars["atkactionstatus"], $this->m_postvars["atkfbmessage"]);
     }
 
-    function feedbackPage($action, $actionstatus)
+    function feedbackPage($action, $actionstatus,$message="")
     {
       global $g_layout;
       $g_layout->initGui();
@@ -2817,6 +2896,7 @@
       $g_layout->output($this->statusbar());
 
       $g_layout->output(text('feedback_'.$action.'_'.atkActionStatus($actionstatus), $this->m_type));
+      $g_layout->output("Error msg: ".$message);
 
       if (atkLevel()>0)
       {
@@ -2862,7 +2942,7 @@
      */
     function redirect($location="")
     {
-      global $g_returnurl;
+      global $g_returnurl,$g_db;
 
       atkdebug("atknode::redirect()");
 
@@ -2872,7 +2952,6 @@
       {
         $location = session_url($_SERVER["PHP_SELF"],SESSION_BACK,1);
       }
-
       if (atkconfig("debug")>=2)
       {
         atkdebug('nondebug version would have redirected to <a href="'.$location.'">'.$location.'</a>');
@@ -3023,12 +3102,37 @@
       global $g_db;
       atkdebug("validate()");
 
+      // First we check if the values for the attributes are correct
       foreach (array_keys($this->m_attribList) as $attribname)
       {
         if (!atk_in_array($attribname, $ignoreList))
         {
           $p_attrib = &$this->m_attribList[$attribname];
 
+          if (!( $p_attrib->isEmpty($record)))
+          {
+            $funcname = $p_attrib->m_name."_validate";
+            if (method_exists($this,$funcname))
+            {
+              $this->$funcname($record, $mode);
+            }
+            else
+            {
+              $p_attrib->validate($record, $mode);
+            }
+          }
+        }   
+      }
+      if(count($record['atkerror']) > 0) return false;
+
+      // After the values check, we check the Flags.
+      foreach (array_keys($this->m_attribList) as $attribname)
+      {
+        if (!atk_in_array($attribname, $ignoreList))
+        {
+          $p_attrib = &$this->m_attribList[$attribname];
+
+          if(count($record['atkerror']) > 0) return false;
           //Validate if ne
           if ($p_attrib->hasFlag(AF_PRIMARY) && !$p_attrib->hasFlag(AF_AUTO_INCREMENT))
           {
@@ -3042,7 +3146,7 @@
               triggerError($record, $attribname, 'error_primarykey_exists', '', $this->m_type);
             }
           }
-
+          
           // if no root elements may be added to the tree, then every record needs to have a parent!
           if ($p_attrib->hasFlag(AF_PARENT) && $this->hasFlag(NF_TREE_NO_ROOT_ADD) && $this->m_action == "save")
             $p_attrib->m_flags |= AF_OBLIGATORY;
@@ -3059,7 +3163,6 @@
           {
             triggerError($record, $attribname, 'error_uniquefield', '', $this->m_type);
           }
-
           else
           {
             //don't validate empty fields
@@ -3937,9 +4040,9 @@
       return $res;
     }
 
-    function feedbackUrl($action, $status)
+    function feedbackUrl($action, $status,$message="")
     {
-      return (hasFlag($this->m_feedback[$action], $status)?session_url(dispatch_url($this->atkNodeType(),"feedback", array("atkfbaction"=>$action, "atkactionstatus"=>$status)),SESSION_REPLACE):"");
+      return (hasFlag($this->m_feedback[$action], $status)||$status==ACTION_FAILED?session_url(dispatch_url($this->atkNodeType(),"feedback", array("atkfbaction"=>$action, "atkactionstatus"=>$status,"atkfbmessage"=>$message)),SESSION_REPLACE):"");
     }
 
     /**

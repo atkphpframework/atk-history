@@ -1,7 +1,10 @@
 <?php
 
   require_once(atkconfig("atkroot")."atk/db/class.atkdb.inc");
+  //Oracle error's includen
+  include_once(atkconfig("atkroot")."atk/db/languages/oracle_".atkconfig('languagefile'));
 
+  
   /**
    * Handles database connectivity and database interaction
    * with the Oracle database server. Portions of this class are
@@ -15,12 +18,16 @@
    */
   class atkoci8db extends atkdb
   {    
+  
     /**
      * Base constructor
      */
     function atkoci8db()
     {
-      /* do nothing */
+      // set the user error's
+      $this->m_user_error=array(1,1400,1438,2290,2291,2292,2293);   
+      // set critical error's      
+      $this->m_critical_error = array(600,904,1017,12154);
     }
     
     /**
@@ -97,17 +104,22 @@
       /* establish connection to database */
       if (empty($this->m_link_id))
       {
-        $this->m_link_id = OCIplogon($this->m_user, $this->m_password, $this->m_database);
+        $this->m_link_id = @OCIplogon($this->m_user, $this->m_password, $this->m_database);
         if (!$this->m_link_id)
         {
-          $this->halt("connect using ".$this->m_user." / ***** on ".$this->m_database." failed.");
           $err = OCIError(); // can't pass link_id because it is null if connect failed.
-          return $this->_translateError($err['code']);
+          $this->halt($this->_translateError($err));
         }
 
         /* set default date format for Oracle */ 
         $nls = OCIParse($this->m_link_id, "alter session set nls_date_format='YYYY-MM-DD'");
         $myresult = OCIExecute($nls);
+        $error = OCIError($this->m_link_id);
+        if ($err["code"]!="")
+        {
+          $this->halt("Invalid SQL: $query"); 
+          return $this->_translateError($err);
+        }
 
       }
       return DB_SUCCESS;
@@ -117,9 +129,21 @@
      * TODO FIXME: I don't know what errormessges oracle gives,
      * so this function only returns DB_UNKNOWNERROR for now.
      */
-    function _translateError($error)
+    function _translateError($err)
     {
-      return DB_UNKNOWNERROR;
+      $this->m_errno = $err['code'];
+      $this->m_error = $err['message'];
+      switch ($this->m_errno)
+      {
+        case     0: return DB_SUCCESS;
+        case  1017: return sprintf(text("access_denied_user"),$this->m_user,$this->m_database);
+        case 12154: return sprintf(text("unknown_database"),$this->m_database);
+        case   904: return sprintf(text(904));
+        default: 
+          // Get error
+          $tmp = text($this->m_errno);
+          if($tmp==$this->m_errno) { return "Unknown error: ".$this->errno." (".$this->m_error.")"; } else { return $tmp; }
+      }
     }
 
     /**
@@ -127,8 +151,29 @@
      */
     function disconnect()
     {
-      atkdebug("Disconnecting from database...");
-      OCILogoff($this->m_link_id);
+      if($this->m_link_id)
+      {
+        atkdebug("Disconnecting from database...");
+        OCILogoff($this->m_link_id);
+      }
+    }
+
+    function commit()
+    {
+      if($this->m_link_id)
+      {
+        atkdebug("OCICommit");
+        OCICommit($this->m_link_id);
+      }    
+    }
+
+    function rollback()
+    {
+      if($this->m_link_id)
+      {
+        atkdebug("OCIRollback");
+        OCIRollback($this->m_link_id);
+      }
     }
 
     /**
@@ -165,21 +210,20 @@
         $this->m_query_id = @OCIParse($this->m_link_id, $query);
         if ($this->m_query_id) 
         {
-          if(!@OCIExecute($this->m_query_id,OCI_COMMIT_ON_SUCCESS))
+          //if(!@OCIExecute($this->m_query_id,OCI_COMMIT_ON_SUCCESS))
+          if(!@OCIExecute($this->m_query_id))
           {
             $error = OCIError($this->m_query_id);
-            $this->m_errno = $error["code"];
-            $this->m_error = $error["message"];          
-            $this->halt("Invalid SQL: $query");
+            $this->halt("Invalid SQL: $query");    
+            $this->halt($this->_translateError($error));
           }
         }
         else
         {
           /* error in query */          
           $error = OCIError($this->m_link_id);
-          $this->m_errno = $error["code"];
-          $this->m_error = $error["message"];          
           $this->halt("Invalid SQL: $query");    
+          $this->halt($this->_translateError($error));          
         }
         $this->m_row = 0;        
         /* return query id */

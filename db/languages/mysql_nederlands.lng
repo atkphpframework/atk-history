@@ -1,0 +1,7 @@
+<?php
+// Language file for the mysql errors
+
+$txt_1130 = "Host heeft geen rechten om verbinding te maken met de MySQL server";
+$txt_1146 = "Tabel bestaat niet";
+$txt_1054 = "Onbekende kolom naam";
+?>

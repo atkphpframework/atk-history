@@ -1,6 +1,8 @@
 <?php
   
   require_once(atkconfig("atkroot")."atk/db/class.atkdb.inc");
+  //PostgreSQL error's includen
+  include_once(atkconfig("atkroot")."atk/db/languages/postgresql_".atkconfig('languagefile'));
 
   /**
    * Handles database connectivity and database interaction

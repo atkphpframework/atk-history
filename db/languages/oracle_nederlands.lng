@@ -1,0 +1,28 @@
+<?php
+// Language file for the oracle error's
+
+//unique constraint (string.string) violated
+$txt_1    = "unique constraint (string.string) violated";
+
+//Invalid column name
+$txt_904  = "Ongeldige kolom naam";
+
+//cannot insert NULL into (string)
+$txt_1400 = "Kan geen 'NULL' waarde toevoegen";
+
+//value larger than specified precision allows for this column
+$txt_1438 = "Waarde is groter dan dat er gespecificeerd is voor deze kolom";
+
+//check constraint (string.string) violated
+$txt_2290 = "check constraint (string.string) violated";
+
+//integrity constraint (string.string) violated - parent key not found
+$txt_2291 = "integrity constraint (string.string) violated - hoofd sleutel niet gevonden";
+
+//integrity constraint (string.string) violated - onderliggend record gevonden
+$txt_2292 = "integrity constraint (string.string) violated - onderliggend record gevonden";
+
+//cannot validate (string.string) - check constraint violated
+$txt_2293 = "cannot validate (string.string) - check constraint violated";
+
+?>

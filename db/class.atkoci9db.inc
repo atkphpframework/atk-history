@@ -43,9 +43,8 @@
         $this->m_link_id = OCIplogon($this->m_user, $this->m_password, $this->m_database);
         if (!$this->m_link_id) 
         {
-          $this->halt("connect using ".$this->m_user." / ***** on ".$this->m_database." failed.");     
           $err = OCIError();
-          return $this->_translateError($err["code"]);
+          $this->halt($this->_translateError($err));
         }
   
         /* set default date format for Oracle */ 
@@ -54,10 +53,8 @@
         $error = OCIError($this->m_link_id);
         if ($err["code"]!="")
         {
-          $this->m_errno = $err["code"];
-          $this->m_error = $err["message"];
           $this->halt("Invalid SQL: $query"); 
-          return $this->_translateError($err["code"]);
+          return $this->_translateError($err);
         }
         
         /* set default timestamp format for Oracle */ 
@@ -69,10 +66,8 @@
         $err = OCIError($this->m_link_id);
         if ($err["code"]!="")
         {
-          $this->m_errno = $err["code"];
-          $this->m_error = $err["message"];
           $this->halt("Invalid SQL: $query"); 
-          return $this->_translateError($err["code"]);
+          return $this->_translateError($err);
         }
       }
       return DB_SUCCESS;
@@ -147,9 +142,8 @@
           {
             /* error in query */
             $error = OCIError($this->m_query_id);
-            $this->m_errno = $error["code"];
-            $this->m_error = $error["message"];
             $this->halt("Invalid SQL: $query"); 
+            $this->halt($this->_translateError($error));
           }
           else
           {        
@@ -183,9 +177,8 @@
         {
           /* error in query */
           $error = OCIError($this->m_query_id);
-          $this->m_errno = $error["code"];
-          $this->m_error = $error["message"];
           $this->halt("Invalid SQL: $query"); 
+          $this->halt($this->_translateError($error));
         }
     
         /* query */
