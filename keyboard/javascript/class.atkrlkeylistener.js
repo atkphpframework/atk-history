@@ -10,6 +10,9 @@ function atkRLKeyListener(rlId, highlight, reccount)
   this.prevcolor = '';
   this.highlight = highlight;
   this.reccount = reccount;
+  
+  var el = document.getElementById(this.recordlistId);
+  el.listener = this; // Give the element a pointer to the listener, so we can always access it. 
 }
 
 atkRLKeyListener.prototype = new atkGKeyListener();
@@ -49,6 +52,33 @@ atkRLKeyListener.prototype.first = function()
   this.down();
 }
 
+atkRLKeyListener.prototype.setRow = function(rownum)
+{
+  this.focus(DIR_DOWN);
+  this.deselectRow();
+  this.currentrec=rownum;
+  this.selectRow();
+}
+
+atkRLKeyListener.prototype.deselectRow = function()
+{
+  if (this.currentrec>0)
+  {
+    prevRow = document.getElementById(this.recordlistId+'_'+this.currentrec);
+    prevRow.style.backgroundColor = this.prevcolor;  
+  }
+}
+
+atkRLKeyListener.prototype.selectRow = function()
+{
+  if (this.currentrec>0)
+  {
+    newRow = document.getElementById(this.recordlistId+'_'+this.currentrec);
+    this.prevcolor = newRow.style.backgroundColor;
+    newRow.style.backgroundColor = this.highlight;
+  }
+}
+
 atkRLKeyListener.prototype.last = function()
 {
   this.currentrec=-1; // put the pointer to nothing.
@@ -59,8 +89,7 @@ atkRLKeyListener.prototype.down = function()
 {
   if (this.currentrec>=0) // a record was already selected  
   {
-    prevRow = document.getElementById(this.recordlistId+'_'+this.currentrec);
-    prevRow.style.backgroundColor = this.prevcolor;
+    this.deselectRow();
     this.currentrec++;
   }
   else  
@@ -76,9 +105,7 @@ atkRLKeyListener.prototype.down = function()
   else
   {
     //alert('naam: '+this.recordlistId+'_'+this.currentrec);
-    newRow = document.getElementById(this.recordlistId+'_'+this.currentrec);
-    this.prevcolor = newRow.style.backgroundColor;
-    newRow.style.backgroundColor = this.highlight;
+    this.selectRow();
   }
 }
 
@@ -86,8 +113,7 @@ atkRLKeyListener.prototype.up = function()
 {
   if (this.currentrec>=0) // a record was already selected  
   {
-    prevRow = document.getElementById(this.recordlistId+'_'+this.currentrec);
-    prevRow.style.backgroundColor = this.prevcolor;
+    this.deselectRow();
     this.currentrec--;
   }  
   else
@@ -102,9 +128,7 @@ atkRLKeyListener.prototype.up = function()
   }
   else
   {
-    newRow = document.getElementById(this.recordlistId+'_'+this.currentrec);
-    this.prevcolor = newRow.style.backgroundColor;
-    newRow.style.backgroundColor = this.highlight;
+    this.selectRow();
   }  
 }
 

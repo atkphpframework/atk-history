@@ -1,7 +1,7 @@
 <table border="0" cellspacing="0" cellpadding="0">
   <tr>
     <td align="left">      
-        <table class="recordlist" cellspacing=0>
+        <table id="{$listid}" class="recordlist" cellspacing=0>
             <!-- header -->
             <tr> 
               {foreach from=$header item=col}
@@ -29,8 +29,9 @@
               
             {foreach from=$rows item=row}
               <tr id="{$row.id}" class="row{if $row.rownum % 2 == 0 }1{else}2{/if}" {if $row.background!=""}style="background-color:{$row.background}" {/if}
-                   onmouseover="if (typeof(this.style) != 'undefined') this.style.backgroundColor = '{$row.highlight}'"
-                   onmouseout="if (typeof(this.style) != 'undefined') this.style.backgroundColor = '{$row.background}'">
+                   onmouseover="highlightrow(this, '{$row.highlight}')"
+                   onmouseout="resetrow(this)"
+                   onclick="selectrow('{$listid}', {$row.rownum})">
               {foreach from=$row.cols item=col}
                 <td valign="{$vorientation}" {$col.htmlattributes}>
                   {if $col.content != ""}{$col.content}{else}&nbsp;{/if}
