@@ -392,29 +392,7 @@
     {
       return 64;
     }
-    
-    /**
-      * In case the identifier is longer than the de maxIndentifierLength
-      * this function returns a new string based on the $identiefier string 
-      * and a unique id.
-      * @param $identifier str 
-      * @param $id unique id 
-      * @param $offset Identifier length may have an offset because some
-      *                         identifiers contain prefixes (e.g. c_paragraaf, f_nl_contact)
-      * 
-      *      
-      */
-    function validIdentifierName($identifier, $id, $offset=0)
-    {
-      $maxLength = $this->maxIdentifierLength()-$offset;
-      if (strlen($identifier) > $maxLength)
-      {
-        $newIdentifier = substr($identifier, 0, $maxLength-strlen($id)).$id;
-        return $newIdentifier;
-      }
-      return $identifier;
-    }
-    
+       
     /**
      * escapes quotes for use in SQL: ' -> '' (and sometimes % -> %%)
      */
