@@ -235,6 +235,12 @@
     var $m_seq;
 
     /**
+     * The db
+     */
+    var $m_db;
+
+    
+    /**
      * The primary key of this node
      */
 
@@ -617,11 +623,15 @@
      * @param $tablename The Tablename
      * @param $seq sequence
      */
-    function setTable($tablename,$seq="")
+    function setTable($tablename, $seq="", $db=NULL)
     {
+      global $g_db;
+
       $this->m_table      = $tablename;
       if ($seq=="") $seq = $tablename;
       $this->m_seq        = $seq;
+      if ($db==NULL) $this->m_db = &$g_db;
+      else $this->m_db = &$db;
     }
 
     /**
@@ -1019,7 +1029,14 @@
             if($attribname!="")
             {
               $p_attrib = &$this->m_attribList[$attribname];
-              if (!$p_attrib->hasFlag(AF_NO_FILTER)) $p_attrib->m_flags |= AF_READONLY|AF_HIDE_ADD;
+              if (is_object($p_attrib))
+              {
+                if (!$p_attrib->hasFlag(AF_NO_FILTER)) $p_attrib->m_flags |= AF_READONLY|AF_HIDE_ADD;
+              }
+              else
+              {
+              	echo "PATTRIB:: ".$p_attrib->m_name;
+              }
             }
           }
         }
@@ -1119,7 +1136,7 @@
      */
     function searchForm($record = NULL)
     {
-      global $g_layout, $g_db;
+      global $g_layout;
 
       $this->setAttribSizes();
 
@@ -1127,7 +1144,7 @@
 
       $form.=$g_layout->ret_table_simple();
 
-      $dbSearchModes = $g_db->getSearchModes();
+      $dbSearchModes = $this->m_db->getSearchModes();
       $form.='<tr>';
       $form.=$g_layout->ret_td(text("search_mode"),'colspan="1"');
       $sel.='<input type="radio" name="atksearchmethod" value="AND" checked>'.text("search_and").'&nbsp;&nbsp;&nbsp;';
@@ -1235,7 +1252,7 @@
       // maximum number of bookmarks to pages.
       $max_bm = 10;
 
-      if (!($limit > 0 && $count > $limit && ceil($count / $limit) > 1)) return "";
+      if (!($limit > 0 && $count > $limit && ceil($count / $limit) > 1))return "";
 
       $pages = ceil($count / $limit);
       $curr  = ($this->m_postvars['atkstartat'] / $limit) + 1;
@@ -2378,13 +2395,14 @@
 
         // create navigation bar
         $nav = $this->buildNavigation("select");
+
         if (!empty($nav)) $g_layout->output("$nav<br>");
         $g_layout->output('<br>');
 
         $actions["select"]=atkurldecode($this->m_postvars['atktarget']);
 
         $g_layout->output($this->normalRecordList($recordset, $actions));
-
+        
         if (!empty($nav)) $g_layout->output('<br>'.$nav.'<br>');
         $g_layout->output('<br>');
 
@@ -2406,7 +2424,7 @@
       if ($checkoverride && method_exists($this, $method))
         return $this->$method($atkselector, $locked);
 
-      global $g_layout, $g_db;
+      global $g_layout;
       $g_layout->initGui();
 
       if (is_array($atkselector))
@@ -2552,10 +2570,9 @@
      */
     function setAttribSizes()
     {
-      if ($this->m_attribsizesset) return true;
-      global $g_db;
+      if ($this->m_attribsizesset) return true;      
 
-      $metainfo = $g_db->tableMeta($this->m_table);
+      $metainfo = $this->m_db->tableMeta($this->m_table);
 
       foreach (array_keys($this->m_attribList) as $attribname)
       {
@@ -2567,6 +2584,8 @@
       }
       $this->m_attribsizesset = true;
     }
+
+
 
     /**
      * The dispatcher. This functions looks at the atkaction from the postvars
@@ -2584,7 +2603,7 @@
      */
     function dispatch($postvars, $fullpage=true)
     {
-      global $g_db, $g_sessionManager, $g_layout;
+      global $g_sessionManager, $g_layout;
       $this->m_postvars = $postvars;
 
       $this->m_action = $postvars['atkaction'];          
@@ -2619,7 +2638,7 @@
       // This is the end of all things for this page..
       // so we clean up some resources..
 
-      $g_db->disconnect();
+      $this->m_db->disconnect();
       atkdebug("disconnected from the database");
     }
 
@@ -2784,6 +2803,7 @@
 
     function action_copy()
     {
+      atkdebug("atknode::action_copy()");
       $recordset = $this->selectDb($this->m_postvars['atkselector'],"","","","","copy");
       if(count($recordset)>0)
       {
@@ -2799,6 +2819,7 @@
 
     function action_editcopy()
     {
+      atkdebug("atknode::action_editcopy()");
       $recordset = $this->selectDb($this->m_postvars['atkselector'],"","","","","copy");
 
       if(count($recordset) > 0)
@@ -3087,7 +3108,6 @@
      */
     function validate(&$record, $mode, $ignoreList=array())
     {
-      global $g_db;
       atkdebug("validate()");
 
       foreach (array_keys($this->m_attribList) as $attribname)
@@ -3103,7 +3123,7 @@
             $atkorgkey = $record["atkprimkey"];
             if(($atkorgkey == '' // no orgkey, so adding this record
                 || $atkorgkey != $this->primaryKey($record)) // key has changed, so check is necessary
-               &&  count($g_db->getrows("SELECT ".$p_attrib->fieldName()." FROM ".$this->m_table." WHERE ".$this->primaryKey($record)))>0
+               &&  count($this->m_db->getrows("SELECT ".$p_attrib->fieldName()." FROM ".$this->m_table." WHERE ".$this->primaryKey($record)))>0
               )
             {
               triggerError($record, $attribname, 'error_primarykey_exists', '', $this->m_type);
@@ -3121,7 +3141,7 @@
           }
           // if flag is primary
           else if ($p_attrib->hasFlag(AF_UNIQUE) && !$p_attrib->hasFlag(AF_PRIMARY) &&
-                   count($g_db->getrows("SELECT ".$p_attrib->fieldName()." FROM ".$this->m_table." WHERE $attribname='".escapeSQL($record[$attribname])."' AND NOT (".$this->primaryKey($record).")"))>0
+                   count($this->m_db->getrows("SELECT ".$p_attrib->fieldName()." FROM ".$this->m_table." WHERE $attribname='".escapeSQL($record[$attribname])."' AND NOT (".$this->primaryKey($record).")"))>0
                   )
           {
             triggerError($record, $attribname, 'error_uniquefield', '', $this->m_type);
@@ -3157,8 +3177,6 @@
      */
     function updateDb(&$record)
     {
-      global $g_db;
-
       $name = "atk".atkconfig("database")."query";
       $query = new $name();
 
@@ -3207,7 +3225,7 @@
         for ($i = 0, $_i = count($storelist); $i < $_i; $i++)
         {
           $p_attrib = &$this->m_attribList[$storelist[$i]];
-          $p_attrib->store($g_db, $record,"update");
+          $p_attrib->store($this->m_db, $record,"update");
         }
 
         // Now we call a postUpdate function, that can be used to do some processing after the record
@@ -3230,12 +3248,15 @@
      */
     function countDb($selector="", $excludeList="", $includeList="", $mode="")
     {
-      global $g_db;
       $name = "atk".atkconfig("database")."query";
       $query = new $name();
 
       $query->addTable($this->m_table);
       $query->addCondition($selector);
+      
+      if(array_key_exists("atkfilter", $this->m_postvars))
+        $query->addCondition($this->m_postvars["atkfilter"]);
+
       $query->m_searchmethod = $this->m_postvars['atksearchmethod'];
 
       if (!$this->hasFlag(NF_NO_FILTER))
@@ -3311,9 +3332,14 @@
 
 
       $querystring = $query->buildCount();
-      //$g_db->query($querystring);
-      $result = $g_db->getrows($querystring);
-      return $result[0]["count"];
+      $result = $this->m_db->getrows($querystring);
+
+      // group by fix:
+      // if there exists a group by (added by atk/filters) the 'else' situation occurs
+      if(count($result)==1)
+        return $result[0]["count"];
+      else
+        return count($result);
     }
 
    /** Copies a record
@@ -3337,8 +3363,6 @@
      */
     function selectDb($selector="", $order="", $limit="", $excludeList="",$includeList="", $mode="")
     {
-      global $g_db;
-
       $selectlist = array();
       $loadlist = array();
 
@@ -3401,9 +3425,10 @@
           }
         }
       }      
+
       foreach (array_keys($this->m_attribList) as $attribname)
       {
-        $p_attrib = &$this->m_attribList[$attribname];        
+        $p_attrib = &$this->m_attribList[$attribname];     
         if (
              (
                 ((is_array($includeList) && in_array($attribname,$includeList))
@@ -3440,7 +3465,7 @@
       
       $querystring = $query->buildSelect();   
       
-      $dbrecords = $g_db->getrows($querystring);
+      $dbrecords = $this->m_db->getrows($querystring);
 
 //      $this->setOrgKeyValue($dbrecords[0]);
 
@@ -3476,7 +3501,7 @@
         {
           $p_attrib = &$this->m_attribList[$loadlist[$j]];
 
-          $recordset[$i][$loadlist[$j]] = $p_attrib->load($g_db, $recordset[$i], $mode);
+          $recordset[$i][$loadlist[$j]] = $p_attrib->load($this->m_db, $recordset[$i], $mode);
         }
       }
       return $recordset;
@@ -3548,7 +3573,7 @@
      */
     function addDb(&$record, $exectrigger=true, $mode="add")
     {
-      global $g_db;
+      atkdebug("atkNode::addDb() start ".$this->m_type." mode: ".$mode);
 
       $name = "atk".atkconfig("database")."query";
       $query = new $name();
@@ -3561,7 +3586,7 @@
       foreach (array_keys($this->m_attribList) as $attribname)
       {
         $p_attrib = &$this->m_attribList[$attribname];
-        if ($p_attrib->needsInsert($record))
+        if ($mode != "add" || $p_attrib->needsInsert($record))
         {
           if ($p_attrib->hasStore($mode))
           {
@@ -3579,7 +3604,7 @@
         $p_attrib = &$this->m_attribList[$querylist[$i]];
         if ($p_attrib->hasFlag(AF_AUTO_INCREMENT))
         {
-          $record[$p_attrib->fieldName()]=$g_db->nextid($this->m_seq);
+          $record[$p_attrib->fieldName()]=$this->m_db->nextid($this->m_seq);
         }
 
         $p_attrib->addToQuery($query,$this->m_table,"",$record,1,"add"); // start at level 1
@@ -3592,7 +3617,7 @@
       {
         $p_attrib = &$this->m_attribList[$storelist[$i]];
 
-        $p_attrib->store($g_db, $record, $mode);
+        $p_attrib->store($this->m_db_db, $record, $mode);
 
       }
 
@@ -3603,7 +3628,8 @@
       // has been saved.
       if ($exectrigger) $this->postAdd($record, $mode);
 
-      atkdebug($g_db->m_error);
+      atkdebug($this->m_db->m_error);
+      atkdebug("atkNode::addDb() stop ".$this->m_type." mode:".$mode);
     }
 
     /**
@@ -3614,8 +3640,6 @@
      */
     function deleteDb($selector)
     {
-      global $g_db;
-
       $recordset = $this->selectDb($selector,"","","","","delete");
                
       if (count($this->m_cascadingAttribs)>0)
@@ -3631,7 +3655,7 @@
       }
 
       $query = "DELETE FROM ".$this->m_table." WHERE ".$selector;
-      $g_db->query($query);
+      $this->m_db->query($query);
       // todo: instead of delete, set the deleted flag.
 
       for ($i = 0, $_i = count($recordset); $i < $_i; $i++)

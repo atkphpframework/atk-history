@@ -175,8 +175,7 @@
             if ($label==""||strtolower($label)==str_replace('_',' ',strtolower($key)))
             {
               $key = text(getNodeType($this->m_destination))." ".strtolower(text("add"));
-              $label = text($key);
-          }
+              $label = text($key);          }
           } 
           $output.="<tr><td>".href($add_url,$label,SESSION_NESTED,true)."</td></tr>";
         }
