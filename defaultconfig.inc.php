@@ -83,6 +83,10 @@
   // Whether the action links in a recordlist appear left or right
   $config_recordlist_orientation  = "left";
   $config_recordlist_vorientation = "middle";
+  
+  // Use icons for action links or not
+  $config_recordlist_icons = "true";
+  
 
   $config_enable_ie_extensions = false;
 
