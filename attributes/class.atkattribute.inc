@@ -413,7 +413,7 @@
     function display($record)
     {
       // default behaviour is that we display a value 'as is'.
-      if (gettype($record[$this->fieldName()]) != "array")
+      if (!is_array($record[$this->fieldName()]))
       {
         return nl2br(htmlspecialchars($record[$this->fieldName()]));
       }
