@@ -1395,7 +1395,7 @@
         else
         {
           // generic text
-          $label = text(getNodeType($this->m_type))." ".text("add");
+          $label = text(getNodeType($this->m_type), $this->m_module)." ".text("add");
         }
         $g_layout->output(href($addurl,$label,SESSION_NESTED).'<br><br>');
       }
