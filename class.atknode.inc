@@ -1210,11 +1210,11 @@
       if ($this->hasFlag(NF_ADD_LINK) && !$this->hasFlag(NF_NO_ADD) && $this->allowed("add"))
       {
         $addurl = $PHP_SELF.'?atkaction=add';
-        $g_layout->output(href($addurl,text("link_".getNodeType($this->m_type)."_add"),SESSION_NESTED).'<br><br>');
+        $g_layout->output(href($addurl,text("link_".getNodeType($this->m_type)."_add"),SESSION_NESTED).'<br>');
       }
 
       // create navigation bar      
-      if ($this->m_index != "") $g_layout->output($this->buildIndex($recordset[0][$this->m_index]).'<br><br>');
+      if ($this->m_index != "") $g_layout->output("<br>".$this->buildIndex($recordset[0][$this->m_index]).'<br><br>');
       $nav = $this->buildNavigation();
       if (!empty($nav)) $g_layout->output("$nav<br>");
       $g_layout->output('<br>');
@@ -1244,7 +1244,13 @@
       $g_layout->output($this->recordList($recordset, $actions));
 
       if (!empty($nav)) $g_layout->output('<br>'.$nav);
-      $g_layout->output('<br><br>');
+      $g_layout->output('<br>');
+      
+      $adminFooter = $this->adminFooter();
+      if ($adminFooter!="")
+      {
+        $g_layout->output($adminFooter);
+      }
 
       $g_layout->ui_bottom();
     }
@@ -3082,6 +3088,15 @@
      * this function in their classes and return a string.
      */
     function adminHeader()
+    {
+      return "";
+    }    
+    
+    /**
+     * Function that is called when creating an adminPage. Developers can override
+     * this function in their classes and return a string.
+     */
+    function adminFooter()
     {
       return "";
     }    
