@@ -358,7 +358,8 @@
       $month = $rec[$this->fieldName()]["month"];
       $day = $rec[$this->fieldName()]["day"];
 
-      if (empty($year) || empty($month) || empty($day)) return "";
+      if (empty($year) || empty($month) || empty($day)) return "NULL";      
+      if ($year=='' || $month==0 || $day==0) return "NULL"; //one of the fields is left empty
 
       $result = $year."-".sprintf("%02d",$month)."-".sprintf("%02d",$day);
       return $result;
@@ -501,7 +502,7 @@
     {
       if ($mode == "add" || $mode == "update")
       {
-        if($this->value2db($rec) == '')
+        if($this->value2db($rec) == 'NULL')
         {
           $query->addField($this->fieldName(),'NULL','','',false);
         }
