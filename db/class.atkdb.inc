@@ -10,7 +10,6 @@
   define("DB_ACCESSDENIED_USER" , 4);
   define("DB_ACCESSDENIED_DB"   , 5);
 
-
   /**
    * Handles database connectivity and database interaction.
    *
@@ -150,9 +149,17 @@
       { 
         if($this->getErrorType()=="system")
         {        
-          atkdebug("atkdb::halt() on system error");
-          if(in_array($this->m_errno,$this->m_critical_error)) $level='critical';
-          halt($this->getErrorMsg(),$level);
+          if(substr($this->getErrorMsg(), 0 , 31) == "Kan niet connecten met database")
+	  {
+            // atkdebug("We can't connect!");
+            return $this->m_error;
+          }
+          else
+          {
+	    atkdebug("atkdb::halt() on system error");
+            if(in_array($this->m_errno,$this->m_critical_error)) $level='critical';
+            halt($this->getErrorMsg(),$level);
+          }
         }
         else
         {

@@ -24,6 +24,7 @@
   define ("AUTH_SUCCESS", 1);
   define ("AUTH_LOCKED", 2);
   define ("AUTH_MISMATCH", 3);
+  define ("AUTH_DBERROR", 4);
   define ("AUTH_ERROR",-1);
    
   $authentication = explode(",",trim($config_authentication));
@@ -366,8 +367,9 @@
           
     function loginForm($defaultname, $lastresponse)
     {      
-
+      
       $loginattempts = sessionLoad('loginattempts');            
+      $loginattempts = 0;
       if($loginattempts=="") $loginattempts = 0;
       
       if($loginattempts=="") 
@@ -379,7 +381,7 @@
         $loginattempts++;      
       }
 
-      sessionStore('loginattempts',$loginattempts);      
+      sessionStore('loginattempts', $loginattempts);      
 
       atkdebug('LoginAttempts: '.$loginattempts);
       
@@ -409,9 +411,14 @@
         }
         else if($lastresponse == AUTH_MISMATCH)
         {
-          $output.='<tr><td colspan=2 class=error>'.text('auth_mismatch').'<br><br></td></tr>';
-        }
-
+            $output.='<tr><td colspan=2 class=error>'.text('auth_mismatch').'<br><br></td></tr>';
+	}
+        else if($lastresponse == AUTH_DBERROR)
+        {
+            $output.='<tr><td colspan=2 class=error>'.text('auth_dberror').'<br><br></td></tr>';
+	    mailreport();
+	}
+	
         // generate the form
         $output.="<tr><td valign=top class=table>".text('username').":</td><td>".$userField."</td></tr>";   
         $output.="<tr><td colspan=2 class=table height=6></td></tr>";
