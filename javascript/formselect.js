@@ -102,3 +102,47 @@ function atkSubmitMRA(name, form, target)
     form.submit();
   }
 }
+
+/**
+ * Because we allow embedded recordLists for 1:n relations we need a way to somehow
+ * distinguish between the submit of the edit form, and the submit of the multi-record action.
+ * This method uses the atkescape option to redirect the multi-record-priority action to a level higher
+ * on the session stack, which makes it possible to return to the edit form (saving updated values!)
+ * @param form reference to the form object
+ * @param target where do we escape to?
+ */
+function atkSubmitMRPA(form, target)
+{
+  /* some stuff we need to know */
+  var atknodetype = form.elements['atk_mrpa_atknodetype'].value;
+  var index  = form.elements['atk_mrpa_atkaction'].selectedIndex;
+  var atkaction = form.elements['atk_mrpa_atkaction'][index].value;
+
+  /* initial target URL */
+  target += 'atknodetype=' + atknodetype + '&atkaction=' + atkaction;
+
+  /* get selectors */
+  var list = form.elements['atk_mrpa_atkselector[]'];
+
+  /* no selectors?! impossible situation, bail out! */
+  if (index == 0 || typeof(list) == 'undefined') return;
+
+  /* add the selectors to the target URL */
+  var selectorLength = 0;
+  if (typeof(list.length) == 'undefined') list = new Array(list);
+  for (var i = 0; i < list.length; i++)
+    if (list[i].selectedIndex != 0)
+    {
+      var priority = list[i][list[i].selectedIndex].value;
+      target += '&atkselector[' + list[i][0].value + ']=' + priority;
+      selectorLength++;
+    }
+
+  /* change atkescape value and submit form */
+  if (selectorLength > 0)
+  {
+    form.atkescape.value = target;
+    globalSubmit(form);
+    form.submit();
+  }
+}

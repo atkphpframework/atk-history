@@ -302,6 +302,63 @@
     }
 
     /**
+     * Adds the attribute / field to the list header. This includes the column name and search field.
+     * @param $action the action that is being performed on the node
+     * @param $arr reference to the the recordlist array
+     * @param $fieldprefix the fieldprefix
+     * @param $flags the recordlist flags
+     * @see atkNode::listArray
+     */
+    function addToListArrayHeader($action, &$arr, $fieldprefix, $flags)
+    {
+      global $PHP_SELF;
+
+      if (!$this->hasFlag(AF_HIDE_LIST) && !($this->hasFlag(AF_HIDE_SELECT) && $action == "select"))
+      {
+        $arr["heading"][$fieldprefix.$this->fieldName()]["title"] = text($this->fieldName(), $this->m_ownerInstance->m_type);
+
+        if (!hasFlag($flags, RL_NO_SORT) && !$this->hasFlag(AF_NO_SORT))
+        {
+          $order = $this->m_ownerInstance->m_table.".".$this->fieldName();
+          if ($this->m_ownerInstance->m_postvars["atkorderby"] == $order) $order .= " DESC";
+          $arr["heading"][$fieldprefix.$this->fieldName()]["url"] =
+            session_url($PHP_SELF.'?atknodetype='.$this->m_ownerInstance->atkNodeType().'&atkaction='.$action.'&atkorderby='.rawurlencode($order));
+        }
+
+        if (!hasFlag($flags, RL_NO_SEARCH) && $this->hasFlag(AF_SEARCHABLE))
+          $arr["search"][$fieldprefix.$this->fieldName()] = $this->search($this->m_ownerInstance->m_postvars['atksearch']);
+      }
+    }
+
+    /**
+     * Adds the attribute / field to the list row. And if the row is totalisable also to the total.
+     * @param $action the action that is being performed on the node
+     * @param $arr reference to the the recordlist array
+     * @param $nr the current row number
+     * @param $fieldprefix the fieldprefix
+     * @param $flags the recordlist flags
+     * @see atkNode::listArray
+     */
+    function addToListArrayRow($action, &$arr, $nr, $fieldprefix, $flags)
+    {
+      if (!$this->hasFlag(AF_HIDE_LIST) && !($this->hasFlag(AF_HIDE_SELECT) && $action == "select"))
+      {
+        /* an <attributename>_display function may be provided in a derived class to display an attribute */
+        $function = $this->m_name."_display";
+        if (method_exists($this->m_ownerInstance, $function))
+          $arr["rows"][$nr]["data"][$fieldprefix.$this->fieldName()] = $this->m_ownerInstance->$function($arr["rows"][$nr]["record"], "list");
+        else $arr["rows"][$nr]["data"][$fieldprefix.$this->fieldName()] = $this->display($arr["rows"][$nr]["record"], "list");
+
+        /* totalisable? */
+        if ($this->hasFlag(AF_TOTAL))
+        {
+          $sum = $this->sum($arr["total"], $arr["rows"][$nr]["record"], $fieldprefix);
+          $arr["total"][$fieldprefix.$this->fieldName()] = $sum[$fieldprefix.$this->fieldName()];
+        }
+      }
+    }
+
+    /**
      * Returns a piece of html code that can be used to search for an
      * attribute's value.
      * @param $record Array with values
@@ -393,9 +450,9 @@
     /**
      * returns a record which is the sum of two records
      */
-    function sum($rec1, $rec2)
+    function sum($rec1, $rec2, $fieldprefix="")
     {
-      return array($this->fieldName()=>($rec1[$this->fieldName()]+$rec2[$this->fieldName()]));
+      return array($fieldprefix.$this->fieldName() => ($rec1[$fieldprefix.$this->fieldName()]+$rec2[$fieldprefix.$this->fieldName()]));
     }
 
     /**
