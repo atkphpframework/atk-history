@@ -854,8 +854,11 @@
       $g_layout->output($page);
       if (count($this->m_tabListView) > 1) $g_layout->tabs_bottom();
 
-      $buttons = '<br><form method="get">'.session_form(SESSION_NESTED).
-                        '&nbsp;<input type="submit" name="atkback" value="&lt;&lt; '.text('back').'">&nbsp;';
+      $buttons = '<br><form method="get">'.session_form(SESSION_NESTED);
+      if (atkLevel()>0)
+      {
+        $buttons.= '&nbsp;<input type="submit" name="atkback" value="&lt;&lt; '.text('back').'">&nbsp;';
+      }
                         
       // if appropriate, display an edit button.
       if (!$this->hasFlag(NF_NO_EDIT)&&$this->allowed("edit", $record))
