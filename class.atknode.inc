@@ -754,7 +754,7 @@
 
         if (count($this->m_tabListEdit) > 1) 
         {        
-          $params["content"].=$ui->render("tabs.tpl", array("tabs"=>$this->buildTabs(),
+          $params["content"] =$ui->render("tabs.tpl", array("tabs"=>$this->buildTabs(),
                                                  "content"=>$form));
         }
         else
@@ -883,48 +883,49 @@
      * Creates an add page
      */
     function addPage($record=NULL)
-    {      
-      
+    {            
       $page = &$this->getPage();
             
       $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
       $this->setStyle("style.css");
       
-      $output = $this->statusbar();
+      $params["statusbar"] = $this->statusbar();
 
-      $output.='<form name="entryform" enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?'.SID.'"'.
-                                   ' method="post" onsubmit="return globalSubmit(this)">';
+      $formstart ='<form name="entryform" enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?'.SID.'"'.
+                     ' method="post" onsubmit="return globalSubmit(this)">';
 
       /* if we are on an admin page we would like to stay on the admin page after adding a new record */
-      if ($this->m_action == "admin") $output.=session_form(SESSION_NESTED);
-      else $output.=session_form();
+      if ($this->m_action == "admin") $formstart.=session_form(SESSION_NESTED);
+      else $formstart.=session_form();
+      
+      $params["formstart"] = $formstart;
       
       $ui = &atknew("atk.ui.atkui");
       if (is_object($ui))
       {        
 
         $forceList = decodeKeyValueSet($this->m_postvars['atkfilter']);
-        $innercontent.=$this->editForm("add",$record,$forceList);      
+        $form = $this->editForm("add",$record,$forceList);      
       
         if (count($this->m_tabListAdd) > 1) 
         {        
-          $output.=$ui->render("tabs.tpl", array("tabs"=>$this->buildTabs(),
-                                                 "content"=>$innercontent));
+          $params["content"] = $ui->render("tabs.tpl", array("tabs"=>$this->buildTabs(),
+                                                 "content"=>$form));
         }  
         else
         {
-          $output.=$innercontent;
+          $params["content"] = $form;
         }   
       
-        $output.='<br>&nbsp;<input type="submit" class="btn_save" value="'.text('save').'&nbsp;">';
+        $params["buttons"][] = '<input type="submit" class="btn_save" value="'.text('save').'&nbsp;">';
         if ($this->m_action=="add")
         {
           // if action is admin, we don't show the cancelbutton..
-          $output.='&nbsp;<input type="submit" class="btn_cancel" name="atkcancel" value="'.text('cancel').'">&nbsp;';
+          $params["buttons"][] ='<input type="submit" class="btn_cancel" name="atkcancel" value="'.text('cancel').'">';
         }
-        $output.='</form>';
+        $params["formend"] = '</form><SCRIPT LANGUAGE="JavaScript">placeFocus()</SCRIPT>';
         
-        $output.='<SCRIPT LANGUAGE="JavaScript">placeFocus()</SCRIPT>';
+        $output = $ui->render("addpage.tpl", $params);
               
         $total = $ui->render("box.tpl", array("title"=>$ui->title($this->m_module, $this->m_type,'add'),
                                                "content"=>$output));
@@ -1136,9 +1137,7 @@
      * @return edit form HTML string
      */
     function editForm($mode="add", $record = NULL, $forceList="", $suppressList="", $fieldprefix="")
-    {
-      global $g_layout;
-
+    {      
       /* get data, transform into form, return */            
       $data = $this->editArray($mode, $record, $forceList, $suppressList, $fieldprefix);                        
       
@@ -1293,7 +1292,7 @@
      */
     function hideForm($mode="add",$record = NULL, $forceList="", $fieldprefix="")
     {
-      global $g_layout, $g_sessionData;
+      global $g_sessionData;
 
       /* suppress all */
       $suppressList = array();
@@ -1311,7 +1310,7 @@
      */
     function searchForm($record = NULL)
     {
-      global $g_layout, $g_db;
+      global $g_db;
 
       $this->setAttribSizes();
 
@@ -2535,7 +2534,7 @@
      */
     function selectPage()
     {
-      global $g_layout, $atksearch;
+      global $atksearch;
       $g_layout->initGui();
       // When there's a lot of data, records will be spread across multiple pages.
       if ($this->m_postvars['atklimit']=="") $this->m_postvars['atklimit']=atkconfig("recordsperpage");
@@ -3155,8 +3154,6 @@
      */
     function xml($record)
     {
-      global $g_layout;
-
       $xml = "<".$this->m_type." ";
 
       foreach (array_keys($this->m_attribList) as $attribname)
@@ -3171,11 +3168,11 @@
 
       if ($this->m_postvars['tohtml']==1)
       {
-        $g_layout->output(htmlspecialchars($xml).'<br>');
+        return htmlspecialchars($xml).'<br>';
       }
       else
       {
-        $g_layout->rawoutput($xml);
+        return $xml;
       }
     }
 
