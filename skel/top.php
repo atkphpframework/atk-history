@@ -1,4 +1,4 @@
-f<?php
+<?php
   $config_atkroot = "./";
   include_once("atk.inc"); 
   
