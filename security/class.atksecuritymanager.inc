@@ -387,8 +387,10 @@
 
       atkdebug('LoginAttempts: '.$loginattempts);
       $g_layout->initGui();
+      $g_layout->output('<html>');
       $g_layout->register_script(atkConfig('atkroot')."atk/javascript/formfocus.js");
       $g_layout->head(text('app_title'));
+      $g_layout->body();
       $g_layout->output('<br><br><div align="center">');
       $g_layout->tpl("login_top", array("header"=>text('login_form')), "block_top");
       $g_layout->output('<form action="'.$_SERVER["PHP_SELF"].'" method="post">');
@@ -436,6 +438,7 @@
       $g_layout->output('<SCRIPT LANGUAGE="JavaScript">placeFocus()</SCRIPT>');
       $g_layout->tpl("login_bottom", "", "block_bottom");
       $g_layout->output('</div><br><br>');
+      $g_layout->output('</body></html>');
 
     }
 
