@@ -158,6 +158,7 @@
       {
         // decimal format
         $tmp = explode('.',$value);
+        if(strlen($tmp[1])==1) $tmp[1]=$tmp[1]*10;
         return $tmp[0]*60+$tmp[1]*(60/100);
       }
       else
