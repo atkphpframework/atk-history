@@ -10,6 +10,15 @@
    * $Id$
    *     
    */
+   
+  /* flag(s) specific for the atkFileAttribute */
+  define("AF_FILE_NO_UPLOAD",           AF_SPECIFIC_1); // unable to upload files
+  define("AF_FILE_NO_SELECT",           AF_SPECIFIC_2); // unable to select files
+  define("AF_FILE_NO_DELETE",           AF_SPECIFIC_3); // unable to delete files
+  define("AF_FILE_NO_AUTOPREVIEW",      AF_SPECIFIC_4); // don't try to detect the file type (shows only filename)
+  define("AF_FILE_PHYSICAL_DELETE",     AF_SPECIFIC_5); // removes the file physically
+  define("AF_FILE_POPUP",                    AF_POPUP); // show preview in popup instead of inline
+   
   class atkFileAttribute extends atkAttribute
   {
     /** 

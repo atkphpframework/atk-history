@@ -8,6 +8,9 @@
    * $Id$
    *
    */
+   
+  /* flag(s) specific for atkMatrixRelation */
+  define("AF_MATRIX_ACYCLIC",           AF_SPECIFIC_1); // checks if a matrix is acyclic
 
   class atkMatrixRelation extends atkRelation
   {

@@ -61,32 +61,6 @@
   define("AF_SPECIFIC_4",                   268435456); // specific attribute flag 4
   define("AF_SPECIFIC_5",                   536870912); // specific attribute flag 5
 
-  /* flag(s) specific for the atkFileAttribute */
-  define("AF_FILE_NO_UPLOAD",           AF_SPECIFIC_1); // unable to upload files
-  define("AF_FILE_NO_SELECT",           AF_SPECIFIC_2); // unable to select files
-  define("AF_FILE_NO_DELETE",           AF_SPECIFIC_3); // unable to delete files
-  define("AF_FILE_NO_AUTOPREVIEW",      AF_SPECIFIC_4); // don't try to detect the file type (shows only filename)
-  define("AF_FILE_PHYSICAL_DELETE",     AF_SPECIFIC_5); // removes the file physically
-  define("AF_FILE_POPUP",                    AF_POPUP); // show preview in popup instead of inline
-
-  /* flag(s) specific for atkMatrixRelation */
-  define("AF_MATRIX_ACYCLIC",           AF_SPECIFIC_1); // checks if a matrix is acyclic
-
-  /* flag(s) specific for atkPasswordAttribute */
-  define("AF_PASSWORD_NOVALIDATE",      AF_SPECIFIC_1); // disables password check when editing password field
-  define("AF_PASSWORD_NO_VALIDATE",     AF_SPECIFIC_1); // disables password check when editing password field
-
-  /* flag(s) specific for atkDateAttribute */
-  define("AF_DATE_STRING",              AF_SPECIFIC_1); // date must be entered as an english date string (strtotime)
-  define("AF_DATE_EMPTYFIELD",          AF_SPECIFIC_2); // Fields have one empty option
-
-  /* flag(s) specific for atkManyToOneRelation */
-  define("AF_RELATION_AUTOLINK",        AF_SPECIFIC_1); // create edit/view links for the items in a manytoonerelation dropdown.
-
-  /* flag(s) specific for atkOneToOneRelation */
-  define("AF_ONETOONE_ADD",             AF_SPECIFIC_1); // override the default no add flag
-  define("AF_ONETOONE_ERROR",           AF_SPECIFIC_2); // enable error notifications / triggers
-
   /**
    * The atkAttribute class represents an attribute of an atkNode.
    * An atkAttribute has a name and a set of parameters that
