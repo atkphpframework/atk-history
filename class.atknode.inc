@@ -1685,23 +1685,33 @@
       /* MULTI-RECORD-PRIORITY-ACTION FORM (CONTINUED) */
       /*************************************************/
       if (hasFlag($flags, RL_MRPA))
-      {
+      {    
+        $target = session_url($PHP_SELF.'?atknodetype='.$this->atkNodeType(), SESSION_NESTED);
         $output .= '<tr><td align="left">'.
                    '<table border="0" cellspacing="0" cellpadding="2">'.
                      '<tr>'.
                        '<td valign="top">'.
                          '<img src="'.atkconfig("atkroot").'atk/images/arrow.gif" border="0">'.
                        '</td>'.
-                       '<td>'.
-                         '<select name="'.$listName.'_atkaction">'.
+                       '<td>';
+        if (count($this->m_priority_actions) > 1)
+        {
+          $output .=     '<select name="'.$listName.'_atkaction">'.
                            '<option value="">'.text("with_selected").':</option>';
 
                            foreach ($this->m_priority_actions as $name)
-                             $output .= '<option value="'.$name.'">'.text($name).'</option>';
+                             $output .= '<option value="'.$name.'">'.text($name).'</option>';         
 
-        $output .=       '</select>&nbsp;'.
-                         '<input type="button" value="'.text("submit").'" onclick="atkSubmitMRPA(\''.$listName.'\', this.form, \''.session_url($PHP_SELF, SESSION_NESTED).'\')">'.
-                       '</td>'.
+          $output .=     '</select>&nbsp;'.
+                         '<input type="button" value="'.text("submit").'" onclick="atkSubmitMRPA(\''.$listName.'\', this.form, \''.$target.'\')">';
+        }
+        else //when only 1 action is defined, do not show the dropdown
+        {
+          $output .=     '<input type="hidden" name="'.$listName.'_atkaction" value="'.$this->m_priority_actions[0].'">' ;
+          $output .=     '<input type="button" value="'.text($this->m_priority_actions[0]).'" onclick="atkSubmitMRPA(\''.$listName.'\', this.form, \''.$target.'\')">' ;
+        }
+  
+        $output .=     '</td>'.
                      '</tr>'.
                    '</table>'.
                    '</td></tr>';
@@ -1731,16 +1741,25 @@
                        ).
                      '</tr>'.
                      '<tr>'.
-                       '<td>'.
-                         '<select name="'.$listName.'_atkaction" onchange="javascript:updateSelectable(\''.$listName.'\', this.form)">'.
+                       '<td>';
+                       
+        if (count($list["mra"]) > 1)
+        {
+          $output .=     '<select name="'.$listName.'_atkaction" onchange="javascript:updateSelectable(\''.$listName.'\', this.form)">'.
                            '<option value="">'.text("with_selected").':</option>';
 
                            foreach ($list["mra"] as $name)
                              $output .= '<option value="'.$name.'">'.text($name).'</option>';
 
-        $output .=       '</select>&nbsp;'.
-                         '<input type="button" value="'.text("submit").'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\')">'.
-                       '</td>'.
+          $output .=     '</select>&nbsp;'.
+                         '<input type="button" value="'.text("submit").'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.session_url($PHP_SELF, SESSION_NESTED).'\')">';
+        }
+        else //when only 1 action is defined, do not show the dropdown
+        {
+          $output .=     '<input type="hidden" name="'.$listName.'_atkaction" value="'.$list["mra"][0].'">' ;
+          $output .=     '<input type="button" value="'.text($list["mra"][0]).'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\')">' ;
+        }
+        $output .=     '</td>'.
                      '</tr>'.
                    '</table>'.
                    '</td></tr>';
