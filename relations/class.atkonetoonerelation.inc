@@ -175,8 +175,10 @@
       if ($this->createDestination())
       {
         $vars = &$record[$this->fieldName()];
-        if(is_array($vars[$this->m_refKey]))
+        if ($this->destinationHasRelation())
+        {
           $vars[$this->m_refKey][$this->m_ownerInstance->primaryKeyField()] = $record[$this->m_ownerInstance->primaryKeyField()];
+        }
         else
         {
           //if the a onetoonerelation has no relation on the other side the m_refKey is not an array
@@ -201,6 +203,20 @@
           atkdebug("Nothing to store in one2one record");
         }
       }
+    }
+
+   /**
+    * Check if destination node has a relation to this node, or a 'regular'
+    * atkattribute to store it's referential key.
+    */
+    function destinationHasRelation()
+    {
+      if ($this->createDestination())
+      {
+        $attrib = $this->m_destInstance->m_attribList[$this->m_refKey];
+        if (is_object($attrib) && strpos(get_class($attrib), "elation")!==false) return true;
+      }
+      return false;
     }
 
     /**
