@@ -32,6 +32,7 @@
   $txt_next = "Volgende";
   $txt_previous = "Vorige";
   $txt_select = "Selecteren";
+  $txt_title_select = "Selecteer";
 
   $txt_save = "Opslaan";
   $txt_close = "Sluiten";
