@@ -67,6 +67,11 @@
     var $m_generatedAlias;
 
     /**
+     * Bool to select distinct option manualy
+     */
+    var $m_distinct = false;
+
+    /**
     * Initialize all variables
     */
     function atkquery()
@@ -171,7 +176,7 @@
       if ($condition!="") $this->m_conditions[] = $condition;
     }
 
-  /**
+    /**
     * Add search condition to search condition Array
     * @param $condition Condition
     */
@@ -181,13 +186,23 @@
     }
 
     /**
+    * Set distinct var
+    * @param $enable default true
+    */
+    function setDistinct($enable=true)
+    {
+      $this->m_distinct = $enable;
+    }
+
+
+    /**
     * Builds the SQL Select query
     * @result a SQL Select Query
     * @param $distinct distinct records?
     */
     function buildSelect($distinct = FALSE)
     {
-      $result = "SELECT ".($distinct ? "DISTINCT ": "");
+      $result = "SELECT ".($distinct || $this->m_distinct ? "DISTINCT ": "");
       for ($i=0;$i<count($this->m_fields);$i++)
       {
         $result.= $this->m_fields[$i];
@@ -251,9 +266,14 @@
      */
      function buildCount($distinct = FALSE)
      {
-       if ($distinct && count($this->m_fields) > 0)
+       if (($distinct || $this->m_distinct )&& count($this->m_fields) > 0)
+       {
+        //RWS mysql database, doesn't support COUNT DISTINCT
+        //SO this option can not be used in admin lists
         $result = "SELECT COUNT(DISTINCT ".implode($this->m_fields, ",").") as count FROM ";
+       }
        else $result = "SELECT COUNT(*) as count FROM ";
+     
 
        for ($i=0;$i<count($this->m_tables);$i++)
        {
