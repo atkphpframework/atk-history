@@ -71,8 +71,8 @@
     {
       global $config_language, $g_layout;
       
-      $result= '<input type="text" name="atksearch['.$this->formName().'_'.$config_language[0].']"'.
-               ' value="'.$record[$this->fieldName().'_'.$config_language[0]].'"'.
+      $result= '<input type="text" name="atksearch['.$this->formName().']"'.
+               ' value="'.$record[$this->fieldName()].'"'.
                ($this->m_searchsize > 0 ? ' size="'.$this->m_searchsize.'"' : '').
                ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>';
 
@@ -199,6 +199,27 @@
       $this->m_searchsize = min($metadata[$attribname]['len'], $g_layout->searchSize());      
       $this->m_maxsize = $metadata[$attribname]['len'];                           
     }
+
+     /**
+     * Creates an search condition for a given search value
+     * @param $table the table name
+     * @param $value the search value
+     * @return a piece of the SQL where clause
+     */
+    function searchCondition(&$query, $table, $value, $searchmode)
+    {
+      global $config_language;
+      $func = $searchmode."Condition";
+      if (method_exists($query,$func))
+      {
+        $query->addSearchCondition($query->$func($table.".".$this->fieldName()."_".$config_language[0],escapeSQL($value)));
+      }
+      else
+      {
+        atkdebug("Database doesn't support searchmode '$searchmode' for ".$this->fieldName().", ignoring condition.");
+      }
+    }
+ 
   }
   
 ?>
