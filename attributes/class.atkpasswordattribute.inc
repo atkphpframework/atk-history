@@ -166,12 +166,10 @@
       $error = TRUE;
       triggerError($record, $this->fieldName(), 'error_obligatoryfield');
     }
-
+    
     /* new password? */
     if (!$error && strlen($value["new"]) > 0)
-      $record[$this->fieldName()]["hash"] = md5($record[$this->fieldName()]["new"]);
-      header("Location: welcome.php"); 
-      
+    $record[$this->fieldName()]["hash"] = md5($record[$this->fieldName()]["new"]);
   }
 
   /**
