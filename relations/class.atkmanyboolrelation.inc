@@ -106,10 +106,10 @@
           $checked[] = $record[$this->fieldName()][$i][$this->remoteKey()][$this->m_destInstance->primaryKeyField()];
         }                
   
-        $rel->deleteDb($this->localKey()."=".$record[$this->m_ownerInstance->primaryKeyField()].
-                       " AND ".
-                       $this->remoteKey()." NOT IN (".implode(",",$checked).")");
-  
+        $filter = $this->localKey()."=".$record[$this->m_ownerInstance->primaryKeyField()];
+        if(count($checked)>0) $filter.=" AND ".$this->remoteKey()." NOT IN (".implode(",",$checked).")";
+        $rel->deleteDb($filter);
+        
         for ($i=0;$i<count($record[$this->fieldName()]);$i++)
         {
           // magical stuff..
