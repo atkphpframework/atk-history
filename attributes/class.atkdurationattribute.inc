@@ -157,7 +157,6 @@
     function db2value($rec)
     {
       return $rec[$this->fieldName()];
-      //return $this->_minutes2value($rec[$this->fieldName()]);
     }
 
     /**
@@ -167,11 +166,7 @@
      */
     function display($rec)
     {
-      atkdebug("Display: ");
-      //return $rec[$this->fieldName()];
       return $this->_minutes2value($rec[$this->fieldName()]);
-      //$value=$record[$this->fieldName()];
-      //return sprintf("%02d",$value["hours"]).":".sprintf("%02d",$value["minutes"]);
     }
     
     /**
@@ -263,13 +258,13 @@
       }
       else
       {
-        if(atkconfig("durationformat")==DURATIONFORMAT_DECIMAL)
+        if(atkconfig("durationformat",0)==DURATIONFORMAT_DECIMAL)
         {
           $hours=floor($minutes/60);
           $min = $minutes-($hours*60);
           return sprintf("%02d",$hours).".".sprintf("%02d",$minutes*(60/100));
         }
-        elseif(atkconfig("durationformat")==DURATIONFORMAT_TIME)
+        elseif(atkconfig("durationformat",0)==DURATIONFORMAT_TIME)
         {
           atkdebug("Minutes: ".$minutes);
           atk_var_dump($minutes);
