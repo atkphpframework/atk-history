@@ -1,6 +1,14 @@
 <?php
   // ATK Configuration file. 
   
+  // Message to be displayed if the content managment system is ever to go offline
+  // Enabling this variable will do 2 things, bringing the managment system offline
+  // and displaying this message.
+  // To bring the managment system offline, place (the 'touch' command in linux)
+  // a file called 'ADMINCLOSED' in the home directory of the installation and uncomment the variable
+  // If left commented, it will display a standard message that the system is down for maintenance
+  // $config_offline_message = "The content managment system is momentary offline because it is being updated.";
+
   // Unique application identifier
   // Set this when using multiple applications within one website
   $config_identifier = "atkapp";
