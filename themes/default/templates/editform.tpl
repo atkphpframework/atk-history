@@ -1,3 +1,4 @@
+<br>
 <table width="100%">
   {if (count($errors)>0)}
     <tr>

@@ -1,3 +1,4 @@
+<br>
 <table width="100%">
   {foreach from=$fields item=field}
     <tr>
