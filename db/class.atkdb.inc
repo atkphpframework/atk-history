@@ -3,7 +3,7 @@
   /**
    * Handles database connectivity and database interaction.
    *
-   * @author Peter Verhage <peter@achievo.com>
+   * @author Peter Verhage <peter@achievo.org>
    * @version $Revision$
    *
    * $Id$

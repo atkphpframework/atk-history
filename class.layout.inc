@@ -3,7 +3,7 @@
   /**
   * This class generates all output from atk.
   *
-  * @author Ivo Jansch  (ivo@achievo.com)
+  * @author Ivo Jansch  (ivo@achievo.org)
   *
   * @version $Revision$
   *

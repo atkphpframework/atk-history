@@ -53,7 +53,7 @@
    *                   - Lots of other small things need to be done. Search for
    *                     'todo' in the code :)
    *
-   * @author Ivo Jansch (ivo@achievo.com)
+   * @author Ivo Jansch (ivo@achievo.org)
    * @version $Revision$
    *
    * $Id$
@@ -818,7 +818,7 @@
       if ($mode=="edit")
       {
         $form.='<input type="hidden" name="'.$fieldprefix.'atkaction" value="update">';
-        $form.='<input type="hidden" name="'.$fieldprefix.'atkselector" value="'.rawurlencode($pk).'">';        
+        //$form.='<input type="hidden" name="'.$fieldprefix.'atkselector" value="'.atkurlencode($pk).'">';        
 
         // Nodes can define edit_values
         if (method_exists($this,"edit_values"))
@@ -1495,25 +1495,26 @@
             
             // dirty hack:
             $atkencoded = false;
-            if (strpos($actions[$j],"_#")>0)
+            if (strpos($actions[$j],"_1")>0)
             {
               // normal value.. 
               $atkencoded = true;
-            }            
+            }           
+                      
             $action=str_replace("%5B","[",$actions[$j]);
             $action=str_replace("%5D","]",$action);
-            $action=str_replace("_#5B","[",$action);
-            $action=str_replace("_#5D","]",$action);
-            
+            $action=str_replace("_1"."5B","[",$action);
+            $action=str_replace("_1"."5D","]",$action);          
+                                    
             if ($atkencoded)
             {
-              $action=str_replace('[pk]',atkurlencode(rawurlencode($pk)),$action);            
+              $action=str_replace('[pk]',atkurlencode(rawurlencode($pk), false),$action);            
             }
             else
             {
               $action=str_replace('[pk]',rawurlencode($pk),$action);
             }
-            $action=stringparse($action,$recordset[$i],true);          
+            $action=stringparse($action,$recordset[$i],true);                      
             $stractions.=$action.'&nbsp;';
           }
           $actionCol=$g_layout->ret_td($stractions);
@@ -1970,6 +1971,7 @@
     header('Content-Type: '. $mime_type);
     header('Content-Disposition:  filename="'.$fileName.'.'.$ext.'"');
     header('Pragma: no-cache');
+    header('Pragma: public');
     header('Expires: 0');
 		
 		// 1. as a bzipped file
@@ -2016,7 +2018,7 @@
       {
         // There's only one record and the autoselect flag is set, so we 
         // automatically go to the target.
-        $target = stringparse(rawurldecode($this->m_postvars['atktarget']),$recordset[0], true);	
+        $target = stringparse(rawurldecode(atkurldecode($this->m_postvars['atktarget'])),$recordset[0], true);	
         $this->redirect($target);
       }
       else
@@ -2033,7 +2035,7 @@
         if (!empty($nav)) $g_layout->output("$nav<br>");
         $g_layout->output('<br>');
 	
-        $actions=array(href($this->m_postvars['atktarget'],text('select'),SESSION_NESTED));
+        $actions=array(href(atkurldecode($this->m_postvars['atktarget']),text('select'),SESSION_NESTED));
 
         $g_layout->output($this->recordList($recordset, $actions));
 
@@ -2421,7 +2423,7 @@
         }
 
       }      
-  
+              
       if (atkconfig("debug")>=2)
       {
         atkdebug('nondebug version would have redirected to <a href="'.$location.'">'.$location.'</a>');
