@@ -245,7 +245,7 @@
     function hide($record="", $fieldprefix="")
     {
       $result = '<input type="hidden" name="'.$fieldprefix.$this->formName().
-                '" value="'.htmlspecialchars($record[$this->fieldName()]).'">';
+                 '" value="'.htmlspecialchars($record[$this->fieldName()]).'">';
       return $result;
     }
 
@@ -413,7 +413,10 @@
     function display($record)
     {
       // default behaviour is that we display a value 'as is'.
-      return nl2br(htmlspecialchars($record[$this->fieldName()]));
+      if (gettype($record[$this->fieldName()]) != "array")
+      {
+        return nl2br(htmlspecialchars($record[$this->fieldName()]));
+      }
     }
 
     /**
