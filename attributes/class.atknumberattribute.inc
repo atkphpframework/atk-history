@@ -107,9 +107,9 @@
                   
         $id = "atksearch[".$this->formName()."][to]";
         $this->registerKeyListener($id, KB_CTRLCURSOR|KB_UPDOWN);  
-        $result.= " ".text("until").' <input type="text" id="'.$id.'" name="'.$id.'" value="'.$record[$this->fieldName()].'"'.
+        $result.= " (".text("until").' <input type="text" id="'.$id.'" name="'.$id.'" value="'.$record[$this->fieldName()].'"'.
                   ($this->m_searchsize > 0 ? ' size="'.$this->m_searchsize.'"' : '').
-                  ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>';                  
+                  ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>)';                  
         return $result;
       }
     }
