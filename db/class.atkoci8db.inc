@@ -125,7 +125,7 @@
       $this->m_record = array();
 
       /* get record data */
-      if (@OCIFetchInto($this->m_query_id, $result, OCI_ASSOC|OCI_RETURN_NULLS))
+      if (@OCIFetchInto($this->m_query_id, $result, OCI_ASSOC|OCI_RETURN_NULLS|OCI_RETURN_LOBS))
       {
         for ($i = 1; $i <= OCINumcols($this->m_query_id); $i++)
         {
@@ -374,6 +374,14 @@
     }  
     
     /**
+      * get SUBSTRING() equivalent for the current database.
+      */
+    function func_substring($fieldname, $startat=0, $length=0)
+    {
+      return "SUBSTR($fieldname, $startat".($length!=0?", $length":"").")";
+    }
+    
+    /**
       * Returns the maximum length an identifier (tablename, columnname, etc) may have
       *      
       */
@@ -381,6 +389,17 @@
     {
       return 30;
     }
+    
+    /**
+     * escapes quotes for use in SQL: ' -> '' (and sometimes % -> %%)
+     */
+    function escapeSQL($string, $wildcard=false)
+    {    
+      $result = str_replace("'","''",$string);
+      if ($wildcard == true) $result = str_replace("%","%%",$result);
+      return $result;
+    }
+
     
   }
 

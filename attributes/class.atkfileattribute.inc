@@ -4,7 +4,7 @@
    *
    * <b>Todo</b>        : Code clean up (del variable)
    *
-   * @author Martin Roest <martin@ibuildings.net>
+   * @author Martin Roest <martin@ibuildings.nl>
    * @version $Revision$
    *
    * $Id$
@@ -116,7 +116,7 @@
 
       if(!$this->hasFlag(AF_FILE_NO_SELECT) AND count($file_arr) > 0)
       {
-        $result .= "<select name=\"select[".$fieldprefix.$this->fieldName()."]\">";
+        $result .= "<select name=\"".$fieldprefix.$this->fieldName()."[select]\">";
         $result .= "<option value=\"\" selected>Selectie";                    // Zorg voor een default met waarde NULL
         while (list ($key, $val) = each ($file_arr))
         {
@@ -139,11 +139,11 @@
      */
     function value2db($rec)
     {
-      global $del,$select;            
+      global $del;
 
-      if($select[$this->fieldName()] != "" && !$this->hasFlag(AF_FILE_NO_SELECT) && $del[$this->fieldName()]!="on")
+      if($rec[$this->fieldName()]["tmpfile"]=="" && $rec[$this->fieldName()]["filename"]!="" && !$this->hasFlag(AF_FILE_NO_SELECT) && $del[$this->fieldName()]!="on")
       {
-        return $select[$this->fieldName()];
+        return $rec[$this->fieldName()]["filename"];
       }
 
       if($this->hasFlag(AF_FILE_NO_DELETE)) unset($del);  // Make sure if flag is set $del unset!
@@ -151,9 +151,9 @@
       if($del[$this->fieldName()] == "on")
       {    
         if($this->hasFlag(AF_FILE_PHYSICAL_DELETE))
-	      {
-	        unlink($this->m_dir.$rec[$this->fieldName()]["orgfilename"]);
-	      }
+        {
+          unlink($this->m_dir.$rec[$this->fieldName()]["orgfilename"]);
+        }
         return '';
       }
       else
@@ -163,10 +163,12 @@
         {
           if (@copy($rec[$this->fieldName()]["tmpfile"],$this->m_dir.$filename))
           {
+            atkdebug("FILE OPGESLAGEN: ".$rec[$this->fieldName()]["tmpfile"]." -> ".$this->m_dir.$filename);
             return $filename;
           }
           else
           {
+            atkdebug("tmp file ".$rec[$this->fieldName()]["tmpfile"]." dir ".$this->m_dir.$filename);
             atkerror("File kon niet worden opgeslagen");
             return "";
           }
@@ -192,29 +194,36 @@
      */
     function fetchValue($rec)
     {    
-      global $HTTP_POST_FILES,$select,$del;          
-      
+      global $HTTP_POST_FILES,$del;          
+
       $postfiles_basename = $rec[$this->fieldName()."_postfileskey"];
      
       $basename = $this->fieldName();      
-      if (is_array($HTTP_POST_FILES)||($select[$this->fieldName()] != "" && !$this->hasFlag(AF_FILE_NO_SELECT))) // php4
+      if (is_array($HTTP_POST_FILES)||($rec[$this->fieldName()]["select"] != "" && !$this->hasFlag(AF_FILE_NO_SELECT)) || ($rec[$this->fieldName()]["filename"]!="")) // php4
       {   
         // if no new file has been uploaded..    
-        if($select[$this->fieldName()] != "" && !$this->hasFlag(AF_FILE_NO_SELECT))
-        {
-          ($del[$this->fieldName()]=="on") ? $filename='' : $filename=$select[$this->fieldName()];
-          $result = array("tmpfile"=>"",
+        if (count($HTTP_POST_FILES)==0||$HTTP_POST_FILES[$postfiles_basename]["tmp_name"]=="none"||$HTTP_POST_FILES[$postfiles_basename]["tmp_name"]=="")
+        { 
+           // No file to upload, then check if the select box is filled
+          if($rec[$this->fieldName()]["select"] != "" && !$this->hasFlag(AF_FILE_NO_SELECT))
+          {
+            ($del[$this->fieldName()]=="on") ? $filename='' : $filename=$rec[$this->fieldName()]["select"];
+            $result = array("tmpfile"=>"",
                           "filename"=>$filename,
                           "filesize"=>0,
-                          "orgfilename"=>'');
-        
-        }
-        elseif (count($HTTP_POST_FILES)==0||$HTTP_POST_FILES[$postfiles_basename]["tmp_name"]=="none"||$HTTP_POST_FILES[$postfiles_basename]["tmp_name"]=="")
-        { 
-          $result = array("tmpfile"=>"",
+                          "orgfilename"=>$filename);
+          }  // maybe we atk restored data from session
+          elseif($rec[$this->fieldName()]["filename"]!="")
+          {
+            $result = $rec[$this->fieldName()];
+          }
+          else
+          {
+            $result = array("tmpfile"=>"",
                           "filename"=>"",
                           "filesize"=>0,
                           "orgfilename"=>$rec[$basename."_orgfilename"]);
+          }
         }
         else
         {    
@@ -223,7 +232,7 @@
                           "filename"=>$realname,
                           "filesize"=>$HTTP_POST_FILES[$postfiles_basename]["size"],
                           "orgfilename"=>$realname);
-        }                      
+        }
         return $result;
       }      
     }
@@ -271,7 +280,7 @@
     function display($record)
     {
       $filename    = $record[$this->fieldName()]["orgfilename"];
-
+      atkdebug($this->fieldname()." - File: $filename");
       $prev_type     = Array("jpg","jpeg","gif","tif","png","bmp","htm","html","txt");  // file types for preview
       $imgtype_prev = Array("jpg","jpeg","gif","png");  // types whitch are supported by GetImageSize
       if($filename != "")
@@ -330,5 +339,27 @@
       }
       return str_replace(' ','_',$filename);
     }
+    
+    /**
+     * Returns a piece of html code that can be used in a form to display
+     * hidden values for this attribute.
+     * @param $record Array with values
+     * @return Piece of htmlcode
+     */
+    function hide($record="", $fieldprefix)
+    {
+      $field = $record[$this->fieldName()];
+
+      if (is_array($field))
+        foreach ($field as $key => $value)
+          $result .= '<input type="hidden" name="'.$fieldprefix.$this->formName().'['.$key.']" '.'value="'.$value.'">';
+
+      else
+        $result = '<input type="hidden" name="'.$fieldprefix.$this->formName().'" value="'.$field.'">';
+
+      return $result;
+    }
+
+    
   }
 ?>

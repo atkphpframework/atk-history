@@ -1485,7 +1485,7 @@
           if (!empty($url))
           {
             /* dirty hack */
-            $atkencoded = strpos($url, "_1") > 0;
+            $atkencoded = strpos($url, "_15B") > 0;
 
             $url = str_replace("%5B","[",     $url);
             $url = str_replace("%5D","]",     $url);
@@ -2481,7 +2481,10 @@
       }
       else
       {
-          $g_layout->output("Sorry, you don't have permission to perform this action");
+        $g_layout->initGui();
+        $g_layout->ui_top(text('access_denied'));
+        $g_layout->output("<br><br>".text("error_node_action_access_denied", $this->m_type)."<br><br><br>");
+        $g_layout->ui_bottom();
       }
 
       if ($fullpage)
@@ -2594,7 +2597,7 @@
         }
         else
         {
-          $this->addDb($record);
+          $this->addDb($record, true, "add");
 
           $location="";
           if ($this->hasFlag(NF_EDITAFTERADD))
@@ -2913,6 +2916,21 @@
 
         // parse fields from descriptordef
         $fields = stringfields($descriptordef);
+
+        // There might be fields that have a '.' in them. These fields are
+        // a concatenation of an attributename (probably a relation), and a subfield
+        // (a field of the destination node).
+        // The actual field is the one in front of the '.'.
+        for ($i=0, $_i=count($fields);$i<$_i; $i++)
+        {
+          $elems = explode(".", $fields[$i]);
+          if (count($elems)>1)
+          {
+            // dot found. attribute is the first item.
+            $fields[$i] = $elems[0];
+
+          }
+        }
       }
       else
       {
@@ -3051,7 +3069,7 @@
           $p_attrib = &$this->m_attribList[$attribname];
           if ($p_attrib->needsUpdate($record))
           {
-            if (method_exists($p_attrib,"store"))
+            if ($p_attrib->hasStore($mode))
             {
               $storelist[]=$attribname;
             }
@@ -3188,7 +3206,7 @@
     function copyDb(&$record)
     {
       $this->preCopy($record);
-      $this->addDb($record);
+      $this->addDb($record, true, "copy");
       return "";
     }
 
@@ -3399,9 +3417,8 @@
      * @param $exectrigger Indicates whether postAdd trigger should be executed or not
      * (defaults to yes)
      */
-    function addDb(&$record, $exectrigger=true)
+    function addDb(&$record, $exectrigger=true, $mode="add")
     {
-//     var_dump($record);
       global $g_db;
 
       $name = "atk".atkconfig("database")."query";
@@ -3415,7 +3432,7 @@
       foreach (array_keys($this->m_attribList) as $attribname)
       {
         $p_attrib = &$this->m_attribList[$attribname];
-        if (method_exists($p_attrib,"store"))
+        if ($p_attrib->hasStore($mode))
         {
           $storelist[]=$attribname;
         }
@@ -3443,7 +3460,7 @@
       {
         $p_attrib = &$this->m_attribList[$storelist[$i]];
 
-        $p_attrib->store($g_db, $record,"add");
+        $p_attrib->store($g_db, $record, $mode);
 
       }
 
@@ -3452,7 +3469,7 @@
 
       // Now we call a postAdd function, that can be used to do some processing after the record
       // has been saved.
-      if ($exectrigger) $this->postAdd($record);
+      if ($exectrigger) $this->postAdd($record, $mode);
 
       atkdebug($g_db->m_error);
     }
@@ -3499,8 +3516,10 @@
      * after you saved a record.
      *
      * @param $record The record that has just been saved.
+     * @param $mode   The 'mode' indicates whether this is a completely new
+     *                record ("add") or a copy ("copy").
      */
-    function postAdd($record)
+    function postAdd($record, $mode="add")
     {
       // Do nothing
     }
@@ -3842,7 +3861,15 @@
     function validateFilter($filter)
     {
       list($relation, $field) = explode('.', $filter);
-      if (in_array($relation, array_keys($this->m_attribList))) return $filter;
+      if ($field != "")
+      {
+        if (in_array($relation, array_keys($this->m_attribList))) return $filter;
+      }
+      else
+      {
+        list($relation_new, $dummy) = explode('=', $relation);
+        if (in_array($relation_new, array_keys($this->m_attribList))) return $filter;
+      }
       return "";
     }
   }

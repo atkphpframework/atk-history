@@ -102,7 +102,7 @@
      * @param $lastmodificationstamp. If set, this timestamp is used to send
      *                                the http Last-Modified header.
      */
-    function outputFlush($nocache=true, $lastmodificationstamp="")
+    function outputFlush($nocache=true, $lastmodificationstamp="",$gzip=false)
     {
       global $g_debug_msg, $g_error_msg;
       $res = "";
@@ -118,9 +118,11 @@
         // the pages, unless $nocache was set to true.
         if ($nocache)
         {
+	        atkdebug("Sending no-cache headers (lmd: ".gmdate("D, d M Y H:i:s")." GMT)");
           header ("Expires: Mon, 26 Jul 1997 05:00:00 GMT");    // Date in the past
           header ("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT"); // always modified
-          header ("Cache-Control: no-cache, must-revalidate");  // HTTP/1.1
+//          header ("Cache-Control: no-cache, must-revalidate");  // HTTP/1.1
+          header ("Cache-Control: private, must-revalidate");  // HTTP/1.1
           header ("Pragma: no-cache");                          // HTTP/1.0
         }
         else if ($lastmodificationstamp!=0)
@@ -150,8 +152,19 @@
           $res.='<br>dbg: '.implode("<br>\ndbg: ",$g_debug_msg);
         }
       }
-//      header("Content-Length: ".strlen($res));
-      echo $res;
+     if ($gzip && phpversion() >= '4.0.4pl1' 
+              && (strstr($_SERVER["HTTP_USER_AGENT"],'compatible') || strstr($_SERVER["HTTP_USER_AGENT"],'Gecko')) 
+              && strstr($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip')
+       )
+
+      {
+        header('Content-Encoding: gzip');
+        echo $this->gzip($res);
+      }
+      else
+      {
+        echo $res;
+      }
     }
 
     /**
@@ -735,6 +748,23 @@
       {
         return $defaultDir.$img;
       }
+    }
+
+  // prepares the content so it can be send with Gzip to a browser
+  function gzip($contents)
+    {
+      $gzip_size = strlen($contents);
+      $gzip_crc  = crc32($contents);
+
+      $contents = gzcompress($contents, 9);
+      $contents = substr($contents, 0, strlen($contents) - 4);
+
+      $res = "\x1f\x8b\x08\x00\x00\x00\x00\x00";
+      $res.= $contents;
+      $res.= pack('V', $gzip_crc);
+      $res.= pack('V', $gzip_size);
+
+      return $res;
     }
   }
 

@@ -245,7 +245,7 @@
     function hide($record="", $fieldprefix="")
     {
       $result = '<input type="hidden" name="'.$fieldprefix.$this->formName().
-                '" value="'.htmlspecialchars($record[$this->fieldName()]).'">';
+                 '" value="'.htmlspecialchars($record[$this->fieldName()]).'">';
       return $result;
     }
 
@@ -413,7 +413,10 @@
     function display($record)
     {
       // default behaviour is that we display a value 'as is'.
-      return nl2br(htmlspecialchars($record[$this->fieldName()]));
+      if (!is_array($record[$this->fieldName()]))
+      {
+        return nl2br(htmlspecialchars($record[$this->fieldName()]));
+      }
     }
 
     /**
@@ -527,6 +530,18 @@
     function setAttribSize($size)
     {
       $this->m_size = $size;
+    }
+
+    /**
+     * This function is used to check whether a attribute has a store function or not.
+     * It can be overridden to use the store function only in a certain mode.
+     */
+    function hasStore($mode)
+    {
+      if (method_exists($this,"store"))
+        return true;
+      else
+        return false;
     }
 
   }

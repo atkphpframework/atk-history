@@ -606,6 +606,14 @@
   }
 
   /**
+   * wrap lines
+   */
+  function _wordwrap($line)
+  {
+    return wordwrap($line,100,"\n",1);
+  }
+
+  /**
    * Sent a detailed error report to the maintainer.
    */
   function mailreport()
@@ -624,20 +632,38 @@
       $body.= "\nPHP Version: ".phpversion()."\n\n";
 
       $body.= "\nDEBUGMESSAGES\n".str_repeat("-",70)."\n";
-      $body.= implode("\n",$g_debug_msg);
-
-      $body.= "\n\nHTTP_GET_VARS\n".str_repeat("-",70)."\n";
-      foreach ($HTTP_GET_VARS as $key=>$value)
+      for($i=0, $_=count($g_debug_msg);$i<$_;$i++)
       {
-        $body.=$key.str_repeat(" ",max(1,20-strlen($key)))." = ".$value."\n";
+        $lines[] = _wordwrap($g_debug_msg[$i]);
       }
+      $body.= implode("\n",$lines);
 
-      if (count($HTTP_POST_VARS)>0)
+      if (count($_GET)>0)
       {
-        $body.= "\n\nHTTP_POST_VARS\n".str_repeat("-",70)."\n";
-        foreach ($HTTP_POST_VARS as $key=>$value)
+        $body.= "\n\n_GET\n".str_repeat("-",70)."\n";
+        foreach ($_GET as $key=>$value)
+        {
+          $body.=_wordwrap($key.str_repeat(" ",max(1,20-strlen($key)))." = ".$value)."\n";
+        }
+      }
+      if (function_exists("getallheaders"))
+      {
+        $request = getallheaders();
+        if (count($request)>0)
+        {
+          $body.= "\n\nREQUEST INFORMATION\n".str_repeat("-",70)."\n";
+          foreach($request as $key=>$value)
+          {
+            $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value)."\n";
+          }
+        }
+      }
+      if (count($_POST)>0)
+      {
+        $body.= "\n\n_POST\n".str_repeat("-",70)."\n";
+        foreach ($_POST as $key=>$value)
         { 
-          $body.=$key.str_repeat(" ",max(1,20-strlen($key)))." = ".$value."\n";
+          $body.=_wordwrap($key.str_repeat(" ",max(1,20-strlen($key)))." = ".$value)."\n";
         }
       }
       $body.= "\n\nATK CONFIGURATION\n".str_repeat("-",70)."\n";
@@ -645,7 +671,7 @@
       {
         if (substr($key,0,7)=="config_")
         {
-          $body.=$key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value."\n";
+          $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value)."\n";
         }
       }
       
@@ -654,7 +680,7 @@
       {      
         foreach($g_user as $key => $value)
         {
-          $body.=$key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value."\n";
+          $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value)."\n";
         }
       }
       else $body.= "Not known\n";
@@ -672,7 +698,7 @@
 	       {
             foreach ($item as $key=>$value)
             {              
-              $body.=$key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value."\n";
+              $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value)."\n";
             }
           }
         }
@@ -682,7 +708,7 @@
           $body.="\nNamespace globals:\n";
           foreach ($ns_globals as $key=>$value)
           {
-            $body.=$key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value."\n";
+            $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value)."\n";
           }
         }
         $globals = $g_sessionData["globals"];
@@ -691,7 +717,7 @@
           $body.="\nGlobals:\n";
           foreach ($globals as $key=>$value)
           {
-            $body.=$key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value."\n";
+            $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value)."\n";
           }
         }
       }
@@ -700,7 +726,7 @@
 
       foreach ($HTTP_SERVER_VARS as $key=>$value)
       {
-        $body.=$key.str_repeat(" ",max(1,20-strlen($key)))." = $value\n";
+        $body.=_wordwrap($key.str_repeat(" ",max(1,20-strlen($key)))." = ".$value)."\n";
       }
 
       mail($config_mailreport,$subject,$body,"From: $from <atkinfo@ibuildings.nl>");
@@ -709,14 +735,12 @@
 
 
   /**
-   * escapes quotes for use in SQL: ' -> '' (and sometimes % -> %%)
+   * wrapper for escapeSQL function
    */
   function escapeSQL($string, $wildcard=false)
   {
-    $result = str_replace("'","''",$string);
-    $result = str_replace("\\","\\\\",$result);
-    if ($wildcard == true) $result = str_replace("%","%%",$result);
-    return $result;
+    global $g_db;    
+    return $g_db->escapeSQL($string, $wildcard);    
   }
 
   /**
@@ -981,7 +1005,7 @@
    * Makes an string with hidden input fields
    * containing all posted vars
    */  
-  function makeHiddenPostvars()
+  function makeHiddenPostvars($excludes=array())
   {
     global $ATK_VARS;
     
@@ -989,7 +1013,8 @@
     {
       foreach ($ATK_VARS as $key => $val)
       {
-        $str .= "<input type='hidden' name=\"$key\" value=\"".$val."\">\n";
+        if (!in_array($key, $excludes))
+          $str .= "<input type='hidden' name=\"$key\" value=\"".$val."\">\n";
       }
       return $str;
     }
@@ -1008,6 +1033,40 @@
       case ACTION_FAILED: return "failed";
       case ACTION_SUCCESS: return "success";
     }
+  }
+  
+  /**
+   * Writes trace file to system tmp directory
+   * @param $msg message to display in the trace
+   */
+  function atkTrace($msg="")
+  {
+    global $HTTP_SERVER_VARS, $HTTP_SESSION_VARS, $HTTP_GET_VARS, $HTTP_COOKIE_VARS, $HTTP_POST_VARS;
+
+    $log = "\n".str_repeat("=", 5)."\n";
+    $log.= "Trace triggered: ".$msg."\n";
+    $log.= date("r")."\n";
+    $log.= $HTTP_SERVER_VARS["REMOTE_ADDR"]."\n";
+    $log.= $HTTP_SERVER_VARS["SCRIPT_URL"]."\n";
+    $log.= "\nSessioninfo: "."session_name(): ".session_name()." session_id(): ".session_id()." SID: ".SID." REQUEST: ".$_REQUEST[session_name()]." COOKIE: ".$_COOKIE[session_name()]."\n";
+    $log.= "\n\nHTTP_SERVER_VARS:\n";
+    $log.= var_export($HTTP_SERVER_VARS, true);
+    $log.= "\n\nHTTP_SESSION_VARS:\n";
+    $log.= var_export($HTTP_SESSION_VARS, true);
+    $log.= "\n\nHTTP_COOKIE_VARS:\n";
+    $log.= var_export($HTTP_COOKIE_VARS, true);
+    $log.= "\n\nHTTP_POST_VARS:\n";
+    $log.= var_export($HTTP_POST_VARS, true);
+    $log.= "\n\nHTTP_GET_VARS:\n";
+    $log.= var_export($HTTP_GET_VARS, true);
+
+    $log.= "\n\nSession file info:\n";
+    $log.= var_export(stat(session_save_path()."/sess_".session_id()), true);
+
+    $tmpfile = tempnam("/tmp",atkconfig("identifier")."_trace_");
+    $fp = fopen($tmpfile,"a");
+    fwrite($fp, $log);
+    fclose($fp);
   }
 
 ?>

@@ -30,7 +30,8 @@
      */
     function atkEmailAttribute($name, $search = false, $flags = 0)
     {
-      $this->$m_dnsSearch = $search;
+      //$this->$m_dnsSearch = $search;
+      $this->$m_dnsSearch = false;
       $this->atkAttribute($name, $flags);
 
     }

@@ -10,9 +10,11 @@
    */
 
   $cookie_params = session_get_cookie_params();
-  session_set_cookie_params($cookie_params["lifetime"], str_replace("\\","/",dirname($HTTP_SERVER_VARS["SCRIPT_NAME"])));
+  $cookiepath = atkconfig("application_root");
+  session_set_cookie_params($cookie_params["lifetime"],$cookiepath);
+  session_name(atkconfig("identifier"));
   session_start();    
-  
+  atkdebug("cookiepath: ".$cookiepath." session_name(): ".session_name()." session_id(): ".session_id()." SID: ".SID." REQUEST: ".$_REQUEST[session_name()]." COOKIE: ".$_COOKIE[session_name()]);  
   session_register("g_sessionDataAll");    
 
   global $config_identifier;

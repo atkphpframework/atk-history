@@ -2,6 +2,9 @@
   // the application identifier (used for sessions)
   $config_identifier   = "default";
 
+  // The application root
+  $config_application_root = "/";
+
   // set several default configuration options
   $config_databasehost = "localhost";
   $config_databasename = "";
@@ -39,6 +42,12 @@
   $config_max_loginattempts = 5; // 0 = no maximum.
   $config_auth_dropdown = false;
   $config_auth_userdescriptor = "[".$config_auth_userfield."]";
+
+  // LDAP settings
+  // to use LDAP you should fill this config_variabels with the right values
+  $config_authentication_ldap_host    = "";
+  $config_authentication_ldap_context = "";
+  $config_authentication_ldap_field   = "";
 
   $config_logging = 0; // no logging;
   $config_logfile = "/tmp/atk-security.log";

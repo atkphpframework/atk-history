@@ -377,6 +377,14 @@
     }
     
     /**
+      * get SUBSTRING() equivalent for the current database.
+      */
+    function func_substring($fieldname, $startat=0, $length=0)
+    {
+      return "SUBSTRING($fieldname, $startat".($length!=0?", $length":"").")";
+    }
+    
+    /**
       * Returns the maximum length an identifier (tablename, columnname, etc) may have
       *      
       */
@@ -384,6 +392,18 @@
     {
       return 64;
     }
+       
+    /**
+     * escapes quotes for use in SQL: ' -> '' (and sometimes % -> %%)
+     */
+    function escapeSQL($string, $wildcard=false)
+    {    
+      $result = str_replace("'","''",$string);
+      $result = str_replace("\\","\\\\",$result);
+      if ($wildcard == true) $result = str_replace("%","%%",$result);
+      return $result;
+    }
+
   }  
 
 ?>

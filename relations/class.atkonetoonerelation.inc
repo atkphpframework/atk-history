@@ -175,8 +175,16 @@
       if ($this->createDestination())
       {
         $vars = &$record[$this->fieldName()];
-        $vars[$this->m_refKey][$this->m_ownerInstance->primaryKeyField()] = $record[$this->m_ownerInstance->primaryKeyField()];
-
+        if ($this->destinationHasRelation())
+        {
+          $vars[$this->m_refKey][$this->m_ownerInstance->primaryKeyField()] = $record[$this->m_ownerInstance->primaryKeyField()];
+        }
+        else
+        {
+          //if the a onetoonerelation has no relation on the other side the m_refKey is not an array
+          $vars[$this->m_refKey] = $record[$this->m_ownerInstance->primaryKeyField()];
+        }
+          
         if ($vars["mode"]=="edit")
         {
           atkdebug("Updating existing one2one record");
@@ -185,16 +193,30 @@
           $this->m_destInstance->m_postvars = $vars;
           $this->m_destInstance->updateDb($vars);
         }
-        elseif ($vars["mode"]=="add" || $mode == "add")
+        elseif ($vars["mode"]=="add" || $mode == "add" || $mode == "copy")
         {
           atkdebug("Adding new one2one record");
-          $this->m_destInstance->addDb($vars);
+          $this->m_destInstance->addDb($vars, true, $mode);
         }
         else
         {
           atkdebug("Nothing to store in one2one record");
         }
       }
+    }
+
+   /**
+    * Check if destination node has a relation to this node, or a 'regular'
+    * atkattribute to store it's referential key.
+    */
+    function destinationHasRelation()
+    {
+      if ($this->createDestination())
+      {
+        $attrib = $this->m_destInstance->m_attribList[$this->m_refKey];
+        if (is_object($attrib) && strpos(get_class($attrib), "elation")!==false) return true;
+      }
+      return false;
     }
 
     /**
@@ -266,6 +288,7 @@
       /* edit */
       else
       {
+
         /* we first check if there is no edit override method, if there
          * is this method has the same behaviour as the atkAttribute's method
          */
@@ -278,8 +301,9 @@
         /* how we handle 1:1 relations normally */
         else
         {
+
           if ($this->createDestination())
-	        {
+	  {
             /* we first check if the record doesn't already exist */
             if ($defaults[$this->fieldName()] != NULL)
             {
@@ -309,7 +333,15 @@
 
             /* add fields */
             $forceList = decodeKeyValueSet($this->m_destinationFilter);
-            $forceList[$this->m_refKey][$this->m_ownerInstance->primaryKeyField()] = $defaults[$this->m_ownerInstance->primaryKeyField()];                 
+            if($this->destinationHasRelation())
+            {
+              $forceList[$this->m_refKey][$this->m_ownerInstance->primaryKeyField()] = $defaults[$this->m_ownerInstance->primaryKeyField()];
+            }
+            else
+            {
+               // its possible that the destination has no relation back. In that case the refKey is just an attribute
+               $forceList[$this->m_refKey] = $defaults[$this->m_ownerInstance->primaryKeyField()];
+            }
             $a = $this->m_destInstance->editArray($mode, $myrecord, $forceList, array(), $this->fieldName()."_AE_");
 
             /* errors and hidden fields */
@@ -332,7 +364,7 @@
               $arr["fields"][] = "-";
             }
           }
-	      }
+        }
       }
     }
 
