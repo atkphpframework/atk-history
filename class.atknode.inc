@@ -775,9 +775,8 @@
         
         $output = $ui->renderAction("edit", $params);
               
-        $total = $ui->renderBox(array("title"=>$ui->title($this->m_module, $this->m_type,'edit'),
-                                      "content"=>$output));
-        return $total;
+        return $ui->renderBox(array("title"=>$ui->title($this->m_module, $this->m_type,'edit'),
+                                      "content"=>$output));        
       }
       else
       {
@@ -951,37 +950,47 @@
     }
 
     function searchPage($record=NULL)
-    {   
-      global $g_layout;
-      $this->setStyle("style.css");
-      $g_layout->initGui();
-      $g_layout->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
+    {         
+      $this->setStyle("style.css");      
+      
+      $page = &$this->getPage();
+      $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
       $ui = &$this->getUi();
-      $g_layout->ui_top($ui->title($this->m_module, $this->m_type,'search'));
-      $g_layout->output($this->statusbar());
+      if (is_object($ui))
+      {        
+        $params = array();
+        $params["formstart"] = '<form name="entryform" action="'.$_SERVER["PHP_SELF"].'?'.SID.'" method="post">';
 
-      $g_layout->output('<form name="entryform" action="'.$_SERVER["PHP_SELF"].'?'.SID.'" method="post">');
+        // usually, extended search is called from a page, and we go back to that page
+        // when the user presses search.
+        if (atkLevel()>0)
+        {
+          $params["formstart"].=session_form(SESSION_BACK);
+        }
+        // but sometimes we directly call the searchpage. if that happens,
+        // we reload the adminpage with the searched items.
+        else
+        {
+          $params["formstart"].=session_form(SESSION_DEFAULT);
+          $params["formstart"].='<input type="hidden" name="'.$fieldprefix.'atkaction" value="admin">';
+        }
+        $params["formstart"].='<input type="hidden" name="atknodetype" value="'.$this->atknodetype().'">';
 
-      // usually, extended search is called from a page, and we go back to that page
-      // when the user presses search.
-      if (atkLevel()>0)
-      {
-        $g_layout->output(session_form(SESSION_BACK));
-      }
-      // but sometimes we directly call the searchpage. if that happens,
-      // we reload the adminpage with the searched items.
+        $params["content"] = $this->searchForm($record);
+        $params["buttons"][] = '<input type="submit" class="btn_search" value="'.text('search').'">';
+        $params["formend"] = '</form><SCRIPT LANGUAGE="JavaScript">placeFocus()</SCRIPT>';      
+      
+        $output = $ui->renderAction("search", $params);
+              
+        $total = $ui->renderBox(array("title"=>$ui->title($this->m_module, $this->m_type,'search'),
+                                      "content"=>$output));
+        
+        return $total;               
+      }      
       else
       {
-        $g_layout->output(session_form(SESSION_DEFAULT));
-        $g_layout->output('<input type="hidden" name="'.$fieldprefix.'atkaction" value="admin">');
+        atkerror("ui object failure");
       }
-      $form.='<input type="hidden" name="atknodetype" value="'.$this->atknodetype().'">';
-
-      $g_layout->output($this->searchForm($record));
-      $g_layout->output('<br>&nbsp;<input type="submit" class="btn_search" value="'.text('search').'">&nbsp;');
-      $g_layout->output('</form>');
-      $g_layout->ui_bottom();
-      $g_layout->output('<SCRIPT LANGUAGE="JavaScript">placeFocus()</SCRIPT>');
     }
 
     /**
@@ -1587,9 +1596,7 @@
                              SESSION_REPLACE));
             break;
           }
-      }            
-      
-      $output = $this->statusbar();
+      }                
 
       $adminHeader = $this->adminHeader();
       if ($adminHeader!="")
@@ -2553,14 +2560,12 @@
     function selectPage()
     {
       global $atksearch;
-      $g_layout->initGui();
+      
       // When there's a lot of data, records will be spread across multiple pages.
       if ($this->m_postvars['atklimit']=="") $this->m_postvars['atklimit']=atkconfig("recordsperpage");
       if ($this->m_postvars['atkstartat']=="" || isset($atksearch)) $this->m_postvars['atkstartat']=0;
 
-      $filter = $this->validateFilter($this->m_postvars["atkfilter"]);
-      
-      $ui = &$this->getUi();
+      $filter = $this->validateFilter($this->m_postvars["atkfilter"]);          
 
       $recordset = $this->selectDb($filter,
                                    $this->m_postvars['atkorderby'],
@@ -2575,29 +2580,30 @@
         // automatically go to the target.
         $target = stringparse(rawurldecode(atkurldecode($this->m_postvars['atktarget'])),$recordset[0], true);
         $this->redirect(session_url($target, SESSION_NESTED));
+        return "";
       }
       else
-      {
-        $g_layout->ui_top($ui->title($this->m_module, $this->m_type,'select'));
-        $g_layout->output($this->statusbar());
-        $g_layout->output(text("title_select", $this->m_type).'<br>');
-        $g_layout->output('<br>');
+      {        
+        $ui = &$this->getUi();
+        
+        $params["header"] = text("title_select", $this->m_type);
 
-        if ($this->m_index != "") $g_layout->output($this->buildIndex($recordset[0][$this->m_index]).'<br><br>');
+        if ($this->m_index != "") 
+        {
+          $params["index"] = $this->buildIndex($recordset[0][$this->m_index]);
+        }
 
         // create navigation bar
-        $nav = $this->buildNavigation("select");
-        if (!empty($nav)) $g_layout->output("$nav<br>");
-        $g_layout->output('<br>');
+        $params["navbar"] = $this->buildNavigation("select");        
 
         $actions["select"]=atkurldecode($this->m_postvars['atktarget']);
 
-        $g_layout->output($this->normalRecordList($recordset, $actions));
-
-        if (!empty($nav)) $g_layout->output('<br>'.$nav.'<br>');
-        $g_layout->output('<br>');
-
-        $g_layout->ui_bottom();
+        $params["list"] = $this->normalRecordList($recordset, $actions);
+        
+        $output = $ui->renderList("select", $params);
+        
+        return $ui->renderBox(array("title"=>$ui->title($this->m_module, $this->m_type,'select'),
+                                    "content"=>$output));         
       }
 
     }
@@ -2620,13 +2626,16 @@
       $formstart.=session_form();
       $formstart.='<input type="hidden" name="atkaction" value="delete">';
       $formstart.='<input type="hidden" name="atknodetype" value="'.$this->atknodetype().'">';
-      $formstart.='<input type="hidden" name="atkselector" value="'.$atkselector_str.'">';            
+      $formstart.='<input type="hidden" name="atkselector" value="'.$atkselector_str.'">';    
       
-      $output.=$ui->render("confirm.tpl", array("text"=>$this->confirmDeleteText($atkselector),
+      $buttons = array();
+      $buttons[] = '<input name="confirm" class="btn" type="submit" value="'.text('yes').'">';
+      $buttons[] = '<input name="cancel" type="submit" class="btn_cancel" value="'.text('no').'">';
+      
+      $output.=$ui->renderAction("delete", array("content"=>$this->confirmDeleteText($atkselector),
                                                 "formstart"=>$formstart,
                                                 "formend"=>'</form>',
-                                                "okbtn"=>'<input name="confirm" class="btn" type="submit" value="'.text('yes').'" style="width:80px">',
-                                                "cancelbtn"=>'<input name="cancel" type="submit" class="btn_cancel" value="'.text('no').'" style="width:80px">'));
+                                                "buttons"=>$buttons));
       return $ui->renderBox(array("title"=>$ui->title($this->m_module, $this->m_type,'delete'),
                                   "content"=>$output));                                          
     }
@@ -2799,14 +2808,14 @@
       
       $page = &$this->getPage();
       
-      $page->addContent($this->renderAction("admin", $this->viewPage($recordset[0])));
+      $page->addContent($this->renderActionPage("admin", $this->viewPage($recordset[0])));
     }
 
     function action_add()
     {
       atkdebug("Action add");
       $page = &$this->getPage();
-      $page->addContent($this->renderAction("add", $this->addPage()));
+      $page->addContent($this->renderActionPage("add", $this->addPage()));
     }
 
     function action_update()
@@ -3022,13 +3031,14 @@
       }
       $res[]= $this->adminPage();
                         
-      $page->addContent($this->renderAction("admin", $res));
+      $page->addContent($this->renderActionPage("admin", $res));
             
     }
 
     function action_search()
     {
-      $this->searchPage($this->m_postvars["atksearch"]);
+      $page = &$this->getPage();
+      $page->addcontent($this->renderActionPage("search", $this->searchPage($this->m_postvars["atksearch"])));
     }
 
     function action_edit()
@@ -3053,10 +3063,10 @@
         $res = $this->editPage($recordset[0], false);
       }
             
-      $page->addContent($this->renderAction("edit", $res));
+      $page->addContent($this->renderActionPage("edit", $res));
     }
     
-    function renderAction($action, $blocks=array())
+    function renderActionPage($action, $blocks=array())
     {
       if(!is_array($blocks))
       {
@@ -3071,34 +3081,40 @@
     }
 
     function action_select()
-    {
-      $this->selectPage();
+    {      
+      $output = $this->selectPage();
+      if ($output!="")
+      {
+        $page =  &$this->getPage();
+        $page->addContent($this->renderActionPage("select", $output));
+      }
     }
 
     function action_feedback()
     {
-      $this->feedbackPage($this->m_postvars["atkfbaction"], $this->m_postvars["atkactionstatus"]);
+      $page = &$this->getPage();
+      $output = $this->feedbackPage($this->m_postvars["atkfbaction"], $this->m_postvars["atkactionstatus"]);
+      $page->addContent($this->renderActionPage("feedback", $output));
     }
 
     function feedbackPage($action, $actionstatus)
     {
-      global $g_layout;
-      $g_layout->initGui();
-      $ui = &$this->getUi();
-      $g_layout->ui_top($ui->title($this->m_module, $this->m_type, $action));
-      $g_layout->output($this->statusbar());
+      $ui = &$this->getUi();            
 
-      $g_layout->output(text('feedback_'.$action.'_'.atkActionStatus($actionstatus), $this->m_type));
+      $params["content"] = text('feedback_'.$action.'_'.atkActionStatus($actionstatus), $this->m_type);
 
       if (atkLevel()>0)
       {
-        $g_layout->output('<br><br><form method="get">'.session_form(SESSION_BACK).
-                          '<input type="submit" class="btn_cancel" value="&lt;&lt; '.text('back').'"></form>');
+        $params["formstart"] = '<form method="get">'.session_form(SESSION_BACK);
+        $params["buttons"][] = '<input type="submit" class="btn_cancel" value="&lt;&lt; '.text('back').'">';
+        $params["formend"] = '</form>';
       }
-
-      $g_layout->output('<br>');
-
-      $g_layout->ui_bottom();
+      
+      $output = $ui->renderAction($action, $params);
+              
+      return $ui->renderBox(array("title"=>$ui->title($this->m_module, $this->m_type, $action),
+                                  "content"=>$output)); 
+    
     }
 
     /**

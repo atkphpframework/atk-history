@@ -29,6 +29,11 @@
       return $this->render("action.tpl", $vars);
     }      
     
+    function renderList($action, $vars)
+    {
+      return $this->render("list.tpl", $vars);
+    }
+    
     function renderBox($vars)
     {
       return $this->render("box.tpl", $vars);
