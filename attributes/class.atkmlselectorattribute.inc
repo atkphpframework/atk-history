@@ -102,6 +102,6 @@ class atkMlSelectorAttribute extends atkAttribute
   function dbFieldType()
   {
     return "";
-  ]
+  }
 }
 ?>
