@@ -1,6 +1,7 @@
 <?php
 
  /**
+  * filter base class
   * 
   * @authors Ivo Jansch      <ivo@ibuildings.nl>
              Kees van Dieren <kees@ibuildings.nl>
@@ -33,7 +34,5 @@
     function addToQuery(&$query, $tablename="", $fieldaliasprefix="", $rec="", $level, $mode)
     {
     }
-
   }
-
 ?>

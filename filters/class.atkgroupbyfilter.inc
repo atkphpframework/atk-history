@@ -1,5 +1,11 @@
 <?php
+
+  usefilter("atkfilter");
+
 /**
+ * add a group by clausule to a query
+ * use this filter, like you use an attribute, for example:
+ * $this->add(new atkGroupByFilter("street_place", "street, place"));
  * 
  * @authors Kees van Dieren <kees@ibuildings.nl>
  *          Ivo Jansch <ivo@ibuildings.nl>
@@ -9,23 +15,22 @@
  * @package atk
  * @subpackage filters
  */
-
-  usefilter("atkfilter");
-
   class atkGroupByFilter extends atkFilter
   {	
     /**
-    * This variable is parsed as part of class classname
+    * the group by statement
     *
     * @access private
-    * @var vartype varname
+    * @var string groupbystmt
     */
     var $m_groupbystmt;
 
     /**
-    * description
+    * constructor
     *
-    * @return void
+    * @param string name
+    * @param string groupbystmt
+    * @param int flags
     */
     function atkGroupByFilter($name, $groupbystmt, $flags=0)
     {	
@@ -34,7 +39,7 @@
     }
 
     /**
-    * description
+    * add the group by statement to the query
     *
     * @return void
     */
@@ -43,5 +48,4 @@
       $query->addGroupBy($this->m_groupbystmt);
     }
   }
-
 ?>
