@@ -45,7 +45,8 @@
       $s_dupelookup[$parent][$name] = count($g_menu[$parent]);
       $g_menu[$parent][] = $item;
     }
-    if (empty($url)) $g_menu_parent[$name] = $parent;
+    //if (empty($url)) 
+    $g_menu_parent[$name] = $parent;
   }
 
   /**
