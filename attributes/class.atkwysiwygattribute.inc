@@ -10,7 +10,7 @@
    */
 
   //include_once($config_atkroot."atk/attributes/wysiwyg/property_accessor.php");
-  //include_once($config_atkroot."atk/atkbrowsertools.inc");
+  include_once($config_atkroot."atk/atkbrowsertools.inc");
   include_once($config_atkroot."atk/attributes/class.atktextattribute.inc");
 
   /**
