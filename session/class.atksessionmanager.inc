@@ -13,6 +13,7 @@
 
   $cookiepath = atkconfig("application_root");
   session_set_cookie_params($cookie_params["lifetime"],$cookiepath);
+  cleanSessionID(atkconfig("identifier"));
   session_name(atkconfig("identifier"));
   session_start();    
 
@@ -470,6 +471,18 @@
   {
     global $g_sessionManager;
     return $g_sessionManager->getValue($var, $namespace);
+  }
+  
+  function cleanSessionId($name)
+  {   
+    for ($position=0; $position<32; $position++)
+    {
+      if (eregi('[a-zA-Z0-9]', substr($_COOKIE[$name], $position, 1)))
+      {
+        $sessionid .= substr($_COOKIE[$name], $position, 1);
+      }
+    }
+    $_COOKIE[$name] = $sessionid;
   }
     
 
