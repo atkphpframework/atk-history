@@ -329,6 +329,16 @@
       }
       return "";
     }
+    
+    function getOrderByStatement()
+    {
+      if ($this->createDestination())
+      {
+        // In queries, relations are alias'd by their attribute name, so we use that for the sort prefix here.
+        return $this->fieldName().".".$this->m_destInstance->m_default_order;
+      }
+      return parent::getOrderByStatement();
+    }
 
     /**
      * Creates an search condition for a given search value

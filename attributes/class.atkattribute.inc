@@ -351,7 +351,7 @@
     function listHeaderSortUrl($atkorderby)
     {
       global $ATK_VARS;
-      $order = $this->getOrderByStatement();
+      $order = $this->fieldName();
       if ($atkorderby == $order) $order .= " DESC";      
       
       return session_url($_SERVER["PHP_SELF"].'?atknodetype='.$ATK_VARS["atknodetype"].'&atkaction='.$ATK_VARS["atkaction"].'&atkorderby='.rawurlencode($order));

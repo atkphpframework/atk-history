@@ -244,7 +244,16 @@
         $elems = explode(" ", $ATK_VARS["atkorderby"]);
         foreach ($elems as $elem)
         {
-          list($table, $field) = explode(".", $elem);
+          if (is_object($this->m_node->m_attribList[$elem]))
+          {
+            // attribute reference
+            $this->addOrderByField($elem, "asc");
+          }
+          else 
+          {
+            // custom order by                     
+            list($table, $field) = explode(".", $elem);
+          }
           //echo $table."-".$field;
           if (($table == $this->m_node->m_type) && is_object($this->m_node->m_attribList[$field]))
           {
