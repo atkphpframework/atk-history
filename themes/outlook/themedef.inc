@@ -1,5 +1,5 @@
 <?php
 
-  $theme["customtpls"] = array("box.tpl", "tabs.tpl");  
+  $theme["customtpls"] = array("box.tpl", "tabs.tpl", "login.tpl");  
 
 ?>

@@ -10,8 +10,7 @@
     {
       static $s_instance = NULL;
       if ($s_instance == NULL)
-      {
-        atkdebug("Created a new atkTheme instance");
+      {        
         $s_instance = new atkTheme();
       }   
       return $s_instance;
