@@ -460,11 +460,13 @@
           $userlist[] = array("userid"=>"guest", "username"=>"Guest");
         }
         
-        foreach ($auth_types as $type => $obj)
+        if (is_array($auth_types))
         {
-          $userlist = array_merge($userlist, $obj->getUserList());
-        }
-                
+          foreach ($auth_types as $type => $obj)
+          {
+            $userlist = array_merge($userlist, $obj->getUserList());
+          }
+        }     
         $userField  = '<select name="auth_user">'."\n";
               
         for ($i=0,$_i=count($userlist);$i<$_i;$i++)
