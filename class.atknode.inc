@@ -725,7 +725,7 @@
       $ui = &$this->getUi();
       if (is_object($ui))
       {                
-        $total = $ui->renderBox(array("title"=>$ui->title($this->m_module, $this->m_type, $this->m_action),
+        $total = $ui->renderBox(array("title"=>$this->actionTitle($this->m_action),
                                       "content"=>$output));
       }
       return $total;
@@ -743,6 +743,23 @@
         }
       }
       return $this->atkUI;
+    }
+    
+    /**
+     * Determine the title for an action. 
+     * Usually a string describing the action, and if possible, the
+     * descriptor of the record on which the action will be performed.
+     */
+    function actionTitle($action, $record="")
+    {      
+      $ui = &$this->getUi();
+      $res = $ui->title($this->m_module, $this->m_type, $action);
+      if ($record!="")
+      {
+        $descr = $this->descriptor($record);
+        if ($descr!="") $res.= "&nbsp; [".$descr."]";
+      }
+      return $res;
     }
 
     /**
@@ -774,7 +791,7 @@
         
         $output = $ui->renderAction("edit", $params);
               
-        return $ui->renderBox(array("title"=>$ui->title($this->m_module, $this->m_type,'edit'),
+        return $ui->renderBox(array("title"=>$this->actionTitle('edit', $record),
                                       "content"=>$output));        
       }
       else
@@ -888,7 +905,7 @@
         
         $output = $ui->renderAction("view", $params);
         
-        $total = $ui->renderBox(array("title"=>$ui->title($this->m_module, $this->m_type,'view'),
+        $total = $ui->renderBox(array("title"=>$this->actionTitle('view', $record),
                                       "content"=>$output));
         return $total;
       }
@@ -937,7 +954,7 @@
         
         $output = $ui->renderAction("add", $params);
               
-        $total = $ui->renderBox(array("title"=>$ui->title($this->m_module, $this->m_type,'add'),
+        $total = $ui->renderBox(array("title"=>$this->actionTitle('add', $record),
                                       "content"=>$output));
         
         return $total;               
@@ -981,7 +998,7 @@
       
         $output = $ui->renderAction("search", $params);
               
-        $total = $ui->renderBox(array("title"=>$ui->title($this->m_module, $this->m_type,'search'),
+        $total = $ui->renderBox(array("title"=>$this->actionTitle('search'),
                                       "content"=>$output));
         
         return $total;               
@@ -1682,7 +1699,7 @@
         
         $output = $ui->renderList("admin", $params);   
       
-        return $ui->renderBox(array("title"=>$ui->title($this->m_module, $this->m_type, 'admin'),
+        return $ui->renderBox(array("title"=>$this->actionTitle('admin'),
                                     "content"=>$output));
       }                 
       else
@@ -2688,7 +2705,7 @@
         
         $output = $ui->renderList("select", $params);
         
-        return $ui->renderBox(array("title"=>$ui->title($this->m_module, $this->m_type,'select'),
+        return $ui->renderBox(array("title"=>$this->actionTitle('select'),
                                     "content"=>$output));         
       }
 
@@ -2718,11 +2735,36 @@
       $buttons[] = '<input name="confirm" class="btn" type="submit" value="'.text('yes').'">';
       $buttons[] = '<input name="cancel" type="submit" class="btn_cancel" value="'.text('no').'">';
       
-      $output.=$ui->renderAction("delete", array("content"=>$this->confirmDeleteText($atkselector),
+      $content = "";
+      $recs = $this->selectDb($atkselector_str, "", "", "", $this->descriptorFields());
+      if (count($recs)==1)
+      {
+        // 1 record, put it in the page title (with the actionTitle call, a few lines below)
+        $record = $recs[0];      
+      }
+      else
+      {
+        // we are gonna perform an action on more than one record
+        // show a list of affected records, at least if we can find a
+        // descriptor_def method
+        if (method_exists($this,"descriptor_def"))
+        {
+          $record = "";
+          $content.= "<ul>";
+          for ($i=0, $_i=count($recs); $i<$_i; $i++)
+          {
+            $content.="<li> ".$this->descriptor($recs[$i]);
+          }
+          $content.= "</ul>";
+        }
+      }    
+      $content.="<br>".$this->confirmDeleteText($atkselector);
+      
+      $output.=$ui->renderAction("delete", array("content"=>$content,
                                                 "formstart"=>$formstart,
                                                 "formend"=>'</form>',
                                                 "buttons"=>$buttons));
-      return $ui->renderBox(array("title"=>$ui->title($this->m_module, $this->m_type,'delete'),
+      return $ui->renderBox(array("title"=>$this->actionTitle('delete', $record),
                                   "content"=>$output));                                          
     }
 
