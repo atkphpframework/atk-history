@@ -328,8 +328,11 @@
       }
 
       // we are authenticated, but atklogout is still active, let's get rid of it!
-      else if (isset($ATK_VARS["atklogout"])) header("Location: ".$_SERVER["PHP_SELF"]."?");
-
+      else if (isset($ATK_VARS["atklogout"]))
+      {
+         header("Location: ".$_SERVER["PHP_SELF"]."?");
+         exit;
+      }
       // we keep the relogin state until the atklogout variable isn't set anymore
       else if (!isset($ATK_VARS["atklogout"]) && $session["relogin"]==1) $session["relogin"]=0;
 
@@ -344,6 +347,25 @@
       sessionStore('loginattempts',''); //reset maxloginattempts
       return true;
     }     
+    
+    /**
+     * Reload the current user data.
+     * This method should be called if userdata, for example name or other 
+     * fields, have been updated for the currently logged in user.
+     * 
+     * The method will make sure that $g_securityManager->m_user, $g_user and 
+     * the authenticated user in the session are refreshed.
+     */
+    function reloadUser()
+    {
+      global $g_user, $g_sessionManager;
+      $user = getUser();
+      $this->m_user = $this->m_authorization->getUser($user["userid"]);            
+      $g_user = &$this->m_user;      
+      $old_auth = $g_sessionManager->getValue("authentication", "globals");          
+      $old_auth["user"] = $g_user;
+      $g_sessionManager->globalVar("authentication",$old_auth, true);
+    }
           
     function loginForm($defaultname, $lastresponse)
     {
@@ -365,8 +387,10 @@
 
       atkdebug('LoginAttempts: '.$loginattempts);
       $g_layout->initGui();
+      $g_layout->output('<html>');
       $g_layout->register_script(atkConfig('atkroot')."atk/javascript/formfocus.js");
       $g_layout->head(text('app_title'));
+      $g_layout->body();
       $g_layout->output('<br><br><div align="center">');
       $g_layout->tpl("login_top", array("header"=>text('login_form')), "block_top");
       $g_layout->output('<form action="'.$_SERVER["PHP_SELF"].'" method="post">');
@@ -414,6 +438,7 @@
       $g_layout->output('<SCRIPT LANGUAGE="JavaScript">placeFocus()</SCRIPT>');
       $g_layout->tpl("login_bottom", "", "block_bottom");
       $g_layout->output('</div><br><br>');
+      $g_layout->output('</body></html>');
 
     }
 
@@ -435,11 +460,13 @@
           $userlist[] = array("userid"=>"guest", "username"=>"Guest");
         }
         
-        foreach ($auth_types as $type => $obj)
+        if (is_array($auth_types))
         {
-          $userlist = array_merge($userlist, $obj->getUserList());
-        }
-                
+          foreach ($auth_types as $type => $obj)
+          {
+            $userlist = array_merge($userlist, $obj->getUserList());
+          }
+        }     
         $userField  = '<select name="auth_user">'."\n";
               
         for ($i=0,$_i=count($userlist);$i<$_i;$i++)
