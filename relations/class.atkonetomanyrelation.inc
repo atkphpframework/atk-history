@@ -2,7 +2,7 @@
   /**
    * Can be used to create '1 library has N books' relations.
    *
-   * @author Ivo Jansch (ivo@achievo.com)
+   * @author Ivo Jansch (ivo@achievo.org)
    * @version $Revision$
    *
    * $Id$

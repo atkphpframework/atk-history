@@ -7,7 +7,7 @@
  * AF_PASSWORD_NOVALIDATE flag, in which case the password just gets
  * overwritten without any check.
  *
- * @author Peter Verhage (peter@achievo.com)
+ * @author Peter Verhage (peter@achievo.org)
  * @version $Revision$
  *
  * $Id$
