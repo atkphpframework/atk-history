@@ -27,6 +27,8 @@
                             // best option.
                             
     var $m_hidewhenempty = false; // by default we don't hide the attribute if a relation is empty
+    
+    var $m_selectableRecords = array();
                
     /**
      * Constructor
@@ -163,6 +165,18 @@
       }
       return "";
     }
+    
+    function getSelectableRecords()
+    {
+      if (!count($m_selectableRecords))
+      {
+        if ($this->createDestination())
+        {
+          $this->m_selectableRecords = $this->m_destInstance->selectDb("","","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
+        }
+      }
+      return $this->m_selectableRecords;
+    }
 
     /**
      * Returns a piece of html code that can be used in a form to edit this
@@ -190,7 +204,7 @@
           $filter = stringparse($this->m_destinationFilter,$record);
           $this->m_destInstance->addFilter($filter);
         }
-        $recordset = $this->m_destInstance->selectDb("","","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
+        $recordset = $this->getSelectableRecords();
 
         // autoselect if there is only one record (if obligatory is not set,
         // we don't autoselect, since user may wist to select 'none' instead
@@ -441,21 +455,21 @@
     function setHideWhenEmpty($hidewhenempty)
     {
       $this->m_hidewhenempty = $hidewhenempty;
+      
+      // We must undo the obligatory flag, if we hide.      
+      $this->m_flags ^= AF_OBLIGATORY;
     }
     
     function addToEditArray($mode, &$arr, &$defaults, &$error, $fieldprefix)
     {
       global $g_db;
-      if ($this->createDestination())
-      {
-        // check if destination table is empty
-        // only check if hidewhenempty is set to true
-        if ($this->m_hidewhenempty)
-        {
-          if (count($g_db->getRows("SELECT * FROM ".$this->m_destInstance->m_table))==0) return "";
-        }
+      
+      // check if destination table is empty
+      // only check if hidewhenempty is set to true
+      if (!$this->m_hidewhenempty || count($this->getSelectableRecords())>0)
+      {            
+        return parent::addToEditArray($mode, $arr, $defaults, $error, $fieldprefix);  
       }
-      return parent::addToEditArray($mode, $arr, $defaults, $error, $fieldprefix);  
     }
   }
 
