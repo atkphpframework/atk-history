@@ -62,6 +62,7 @@
   $txt_edit = "Bewerk";
   $txt_editcopy = "Bewerk kopie";
   $txt_error = "Error";
+  $txt_error_activitydate_after_today = "De geselecteerde datum ligt na vandaag";
   $txt_error_date_invalid = "Ongeldige datum";
   $txt_error_fileexists = "Bestand bestaat al op de server. Verander de naam van het bestand";
   $txt_error_formdataerror = "Opslaan mislukt om de volgende reden: ";
@@ -100,6 +101,7 @@
   $txt_friday = "vrijdag";
   $txt_help = "Help";
   $txt_invert_selection = "Selectie omkeren";
+  $txt_insert_multi = "Selecteer periode";
   $txt_january = "januari";
   $txt_july = "juli";
   $txt_june = "juni";
@@ -111,7 +113,7 @@
   $txt_lock_expired = "De items die u open heeft staan zijn niet meer exclusief voor u toegankelijk. Dit kan verschillende
                        oorzaken hebben, de meest gebruikelijke oorzaak is dat u te lang niet heeft opgeslagen. U kunt
                        proberen uw werk nog op te slaan, maar het is mogelijk dat de items inmiddels door een andere
-                       gebruiker is/zijn toegeïgend!";
+                       gebruiker is/zijn toegeï¿½gend!";
   $txt_lock_locked = "De door u geselecteerde items zijn momenteel niet toegankelijk omdat een andere gebruiker deze open heeft staan.";
   $txt_login = "Inloggen";
   $txt_login_failed = "Inloggen mislukt";

@@ -62,6 +62,7 @@
   $txt_edit = "Edit";
   $txt_editcopy = "Edit copy";
   $txt_error = "Error";
+  $txt_error_activitydate_after_today = "The selected date is after today";
   $txt_error_date_invalid = "Invalid date";
   $txt_error_fileexists = "File already exists on server. Please rename the file.";
   $txt_error_formdataerror = "Save failed due to the following reason: ";
@@ -196,4 +197,5 @@
   $txt_wysiwyg_split_cell = "Split cells";
   $txt_yes = "Yes";
 
+  $txt_insert_multi = "Select a period";
 ?>
