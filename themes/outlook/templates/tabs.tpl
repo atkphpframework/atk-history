@@ -1,3 +1,13 @@
+<script language="JavaScript">
+var tabs = new Array();
+{section name=i loop=$tabs}tabs[tabs.length] = "{$tabs[i].tab}"; {/section}
+
+var tabColor = "";
+var tabBackground = "";
+var tabSelectedColor = "";
+var tabSelectedBackground = "";
+</script>
+
 <table border="0" cellpadding="0" cellspacing="0" bgcolor="#606060" width="98%" align="center" valign="top">
   <tr>
     <td width="100%" bgcolor="#EEEEE0">
@@ -8,17 +18,13 @@
           <td valign="bottom">
             <table border="0" cellspacing="0" cellpadding="0">
               <tr>
-                <td><img src="{$themedir}images/tab_left{if $tabs[i].selected}_s{/if}.gif"></td>
-                <td height="22" valign="middle" background="{$themedir}images/tab_back{if $tabs[i].selected}_s{/if}.gif" align="center" nowrap>
+                <td><img src="{$themedir}images/tab_left.gif"></td>
+                <td id="{$tabs[i].tab}" onclick="showTab('{$tabs[i].tab}')" style="cursor: pointer; cursor: hand; color:{if $tabs[i].selected}#000000{else}#000000{/if}; height="22" valign="middle" background="{$themedir}images/tab_back.gif" align="center" nowrap>
                   <span class="{if $tabs[i].selected}tab_selected{else}tab{/if}">
-                  {if $tabs[i].selected}
                     {$tabs[i].title}
-                  {else}
-                    <a href="{$tabs[i].link}" style="color:#ffffff;text-decoration:none">{$tabs[i].title}</a>
-                  {/if}
                     </span>
                 </td>
-                <td><img src="{$themedir}images/tab_right{if $tabs[i].selected}_s{/if}.gif"></td>
+                <td><img src="{$themedir}images/tab_right.gif"></td>
               </tr>
             </table>
           </td>

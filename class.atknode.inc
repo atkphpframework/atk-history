@@ -857,9 +857,8 @@
         $forceList = decodeKeyValueSet($this->m_postvars['atkfilter']);
         $form =$this->editForm("edit",$record,$forceList,$this->m_postvars['atksuppress']);
 
-        $params["content"] = $this->tabulate("edit", $form);
-        
-        $params["buttons"] = $this->getFormButtons("edit", $record);
+	$params["content"] = $this->tabulate("edit", $form);
+	$params["buttons"] = $this->getFormButtons("edit", $record);
         
         $output = $ui->renderAction("edit", $params);
               
@@ -873,7 +872,7 @@
     }        
     
     function tabulate($action, $content)
-    {
+    {     
       $list = $this->getTabs($action);
       if (count($list) > 1) 
       {     
@@ -1223,11 +1222,11 @@
         /* sometimes a field is hidden although not specified by the field itself */
         $tabs = $this->m_attribIndexList[$r]["tabs"];
 
-        if ((is_array($suppressList) && count($suppressList) > 0 && in_array($attribname,$suppressList)) ||
-            !$p_attrib->showOnTab($tab))
-        {
-          $p_attrib->m_flags |= ($mode == "add" ? AF_HIDE_ADD : AF_HIDE_EDIT);
-        }
+        //if ((is_array($suppressList) && count($suppressList) > 0 && in_array($attribname,$suppressList)) ||
+        //    !$p_attrib->showOnTab($tab))
+        //{
+        //  $p_attrib->m_flags |= ($mode == "add" ? AF_HIDE_ADD : AF_HIDE_EDIT);
+        //}
 
         /* we let the attribute add itself to the edit array */
         $p_attrib->addToEditArray($mode, $result, $defaults, $record['atkerror'], $fieldprefix);
@@ -1258,7 +1257,7 @@
       // Format some things for use in tpl.
       /* check for errors and display them */
       $tab = $this->getActiveTab();
-      $error_title = "";
+      $error_title = "Tabs: ";
       
       // Handle errors
       $errors = array();
@@ -1331,11 +1330,18 @@
 
       /* display the edit fields */
       $fields = array();
+
       for ($i = 0, $_i= count($data["fields"]); $i<$_i; $i++)
       {
-        $field = &$data["fields"][$i];                
-        $tplfield = array();
+        $field = &$data["fields"][$i];
+	$field_name = $field['name'];
 
+	$tab_name = $field["attribute"]->m_ownerInstance->m_attribList[$field_name]->m_tabs[0];
+
+	$tplfield = array();
+	
+	$tplfield["tab"] = $tab_name;
+	
         /* check for seperator */
         if (!is_array($field) && $field == "-" && $i > 0 && $data["fields"][$i-1] != "-")
         {
@@ -1372,7 +1378,7 @@
           
           /* html source */
           $tplfield["widget"] = $field["html"];
-          $editsrc = $field["html"];
+          $editsrc .= $field["html"];
 
           /* obligatory indicator */
           if ($field["obligatory"]) 
@@ -1389,8 +1395,8 @@
             $tplfield["tooltip"] = $tooltip;
             $editsrc.=$tooltip."&nbsp;";
           }
-
-          $tplfield["full"] = $editsrc;        
+          $tplfield["full"] = $editsrc;      
+	  $editsrc="";
         }
         $fields[] = $tplfield; // make field available in numeric array
         $params[$field["name"]] = $tplfield; // make field available in associative array
@@ -1404,13 +1410,14 @@
         $result.= $hidden;
       }
       
+      $params["activeTab"] = $tab;
       $params["fields"] = $fields; // add all fields as an numeric array.
       $params["errortitle"] = $error_title;
       $params["errors"] = $errors; // Add the list of errors.
       
       $result.= $ui->render($this->getTemplate($mode, $record, $tab), $params);
+      
       return $result;
-            
     }
     
     /**
@@ -1674,9 +1681,11 @@
       
       if (is_array($list))
       {
+	$newtab["total"] = count($list);
         foreach ($list as $t)
         {
           $newtab["title"] = text("tab_$t",$this->m_type);
+	  $newtab["tab"] = $t;
           $url = $_SERVER["PHP_SELF"]."?atknodetype=".$this->atkNodeType()."&atkaction=".$this->m_action."&atktab=".$t;
           if ($this->m_action == "view") 
           {
