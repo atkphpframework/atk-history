@@ -902,7 +902,9 @@
         $g_layout->output(session_form(SESSION_DEFAULT));
         $g_layout->output('<input type="hidden" name="'.$fieldprefix.'atkaction" value="admin">');
       }
-      $form.='<input type="hidden" name="atknodetype" value="'.$this->atknodetype().'">';
+      $vars ='<input type="hidden" name="atknodetype" value="'.$this->atknodetype().'">';
+      $vars.='<input type="hidden" name="atkstartat" value="0">'; // start at first page after new search
+      $g_layout->output($vars);
 
       $g_layout->output($this->searchForm($record));
       $g_layout->output('<br>&nbsp;<input type="submit" value="'.text('search').'">&nbsp;');
@@ -1197,8 +1199,10 @@
               while (list($key, $searchMode) = each($searchModes))
               {
                 // if supported, we select the 'like' searchmode by default
-                $selected="";
-                if ($this->m_postvars["atksearchmode"][$p_attrib->m_name]==$searchMode||($this->m_postvars["atksearchmode"][$p_attrib->m_name]==""&&$searchMode=="substring")) $selected="selected";
+                $selected=""; 
+                if ($this->m_postvars["atksearchmode"][$p_attrib->m_name]==$searchMode||
+                    ((!is_array($this->m_postvars["atksearchmode"]) || $this->m_postvars["atksearchmode"][$p_attrib->m_name]=="")&&
+                     $searchMode=="substring")) $selected="selected";
                 $sel.= '<option value="'.$searchMode.'" '.$selected.'>'.text("search_".$searchMode);
               }
               $sel.= '</select>';
@@ -1295,7 +1299,7 @@
 
         // We use wildcard search for the index. Should be supported by any database.
 
-        $nav.=href($_SERVER["PHP_SELF"]."?atknodetype=".$this->atkNodeType()."&atkaction=".$this->m_action."&atksearch[".$this->m_index."]=".$char."*&atksearchmode[".$this->m_index."]=wildcard",$label);
+        $nav.=href($_SERVER["PHP_SELF"]."?atknodetype=".$this->atkNodeType()."&atkaction=".$this->m_action."&atksearch[".$this->m_index."]=".$char."*&atksearchmode[".$this->m_index."]=wildcard&atkstartat=0",$label);
 
         // uncomment the following line if 26 letters seems to become too wide.
         //if ($count>13 && ($i+1)==floor($count/2)) $nav.='<br>'; else
@@ -1340,14 +1344,14 @@
      */
     function adminPage($actions="")
     {
-      global $g_layout, $atksearch, $config_atkroot;
+      global $g_layout, $config_atkroot;
       $g_layout->initGui();
 
       // When there's a lot of data, records will be spread across multiple
       // pages.
       if ($this->m_postvars['atklimit']=="") $this->m_postvars['atklimit']=atkconfig("recordsperpage");
 
-      if ($this->m_postvars['atkstartat']=="" || isset($atksearch)) $this->m_postvars['atkstartat']=0;
+      if ($this->m_postvars['atkstartat']=="") $this->m_postvars['atkstartat']=0;
 
       $recordset = $this->selectDb($this->m_postvars['atkfilter'],
                                    $this->m_postvars['atkorderby'],
@@ -1391,7 +1395,7 @@
         else
         {
           // generic text
-          $label = text(getNodeType($this->m_type))." ".text("add");
+          $label = text(getNodeType($this->m_type), $this->m_module)." ".text("add");
         }
         $g_layout->output(href($addurl,$label,SESSION_NESTED).'<br><br>');
       }
@@ -1717,7 +1721,8 @@
                      session_form().
                        '<input type="hidden" name="atknodetype" value="'.$this->atknodetype().'">'.
                        '<input type="hidden" name="atkaction" value="'.$this->m_action.'">'.
-                       '<input type="hidden" name="atksearchmode" value="'.$searchmode.'">';
+                       '<input type="hidden" name="atksearchmode" value="'.$searchmode.'">'.
+                       '<input type="hidden" name="atkstartat" value="0">'; // reset atkstartat to first page after a new search
 
           if (hasFlag($flags, RL_MRA) || hasFlag($flags, RL_MRPA)) $output .= $g_layout->ret_td_datatitle();
           if (hasFlag($flags, RL_LOCK)) $output .= $g_layout->ret_td_datatitle();
@@ -2340,11 +2345,11 @@
      */
     function selectPage()
     {
-      global $g_layout, $atksearch;
+      global $g_layout;
       $g_layout->initGui();
       // When there's a lot of data, records will be spread across multiple pages.
       if ($this->m_postvars['atklimit']=="") $this->m_postvars['atklimit']=atkconfig("recordsperpage");
-      if ($this->m_postvars['atkstartat']=="" || isset($atksearch)) $this->m_postvars['atkstartat']=0;
+      if ($this->m_postvars['atkstartat']=="") $this->m_postvars['atkstartat']=0;
 
       $filter = $this->validateFilter($this->m_postvars["atkfilter"]);
 
@@ -3364,8 +3369,8 @@
       if (!atkReadOptimizer())
       {
         /* there may be search criteria, which we also filter */
-        $searchArray = $this->m_postvars['atksearch'];
-        if (is_array($searchArray) && count($searchArray)>0)
+        $searchArray = $this->m_postvars['atksearch'];        
+        if (is_array($searchArray) && count($searchArray)>0)      
         {
           $searchmode = $this->m_postvars["atksearchmode"];
           if ($searchmode=="") $searchmode = atkconfig("search_defaultmode");
@@ -3808,6 +3813,15 @@
       
       // Resolve action
       $action = $this->securityKey($action);
+      
+      // If action contains a dot, it's a complete nodename.action alias.
+      // Else, it's only an action alias, and we use the default node. 
+      // (TODO: make it possible to use modulename.nodename.action aliases)
+      if (strpos($action, ".")!==false)
+      {
+        list($node, $action) = explode(".", $action);
+        $alias = $this->m_module.".".$node;
+      }
 
       return ($this->hasFlag(NF_NO_SECURITY)
               ||in_array($action, $this->m_unsecuredActions)
@@ -3962,10 +3976,14 @@
      */
     function searchDb($expression)
     {
-
       // Set default searchmethod to OR (put it in m_postvars, because selectDb
       // will use m_postvars to built it's search conditions).
       $this->m_postvars['atksearchmethod'] = "OR";
+      
+      // To perform the search, we fill atksearch, so selectDb automatically
+      // searches. Because an atksearch variable may have already been set,
+      // we save it to restore it after the query.
+      $orgsearch = $this->m_postvars['atksearch'];
 
       // Built whereclause.
       foreach (array_keys($this->m_attribList) as $attribname)
@@ -3978,25 +3996,13 @@
         }
       }
 
-      // We search in admin mode, se we are certain that all fields are added.
-      $recs = $this->selectDb($where, $this->m_defaultOrder, "", "", "", "admin");
-      $res = array();
-      for ($i=0, $_i=count($recs); $i<$_i; $i++)
-      {
-// disabled rights check. It's not searchDb's responsibility to check this, but
-// the code that calls this. 
-    //    if ($this->allowed("view", $recs[$i]))
-//        {
-          $item = $recs[$i];
-          $item ["title"] = $this->descriptor($recs[$i]);
-          $item ["url"] = dispatch_url($this->atkNodeType(),
-                                             "view",
-                                             array("atkselector"=>$this->primaryKey($recs[$i]))
-                                            );
-          $res[] = $item;
-  //      }
-      }
-      return $res;
+      // We load records in admin mode, se we are certain that all fields are added.
+      $recs = $this->selectDb($where, $this->m_defaultOrder, "", $this->m_listExcludes, "", "admin");
+      
+      // Restore original atksearch
+      $this->m_postvars['atksearch'] = $orgsearch;
+      
+      return $recs;
     }
 
     function feedbackUrl($action, $status)

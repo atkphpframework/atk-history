@@ -1,11 +1,11 @@
 <?php
 
-  // To keep language files up to date, all strings that are introduced in a new version
-  // Have to be kept in a separate section, so we can easily see which strings need to be
-  // translated when a new version comes out.
+  // To keep language files up to date, all strings that are introduced in a 
+  // new version have to be kept in a separate section, so we can easily see 
+  // which strings need to be translated when a new version comes out.
   
-  // Note that these are ATK defaults. You can always override the defaults by providing
-  // a languages/ dir with language files in your application. 
+  // Note that these are ATK defaults. You can always override the defaults by 
+  // providing a languages/ dir with language files in your application. 
 
   // --------==== Strings that were there from the beginning: ====---------
 
@@ -20,103 +20,103 @@
   $txt_edit = "Editer";
   $txt_delete = "Effacer";
   $txt_add = "Ajouter";
-  $txt_copy = "Copy";  
-  $txt_search = "Search";
-  $txt_search_all = "Search all";
+  $txt_copy = "Copier";  // Modified  
+  $txt_search = "Recherche"; // Modified
+  $txt_search_all = "Recherche globale"; // Modified
 
-  $txt_next = "Next";
-  $txt_previous = "Previous";
-  $txt_select = "Select";
+  $txt_next = "Suivant";  // Modified
+  $txt_previous = "Précedent"; // Modified
+  $txt_select = "Choisissez";  // Modified
   
-  $txt_save = "Sauver";
+  $txt_save = "Sauvegarder";  // Modified
   $txt_close = "Fermer";
-  $txt_saveandclose = "Sauver et fermer";  
+  $txt_saveandclose = "Sauvegarder et fermer"; // Modified  
   $txt_cancel = "Annuler";
   
   $txt_menu = "Menu";
   $txt_error = "Erreur";
 
-  $txt_error_obligatoryfield = "This field is required";
-  $txt_error_formdataerror = "Save failed due to the following reason: ";
-  $txt_error_uniquefield = "The value for this field must be unique";
-  $txt_confirm_delete = "Are you sure you want to delete this item?";
-  $txt_title_delete = "Confirm delete";
+  $txt_error_obligatoryfield = "Ce champ est obligatoire";  // Modified
+  $txt_error_formdataerror = "Enregistrement échoué à cause de : ";
+  $txt_error_uniquefield = "Vous devez renseigner une valeur unique pour ce champ";
+  $txt_confirm_delete = "Etes vous sûr de vouloir supprimer cet enregistrement ?";
+  $txt_title_delete = "Confirmer la suppression";
   
-  $txt_select_none = "None";  
+  $txt_select_none = "Aucun";  
   
-  $txt_fri = "Fri";
-  $txt_sat = "Sat";
-  $txt_sun = "Sun";
-  $txt_mon = "Mon";
-  $txt_tue = "Tue";
-  $txt_wed = "Wed";
-  $txt_thu = "Thu";
+  $txt_fri = "Ven";
+  $txt_sat = "Sam";
+  $txt_sun = "Dim";
+  $txt_mon = "Lun";
+  $txt_tue = "Mar";
+  $txt_wed = "Mer";
+  $txt_thu = "Jeu";
   
-  $txt_permission_denied = "Sorry, you don't have permission to perform this action";
+  $txt_permission_denied = "Désolé, vous n'avez pas les droits requis pour executer cette action";
   
-  $txt_menu_main = "Main";
-  $txt_back_to = "Back to";
+  $txt_menu_main = "Accueil";
+  $txt_back_to = "Retour";
   
   // The charset to use.. for most languages, this is iso-8859-1 (Western European).
-  $txt_charset="iso-8859-1";
+  $txt_charset="iso-8859-15";
     
-  $txt_field_obligatory = "This field is a required field";
+  $txt_field_obligatory = "Ce champ est obligatoire";
   
-  $txt_help = "Help";
+  $txt_help = "Aide";
   
-  $txt_search_extended = "Extended";
+  $txt_search_extended = "Avancée";
   
-  $txt_search_exact = "Search for an exact match";
-  $txt_search_substring = "Search for a substring";
-  $txt_search_wildcard = "Search with wildcards (*)";
-  $txt_search_regexp = "Search with a regular expression (advanced)";
+  $txt_search_exact = "Recherche exacte";
+  $txt_search_substring = "Recherche contenant un mot";
+  $txt_search_wildcard = "Recherche avec caractère spécial (*)";
+  $txt_search_regexp = "Recherche avec expression régulière (avancée)";
   $txt_search_soundex = "Search for a string that sounds similar";
   
-  $txt_search_mode = "Searchmode";
+  $txt_search_mode = "Mode de recherche";
   
-  $txt_login_failed = "Login failed";
-  $txt_auth_no_server = "No server specified. No authentication possible (please consult your system administrator).";
-  $txt_auth_unable_to_connect = "Unable to connect to server for authentication (please consult your system administrator).";    
+  $txt_login_failed = "autentification échouée";
+  $txt_auth_no_server = "Aucun serveur spécifié. Autentification impossible (veuillez consulter votre administrateur système).";
+  $txt_auth_unable_to_connect = "Impossible de se connecter au serveur pour autentification  (veuillez consulter votre administrateur système).";    
   
-  $txt_error_primarykey_exists = "A record with this key already exists";
+  $txt_error_primarykey_exists = "Erreur, cet enregistrement existe déjà";
   
   // colorpicker attribute
-  $txt_colorpicker_selectcolor = "Select a color";
+  $txt_colorpicker_selectcolor = "Choisissez une couleur";
   
-  $txt_check_all = "Select all";
-  $txt_check_none = "Select none";
-  $txt_invert_selection = "Invert selection";
+  $txt_check_all = "Selectionner tout";
+  $txt_check_none = "Selectionner aucun";
+  $txt_invert_selection = "Inverser la selection";
   
   // Strings for atkFileEditor
-  $txt_file_exists = "A file with this name already exists";
-  $txt_filename_invalid = "This filename is invalid";
-  $txt_filename = "Filename";
-  $txt_filecontent = "Content";
+  $txt_file_exists = "Fichier déjà existant";
+  $txt_filename_invalid = "Nom de fichier invalide";
+  $txt_filename = "Fichier";
+  $txt_filecontent = "Contenu";
   
-  $txt_title_session_expired = "Session expired";
-  $txt_explain_session_expired = "Your session has expired. This happens if the application is inactive for a certain amount of time. You can continue work by logging in again.";
+  $txt_title_session_expired = "Session expirée";
+  $txt_explain_session_expired = "Votre session a expirée due à une longue inactivité. Veuillez vous reconnecter.";
   
   // visual html editor
-  $txt_ww_sourcemode = "Source mode";
-  $txt_ww_visualmode = "Visual mode";
+  $txt_ww_sourcemode = "Mode source";
+  $txt_ww_visualmode = "Mode visuel";
 
   // multi-record actions selection
-  $txt_select_all     = "Select all";
-  $txt_deselect_all   = "Deselect all";
-  $txt_select_invert  = "Invert selection";
+  $txt_select_all     = "Selectionner tout";
+  $txt_deselect_all   = "Deselectionner tout";
+  $txt_select_invert  = "Inverser la selection";
   $txt_with_selected  = "With selected";
-  $txt_submit         = "Go";
+  $txt_submit         = "Valider";
 
   // Login form
   $txt_login_form = "Login";
-  $txt_username = "Username";
-  $txt_password = "Password";
+  $txt_username = "Nom utilisateur";
+  $txt_password = "Mot de passe";
   $txt_login = "Login";
-  $txt_auth_max_loginattempts_exceeded = "Too many retries. Login has been disabled. Please contact your system administrator.";
-  $txt_auth_mismatch = "Username and/or password are incorrect. Please try again.";
-  $txt_auth_account_locked = "This account has been locked. Try a different account if possible, or contact your system administrator.";
+  $txt_auth_max_loginattempts_exceeded = "Trop de tentatives. Ce compte est désactivé. Veuillez contacter votre administrateur système.";
+  $txt_auth_mismatch = "Nom utilisateur et/ou mot de passe incorrect . Veuillez réessayer.";
+  $txt_auth_account_locked = "Ce compte a été désactivé. Essayer avec un autre compte , ou veuillez contacter votre administrateur système.";
   
-  $txt_wysiwyg_fontface = "Font";
+  $txt_wysiwyg_fontface = "Police";
   $txt_wysiwyg_fontsize = "Pt";
   
 ?>
