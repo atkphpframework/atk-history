@@ -47,10 +47,19 @@
      */
     function display($record)
     {
-	  	$value = $record[$this->fieldName()];
-      if (empty($value["hours"]) ) return "";
-      $tmp_time = $value["hours"].":".$value["minutes"].":".$value["seconds"];			
-      return $tmp_time;
+      if ($this->isEmpty($record)) return "";
+      $value = $record[$this->fieldName()];            
+      return sprintf("%02d:%02d:%02d", $value["hours"], $value["minutes"], $value["seconds"]);
+    }
+    
+    /**
+     * Check if there's a valid non-empty value in the record.
+     * @param $record The record to validate
+     */
+    function isEmpty($record)
+    {
+      $value = $record[$this->fieldName()];
+      return ($value["hours"]==""&&$value["minutes"]==""&&$value["seconds"]=="");
     }
 
     function fetchValue($postvars)

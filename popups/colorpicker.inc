@@ -39,14 +39,14 @@
    $layout .= " <td valign='top' align='left'>".$matrix[3].$matrix[4]."</td>";
    $layout .= " <td valign='top' align='left'>".$matrix[5].$matrix[6]."<br></td>";
    $layout .= " <td valign='top' align='right' class='table'>";
-   $layout .= "  &nbsp;Kleurcode: &nbsp;<input type='text' name='".$formRef."' size='7' maxlength='7' value='' style='font-family: verdana; font-size: 11px;'>&nbsp;";
+   $layout .= "  &nbsp;".text("colorcode").": &nbsp;<input type='text' name='".$formRef."' size='7' maxlength='7' value='' style='font-family: verdana; font-size: 11px;'>&nbsp;";
    $layout .= " </td>";
    $layout .= "</tr>";
    $layout .= "<tr bgcolor='#FFFFFF'>";
    $layout .= " <td colspan='2' valign='top' align='left'>".$matrix[7]."</td>";
    $layout .= " <td valign='top' align='right'>";
-   $layout .= " <input type='button' name='cancel' value='Annuleren' style='width: 75px; font-family: verdana; font-size: 11px;' onClick='window.close();'>&nbsp;";
-   $layout .= " <input type='button' name='close' value='Toepassen'  style='width: 75px; font-family: verdana; font-size: 11px;' onClick='remoteUpdate(\"".$formRef."\", \"".$prefix."\");'>&nbsp;<br><br>";
+   $layout .= " <input type='button' name='cancel' value='".text("cancel")."' style='width: 75px; font-family: verdana; font-size: 11px;' onClick='window.close();'>&nbsp;";
+   $layout .= " <input type='button' name='close' value='".text("apply")."'  style='width: 75px; font-family: verdana; font-size: 11px;' onClick='remoteUpdate(\"".$formRef."\", \"".$prefix."\");'>&nbsp;<br><br>";
    $layout .= " </td>";
    $layout .= "</tr>";
    $layout .= "</table>";

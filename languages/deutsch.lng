@@ -143,28 +143,28 @@
   $txt_filename = "Dateiname";
   $txt_filecontent = "Inhalt";
   
-    $txt_title_session_expired = "Session expired";
-  $txt_explain_session_expired = "Your session has expired. This happens if the application is inactive for a certain amount of time. You can continue work by logging in again.";
+  $txt_title_session_expired = "Session abgelaufen";
+  $txt_explain_session_expired = "Ihre Session ist abgelaufen. Das passiert, wenn die Applikation f&uuml;r eine bestimmte Zeit inaktiv ist. Sie k&ouml;nnen weiterarbeiten, indem Sie sich erneut einloggen.";
   
   // visual html editor
-  $txt_ww_sourcemode = "Source mode";
-  $txt_ww_visualmode = "Visual mode";
+  $txt_ww_sourcemode = "Quelltextmodus";
+  $txt_ww_visualmode = "Grafikmodus";
 
   // multi-record actions selection
-  $txt_select_all     = "Select all";
-  $txt_deselect_all   = "Deselect all";
-  $txt_select_invert  = "Invert selection";
+  $txt_select_all     = "Alle ausw&auml;hlen";
+  $txt_deselect_all   = "Keinen ausw&auml;hlen";
+  $txt_select_invert  = "Selektion invertieren";
   $txt_with_selected  = "With selected";
-  $txt_submit         = "Go";
+  $txt_submit         = "Los"; // or "Senden"
 
   // Login form
   $txt_login_form = "Login";
-  $txt_username = "Username";
-  $txt_password = "Password";
+  $txt_username = "Benutzername";
+  $txt_password = "Passwort";
   $txt_login = "Login";
-  $txt_auth_max_loginattempts_exceeded = "Too many retries. Login has been disabled. Please contact your system administrator.";
-  $txt_auth_mismatch = "Username and/or password are incorrect. Please try again.";
-  $txt_auth_account_locked = "This account has been locked. Try a different account if possible, or contact your system administrator.";
+  $txt_auth_max_loginattempts_exceeded = "Zu viele Versuche. Login wurde gesperrt. Bitte wenden Sie sich an Ihren Systemverwalter.";
+  $txt_auth_mismatch = "Benutzername und/oder Passwort sind nicht korrekt. Bitte versuchen Sie es erneut.";
+  $txt_auth_account_locked = "Dieser Account wurde gesperrt. Versuchen Sie sich f&uuml;r einen anderen Account anzumelden, oder wenden Sie sich an Ihren Systemverwalter.";
   
   $txt_wysiwyg_fontface = "Font";
   $txt_wysiwyg_fontsize = "Pt";
