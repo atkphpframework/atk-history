@@ -26,6 +26,21 @@
      * Array for fast lookup of what value belongs to what option.
      */
     var $m_lookup = Array();
+    
+    /**
+     * Array for onchange code
+     */
+    var $m_onchangecode = array();
+    
+    /**
+     * Attribute that is to be selected
+     */
+    var $m_selected;
+    
+    /**
+     * Value that is used when list is empty, normally empty
+     */
+     var $m_emptyvalue;
 
     /**
      * Constructor.
@@ -44,7 +59,7 @@
      * @param $size  Size of the attribute.
      */
     function atkListAttribute($name, $optionArray, $valueArray="", $flags=0, $size=0)
-    {
+    {      
       if (!is_array($valueArray) || count($valueArray)==0)
       {
         $valueArray = $optionArray;
@@ -78,7 +93,68 @@
         $this->m_lookup[$this->m_values[$i]] = $optionArray[$i];
       }
     }
-
+    
+    /** 
+     * Add a javascript onchange event handler.
+     * @param $jscode A block of valid javascript code.
+     */
+    function addOnChangeHandler($jscode)
+    {
+      $this->m_onchangecode[] = $jscode;
+    }
+    
+    function renderChangeHandler($fieldprefix)
+    {
+      global $g_layout;
+      
+      if (count($this->m_onchangecode))
+      {
+        
+        $g_layout->register_scriptcode("function ".$fieldprefix.$this->fieldName()."_onChange(el)
+                                    {
+                                      newvalue = el.options[el.selectedIndex].value;
+                                      ".implode("\n", $this->m_onchangecode)."
+                                    }\n");
+      }
+    }
+    
+    /**
+     * Sets the selected listitem
+     * @param string $selected the listitem you want to have selected
+     */
+    function setSelected($selected)
+    {
+      $this->m_selected = $selected;
+    }
+    
+    /**
+     * Gets the selected listattribute
+     * @return string the selected listitem
+     */
+    function getSelected()
+    {
+      return $this->m_selected;
+    }
+    
+    /**
+     * Sets the value for the empty entry in the list attribute
+     * In normal cases you would just leave this empty, but certain cases
+     * might demand you set a value.
+     * @param string $value the value we set for empty value
+     */
+    function setEmptyValue($value)
+    {
+      $this->m_emptyvalue = $value;
+    }
+    
+    /**
+     * Gets the value for the empty entry in the list attribute
+     * @return string 
+     */
+    function getEmptyValue()
+    {
+      return $this->m_emptyvalue;
+    }
 
     /**
      * Display's text version of Record
@@ -98,11 +174,24 @@
      */
     function edit($record="", $fieldprefix="")
     {
+      $onchange='';
+      if (count($this->m_onchangecode))
+      {
+        $onchange = 'onChange="'.$this->fieldName().'_onChange(this);"';
+        $this->renderChangeHandler($fieldprefix);
+      }
+      
       // todo: configurable rows
-      $result = '<select name="'.$fieldprefix.$this->formName().'">';
+      $result = '<select name="'.$fieldprefix.$this->formName().'" '.$onchange.'>';
+      
+      if(!$this->hasFlag(AF_OBLIGATORY))
+      {
+        $result.= '<option value="'.$this->m_emptyvalue.'">'.text('list_null_value', $this->m_ownerInstance->m_type);   
+      }
+      
       for ($i=0;$i<count($this->m_values);$i++)
       {
-        if ($this->m_values[$i] == $record[$this->fieldName()] && $record[$this->fieldName()]!="")
+        if ($this->m_values[$i] == $this->m_selected || $this->m_values[$i] == $record[$this->fieldName()] && $record[$this->fieldName()]!="")
         {
           $sel = "selected";
         }
