@@ -135,7 +135,7 @@
     
     function edit($record="", $fieldprefix="", $mode="")
     {
-      return $this->draw($record, $fieldprefix, "", $mode);
+      return $this->draw($record, $fieldprefix, "", $mode, $this->hasFlag(AF_OBLIGATORY));
     }
 
     /**
@@ -144,7 +144,7 @@
      * @params $record Array with 3 fields (year, month, day)
      * @return Piece a of HTML Code
      */
-    function draw($record="", $fieldprefix="", $postfix="", $mode="")
+    function draw($record="", $fieldprefix="", $postfix="", $mode="", $obligatory=false)
     {
       $page = &atkPage::getInstance();
       
@@ -170,7 +170,7 @@
         $value = &$record[$this->fieldName()];
 
         if (is_array($value)) $value = adodb_date("Y-m-d", adodb_mktime(0, 0, 0, $value["month"], $value["day"], $value["year"]));
-        elseif ($this->hasFlag(AF_OBLIGATORY)) $value = adodb_date("Y-m-d");
+        elseif ($obligatory) $value = adodb_date("Y-m-d");
         else $value = "";
         $this->registerKeyListener($fieldname, KB_CTRLCURSOR|KB_UPDOWN);  
         $result = '<input type="text" id="'.$fieldname.'" name="'.$fieldname.'" value="'.$value.'" size="10">';
@@ -264,7 +264,7 @@
       {
       
         if ($this->hasFlag(AF_DATE_EMPTYFIELD))  $emptyfield=true;
-        else if (!$this->hasFlag(AF_OBLIGATORY)) $emptyfield=true;
+        else if (!$obligatory) $emptyfield=true;
         else $emptyfield=false;
         
         /* javascript method */
@@ -278,7 +278,7 @@
           {
             $this->registerKeyListener($fieldname.'[year]', KB_CTRLCURSOR|KB_LEFTRIGHT);  
             $result .= '<select id="'.$fieldname.'[year]" name="'.$fieldname.'[year]" onChange="'.$str_script.'">';
-            if (!$this->hasFlag(AF_OBLIGATORY) || $this->hasflag(AF_DATE_EMPTYFIELD))
+            if (!$obligatory || $this->hasflag(AF_DATE_EMPTYFIELD))
               $result .= '<option value="0"'.($current === NULL ? ' selected' : '').'></option>';
             for($j = $current["y_min"]; $j <= $current["y_max"]; $j++)
             {
@@ -302,7 +302,7 @@
         {
           $this->registerKeyListener($fieldname.'[day]', KB_CTRLCURSOR|KB_LEFTRIGHT);  
           $result .= '<select id="'.$fieldname.'[day]" name="'.$fieldname.'[day]" onChange="'.$str_script.'">';
-          if (!$this->hasFlag(AF_OBLIGATORY) || $this->hasflag(AF_DATE_EMPTYFIELD)) 
+          if (!$obligatory || $this->hasflag(AF_DATE_EMPTYFIELD)) 
             $result .= '<option value="0"'.($current === NULL ? ' selected' : '').'></option>';
           for ($j = $current["d_min"]; $j <= $current["d_max"]; $j++)
           {
@@ -321,7 +321,7 @@
         {
           $this->registerKeyListener($fieldname.'[month]', KB_CTRLCURSOR|KB_LEFTRIGHT);  
           $result .= '<select id="'.$fieldname.'[month]" name="'.$fieldname.'[month]" onChange="'.$str_script.'">';
-          if (!$this->hasFlag(AF_OBLIGATORY) || $this->hasflag(AF_DATE_EMPTYFIELD))
+          if (!$obligatory || $this->hasflag(AF_DATE_EMPTYFIELD))
             $result .= '<option value="0"'.($current === NULL ? ' selected' : '').'></option>';
           for ($j = $current["m_min"]; $j <= $current["m_max"]; $j++)
           {
@@ -379,7 +379,7 @@
       $record[$this->fieldName()]=array("year"=>0, "month"=>0, "day"=>0);
 
       // FIXME, we need a way to set the date to 'nothing' (i.e., unselected)
-      $res = $this->draw($record, "atksearch_AE_", "_AE_from");
+      $res = $this->draw($record, "atksearch_AE_", "_AE_from", "", false);
       $res.= "&nbsp;".text("until").": ".$this->draw($record, "atksearch_AE_", "_AE_to");
       return $res;
     }
@@ -390,21 +390,35 @@
       // We only support searchmode 'between' for now.
       
       $fromval = $this->value2db(array($this->fieldName()=>$value["from"]));
-      $toval   = $this->value2db(array($this->fieldName()=>$value["to"]));
-      
-      if ($fromval>$toval)
-      {
-        // User entered dates in wrong order. Let's put them in the right order.
-        $tmp=$fromval; $fromval=$toval; $toval=$tmp;
-      }
-      
+      $toval   = $this->value2db(array($this->fieldName()=>$value["to"]));            
+                  
+      $field = $g_db->func_datetochar($table.".".$this->fieldName());
       if ($fromval!="NULL" && $toval!="NULL")
-      {      
+      {     
+        if ($fromval>$toval)
+        {        
+          // User entered dates in wrong order. Let's put them in the right order.
+          $tmp=$fromval; $fromval=$toval; $toval=$tmp;
+        } 
         $query->addSearchCondition(
                    $query->betweenCondition(
-                      $g_db->func_datetochar($table.".".$this->fieldName()), 
+                      $field, 
                       $fromval, 
                       $toval));  
+      }
+      else if ($fromval!="NULL" && $toval=="NULL")
+      {
+        $query->addSearchCondition(
+                   $query->greaterthanequalCondition(
+                      $field,
+                      $fromval));
+      }
+      else if ($fromval=="NULL" && $toval!="NULL")
+      {
+        $query->addSearchCondition(
+                   $query->lessthanequalCondition(
+                      $field,
+                      $toval));
       }
       
     }
