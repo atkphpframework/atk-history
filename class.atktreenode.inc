@@ -26,6 +26,7 @@
   {
   
     var $m_tree = array(); 
+    
   
     /**
      * Constructor
@@ -100,7 +101,6 @@
       }
 
       $g_layout->output($this->GraphTreeRender());
-      
       $g_layout->output("</table><br>");      
       $g_layout->ui_bottom();
       atkdebug("Generating treeview finished!");
@@ -165,9 +165,11 @@
   
       $res="";
       $lastlevel=0;
-      
-      for ($i=0; $i<count($this->m_tree); $i++) 
-	    { 
+     // echo $this->m_tree[0]["expand"]."--".$this->m_tree[0]["colapse"];
+      if ($this->m_tree[0]["expand"] !=1 && $this->m_tree[0]["colapse"] !=1) // normal operation
+      {
+       for ($i=0; $i<count($this->m_tree); $i++) 
+	     { 
         if($this->m_tree[$i]["level"]<2)
         {
           if($this->m_tree[$i]["isleaf"]==1&&$this->m_tree[$i]["level"]<1)
@@ -187,12 +189,49 @@
 	   	    $visible[$i]=0;
         }
 	    	$levels[$i]=0; 
-	    } 
+	     } 
+       if ($this->m_postvars["atktree"]!="") $explevels = explode("|",$this->m_postvars["atktree"]); 
+      }
+      elseif ($this->m_tree[0]["expand"] == 1) // expand all mode!
+      {
+       for ($i=0; $i<count($this->m_tree); $i++) 
+	     {
+        $expand[$i]=1; 
+        $visible[$i]=1;
+       	$levels[$i]=0; 
+	     }
+       $this->m_tree[0]["expand"]=0; // next time we are back in normal view mode!
+      }
+      elseif ($this->m_tree[0]["colapse"]== 1) //  colapse all mode!
+      {
+       for ($i=0; $i<count($this->m_tree); $i++) 
+	     { 
+        
+        if($this->m_tree[$i]["level"]<2)
+         {
+          if($this->m_tree[$i]["isleaf"]==1&&$this->m_tree[$i]["level"]<1)
+          {
+     	      $expand[$i]=1; 
+	   	      $visible[$i]=1;
+          }
+          else
+          {
+     	      $expand[$i]=0; 
+	   	      $visible[$i]=1;
+          }
+         }
+         $levels[$i]=0; 
+        
+	     }
+       $this->m_tree[0]["colapse"]=0; // next time we are back in normal view mode!
+       $explevels ="";
+      }
+
       /*********************************************/ 
     	/*  Get Node numbers to expand               */ 
     	/*********************************************/ 
    
-	    if ($this->m_postvars["atktree"]!="") $explevels = explode("|",$this->m_postvars["atktree"]); 
+	    
    
 	    $i=0;
 	    while($i<count($explevels)) 

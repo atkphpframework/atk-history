@@ -611,10 +611,10 @@
                        // which means that 'saveandclose' doesn't close anyway, so we leave out
                        // the 'saveandclose' button.
       {
-        $g_layout->output('<input type="submit" value="'.text('saveandclose').'">');
+        $g_layout->output('&nbsp;<input type="submit" value="'.text('saveandclose').'">&nbsp;');
       }
-      $g_layout->output('<input type="submit" name="atknoclose" value="'.text('save').'">');
-      $g_layout->output('<input type="submit" name="atkcancel" value="'.text('cancel').'">');
+      $g_layout->output('&nbsp;<input type="submit" name="atknoclose" value="'.text('save').'">&nbsp;');
+      $g_layout->output('&nbsp;<input type="submit" name="atkcancel" value="'.text('cancel').'">&nbsp;');
       $g_layout->output('</form>');
       $g_layout->ui_bottom();
       $g_layout->output('<SCRIPT LANGUAGE="JavaScript">placeFocus()</SCRIPT>');
@@ -635,7 +635,8 @@
       // For all attributes we use the edit() function to display an
       // appropriate way to edit the data. This may be overridden by supplying
       // an <attributename>_edit function in the derived classes.
-      for($i=0;$i<count($this->m_attribIndexList);$i++)
+      //for($i=0;$i<count($this->m_attribIndexList);$i++)
+      for($i=0;$i<=count($this->m_attribIndexList);$i++)
       {
         $p_attrib = &$this->m_attribList[$this->m_attribIndexList[$i]["name"]];
         
@@ -702,11 +703,11 @@
       $g_layout->output(session_form());                                   
       $forceList = decodeKeyValueSet($this->m_postvars['atkfilter']);
       $g_layout->output($this->editForm("add",$record,$forceList));
-      $g_layout->output('<br><input type="submit" value="'.text('save').'">');
+      $g_layout->output('<br>&nbsp;<input type="submit" value="'.text('save').'&nbsp;">');
       if ($this->m_action=="add")
       {
         // if action is admin, we don't show the cancelbutton..
-        $g_layout->output('<input type="submit" name="atkcancel" value="'.text('cancel').'">');
+        $g_layout->output('&nbsp;<input type="submit" name="atkcancel" value="'.text('cancel').'">&nbsp;');
       }
       $g_layout->output('</form>');
       $g_layout->ui_bottom();
@@ -737,7 +738,7 @@
       }
       
       $g_layout->output($this->searchForm($record));
-      $g_layout->output('<br><input type="submit" value="'.text('search').'">');
+      $g_layout->output('<br>&nbsp;<input type="submit" value="'.text('search').'">&nbsp;');
       $g_layout->output('</form>');
       $g_layout->ui_bottom();
       $g_layout->output('<SCRIPT LANGUAGE="JavaScript">placeFocus()</SCRIPT>');
@@ -888,9 +889,10 @@
       // For all attributes we use the edit() function to display an
       // appropriate way to edit the data. This may be overridden by supplying
       // an <attributename>_edit function in the derived classes.
-      for($r=0;$r<count($this->m_attribIndexList)-1;$r++)
+      for($r=0;$r<count($this->m_attribIndexList);$r++)
       { 
-        $p_attrib = &$this->m_attribList[$this->m_attribIndexList[$r]["name"]];
+        $attribname = $this->m_attribIndexList[$r]["name"];
+        $p_attrib = &$this->m_attribList[$attribname];
         // fields that have not yet been initialised may be overriden in the url..
         if ($defaults[$p_attrib->fieldName()]=="" && $this->m_postvars[$p_attrib->fieldName()]!="")
         {
@@ -1208,11 +1210,11 @@
       if ($this->hasFlag(NF_ADD_LINK) && !$this->hasFlag(NF_NO_ADD) && $this->allowed("add"))
       {
         $addurl = $PHP_SELF.'?atkaction=add';
-        $g_layout->output(href($addurl,text("link_".getNodeType($this->m_type)."_add"),SESSION_NESTED).'<br><br>');
+        $g_layout->output(href($addurl,text("link_".getNodeType($this->m_type)."_add"),SESSION_NESTED).'<br>');
       }
 
       // create navigation bar      
-      if ($this->m_index != "") $g_layout->output($this->buildIndex($recordset[0][$this->m_index]).'<br><br>');
+      if ($this->m_index != "") $g_layout->output("<br>".$this->buildIndex($recordset[0][$this->m_index]).'<br><br>');
       $nav = $this->buildNavigation();
       if (!empty($nav)) $g_layout->output("$nav<br>");
       $g_layout->output('<br>');
@@ -1242,7 +1244,13 @@
       $g_layout->output($this->recordList($recordset, $actions));
 
       if (!empty($nav)) $g_layout->output('<br>'.$nav);
-      $g_layout->output('<br><br>');
+      $g_layout->output('<br>');
+      
+      $adminFooter = $this->adminFooter();
+      if ($adminFooter!="")
+      {
+        $g_layout->output($adminFooter);
+      }
 
       $g_layout->ui_bottom();
     }
@@ -1271,9 +1279,10 @@
       // sort the list by that attribute.
       // Since we are looping the attriblist anyway, we also check if there
       // are totalisable collumns.
-      for($i=0;$i<count($this->m_attribIndexList)-1;$i++)
+      for($i=0;$i<count($this->m_attribIndexList);$i++)
       {
-        $p_attrib = &$this->m_attribList[$this->m_attribIndexList[$i]["name"]];
+        $attribname = $this->m_attribIndexList[$i]["name"];
+        $p_attrib = &$this->m_attribList[$attribname];
         //$p_attrib = &$this->m_attribList[$attribname];
         $musthide=(is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList));
         if (
@@ -1347,9 +1356,10 @@
         }
 
         // Second loop.. this time for the search fields.
-        for($i=0;$i<count($this->m_attribIndexList)-1;$i++)
+        for($i=0;$i<count($this->m_attribIndexList);$i++)
         {
-          $p_attrib = &$this->m_attribList[$this->m_attribIndexList[$i]["name"]];
+          $attribname = $this->m_attribIndexList[$i]["name"];
+          $p_attrib = &$this->m_attribList[$attribname];
           $musthide=(is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList));
           if (
               ($p_attrib->hasFlag(AF_HIDE_LIST)==false)
@@ -1457,9 +1467,10 @@
           $output.=$actionCol;
         }
 
-        for($r=0;$r<(count($this->m_attribIndexList)-1);$r++)
+        for($r=0;$r<(count($this->m_attribIndexList));$r++)
         {
-          $p_attrib = &$this->m_attribList[$this->m_attribIndexList[$r]["name"]];
+          $attribname = $this->m_attribIndexList[$r]["name"];
+          $p_attrib = &$this->m_attribList[$attribname];
           //echo $r."/".(count($this->m_attribIndexList)-1)." - ".$this->m_attribIndexList[$r]["name"]."<br>";
           $musthide=(is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList));
           if (
@@ -1515,9 +1526,10 @@
         }
         
         // Third loop.. this time for the totals row.
-        for($i=0;$i<count($this->m_attribIndexList)-1;$i++)
+        for($i=0;$i<count($this->m_attribIndexList);$i++)
         {
-         $p_attrib = &$this->m_attribList[$this->m_attribIndexList[$i]["name"]];
+          $attribname = $this->m_attribIndexList[$i]["name"];
+          $p_attrib = &$this->m_attribList[$attribname];
           $musthide=(is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList));
           if (
               ($p_attrib->hasFlag(AF_HIDE_LIST)==false)
@@ -1992,7 +2004,7 @@
       $g_layout->output('</tr>');
       $g_layout->td(text('confirm_delete'));
       $g_layout->output('<tr>');
-      $g_layout->td('<input name="confirm" type="submit" value="'.text('yes').'"><input name="cancel" type="submit" value="'.text('no').'">','colspan="2"');
+      $g_layout->td('&nbsp;<input name="confirm" type="submit" value="'.text('yes').'"><input name="cancel" type="submit" value="'.text('no').'">','colspan="2"');
       $g_layout->output('</tr></table></form>');
 
       $g_layout->ui_bottom();
@@ -2658,7 +2670,16 @@
             $p_attrib = &$this->m_attribList[$key];
             if (is_object($p_attrib)) 
             {
-              $p_attrib->searchCondition($query, $this->m_table, $value, $searchmode);
+              if(is_array($searchmode))
+              {
+                $search = $searchmode[$key];
+                if ($search=="") $search = atkconfig("search_defaultmode");
+                $p_attrib->searchCondition($query, $this->m_table, $value, $search);
+              }
+              else
+              {
+                $p_attrib->searchCondition($query, $this->m_table, $value, $searchmode);
+              }
             }
             else 
             {
@@ -2772,7 +2793,16 @@
             $p_attrib = &$this->m_attribList[$key];
             if (is_object($p_attrib)) 
             {
-              $p_attrib->searchCondition($query, $this->m_table, $value, $searchmode);
+              if(is_array($seachmode))
+              {
+                $search = $searchmode[$key];
+                if ($search=="") $search = atkconfig("search_defaultmode");
+                $p_attrib->searchCondition($query, $this->m_table, $value, $search);
+              }
+              else
+              {
+                $p_attrib->searchCondition($query, $this->m_table, $value, $searchmode);
+              }
             }
             else 
             {
@@ -3058,6 +3088,15 @@
      * this function in their classes and return a string.
      */
     function adminHeader()
+    {
+      return "";
+    }    
+    
+    /**
+     * Function that is called when creating an adminPage. Developers can override
+     * this function in their classes and return a string.
+     */
+    function adminFooter()
     {
       return "";
     }    
