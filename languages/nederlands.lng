@@ -229,4 +229,10 @@
   $txt_date_format_edit = "j F Y";
   $txt_date_format_view = "j F Y";
 
+  $txt_column_desc = "Oplopend";
+  $txt_column_asc  = "Aflopend";
+  $txt_column_subtotal = "Subtotaal";
+  $txt_column_unsubtotal = "Geen Subt.";
+
+
 ?>

@@ -170,5 +170,11 @@
   
   $txt_wysiwyg_fontface = "Font";
   $txt_wysiwyg_fontsize = "Pt";
+
+  $txt_column_desc = "Up";
+  $txt_column_asc  = "Down";
+  $txt_column_subtotal = "Subtotal";
+  $txt_column_unsubtotal = "No Subt.";
+
   
 ?>
