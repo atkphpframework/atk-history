@@ -2219,14 +2219,18 @@
   
           $str_actions = "";
 	  $icons = atkconfig("recordlist_icons");
+	  
           foreach ($list["rows"][$i]["actions"] as $name => $url)
-	  {
-	   $icon_path = "../icons/record/";
-	   $icon = $icon_path.$name.".gif";
-	    
-	    if(file_exists($icon) && $icons == "true")
+	  {    
+	    if($icons == "true")
 	    {
-		$name = '<img width="16" height="16" border="0" src="'.$icon.'" alt="'.$name.'">';
+		$icon_path = atkconfig("atkroot")."icons/record/";
+		$icon = $icon_path.$name.".gif";
+
+		if(file_exists($icon))
+		{
+		    $name = '<img width="16" height="16" border="0" src="'.$icon.'" alt="'.$name.'">';
+		}
 	    }
 	     $str_actions .= href($url, text($name, $this->m_type), SESSION_NESTED, hasFlag($flags, RL_EMBED)).'&nbsp;';
 	  }
