@@ -3219,12 +3219,14 @@
     function feedbackPage($action, $actionstatus, $message="")
     {
       $ui = &$this->getUi();            
+      
+      $this->addStyle("style.css");
 
       $params["content"] = text('feedback_'.$action.'_'.atkActionStatus($actionstatus), $this->m_type).
                            ' '.$message;
 
       if (atkLevel()>0)
-      {
+      {      
         $params["formstart"] = '<form method="get">'.session_form(SESSION_BACK);
         $params["buttons"][] = '<input type="submit" class="btn_cancel" value="&lt;&lt; '.text('back').'">';
         $params["formend"] = '</form>';
@@ -3575,8 +3577,10 @@
 
         if (count($query->m_fields) > 0)
         {
-          $query->executeUpdate();
-          if($g_db->m_errno!=0) return false;
+          if (!$query->executeUpdate())
+          {          
+            return false;
+          }
         }
 
         // also store special storage attributes.
@@ -3585,6 +3589,7 @@
           $p_attrib = &$this->m_attribList[$storelist[$i]];
           if (!$p_attrib->store($g_db, $record,"update"))
           {
+          echo '  jo2'.$p_attrib->m_name;
             // something went wrong.
             return false;
           }
