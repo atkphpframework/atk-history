@@ -10,7 +10,7 @@
 <LINK REL="stylesheet" HREF="<?php echo $ui->stylePath("dhtml_menu.css") ?>">
  
 </HEAD>
-<BODY bgcolor="#CFCFCF">
+<BODY background='<?php echo $g_layout->getImgSrc("dhtml_menu_bg.gif"); ?>'>
 <script language="JavaScript" src="<?php echo $config_atkroot; ?>javascript/dhtml_menu_events.js" type="text/javascript">
 
 </BODY>
