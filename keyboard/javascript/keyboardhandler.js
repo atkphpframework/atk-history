@@ -65,7 +65,14 @@ function atkFEKeyListener(elementId, onUp, onDown, onLeft, onRight, onCtrl)
   // Hook ourselves an onfocus event to keep track of focus, when using the mouse.
   var el = document.getElementById(this.elementId);
   el.listener = this; // Give the element a pointer to the listener, so we can always access it. 
-  el.onfocus = function() { kb_defocus(); focussedListener = this.listener.id; }
+  el.onfocus = function() 
+  { 
+    if (this.listener.id != focussedListener)
+    {
+      kb_defocus(); // Another element was focussed before.
+    }
+    focussedListener = this.listener.id; 
+  }
 }
 
 atkFEKeyListener.prototype = new atkGKeyListener();
