@@ -86,6 +86,7 @@
   /* flag(s) specific for atkOneToOneRelation */
   define("AF_ONETOONE_ADD",             AF_SPECIFIC_1); // override the default no add flag
   define("AF_ONETOONE_ERROR",           AF_SPECIFIC_2); // enable error notifications / triggers
+  define("AF_ONETOONE_INTEGRATE",       AF_SPECIFIC_3); // invisibly integrate a onetoonerelation as if the fields where part of the current node.  
 
   /**
    * The atkAttribute class represents an attribute of an atkNode.
@@ -243,7 +244,8 @@
      * @return Piece of htmlcode
      */
     function hide($record="", $fieldprefix="")
-    {
+    { 
+      if(is_array($record[$this->fieldName()])) { echo $this->fieldName()."<br>"; var_dump($record); echo "<hr>"; }
       $result = '<input type="hidden" name="'.$fieldprefix.$this->formName().
                 '" value="'.htmlspecialchars($record[$this->fieldName()]).'">';
       return $result;
@@ -276,7 +278,7 @@
         /* label? */
         if     ($this->hasFlag(AF_NOLABEL))    $entry["label"] = NULL;
         elseif ($this->hasFlag(AF_BLANKLABEL)) $entry["label"] = "";
-        else   $entry["label"] = text($this->m_name, $this->m_ownerInstance->m_type);
+        else   $entry["label"] = $this->label($defaults);
 
         /* error? */
         $entry["error"] = FALSE;
@@ -527,6 +529,14 @@
     function setAttribSize($size)
     {
       $this->m_size = $size;
+    }
+    
+    /**
+           * Return the label of the field.
+           */
+    function label($record)
+    {    
+      return text($this->fieldName(),$this->m_ownerInstance->m_type);
     }
 
   }
