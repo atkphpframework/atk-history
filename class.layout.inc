@@ -14,20 +14,19 @@
   $g_error_msg = array();
 
   class layout
-  {
-    /*
-     * Content
-     */
-    var $m_content = "";
+  {    
+    
+    var $m_saved = "";
 
     /**
      * Raw
-     */
-    var $m_raw = "";
+     */    
 
-    var $m_submitscripts = array();
-    var $m_scripts = array();
-    var $m_stylesheets = array();
+    var $m_submitscripts = array();        
+    
+    var $m_atkui = NULL;
+    var $m_atkoutput = NULL;
+    var $m_atkpage = NULL;
 
     /**
      * The directory where the current template files are located..
@@ -41,7 +40,9 @@
      * Constructor
      */
     function layout()
-    {
+    {          
+      $this->m_atkoutput = &atkOutput::getInstance();      
+      $this->m_atkui = &atknew("atk.ui.atkui");
     }
 
     /**
@@ -50,6 +51,7 @@
       */
     function initGui()
     {
+      atkdebug("Obsolete use of \$g_layout->initGui()!");
       static $initialized = false;
       global $g_theme;
 
@@ -59,7 +61,8 @@
         if($g_theme["Name"]=="") $g_theme["Name"] = $GLOBALS["config_defaulttheme"];
         if($g_theme["Name"]=="") $g_theme["Name"]="default";
         $this->initTheme();
-        $this->import_layout();        
+        $this->import_layout();             
+
         atkdebug("Initialized GUI");
         $initialized = true;
       }
@@ -71,17 +74,22 @@
      */
     function import_layout()
     {
-      global $g_theme;
-      include_once($this->m_tpldir."layout.inc");
+      atkdebug("Obsolete use of \$g_layout->import_layout()!");
+      
+      global $g_theme;      
       
       // stylesheets
-      if ($g_theme["css_default"]!="")
+      $page = &$this->getPage();
+      if (is_object($page))
       {
-        $this->register_style($this->m_tpldir.$g_theme["css_default"]);
-      }
-      else
-      {
-        $this->register_style((file_exists(atkconfig("atkroot")."./style.php") ? "." : atkconfig("atkroot")."atk").'/style.php');
+        if ($g_theme["css_default"]!="")
+        {
+          $page->register_style($this->m_tpldir.$g_theme["css_default"]);
+        }
+        else
+        {
+          $page->register_style((file_exists(atkconfig("atkroot")."./style.css") ? "." : atkconfig("atkroot")."atk").'/style.css');
+        }
       }
     }
 
@@ -91,7 +99,8 @@
      */
     function output($txt)
     {
-      $this->m_content.= $txt."\n";
+      atkdebug("Obsolete use of \$g_layout->output()!");
+      $this->m_atkoutput->output($txt);
     }
 
     /**
@@ -100,7 +109,8 @@
      */
     function rawoutput($txt)
     {
-      $this->m_raw.= $txt."\n";
+      atkdebug("Obsolete use of \$g_layout->rawoutput()!");
+      $this->m_atkoutput->rawoutput($txt);
     }
 
     /**
@@ -113,56 +123,8 @@
      */
     function outputFlush($nocache=true, $lastmodificationstamp="")
     {
-      global $g_debug_msg, $g_error_msg;
-      $res = "";
-      if (strlen($this->m_raw)>0)
-      {
-        $res = $this->m_raw;
-      }
-      else
-      {
-        // echo some headers first..
-
-        // Since atk pages are always dynamic, we have to prevent that some browsers cache
-        // the pages, unless $nocache was set to true.
-        if ($nocache)
-        {
-	        atkdebug("Sending no-cache headers (lmd: ".gmdate("D, d M Y H:i:s")." GMT)");
-          header ("Expires: Mon, 26 Jul 1997 05:00:00 GMT");    // Date in the past
-          header ("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT"); // always modified
-//          header ("Cache-Control: no-cache, must-revalidate");  // HTTP/1.1
-          header ("Cache-Control: private, must-revalidate");  // HTTP/1.1
-          header ("Pragma: no-cache");                          // HTTP/1.0
-        }
-        else if ($lastmodificationstamp!=0)
-        {
-          header ("Last-Modified: " . gmdate("D, d M Y H:i:s", $lastmodificationstamp) . " GMT");
-        }
-
-        // Set the content type.
-        header ("Content-Type: text/html; charset=".text('charset')); // The character set (defined
-                                                                      // in the language files
-
-        $res = $this->m_content;
-        if (count($g_error_msg)>0)
-        {
-          if (atkconfig("display_errors")||atkconfig("debug")>0)
-          {
-            // only show errors in debugmode, or when display_errors is
-            // true.
-            $res.='<br><font color="#FF0000">error: '.implode("<br>\nerror: ",$g_error_msg).'</font>';
-          }
-          // also send a mail report with errormessages..
-          // (even when display of errors is turned off)
-          mailreport();
-        }
-        if ($GLOBALS['config_debug'])
-        {
-          $res.='<br>dbg: '.implode("<br>\ndbg: ",$g_debug_msg);
-        }
-      }
-//      header("Content-Length: ".strlen($res));
-      echo $res;
+      atkdebug("Obsolete use of \$g_layout->outputFlush()!");
+      $this->m_atkoutput->outputFlush($nocache, $lastmodificationstamp);
     }
 
     /**
@@ -170,14 +132,9 @@
      */
     function page($title="")
     {
-      $m_page = "<html>\n";
-      $m_page.= $this->ret_head($title);
-      $m_page.= $this->ret_body();
-      $m_page.= $this->m_content;
-      $m_page.= "\n</body>\n</html>\n";
-
-      // hele pagina terug in de output schrijven..
-      $this->m_content = $m_page;
+      atkdebug("Obsolete use of \$g_layout->page()!");
+      $page = &$this->getPage();
+      $this->output($page->render($title, $this->m_atkoutput->m_content));      
     }
 
     /**
@@ -187,6 +144,7 @@
      */
     function error($title,$txt)
     {
+      atkdebug("Obsolete use of \$g_layout->error()!");
       $this->ui_top($title);
       $this->output("<br><br><br>");
       $this->output($txt);
@@ -201,6 +159,7 @@
      */
     function maxInputSize()
     {
+      atkdebug("Obsolete use of \$g_layout->maxInputSize()!");
       $size = atkconfig("max_input_size");
       if ($size!="") return $size;
       return 70;
@@ -212,6 +171,7 @@
      */
     function searchSize()
     {
+      atkdebug("Obsolete use of \$g_layout->searchSize()!");
       return 20;
     }
 
@@ -221,11 +181,14 @@
      */
     function register_script($file)
     {
-      if (!in_array($file, $this->m_scripts)) $this->m_scripts[] = $file;
+      atkdebug("Obsolete use of \$g_layout->register_script()!");
+      $page = &$this->getPage();
+      $page->register_script($file);
     }
 
     function register_submitscript($code)
     {
+      atkdebug("Obsolete use of \$g_layout->register_submitscript()!");
       if (!in_array($code, $this->m_submitscripts)) $this->m_submitscripts[] = $code;
     }
 
@@ -235,7 +198,9 @@
      */
     function register_style($file)
     {
-      if (!in_array($file, $this->m_stylesheets)) $this->m_stylesheets[] = $file;
+      atkdebug("Obsolete use of \$g_layout->register_style()!");
+      $page = &$this->getPage();
+      $page->register_style($file);
     }
 
     /**
@@ -245,34 +210,8 @@
      */
     function title($module, $nodetype, $action)
     {
-      // first look for specific text.
-      $key = 'title_'.$module.'_'.$nodetype.'_'.$action;
-      if ($GLOBALS["txt_".$key]!="")
-      {
-        return text($key);
-      }
-      else
-      {
-        $key = $module."_".$nodetype;
-        if ($GLOBALS["txt_".$key]!="")
-        {
-          return text($key)." - ".text($action, $nodetype);
-        }
-        else
-        {
-          $key = 'title_'.$nodetype.'_'.$action;
-          if ($GLOBALS["txt_".$key]!="")
-          {
-            return text($key);
-          }
-          else
-          {
-            // if no specific text available for this node,
-            // generate a generic title
-            return text($nodetype, $module)." - ".text($action, $nodetype);
-          }
-        }
-      }
+      atkdebug("Obsolete use of \$g_layout->title()!");
+      return $this->m_atkui->title($module, $nodetype, $action);
     }
 
     /**
@@ -281,12 +220,24 @@
      */
     function head($title)
     {
+      atkdebug("Obsolete use of \$g_layout->head()!");
       if (!$this->m_wrotehead)
       {
-        $this->output($this->ret_head($title));
+        $page = &$this->getPage();
+        $this->output($page->head($title));
         $this->m_wrotehead = true;
       }
     }
+    
+    // Dummy, creates an atkPage if one does not exist (for backward compatibility).
+    function &getPage()
+    {
+      if (!is_object($this->m_atkpage))
+      {
+        $this->m_atkpage = &atknew("atk.ui.atkpage");
+      }
+      return $this->m_atkpage;
+    }  
 
     /**
      * Return a HTML header
@@ -294,34 +245,9 @@
      */
     function ret_head($title)
     {
-      $res = "<head>\n  <title>$title</title>\n";
-      global $config_atkroot;
-      // $Name$ is the CVS tag.
-      $version = atkversion();
-      if ("\$Name$"!="\$"."Name:  $") $version.=" ($Name$)";
-      $res.= '  <meta name="atkversion" value="'.$version.'">'."\n";
-
-      for ($i = 0; $i < count($this->m_scripts); $i++)
-        $res.='  <script language="javascript" src="'.$this->m_scripts[$i].'"></script>'."\n";
-
-      $res.="<script language=\"javascript\">\n
-               function globalSubmit(form)
-               {
-                 var retval = true;\n";
-      for ($i=0; $i < count($this->m_submitscripts); $i++)
-      {
-        $res.="retval = ".$this->m_submitscripts[$i]."\n";
-        $res.="if (retval!=true) return false;\n";
-      }
-      $res.="return retval;
-               }
-             </script>\n";
-
-      for ($i = 0; $i < count($this->m_stylesheets); $i++)
-        $res.='  <link href="'.$this->m_stylesheets[$i].'" rel="stylesheet" type="text/css">'."\n";
-
-      $res.="</head>\n";
-      return $res;
+      atkdebug("Obsolete use of \$g_layout->ret_head()!");
+      $page = &$this->getPage();
+      return $page->head($title);
     }
 
     /**
@@ -330,9 +256,11 @@
      */
     function body($extraprops="")
     {
+      atkdebug("Obsolete use of \$g_layout->body()!");
       if (!$this->m_wrotebody)
       {
-        $this->output($this->ret_body($extraprops));
+        $page = &$this->getPage();
+        $this->output($page->body($extraprops));
         $this->m_wrotebody = true;
       }
     }
@@ -343,7 +271,9 @@
      */
     function ret_body($extraprops="")
     {
-      return "<body ".$extraprops.">\n";
+      atkdebug("Obsolete use of \$g_layout->ret_body()!");
+      $page = &$this->getPage();
+      return $page->body($extraprops);
     }
 
 
@@ -353,11 +283,17 @@
      */
     function ui_top($title)
     {
-      $this->tpl("block_top", array("header"=>$title));
+      atkdebug("Obsolete use of \$g_layout->ui_top()!");
+      $this->m_saved = $this->m_atkoutput->m_content;
+      $this->m_atkoutput->m_content = "";
+      atkimport("atk.ui.atksmarty");
+      $smarty = &atkSmarty::getInstance();
+      $smarty->assign("title", $title);      
     }
 
     function ret_tpl($tplname, $vars="", $fallbacktpl="")
     {
+      atkdebug("Obsolete use of \$g_layout->ret_tpl()!");
       $template = $this->getTemplate($tplname, $fallbacktpl);
       $template=str_replace('[IMAGEDIR]',$this->m_tpldir."images",$template);
 
@@ -373,6 +309,7 @@
 
     function tpl($tplname, $vars="", $fallbacktpl="")
     {
+      atkdebug("Obsolete use of \$g_layout->tpl()!");
       $this->output($this->ret_tpl($tplname, $vars, $fallbacktpl));
     }
 
@@ -381,7 +318,11 @@
      */
     function ui_bottom()
     {
-      $this->tpl("block_bottom");
+      atkdebug("Obsolete use of \$g_layout->ui_bottom()!");
+      $rendered = $this->m_atkui->render("box.tpl", array("content"=>$this->m_atkoutput->m_content));
+      $this->m_atkoutput->m_content = $this->m_saved;
+      $this->m_saved = "";
+      $this->output($rendered);
     }
 
     /**
@@ -390,6 +331,7 @@
      */
     function tabs_top($tabs)
     {
+      atkdebug("Obsolete use of \$g_layout->tabs_top()!");
       if (file_exists($this->m_tpldir."tabs_top.tmpl"))
       {
         $this->tpl("tabs_top", array("tabs"=>$tabs));
@@ -411,6 +353,7 @@
      */
     function tabs_bottom()
     {
+      atkdebug("Obsolete use of \$g_layout->tabs_bottom()!");
       if (file_exists($this->m_tpldir."tabs_bottom.tmpl"))
       {
         $this->tpl("tabs_bottom");
@@ -429,6 +372,7 @@
      */
     function ret_tab($title, $link, $selected=false)
     {
+      atkdebug("Obsolete use of \$g_layout->ret_tab()!");
       if (file_exists($this->m_tpldir."tab_".($selected ? "selected" : "normal").".tmpl"))
       {
         return $this->ret_tpl("tab_".($selected ? "selected" : "normal"),
@@ -450,6 +394,7 @@
 
     function data_top()
     {
+      atkdebug("Obsolete use of \$g_layout->data_top()!");
       global $g_theme;
       $template=$this->ret_tpl("data_top");
 
@@ -469,6 +414,7 @@
 
     function data_bottom()
     {
+      atkdebug("Obsolete use of \$g_layout->data_bottom()!");
       global $g_theme;
       $template=$this->ret_tpl("data_bottom");
 
@@ -494,6 +440,7 @@
      */
     function table_simple($border=0,$fillout=false)
     {
+      atkdebug("Obsolete use of \$g_layout->tableSimple()!");
       $this->output('<table border="'.$border.'" cellspacing="0" cellpadding="2"');
       if ($fillout) $this->output(' width="100%"');
       $this->output(">\n");
@@ -507,6 +454,7 @@
      */
     function ret_table_simple($border=0,$fillout=false)
     {
+      atkdebug("Obsolete use of \$g_layout->ret_table_simple()!");
       $output = '<table border="'.$border.'" cellspacing="0" cellpadding="2"';
       if ($fillout) $output.=' width="100%"';
       $output.=">\n";
@@ -520,6 +468,7 @@
      */
     function td($contents="", $extraprops="")
     {
+      atkdebug("Obsolete use of \$g_layout->td()!");
       $this->output($this->ret_td($contents, $extraprops));
     }
 
@@ -531,6 +480,7 @@
      */
     function ret_td($contents="", $extraprops="")
     {
+      atkdebug("Obsolete use of \$g_layout->ret_td()!");
       $output='<td class="table" '.$extraprops.'>';
       if (strlen($contents) == 0)
       {
@@ -552,11 +502,13 @@
      */
     function tr_top($alt=false, $extraprops="")
     {
+      atkdebug("Obsolete use of \$g_layout->tr_top()!");
       return '<tr class="row'.($alt?"2":"1").'" '.$extraprops.'>';
     }
 
     function tr_bottom()
     {
+      atkdebug("Obsolete use of \$g_layout->tr_bottom()!");
       return '</tr>';
     }
 
@@ -567,6 +519,7 @@
      */
     function td_datatitle($contents="", $extraprops="")
     {
+      atkdebug("Obsolete use of \$g_layout->td_datatitle()!");  
       $this->output('<td class="tableheader" '.$extraprops.'>');
       if ($contents=="")
       {
@@ -587,6 +540,7 @@
      */
     function ret_td_datatitle($contents="", $extraprops="")
     {
+      atkdebug("Obsolete use of \$g_layout->ret_td_datatitle()!");
       global $g_colorset;
       $output='<td class="tableheader" '.$extraprops.'>';
       if ($contents=="")
@@ -609,6 +563,7 @@
      */
     function ret_editForm(&$data, &$node)
     {
+      atkdebug("Obsolete use of \$g_layout->ret_editForm()!");
       global $config_atkroot;
 
       /* javascript */
@@ -629,7 +584,7 @@
         $pk_err = array();
         foreach ($data["error"] as $error)
         {
-          if ($error['err'] == error_primarykey_exists)
+          if ($error['err'] == "error_primarykey_exists")
           {
             $pk_err_attrib[] = $error['attrib_name'];
           }
@@ -638,11 +593,15 @@
             $type = (empty($error["node"]) ? $node->m_type : $error["node"]);
             $index = $node->m_attribList[$error['attrib_name']]->m_index;
             $tabs  = $node->m_attribIndexList[$index]["tabs"];
-            if (($node->m_action == "add" && count($node->m_tabListAdd) > 1 ||
-                 $node->m_action == "edit" && count($node->m_tabListEdit) > 1) &&
+            if (count($node->m_tabList[$node->m_action]) > 1 &&
                  $tabs != "*" && !atk_in_array($tab, $tabs))
+            {
               $error_tab = ' ('.text("error_tab").' '.href($_SERVER["PHP_SELF"]."?atktab=".$tabs[0],text("tab_".$tabs[0], $node->m_type),SESSION_DEFAULT,true).')';
-            else $error_tab = "";
+            }
+            else 
+            {
+              $error_tab = "";
+            }
             $errormsg.="<br>".text($error['attrib_name'], $type).': '.$error['msg'].$error_tab;
           }
         }
@@ -729,6 +688,7 @@
 
     function getTemplate($templatefile, $fallback="")
     {
+      atkdebug("Obsolete use of \$g_layout->getTemplate()!");
       if (file_exists($this->m_tpldir.$templatefile.".tmpl"))
       {
         return implode(file($this->m_tpldir.$templatefile.".tmpl"), "");
@@ -743,6 +703,7 @@
     
     function theme_style($stylesheetname)
     {        
+       atkdebug("Obsolete use of \$g_layout->theme_style()!");
       if (file_exists($this->m_tpldir."styles/$stylesheetname"))
       {
         $this->register_style($this->m_tpldir."styles/$stylesheetname");
@@ -755,32 +716,16 @@
     }
 
     function initTheme()
-    {
-      global $g_theme;
-      
-      // dirs
-
-      // First check local theme directory
-      $atkroot = atkconfig("atkroot");
-      if(file_exists($atkroot."themes/".$g_theme["Name"]))
-      {
-        $this->m_tpldir = $atkroot."themes/".$g_theme["Name"]."/";
-      }
-      // else check atk themes directory
-      else if (file_exists($atkroot."atk/themes/".$g_theme["Name"]))
-      {
-        $this->m_tpldir = $atkroot."atk/themes/".$g_theme["Name"]."/";
-      }
-      // else fallback to default.
-      else
-      {
-        halt("Theme ".$g_theme["Name"]."cannot be found, swithing to default.","warning");
-        $this->m_tpldir = $atkroot."atk/themes/default/";
-      }            
+    {      
+      atkdebug("Obsolete use of \$g_layout->initTheme()!");
+      atkimport("atk.ui.atktheme");
+      $theme = &atkTheme::getInstance();
+      $this->m_tpldir = $theme->themeDir();
     }
 
     function getImgSrc($img)
     {
+      atkdebug("Obsolete use of \$g_layout->getImgSrc()!");
       global $config_atkroot, $g_theme;
       $themeDir   = $config_atkroot."atk/themes/".$g_theme["Name"]."/images/";
       $defaultDir = $config_atkroot."atk/themes/default/images/";

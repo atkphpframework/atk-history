@@ -99,10 +99,11 @@
      */
     function edit($record="", $fieldprefix="")
     {
-      global $g_layout,$config_atkroot;
+      global $config_atkroot;
       $rows = $this->m_rows;
       $modRows =$rows-1;
-      $g_layout->register_script($config_atkroot."atk/javascript/class.atkprofileattribute.js.php");
+      $page = &atkPage::getInstance();
+      $page->register_script($config_atkroot."atk/javascript/class.atkprofileattribute.js.php");
       // todo: configurable rows
       if (count($this->m_values)>4)
       {

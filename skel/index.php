@@ -3,113 +3,112 @@
   include_once("atk.inc");
   atksession();
   atksecure();
- 
-  $g_layout->output('<html>');
-  $g_layout->head(text("app_title"));
-  
+   
+  $output='<html><head><title>'.text('app_title').'</title></head>';
+
   if(strtolower($config_menu_pos) == "top")
   {
     if($config_top_frame==1)
     {
-       $g_layout->output('
+       $output = '
         <frameset rows="70,*" frameborder="0" border="0">
           <frame name="top" scrolling="no" noresize src="top.php" marginwidth="0" marginheight="0">
-       ');    
+       ';    
     }
-    $g_layout->output('
+    $output .='
                <frameset rows="100,*" frameborder="0" border="0">
                   <frame name="menu" scrolling="no"   noresize src="menu.php"   marginwidth="0" marginheight="0">
                   <frame name="main" scrolling="auto" noresize src="welcome.php" marginwidth="0" marginheight="0">
-    ');
-    if($config_top_frame==1) { $g_layout->output('</frameset>'); }
-    $g_layout->output('
+    ';
+    if($config_top_frame==1) { $output .= '</frameset>'; }
+    $output.='
                    <noframes>
                     <body bgcolor="#CCCCCC" text="#000000">
-                      <p>Your browser doesnt support frames, but this is required to run <?php echo $txt_app_title; ?></p>
+                      <p>Your browser doesnt support frames, but this is required to run '.text('app_title').'</p>
                     </body>
                   </noframes>
                </frameset>
-               </html>
-                   ');
+               </html>';
   }
   if(strtolower($config_menu_pos) == "bottom")
   {
     if($config_top_frame==1)
     {
-       $g_layout->output('
+       $output.='
         <frameset rows="70,*" frameborder="0" border="0">
           <frame name="top" scrolling="no" noresize src="top.php" marginwidth="0" marginheight="0">
-       ');    
+       ';    
     }
-    $g_layout->output('
+    $output.='
                <frameset rows="*,100" frameborder="0" border="0">
                   <frame name="main" scrolling="auto" noresize src="welcome.php" marginwidth="0" marginheight="0">
                   <frame name="menu" scrolling="no"   noresize src="menu.php"   marginwidth="0" marginheight="0">
-    ');
-    if($config_top_frame==1) { $g_layout->output('</frameset>'); }
+    ';
+    if($config_top_frame==1) { $output.='</frameset>'; }
     
-    $g_layout->output('
+    $output.='
                    <noframes>
                     <body bgcolor="#CCCCCC" text="#000000">
-                      <p>Your browser doesnt support frames, but this is required to run <?php echo $txt_app_title; ?></p>
+                      <p>Your browser doesnt support frames, but this is required to run '.text('app_title').'</p>
                     </body>
                   </noframes>
                </frameset>
                </html>
-                   ');
+                   ';
   }
   elseif(strtolower($config_menu_pos) == "left")
   {
     if($config_top_frame==1)
     {
-       $g_layout->output('
+       $output.='
         <frameset rows="70,*" frameborder="0" border="0">
           <frame name="top" scrolling="no" noresize src="top.php" marginwidth="0" marginheight="0">
-       ');    
+       ';    
     }
-    $g_layout->output('
+    $output.='
       <frameset cols="190,*" frameborder="0" border="0">
         <frame name="menu" scrolling="no" noresize src="menu.php" marginwidth="0" marginheight="0">
         <frame name="main" scrolling="auto" noresize src="welcome.php" marginwidth="0" marginheight="0">
-    ');
-    if($config_top_frame==1) { $g_layout->output('</frameset>'); }
+    ';
+    if($config_top_frame==1) { $output.='</frameset>'; }
 
-    $g_layout->output('
+    $output.='
         <noframes>
           <body bgcolor="#CCCCCC" text="#000000">
-            <p>Your browser doesnt support frames, but this is required to run <?php echo $txt_app_title; ?></p>
+            <p>Your browser doesnt support frames, but this is required to run '.text('app_title').'</p>
           </body>
         </noframes>
       </frameset>
       </html>
-       ');
+       ';
   }
   elseif(strtolower($config_menu_pos)=="right")
   {
     if($config_top_frame==1)
     {
-       $g_layout->output('
+       $output.='
         <frameset rows="70,*" frameborder="0" border="0">
           <frame name="top" scrolling="no" noresize src="top.php" marginwidth="0" marginheight="0">
-       ');    
+       ';    
     }
-    $g_layout->output('
+    $output.='
       <frameset cols="*,190" frameborder="0" border="0">
         <frame name="main" scrolling="auto" noresize src="welcome.php" marginwidth="0" marginheight="0">
         <frame name="menu" scrolling="no" noresize src="menu.php" marginwidth="0" marginheight="0">
-    ');
-    if($config_top_frame==1) { $g_layout->output('</frameset>'); }
+    ';
+    if($config_top_frame==1) { $output.='</frameset>'; }
 
-    $g_layout->output('
+    $output.='
         <noframes>
           <body bgcolor="#CCCCCC" text="#000000">
-            <p>Your browser doesnt support frames, but this is required to run '.$txt_app_title.'.</p>
+            <p>Your browser doesnt support frames, but this is required to run '.text('app_title').'.</p>
           </body>
         </noframes>
       </frameset>
       </html>
-       ');
+       ';
   }
+  
+  echo $output;
 
-  $g_layout->outputFlush();
 ?>

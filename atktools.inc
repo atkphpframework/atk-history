@@ -1124,5 +1124,41 @@
     fwrite($fp, $log);
     fclose($fp);
   }
+  
+  function atkimport($fullclassname, $failsafe=true)
+  {
+    $elems = explode(".", strtolower($fullclassname));
+    $last = &$elems[count($elems)-1];
+    $last = "class.".$last.".inc";
+    
+    $filename = implode("/", $elems);
+    
+    if ($failsafe)
+    {
+      require_once($filename);
+    }
+    else
+    {
+      include_once($filename);
+    }
+  }
+  
+  function &atknew($fullclassname)
+  {
+    atkimport($fullclassname, true);
+    
+    $elems = explode(".", strtolower($fullclassname));
+    $classname = $elems[count($elems)-1];
+    
+    if (class_exists($classname))
+    {      
+      return new $classname;
+    }
+    else
+    {
+      atkerror("Class $fullclassname not found.");
+      return NULL;
+    }
+  }
 
 ?>

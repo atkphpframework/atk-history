@@ -77,10 +77,11 @@
 
     function edit($record)
     {
-      global $g_modules, $g_nodes, $config_atkroot, $g_layout, $g_moduleflags;
+      global $g_modules, $g_nodes, $config_atkroot,$g_moduleflags;
       global $g_user, $g_db;
 
-      $g_layout->register_script($config_atkroot."atk/javascript/class.atkprofileattribute.js.php");
+      $page = &atkPage::getInstance();
+      $page->register_script($config_atkroot."atk/javascript/class.atkprofileattribute.js.php");
       
       /* get nodes */
       require_once($config_atkroot."atk/atknodetools.inc");
