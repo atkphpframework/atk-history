@@ -2,9 +2,9 @@
 var tabs = new Array();
 {section name=i loop=$tabs}tabs[tabs.length] = "{$tabs[i].tab}"; {/section}
 
-var tabColor = "";
+var tabColor = "#000000";
 var tabBackground = "";
-var tabSelectedColor = "";
+var tabSelectedColor = "#FFFFFF";
 var tabSelectedBackground = "";
 </script>
 
@@ -19,10 +19,8 @@ var tabSelectedBackground = "";
             <table border="0" cellspacing="0" cellpadding="0">
               <tr>
                 <td><img src="{$themedir}images/tab_left.gif"></td>
-                <td id="{$tabs[i].tab}" onclick="showTab('{$tabs[i].tab}')" style="cursor: pointer; cursor: hand; color:{if $tabs[i].selected}#000000{else}#000000{/if}; height="22" valign="middle" background="{$themedir}images/tab_back.gif" align="center" nowrap>
-                  <span class="{if $tabs[i].selected}tab_selected{else}tab{/if}">
-                    {$tabs[i].title}
-                    </span>
+                <td id="{$tabs[i].tab}" onclick="showTab('{$tabs[i].tab}')" style="cursor: pointer; cursor: hand; color:{if $tabs[i].selected}#FFFFFF{else}#000000{/if}; height="22" valign="middle" background="{$themedir}images/tab_back.gif" align="center" nowrap>
+                    <b>{$tabs[i].title}</b>
                 </td>
                 <td><img src="{$themedir}images/tab_right.gif"></td>
               </tr>
