@@ -66,7 +66,7 @@
     {
       if ($userinfo["id"] == $id2)
       {
-	$g_db->query("UPDATE user_user SET password = '".md5($passw1)."' WHERE userid = '$user'");
+	$obj->setPassword($user, $passw1);
 	header("Location: index.php");
       }
       else{sessionStore('err', text(passchange_id_error));}
@@ -81,7 +81,7 @@
     $output.="<tr><td valign=top class=table>".text('password').":</td><td><input type=\"password\" size=\"15\" name=\"auth_passw2\"></td></tr>\n";
     $output.="<tr><td colspan=2 class=table height=6></td></tr>\n";
     $output.="<tr><td class=table colspan=2 align=center height=50 valign=middle><input type=submit value=\"Submit\"></td></tr>\n";
-    $text=text(password_change2);
+    $text=text(passchange_please_enter_id_and_password);
     sessionStore('err', null);
   }
   else if ($user AND $email)
@@ -101,7 +101,7 @@
         $output.="<tr><td valign=top class=table>".text('password').":</td><td><input type=\"password\" size=\"15\" name=\"auth_passw2\"></td></tr>\n";
         $output.="<tr><td colspan=2 class=table height=6></td></tr>\n";
         $output.="<tr><td class=table colspan=2 align=center height=50 valign=middle><input type=submit value=\"Submit\"></td></tr>\n";
-        $text=text(password_change2);
+        $text=text(passchange_please_enter_id_and_password);
         sessionStore('err', null);
       }
       else
@@ -115,7 +115,7 @@
     $output.="<tr><td valign=top class=table>".text('email').":</td><td><input type=\"text\" size=\"15\" name=\"auth_email\"></td></tr>\n";
     $output.="<tr><td colspan=2 class=table height=6></td></tr>\n";
     $output.="<tr><td class=table colspan=2 align=center height=50 valign=middle><input type=submit value=\"Submit\"></td></tr>\n";
-    $text=text(password_change1);
+    $text=text(passchange_please_enter_email_and_username);
     sessionStore('err', null);
   }
   $output.='</table></form>';
