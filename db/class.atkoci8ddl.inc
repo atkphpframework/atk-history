@@ -1,52 +1,43 @@
 <?php
 
   /**
-   * This file is part of the Achievo ATK distribution.
-   * Detailed copyright and licensing information can be found
-   * in the doc/COPYRIGHT and doc/LICENSE files which should be 
-   * included in the distribution.
+   * Oracle8 specific implementations of the aktDDL utility class.
    *
-   * @package atk
-   * @subpackage db
+   * @author Joop van de Wege <JoopvandeWege@mococo.nl>
+   * @version $Revistion$
    *
-   * @copyright (c)2000-2004 Ibuildings.nl BV
-   * @license http://www.achievo.org/atk/licensing ATK Open Source License
-   *
-   * @version $Revision$
    * $Id$
    */
-   
-  /**
-   * Oracle 8i ddl driver. 
-   *
-   * Implements specific ddl statements for Oracle 8i databases.
-   *
-   * @author Martin Roest <martin@ibuildings.nl>
-   * @package atk
-   * @subpackage db
-   *
-   */
-  class atkOci8DDL extends atkDDL
+
+  class atkoci8ddl extends atkDDL
   {
-    
-    function atkOci8DDL()
-    {
-    }
-    
+    /**
+     * Convert an ATK generic datatype to a database specific type.
+     * 
+     * This function will be overrided by the database specific subclasses of
+     * atkDb.
+     * Note: in all derived subclasses, the following types *must* be 
+     * supported: number, decimal, string, date, text, datetime, time, 
+     * boolean.
+     * If the database does not have a proper field type, consider using
+     * a varchar or number to store the value.
+     * 
+     * @param $generictype  The datatype to convert.
+     */
     function getType($generictype)
-    {
-      switch ($generictype)
+    {      
+      switch($generictype)
       {
         case "number": 
           return "NUMBER";
         case "decimal":
-          return "FLOAT";
+          return "NUMBER";
         case "string":
           return "VARCHAR2";          
         case "date":
           return "DATE";
         case "text":
-          return "CLOB";
+          return "VARCHAR2(4000)"; // @TODO JvdW 10-01-2004 CLOB's can't be used in 'select DISTINCT ' 
         case "datetime":
           return "DATE";
         case "time":
@@ -57,6 +48,7 @@
       return ""; // in case we have an unsupported type.      
     }
 
+  }
     /**
      * Convert an database specific type to an ATK generic datatype.
      * 
@@ -77,12 +69,12 @@
           return "string";          
         case "date":
           return "date";
-        case "clob":
+        case "clob": // @TODO JvdW 10-01-2004 should it be 'case VARCHAR2(4000):' ?? 
           return "text";
         case "date":
           return "date";                
       }
       return ""; // in case we have an unsupported type.      
     }
-  }
+
 ?>
