@@ -158,7 +158,6 @@
                 $i++;
               }
             }          
-            OCICommit($this->m_link_id);
           }
           if (count($bindLobs))
           {

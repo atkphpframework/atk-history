@@ -2594,19 +2594,18 @@
         }
         else
         {
-          $this->updateDb($record);
-          if($g_db->getError()!="")
+          if(!$this->updateDb($record))
           {
             $g_db->rollback();
             if($g_db->getErrorType()=="user")
             {
-              triggerError($record, 'Error', $g_db->getError(), '', '');
+              triggerError($record, 'Error', $g_db->getErrorMsg(), '', '');
               $this->m_action="edit";
               $this->editPage($record);
             }
             else
             {
-              $location = $this->feedbackUrl("update",ACTION_FAILED,$g_db->getError());
+              $location = $this->feedbackUrl("update",ACTION_FAILED,$g_db->getErrorMsg());
               $this->redirect($location);
             }
           }
@@ -2674,19 +2673,18 @@
         }
         else
         {
-          $this->addDb($record, true, "add");
-          if($g_db->getError()!="")
+          if(!$this->addDb($record, true, "add"))
           {
             $g_db->rollback();
             if($g_db->getErrorType()=="user")
             {
-              triggerError($record, 'Error', $g_db->getError(), '', '');
+              triggerError($record, 'Error', $g_db->getErrorMsg(), '', '');
               $this->m_action="add";
               $this->addPage($record);
             }
             else
             {
-              $location = $this->feedbackUrl("save",ACTION_FAILED,$g_db->getError());
+              $location = $this->feedbackUrl("save",ACTION_FAILED,$g_db->getErrorMsg());
               $this->redirect($location);
             }
           }
@@ -2720,18 +2718,18 @@
       {
         // Confirmation page was displayed and 'yes' was clicked
         $recordset = $this->deleteDb($this->m_postvars['atkselector']);
-        if($g_db->getError()!="")
+        if($g_db->getErrorMsg()!="")
         {
           $g_db->rollback();
           if($g_db->getErrorType()=="user")
           {
-            triggerError($record, 'Error', $g_db->getError(), '', '');
+            triggerError($record, 'Error', $g_db->getErrorMsg(), '', '');
             $this->m_action="admin";
             $this->adminPage();
           }
           else
           {
-            $location = $this->feedbackUrl("delete",ACTION_FAILED,$g_db->getError());
+            $location = $this->feedbackUrl("delete",ACTION_FAILED,$g_db->getErrorMsg());
             $this->redirect($location);
           }
         }
@@ -2779,11 +2777,12 @@
       $recordset = $this->selectDb($this->m_postvars['atkselector'],"","","","","copy");
       if(count($recordset)>0)
       {
-        $this->copyDb($recordset[0]);
-        if($g_db->getError()!="")
+        if(!$this->copyDb($recordset[0]))
         {
+          atkdebug("atknode::action_copy() -> Error");
           $g_db->rollback();
-          $location = $this->feedbackUrl("save",ACTION_FAILED,$g_db->getError());
+          $location = $this->feedbackUrl("save",ACTION_FAILED,$g_db->getErrorMsg());
+          atkdebug("atknode::action_copy() -> Redirect");
           $this->redirect($location);
         }
         else
@@ -2805,11 +2804,11 @@
 
       if(count($recordset) > 0)
       {
-        $this->copyDb($recordset[0]);
-        if($g_db->getError()!="")
+        
+        if(!$this->copyDb($recordset[0]))
         {
           $g_db->rollback();
-          $location = $this->feedbackUrl("editcopy",ACTION_FAILED,$g_db->getError());
+          $location = $this->feedbackUrl("editcopy",ACTION_FAILED,$g_db->getErrorMsg());
           $this->redirect($location);
         }
         else
@@ -3237,6 +3236,7 @@
         if (count($query->m_fields) > 0)
         {
           $query->executeUpdate();
+          if($g_db->m_errno!=0) return false;
         }
 
         // also store special storage attributes.
@@ -3244,6 +3244,7 @@
         {
           $p_attrib = &$this->m_attribList[$storelist[$i]];
           $p_attrib->store($g_db, $record,"update");
+          if($g_db->m_errno!=0) return false;
         }
 
         // Now we call a postUpdate function, that can be used to do some processing after the record
@@ -3254,7 +3255,7 @@
       {
         atkdebug("NOT UPDATING! NO SELECTOR SET!");
       }
-
+      return true;
     }
 
     /**
@@ -3359,8 +3360,14 @@
     function copyDb(&$record)
     {
       $this->preCopy($record);
-      $this->addDb($record, true, "copy");
-      return "";
+      if(!$this->addDb($record, true, "copy"))
+      {
+        return false;
+      }
+      else
+      {
+        return true;
+      }
     }
 
     /**
@@ -3619,6 +3626,7 @@
       }
 
       $query->executeInsert();
+      if($g_db->m_errno!=0) return false;
 
       // also store special storage attributes.
       for ($i = 0, $_i = count($storelist); $i < $_i; $i++)
@@ -3626,7 +3634,7 @@
         $p_attrib = &$this->m_attribList[$storelist[$i]];
 
         $p_attrib->store($g_db, $record, $mode);
-
+        if($g_db->m_errno!=0) return false;
       }
 
       // new primary key
@@ -3636,7 +3644,7 @@
       // has been saved.
       if ($exectrigger) $this->postAdd($record, $mode);
 
-      atkdebug($g_db->m_error);
+      return true;
     }
 
     /**

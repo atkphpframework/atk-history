@@ -1,13 +1,13 @@
 <?php
 // Language file for the oracle error's
 
-$txt_1    = "unique constraint (string.string) violated";
-$txt_904  = "Invalid column name";
-$txt_1400 = "cannot insert NULL into (string)";
-$txt_1438 = "value larger than specified precision allows for this column";
-$txt_2290 = "check constraint (string.string) violated";
-$txt_2291 = "integrity constraint (string.string) violated - parent key not found";
-$txt_2292 = "integrity constraint (string.string) violated - child record found";
-$txt_2293 = "cannot validate (string.string) - check constraint violated";
+$txt_db_1    = "unique constraint (string.string) violated";
+$txt_db_904  = "Invalid column name";
+$txt_db_1400 = "cannot insert NULL into (string)";
+$txt_db_1438 = "value larger than specified precision allows for this column";
+$txt_db_2290 = "check constraint (string.string) violated";
+$txt_db_2291 = "integrity constraint (string.string) violated - parent key not found";
+$txt_db_2292 = "integrity constraint (string.string) violated - child record found";
+$txt_db_2293 = "cannot validate (string.string) - check constraint violated";
 
 ?>

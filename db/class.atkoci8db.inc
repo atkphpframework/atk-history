@@ -107,44 +107,53 @@
         $this->m_link_id = @OCIplogon($this->m_user, $this->m_password, $this->m_database);
         if (!$this->m_link_id)
         {
-          $err = OCIError(); // can't pass link_id because it is null if connect failed.
-          $this->halt($this->_translateError($err));
+          $error = OCIError(); // can't pass link_id because it is null if connect failed.
+          atkdebug("CONNECT ERROR");
+          $this->halt($this->_translateError($error));
         }
 
         /* set default date format for Oracle */ 
         $nls = OCIParse($this->m_link_id, "alter session set nls_date_format='YYYY-MM-DD'");
         $myresult = OCIExecute($nls);
         $error = OCIError($this->m_link_id);
-        if ($err["code"]!="")
+        if ($error["code"]!="")
         {
           $this->halt("Invalid SQL: $query"); 
-          return $this->_translateError($err);
+          return $this->_translateError($error);
         }
 
       }
       return DB_SUCCESS;
     }
     
+    /*
+          * Return atk database error
+          */
+    function getAtkDbErrno()
+    {
+      atkdebug("atkoci8db::getAtkDbErrno() -> ".$this->getDbErrno());
+      return $this->_translateError(array('code'=>$this->getDbErrno(),'error'=>$this->getDbError()));
+    }
+  
     /**
-     * TODO FIXME: I don't know what errormessges oracle gives,
-     * so this function only returns DB_UNKNOWNERROR for now.
-     */
+         *  return a atkError;
+         */
     function _translateError($err)
     {
       $this->m_errno = $err['code'];
       $this->m_error = $err['message'];
+      atkdebug('atkoci8db::_translateError() -> DB Error code: '.$err['code']);
       switch ($this->m_errno)
       {
         case     0: return DB_SUCCESS;
-        case  1017: return sprintf(text("access_denied_user"),$this->m_user,$this->m_database);
-        case 12154: return sprintf(text("unknown_database"),$this->m_database);
-        case   904: return sprintf(text(904));
+        case  1017: return DB_ACCESSDENIED_USER;
+        case 12154: return DB_UNKNOWNDATABASE;
         default: 
-          // Get error
-          $tmp = text($this->m_errno);
-          if($tmp==$this->m_errno) { return "Unknown error: ".$this->errno." (".$this->m_error.")"; } else { return $tmp; }
+                    return DB_UNKNOWNERROR;
       }
     }
+
+    
 
     /**
      * Disconnect from database
@@ -158,6 +167,9 @@
       }
     }
 
+    /*
+          * Commit all queries
+          */
     function commit()
     {
       if($this->m_link_id)
@@ -167,6 +179,9 @@
       }    
     }
 
+    /*
+          * Rollback the queries
+          */
     function rollback()
     {
       if($this->m_link_id)
@@ -210,11 +225,10 @@
         $this->m_query_id = @OCIParse($this->m_link_id, $query);
         if ($this->m_query_id) 
         {
-          //if(!@OCIExecute($this->m_query_id,OCI_COMMIT_ON_SUCCESS))
-          if(!@OCIExecute($this->m_query_id))
+          if(!@OCIExecute($this->m_query_id,OCI_DEFAULT))
           {
             $error = OCIError($this->m_query_id);
-            $this->halt("Invalid SQL: $query");    
+            atkerror("Invalid SQL: $query");    
             $this->halt($this->_translateError($error));
           }
         }
@@ -222,7 +236,7 @@
         {
           /* error in query */          
           $error = OCIError($this->m_link_id);
-          $this->halt("Invalid SQL: $query");    
+          atkerror("Invalid SQL: $query");    
           $this->halt($this->_translateError($error));          
         }
         $this->m_row = 0;        

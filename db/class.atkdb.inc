@@ -68,19 +68,6 @@
       return $this->m_link_id;
     }
     
-    /**
-     * Get the last error message
-     */
-    function getError()
-    {      
-      if ($this->m_error!="" || $this->m_errno!=0)
-      {
-        $error = $this->_translateError(array("code"=>$this->m_errno,"message"=>$this->m_error));
-        return $error." (errno: ".$this->m_errno.")"; 
-      }
-      return "";
-    }
-    
     function getErrorType()
     {
       if(in_array($this->m_errno,$this->m_user_error))
@@ -90,21 +77,88 @@
       return "system";
     }
     
+    /*
+          * Get atk database error
+          */
+    function getAtkDbErrno()
+    {
+      atkdebug("atkdb::getAtkDbErrno() -> ".$this->getDbErrno());
+      return $this->_translateError();
+    }
+    
+    /*
+          * Get real database error number
+          */
+    function getDbErrno()
+    {
+      atkdebug("atkdb::getDbErrno() -> ".$this->m_errno);
+      return $this->m_errno;
+    }
+
+    /*
+          * Get real database error 
+          */
+    function getDbError()
+    {
+      atkdebug("atkdb::getDbError() -> ".$this->m_error);
+      return $this->m_error;
+    }
+    
+    /*
+          * Set user error number for your own applications.
+          * When the user gets this error, it will show the feedback screen
+          */
     function setUserError($errno)
     {
+      atkdebug("atkdb::setUserError() -> ".$errno);
       $this->m_user_error[]=$errno;
     }
     
-    function halt($message)
+    /*
+          * Get the translated error message
+          */
+    function getErrorMsg()
     {
+      atkdebug("atkdb::getErrorMsg()");
+      $errno = $this->getAtkDbErrNo(); 
+      atkdebug("atkdb::getErrorMsg() -> Get msg for AtkDberror: ".$errno); 
+      if($errno==DB_UNKNOWNERROR)
+      {
+        $tmp = text('db_'.$this->getDbErrno());
+        if($tmp==$this->m_errno) { $this->m_error = text('unknown_error').": ".$this->getDbErrno()." (".$this->getDbError().")"; } else { $this->m_error=$tmp; }
+        atkerror($this->m_error);
+        return $this->m_error;
+      }
+      else
+      {
+        $tmp_error='';
+        switch ($errno)
+        {
+          case DB_ACCESSDENIED: $tmp_error = sprintf(text("db_access_denied_database"),$this->m_user,$this->m_database);
+                                break;
+          case DB_ACCESSDENIED_USER: $tmp_error = sprintf(text("db_access_denied_user"),$this->m_user,$this->m_database);
+                                     break;
+          case DB_UNKNOWNDATABASE: $tmp_error = sprintf(text("db_unknown_database"),$this->m_database);
+                                   break;
+          case DB_UNKNOWNHOST: $tmp_error = sprintf(text("db_unknown_host"),$this->m_host);
+                               break;
+        }
+        $this->m_error = $tmp_error;
+        atkerror($this->m_error);
+        return $this->m_error;
+      }
+    }
+    
+    function halt()
+    {
+      atkdebug("atkdb::halt()");
       if ($this->m_haltonerror)
       { 
         if($this->getErrorType()=="system")
         {        
-          $dbmsg = $this->getError();
-          if ($dbmsg!="") atkerror($dbmsg);
+          atkdebug("atkdb::halt() -> System error");
           if(in_array($this->m_errno,$this->m_critical_error)) $level='critical';
-          halt($message,$level);
+          halt($this->getErrorMsg(),$level);
         }
       }
     }

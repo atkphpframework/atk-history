@@ -49,17 +49,15 @@
         $this->m_link_id = @mysql_pconnect($this->m_host, $this->m_user, $this->m_password);
         if (!$this->m_link_id) 
         {
-          //$this->halt("connect using ".$this->m_host.", ".$this->m_user.", ***** failed.");
-          $this->halt($this->_translateError());
+          $this->halt($this->getErrorMsg());
         }
       }
 
       /* select database */
       if (!@mysql_select_db($this->m_database, $this->m_link_id))
       {
-        //$this->halt("cannot use database ".$this->m_database.".");
-        $this->halt($this->_translateError());
-        //return $this->_translateError(mysql_errno());
+        $this->halt($this->getErrorMsg());
+        return $this->_translateError();
       }
         
       /* return link identifier */
@@ -73,18 +71,16 @@
       switch ($this->m_errno)
       {
         case    0: return DB_SUCCESS;
-        case 1044: return sprintf(text("access_denied_database"),$this->m_user,$this->m_database);  // todofixme: deze komt bij mysql pas na de eerste query. 
-        case 1045: return sprintf(text("access_denied_user"),$this->m_user,$this->m_database);
-        case 1049: return sprintf(text("unknown_database"),$this->m_database);
-        case 2002: // Same as 2005, but for local connection.
-        case 2005: return sprintf(text("unknown_host"),$this->m_host);
+        case 1044: return DB_ACCESSDENIED;  // todofixme: deze komt bij mysql pas na de eerste query. 
+        case 1045: return DB_ACCESSDENIED_USER;
+        case 1049: return DB_UNKNOWNDATABASE;
+        case 2004: 
+        case 2005: return DB_UNKNOWNHOST;
         default: 
-          // Get error
-          $tmp = text($this->m_errno);
-          if($tmp==$this->m_errno) { return "Unknown error: ".$this->errno." (".$this->m_error.")"; } else { return $tmp; }
+                   return DB_UNKNOWNERROR;   
       }
     }
-
+    
     /**
      * Disconnect from database
      */
