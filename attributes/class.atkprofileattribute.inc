@@ -158,19 +158,14 @@
           }
         }
       }
-
       /*** per module ***/
       foreach ($g_modules as $modname => $pathname)
       {
-        $mod_inst = getModule($modname);
-        if (method_exists($mod_inst,"getNodes")) $mod_inst->getNodes();
-
         $nodes = $g_nodes[$modname];
         $mainHtml="";
         if (count($nodes) > 0)
         {        
           $showModule=false;
-          //while (list($node, $actionarr) = each($nodes))
           foreach($nodes as $node => $actionarr)
           {
             $checked_actions = $checked["$modname.$node"];
@@ -189,7 +184,6 @@
                 {                                  
                   $showModule=true;
                   $boxActive=true;
-                  //'.($disable ? "DISABLED " : "").'
                   $html.='<input  type="checkbox" name="'.$this->formName().'[]" value="'.$modname.".".$node.".".$action.'" ';
                   if (is_array($checked_actions)&&in_array($action, $checked_actions)) $html.=" checked";
                   
