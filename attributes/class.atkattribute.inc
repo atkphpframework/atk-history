@@ -61,6 +61,9 @@
   define("AF_SPECIFIC_3",                   134217728); // specific attribute flag 3
   define("AF_SPECIFIC_4",                   268435456); // specific attribute flag 4
   define("AF_SPECIFIC_5",                   536870912); // specific attribute flag 5  
+  
+  define("SORT_ASCENDING", 1);
+  define("SORT_DESCENDING", 0);
 
   /**
    * The atkAttribute class represents an attribute of an atkNode.
@@ -346,15 +349,26 @@
 
         if (!hasFlag($flags, RL_NO_SORT) && !$this->hasFlag(AF_NO_SORT))
         {
-          $order = $this->m_ownerInstance->m_table.".".$this->fieldName();
-          if ($atkorderby == $order) $order .= " DESC";
-          $arr["heading"][$fieldprefix.$this->fieldName()]["url"] =
-            session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->m_ownerInstance->atkNodeType().'&atkaction='.$action.'&atkorderby='.rawurlencode($order));
+          $name = $this->fieldName();
+        	$asc = !is_array($atkorderby) || $atkorderby[0] != $this->fieldName() || $atkorderby[1] == SORT_DESCENDING ? SORT_ASCENDING : SORT_DESCENDING;
+
+        	// atknodetype and atkaction are not posted to the url because they are already known in the session
+        	// this solves problems when using one node action to display a recordlist of another node
+          $arr["heading"][$fieldprefix.$this->fieldName()]["url"] = session_url($_SERVER["PHP_SELF"].'?atkorderby[0]='.$name.'&atkorderby[1]='.$asc);
         }
 
         if (!hasFlag($flags, RL_NO_SEARCH) && $this->hasFlag(AF_SEARCHABLE))
           $arr["search"][$fieldprefix.$this->fieldName()] = $this->search($atksearch);
       }
+    }
+    
+    /**
+     * Add to the order by clause of the select query.
+     */
+    function addToOrderBy(&$query, $atkorderby)
+    {
+      $order = $this->m_ownerInstance->m_table.".".$this->fieldName();    	
+    	$query->addOrderBy($order." ".($atkorderby[1] == SORT_DESCENDING ? "DESC" : "ASC"));
     }
 
     /**
