@@ -175,8 +175,14 @@
       if ($this->createDestination())
       {
         $vars = &$record[$this->fieldName()];
-        $vars[$this->m_refKey][$this->m_ownerInstance->primaryKeyField()] = $record[$this->m_ownerInstance->primaryKeyField()];
-
+        if(is_array($vars[$this->m_refKey]))
+          $vars[$this->m_refKey][$this->m_ownerInstance->primaryKeyField()] = $record[$this->m_ownerInstance->primaryKeyField()];
+        else
+        {
+          //if the a onetoonerelation has no relation on the other side the m_refKey is not an array
+          $vars[$this->m_refKey] = $record[$this->m_ownerInstance->primaryKeyField()];
+        }
+          
         if ($vars["mode"]=="edit")
         {
           atkdebug("Updating existing one2one record");
