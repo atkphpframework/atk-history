@@ -341,7 +341,7 @@
      * atkAttribute or one of its derivatives)
      * @param $attribute the attribute you want to add
      * @param $tab on which tab should the field be displayed?
-     *        (use array for multiple tabs or "all" for all tabs!)
+     *        (use array for multiple tabs or "*" for all tabs!)
      * @param $order override the attribute order
      */
     function add($attribute,$tab=NULL,$order=0)
@@ -459,9 +459,9 @@
           $attrib_order+=100;
         }
 
-        // add new tab(s) to the tab list ("all" isn't a tab!)
-        if (!is_array($tab) && $tab != "all") $tab = array($tab);
-        if ($tab != "all") $this->m_tabList = atk_array_merge($this->m_tabList, $tab);
+        // add new tab(s) to the tab list ("*" isn't a tab!)
+        if (!is_array($tab) && $tab != "*") $tab = array($tab);
+        if ($tab != "*") $this->m_tabList = atk_array_merge($this->m_tabList, $tab);
 
         $attribute->m_order = $order;
         $this->m_attribIndexList[$attrib_index]=array("name"=>$attribute->fieldName(),"tabs"=>$tab,"order"=>$attribute->m_order);
@@ -672,7 +672,7 @@
       {
         $p_attrib = &$this->m_attribList[$this->m_attribIndexList[$i]["name"]];
 
-        if (!$p_attrib->hasFlag(AF_HIDE) && ($this->m_attribIndexList[$i]["tabs"] == "all" || in_array($tab, $this->m_attribIndexList[$i]["tabs"])))
+        if (!$p_attrib->hasFlag(AF_HIDE) && ($this->m_attribIndexList[$i]["tabs"] == "*" || in_array($tab, $this->m_attribIndexList[$i]["tabs"])))
         {
           // fields that have not yet been initialised may be overriden in the url..
           $page.='<tr>';
@@ -913,7 +913,7 @@
           {
             $index = $this->m_attribList[$data['attrib_name']]->m_index;
             $tabs  = $this->m_attribIndexList[$index]["tabs"];
-            if ($tabs != "all" && !in_array($tab, $tabs))
+            if ($tabs != "*" && !in_array($tab, $tabs))
               $errot_tab = ' ('.text("error_tab").' '.href("$PHP_SELF?atktab=".$tabs[0],text("tab_".$tabs[0]),SESSION_DEFAULT,true).')';
             else $error_tab = "";
             $errormsg.="<br>".text($data['attrib_name']).': '.$data['msg'].$error_tab;
@@ -954,7 +954,7 @@
         {
           $defaults[$p_attrib->fieldName()] = $this->m_postvars[$p_attrib->fieldName()];
         }
-        if ((is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList)) || ($attribtabs != "all" && !in_array($tab, $attribtabs)))
+        if ((is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList)) || ($attribtabs != "*" && !in_array($tab, $attribtabs)))
         {
           $form.=$p_attrib->hide($defaults, $fieldprefix);
         }
