@@ -154,13 +154,16 @@
 	  {
             if (!getUser())
 	    {
+              atkdebug($this->getErrorMsg());
+              mailreport();
               return $this->m_error;
 	    }
 	    else
 	    {
 	      $g_layout->error("System error", $this->getErrorMsg());
 	      atkdebug("atkdb::halt() on system error");
-              if(in_array($this->m_errno,$this->m_critical_error)) $level='critical';
+              mailreport();
+	      if(in_array($this->m_errno,$this->m_critical_error)) $level='critical';
               halt($this->getErrorMsg(),$level);
 	    }
           }
