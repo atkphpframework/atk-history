@@ -12,7 +12,8 @@
   * $Id$
   *
   */
-  $config_atkroot = "../../"; 
+  chdir("../../");
+  $config_atkroot = "./"; 
   include($config_atkroot."atk.inc");  
   
   atksession();
