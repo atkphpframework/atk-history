@@ -2716,29 +2716,20 @@
     {
       if (!empty($this->m_postvars['confirm']))
       {
-        // Confirmation page was displayed and 'yes' was clicked
-        $recordset = $this->deleteDb($this->m_postvars['atkselector']);
-        if($g_db->getErrorMsg()!="")
-        {
-          $g_db->rollback();
-          if($g_db->getErrorType()=="user")
-          {
-            triggerError($record, 'Error', $g_db->getErrorMsg(), '', '');
-            $this->m_action="admin";
-            $this->adminPage();
-          }
-          else
-          {
-            $location = $this->feedbackUrl("delete",ACTION_FAILED,$g_db->getErrorMsg());
-            $this->redirect($location);
-          }
-        }
-        else
+        global $g_db;
+        // Confirmation page was displayed and 'yes' was clicked        
+        if($this->deleteDb($this->m_postvars['atkselector']))        
         {
           $g_db->commit();
           $location = $this->feedbackUrl("delete", ACTION_SUCCESS);
           $this->redirect($location);
         }
+        else
+        {
+          $g_db->rollback();
+          $location = $this->feedbackUrl("delete",ACTION_FAILED,$g_db->getErrorMsg());
+          $this->redirect($location);    
+        }        
       }
       elseif (empty($this->m_postvars['cancel']))
       {
@@ -2895,7 +2886,7 @@
       $g_layout->output($this->statusbar());
 
       $g_layout->output(text('feedback_'.$action.'_'.atkActionStatus($actionstatus), $this->m_type));
-      $g_layout->output("Error msg: ".$message);
+      $g_layout->output($message);
 
       if (atkLevel()>0)
       {
@@ -3243,13 +3234,16 @@
         for ($i = 0, $_i = count($storelist); $i < $_i; $i++)
         {
           $p_attrib = &$this->m_attribList[$storelist[$i]];
-          $p_attrib->store($g_db, $record,"update");
-          if($g_db->m_errno!=0) return false;
+          if (!$p_attrib->store($g_db, $record,"update"))
+          {          
+            // something went wrong.
+            return false;
+          }
         }
 
         // Now we call a postUpdate function, that can be used to do some processing after the record
         // has been saved.
-        $this->postUpdate($record);
+        return $this->postUpdate($record);
       }
       else
       {
@@ -3625,37 +3619,43 @@
         $p_attrib->addToQuery($query,$this->m_table,"",$record,1,"add"); // start at level 1
       }
 
-      $query->executeInsert();
-      if($g_db->m_errno!=0) return false;
+      if ($query->executeInsert())
+      {        
 
-      // also store special storage attributes.
-      for ($i = 0, $_i = count($storelist); $i < $_i; $i++)
-      {
-        $p_attrib = &$this->m_attribList[$storelist[$i]];
+        // also store special storage attributes.
+        for ($i = 0, $_i = count($storelist); $i < $_i; $i++)
+        {
+          $p_attrib = &$this->m_attribList[$storelist[$i]];
+  
+          if (!$p_attrib->store($g_db, $record, $mode))
+          {
+            // error
+            return false;
+          }        
+        }
 
-        $p_attrib->store($g_db, $record, $mode);
-        if($g_db->m_errno!=0) return false;
+        // new primary key
+        $record["atkprimkey"] = $this->primaryKey($record);
+
+        // Now we call a postAdd function, that can be used to do some processing after the record
+        // has been saved.
+        if ($exectrigger) return $this->postAdd($record, $mode);
+        return true;
       }
 
-      // new primary key
-      $record["atkprimkey"] = $this->primaryKey($record);
-
-      // Now we call a postAdd function, that can be used to do some processing after the record
-      // has been saved.
-      if ($exectrigger) $this->postAdd($record, $mode);
-
-      return true;
+      return false;
     }
 
     /**
      * delete record from the database.
      * todo: instead of delete, set the deleted flag.
      * @param $selector Selector
-     * @returns the records that were deleted
+     * @returns true if successful, false if error
      */
     function deleteDb($selector)
     {
       global $g_db;
+            
 
       $recordset = $this->selectDb($selector,"","","","","delete");
                
@@ -3666,21 +3666,31 @@
           for ($j = 0, $_j = count($this->m_cascadingAttribs); $j < $_j; $j++)
           {
             $p_attrib = &$this->m_attribList[$this->m_cascadingAttribs[$j]];
-            $p_attrib->delete($recordset[$i]);
+            if (!$p_attrib->delete($recordset[$i]))
+            {
+              // error
+              return false;
+            }
           }
         }
       }
-
-      $query = "DELETE FROM ".$this->m_table." WHERE ".$selector;
-      $g_db->query($query);
-      // todo: instead of delete, set the deleted flag.
-
-      for ($i = 0, $_i = count($recordset); $i < $_i; $i++)
-      {
-        $this->postDel($recordset[$i]);
+          
+      if ($g_db->query("DELETE FROM ".$this->m_table." WHERE ".$selector))
+      {      
+        for ($i = 0, $_i = count($recordset); $i < $_i; $i++)
+        {
+          if (!$this->postDel($recordset[$i]))
+          {
+            // error.
+            return false;
+          };
+        }
+        return true;
       }
-
-      return $recordset;
+      else
+      {
+        return false;
+      }      
     }
 
     /**
@@ -3696,6 +3706,7 @@
     function postAdd($record, $mode="add")
     {
       // Do nothing
+      return true;
     }
 
     /**
@@ -3721,7 +3732,8 @@
      */
     function postUpdate($record)
     {
-      // Do nothing
+      // Do nothing      
+      return true;
     }
 
     /**
@@ -3748,6 +3760,7 @@
     function postDel($record)
     {
       // Do nothing
+      return true;
     }
 
     /**

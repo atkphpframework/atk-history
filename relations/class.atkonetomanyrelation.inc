@@ -275,8 +275,9 @@
 
       if ($where!="") // double check, so we never by accident delete the entire db
       {
-        $rel->deleteDb($where);
+        return $rel->deleteDb($where);
       }
+      return true;
     }
 
 
@@ -323,12 +324,17 @@
                 }                              
               }        
               
-              $this->m_destInstance->addDb($onetomanyrecs[$i], true, $mode);
+              if (!$this->m_destInstance->addDb($onetomanyrecs[$i], true, $mode))
+              {
+                // error
+                return false;
+              }
 
             }
           }
         }
-      }      
+      }
+      return true;
     }
     
     function hide($record="", $fieldprefix="")

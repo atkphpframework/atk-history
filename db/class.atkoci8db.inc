@@ -218,32 +218,35 @@
         {
           @OCIFreeStatement($this->m_query_id);
           $this->m_query_id = 0;
-        }      
+        }                    
 
         /* query database */
         $execresult = false;
-        $this->m_query_id = @OCIParse($this->m_link_id, $query);
+        $this->m_query_id = @OCIParse($this->m_link_id, $query);              
+        
         if ($this->m_query_id) 
-        {
+        {                
           if(!@OCIExecute($this->m_query_id,OCI_DEFAULT))
-          {
+          {         
             $error = OCIError($this->m_query_id);
             atkerror("Invalid SQL: $query");    
             $this->halt($this->_translateError($error));
-          }
+            return false;
+          }          
         }
         else
-        {
+        {        
           /* error in query */          
           $error = OCIError($this->m_link_id);
           atkerror("Invalid SQL: $query");    
           $this->halt($this->_translateError($error));          
+          return false;
         }
         $this->m_row = 0;        
-        /* return query id */
-        return $this->m_query_id;
+        /* return query id */                        
+        return true;
       }
-      return 0;
+      return false;
     }
 
     /**

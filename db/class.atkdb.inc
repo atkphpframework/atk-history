@@ -134,7 +134,7 @@
         $tmp_error='';
         switch ($errno)
         {
-          case DB_ACCESSDENIED: $tmp_error = sprintf(text("db_access_denied_database"),$this->m_user,$this->m_database);
+          case DB_ACCESSDENIED_DB: $tmp_error = sprintf(text("db_access_denied_database"),$this->m_user,$this->m_database);
                                 break;
           case DB_ACCESSDENIED_USER: $tmp_error = sprintf(text("db_access_denied_user"),$this->m_user,$this->m_database);
                                      break;
@@ -223,11 +223,11 @@
      * @param $query the query
      * @param $offset offset in record list
      * @param $limit maximum number of records
-     * @return the query identifier
+     * @return true if successful
      */
     function query($query, $offset=-1, $limit=-1)
     {
-      return $this->m_query_id;    
+      return true;    
     }
 
     /**

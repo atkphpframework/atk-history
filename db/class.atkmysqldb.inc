@@ -126,10 +126,11 @@
         {
           $this->halt("Invalid SQL: $query");
           $this->halt($this->_translateError());
+          return false;
         }
         
         /* return query id */
-        return $this->m_query_id;
+        return true;
       }
       return 0;
     }

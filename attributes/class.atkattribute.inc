@@ -452,10 +452,12 @@
     /**
      * delete is only of interest for special attributes like relations, or file attributes.
      * @param $record record that has to be delete
+     * @return true if successful, false otherwise
      */
     function delete($record)
     {
       // delete is only of interest for special attributes like relations, or file attributes.
+      return true;
     }
 
     /**

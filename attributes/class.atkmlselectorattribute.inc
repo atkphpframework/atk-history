@@ -88,7 +88,9 @@ class atkMlSelectorAttribute extends atkAttribute
    * No function, but is necessary
    */
   function store($a, $b)
-  {}
+  {
+    return true;
+  }
 
   /**
    * No function, but is necessary

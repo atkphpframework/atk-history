@@ -80,7 +80,7 @@
      * @param $limit maximum number of records
      */
     function query($query, $offset=-1, $limit=-1, $bindLobs=array(), $bindVars=array())
-    {
+    {    
       /* limit? */
       if ($offset >= 0 && $limit > 0)
       {
@@ -88,6 +88,9 @@
 	      $query="SELECT * FROM (SELECT rownum AS rid, XX.* FROM (".$query.
                 ") XX) YY  WHERE YY.rid >= ".($offset+1)." AND YY.rid <= ".($offset + $limit);
       }	
+      
+      /* query */
+      atkdebug("atkoci9db.query(): ".$query);   
       
       /* connect to database */
       if ($this->connect()==DB_SUCCESS)
@@ -144,6 +147,7 @@
             $error = OCIError($this->m_query_id);
             $this->halt("Invalid SQL: $query"); 
             $this->halt($this->_translateError($error));
+            return false;
           }
           else
           {        
@@ -169,8 +173,9 @@
               $i++;
             }
 
-          }
+          }          
           $this->m_row = 0;
+          return true;
         }
         else
         {
@@ -178,15 +183,11 @@
           $error = OCIError($this->m_query_id);
           $this->halt("Invalid SQL: $query"); 
           $this->halt($this->_translateError($error));
-        }
-    
-        /* query */
-        atkdebug("atkoci9db.query(): ".$query);
+          return false;
+        }          
       
-        /* return query id */
-        return $this->m_query_id;
       }
-      return 0;
+      return false;
     }    
 
     /**

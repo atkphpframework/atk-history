@@ -278,9 +278,10 @@
       {
         if(!@unlink($this->m_dir.$record[$this->fieldName()]["orgfilename"]))
 	      {
-	        return text("cannot_remove_file");
+	        return false;
 	      }
       }
+      return true;
     }
 
 
