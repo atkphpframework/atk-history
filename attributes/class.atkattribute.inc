@@ -147,13 +147,13 @@
      * @return True or False
      */
     function hasFlag($flag)
-    {
+    {      
       return (($this->m_flags & $flag) == $flag);
     }
 
     /**
-     * Returns the fieldname
-     * @return fieldname
+     * Returns the (field)name of the attribute.
+     * @return fieldname       
      */
     function fieldName()
     {
