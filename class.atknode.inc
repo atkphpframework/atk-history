@@ -4279,6 +4279,7 @@
      */
     function statusbar($locked=FALSE)
     {      
+      atkdebug("Obsolete use of statusbar()");
       if (!$this->m_statusbarDone)
       {
         global $g_sessionManager;
