@@ -16,5 +16,4 @@
      {if $helplink!=""}<td align="right" class="helplink">{$helplink}</td>{/if}
   </tr>
 </table>
-<br>
 {/if}

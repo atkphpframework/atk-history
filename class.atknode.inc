@@ -785,10 +785,10 @@
       
       if (is_object($ui))
       {
-            
-        $output=$this->statusbar();
-  
-        $innercontent.=$g_layout->ret_table_simple();
+        $params = array();
+        $params["statusbar"]=$this->statusbar();
+        
+        $fields = array();          
   
         // get active tab
         $tab = $this->getActiveTab();
@@ -798,36 +798,11 @@
         // an <attributename>_display function in the derived classes.
         foreach (array_keys($this->m_attribIndexList) as $i)
         {
+          $tplfield = array();
           $p_attrib = &$this->m_attribList[$this->m_attribIndexList[$i]["name"]];
   
           if (!$p_attrib->hasFlag(AF_HIDE_VIEW) && ($this->m_attribIndexList[$i]["tabs"] == "*" || in_array($tab, $this->m_attribIndexList[$i]["tabs"])))
-          {
-            // fields that have not yet been initialised may be overriden in the url..
-            $innercontent.='<tr>';
-  
-            // Keep track of the number of td's we have to fill with the edit thingee..
-            // This depends on AF_NOLABEL for example.
-            $tdcount = 1;
-  
-            // The Label of the attribute (can be suppressed with AF_NOLABEL or AF_BLANKLABEL)
-            // For each attribute, a txt_<attributename> must be provided in the language files.
-            if ($p_attrib->hasFlag(AF_NOLABEL)==false)
-            {
-              if ($p_attrib->hasFlag(AF_BLANKLABEL))
-              {
-                $innercontent.=$g_layout->ret_td('&nbsp;');
-              }
-              else
-              {
-  
-                $innercontent.=$g_layout->ret_td($p_attrib->label($record).': ','valign="top"');
-              }
-            }
-            else
-            {
-              $tdcount++; // If there's no label, the other td's have to be filled up.
-            }
-  
+          {          
             // An <attributename>_display function may be provided in a derived
             // class to display an attribute. If it exists we will use that method
             // else we will just use the attribute's display method.
@@ -835,37 +810,62 @@
             if (method_exists($this, $funcname)) $editsrc = $this->$funcname($record, "view");
             else $editsrc=$p_attrib->display($record, "view");
   
-            $innercontent .= $g_layout->ret_td($editsrc, 'colspan="'.$tdcount.'" valign="top"');
-            $innercontent .= "</tr>";
-          }
+            $tplfield["full"] = $editsrc;
+            $tplfield["widget"] = $editsrc; // in view mode, widget and full are equal
+             
+            // The Label of the attribute (can be suppressed with AF_NOLABEL or AF_BLANKLABEL)
+            // For each attribute, a txt_<attributename> must be provided in the language files.
+            if ($p_attrib->hasFlag(AF_NOLABEL)==false)
+            {
+              if ($p_attrib->hasFlag(AF_BLANKLABEL))
+              {
+                $tplfield["label"] = "";
+              }
+              else
+              {
   
-        }
-        $innercontent.='</table>';          
+                $tplfield["label"] = $p_attrib->label($record);
+              }
+            }
+            else
+            {
+              // Make the rest fill up the entire line
+              $tplfield["label"] = "";
+              $tplfield["line"] = $tplfield["full"];
+            }
+            
+            $fields[] = $tplfield;
+            
+          }          
+  
+        }  
+        
+        $innerform = $ui->render("viewform.tpl", array("fields"=>$fields));
   
         if (count($this->m_tabListView) > 1)
         { 
-          $output.= $ui->render("tabs.tpl", array("tabs"=>$this->buildTabs(),
-                                                  "content"=>$innercontent));
+          $params["content"] = $ui->render("tabs.tpl", array("tabs"=>$this->buildTabs(),
+                                                             "content"=>$innerform));
         }
         else
         {
-          $output.= $innercontent;
+          $params["content"] = $innercontent;
         }
   
-        $buttons = '<br><form method="get">'.session_form(SESSION_NESTED).
-                          '&nbsp;<input type="submit" class="btn_cancel" name="atkback" value="&lt;&lt; '.text('back').'">&nbsp;';
+        $params["formstart"] = '<form method="get">'.session_form(SESSION_NESTED);
+        $params["backbtn"] = '<input type="submit" class="btn_cancel" name="atkback" value="&lt;&lt; '.text('back').'">';
                           
         // if appropriate, display an edit button.
         if (!$this->hasFlag(NF_NO_EDIT)&&$this->allowed("edit", $record))
         {        
-          $buttons.= '<input type="hidden" name="atkaction" value="edit">'.
+          $params["editbtn"] = '<input type="hidden" name="atkaction" value="edit">'.
                      '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">'.
-                     '&nbsp;<input type="submit" class="btn" value="'.text('edit').'">&nbsp;';
+                     '&nbsp;<input type="submit" class="btn" value="'.text('edit').'">';
         }      
       
-        $buttons.= '</form>';
+        $params["formend"] = '</form>';                
         
-        $output.= $buttons."<br>";
+        $output = $ui->render("viewpage.tpl", $params);
         
         $total = $ui->render("box.tpl", array("title"=>$ui->title($this->m_module, $this->m_type,'view'),
                                               "content"=>$output));
