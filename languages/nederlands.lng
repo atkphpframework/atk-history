@@ -74,6 +74,11 @@
   // multilanguage text
   $txt_multilanguage_select = "Kies een taal";
   $txt_multilanguage_choice = "Gekozen taal";
+  
+  // colorpicker text
+  $txt_colorcode = "Kleurcode";
+  $txt_apply = "Toepassen";
+
 
   $txt_language_nl = "Nederlands";
   $txt_language_de = "Duits";

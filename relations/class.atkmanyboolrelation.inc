@@ -31,17 +31,16 @@
      * @result piece of html code
      */
     function edit($record="", $fieldprefix="")
-    {
-    //var_dump($record);
+    {    
       $this->createDestination();
 
-      $selectedPk = array();
+      $selectedPk = array();          
 
       // first the selected records..
       for ($i=0;$i<count($record[$this->m_name]);$i++)
-      {
+      {         
         $selectedPk[] = $this->m_destInstance->primaryKey($record[$this->m_name][$i][$this->remoteKey()]);
-      }
+      }      
 
       // now select all records
       $recordset = $this->m_destInstance->selectDb();
@@ -75,21 +74,43 @@
      */
     function store($notused, $record, $mode)
     {
-      $this->createLink();
-      $rel = &$this->m_linkInstance;
-
-      $rel->deleteDb($this->localKey()."=".$record[$this->m_ownerInstance->primaryKeyField()]);
-
+      if ($this->createDestination())
+      {
+        $this->createLink();      
+        $rel = &$this->m_linkInstance;
+  
+        $rel->deleteDb($this->localKey()."=".$record[$this->m_ownerInstance->primaryKeyField()]);
+  
+        for ($i=0;$i<count($record[$this->fieldName()]);$i++)
+        {
+          // magical stuff..
+          $newrecord = $record[$this->fieldName()][$i];
+          //$newrecord[$this->remoteKey()][$this->m_destInstance->primaryKeyField()] = $record[$this->fieldName()][$i][$this->remoteKey()];
+  
+          $newrecord[$this->localKey()][$this->m_ownerInstance->primaryKeyField()] = $record[$this->m_ownerInstance->primaryKeyField()];
+  
+          $rel->addDb($newrecord, true, $mode);
+        }
+      }
+    }
+    
+    function isEmpty($postvars)
+    {
+      return (!is_array($postvars[$this->fieldName()]) || count($postvars[$this->fieldName()])<=0);
+    }
+    
+    function fetchValue($record)
+    {
+      $this->createDestination();      
+      $result = array();
       for ($i=0;$i<count($record[$this->fieldName()]);$i++)
       {
         // magical stuff..
         $newrecord = array();
         $newrecord[$this->remoteKey()][$this->m_destInstance->primaryKeyField()] = $record[$this->fieldName()][$i][$this->remoteKey()];
-
-        $newrecord[$this->localKey()][$this->m_ownerInstance->primaryKeyField()] = $record[$this->m_ownerInstance->primaryKeyField()];
-
-        $rel->addDb($newrecord, true, $mode);
-      }
+        $result[] = $newrecord;
+      }      
+      return $result;
     }
 
   }
