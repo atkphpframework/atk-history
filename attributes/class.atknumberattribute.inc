@@ -131,7 +131,12 @@
       {       
         if ($value["from"]!="" && $value["to"]!="")
         {
-          $query->addSearchCondition($query->betweenCondition($table.".".$this->fieldName(),escapeSQL($value["from"]), escapeSQL($value["to"])));       
+          if ($value["from"]>$value["to"])
+          {
+            // User entered fields in wrong order. Let's fix that.
+            $tmp = $value["from"]; $value["from"] = $value["to"]; $value["to"] = $tmp;
+          }
+          $query->addSearchCondition($query->betweenCondition($table.".".$this->fieldName(),escapeSQL($value["from"]), escapeSQL($value["to"]))); 
         }
       }
     }
