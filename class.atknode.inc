@@ -2664,7 +2664,7 @@
       // This is the end of all things for this page..
       // so we clean up some resources..
 
-      $g_db->disconnect();
+      $this->m_db->disconnect();
       atkdebug("disconnected from the database");
     }
 
@@ -3194,6 +3194,7 @@
 
       for ($i = 0, $_i = count($record["atkerror"]); $i < $_i; $i++)
         $record["atkerror"][$i]["node"] = $this->m_type;
+
     }
 
     /**
