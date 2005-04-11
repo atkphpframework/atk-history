@@ -2664,7 +2664,6 @@
       // This is the end of all things for this page..
       // so we clean up some resources..
 
-      $this->m_db->disconnect();
       atkdebug("disconnected from the database");
     }
 
