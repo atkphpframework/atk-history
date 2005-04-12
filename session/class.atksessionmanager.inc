@@ -10,23 +10,28 @@
    */
 
   $cookie_params = session_get_cookie_params();
-
+  
+  $config_identifier = atkconfig("identifier");
+  if (empty($config_identifier)) $config_identifier = "default";
+  
   $cookiepath = atkconfig("application_root");
   session_set_cookie_params($cookie_params["lifetime"],$cookiepath);
-  //session_name(cleanSessionId(atkconfig("identifier")));
-  session_name(atkconfig("identifier"));
-  session_start();    
-
-  global $config_identifier;
-  if (empty($config_identifier)) $config_identifier = "default";
+  
+  // If somehow the sessionid is unclean (searchengine bots have been known to mangle sessionids)
+  // we don't have a session...
+  if (!cleanSessionId(atkconfig("identifier")))
+  {
+    session_name(atkconfig("identifier"));
+    session_start();    
   
   // backwardscompatibility hacks. g_sessionData and g_sessionData are obsolete actually.
   // You can use $session = &atkSessionManager::getSession() now, and you'll have a
   // session enabled, multi-app array in which you can store whatever you like.
   // There are old applications however that still use $g_sessionData, so I'll 
   // leave it in place for now.
-  $g_sessionData = &$_SESSION[$config_identifier];
-
+    $g_sessionData = &$_SESSION[$config_identifier];
+  }
+  
   define(SESSION_DEFAULT,0); // stay at current stacklevel
   define(SESSION_NEW,1);     // new stack
   define(SESSION_NESTED,2);  // new item on current stack
@@ -474,10 +479,10 @@
   }
 
   /**
-   * This function does not work as it should and should be fixed
-   * It was designed to clean sessionIDs when they are passed back to
-   * the system. This because certain bots (MSNBot) like to pollute it with slashes
-   */  
+   * Cleans the sessionid and returns true if the sessionid was empty
+   * @param String $name the name of the sessionid
+   * @return bool wether or not the sessionid was okay
+   */
   function cleanSessionId($name)
   {   
     global ${$name};
@@ -492,9 +497,11 @@
         $sessionid .= substr($oldsessionid, $position, 1);
       }
     }
+    if ($oldsessionid !== $sessionid) $dirt = true;
+    
     if ($_COOKIE[$name]) $_COOKIE[$name] = $sessionid;
     else ${$name} = $sessionid;
     
-    if ($sessionid) return $name;
+    return $dirt;
   }
 ?>
