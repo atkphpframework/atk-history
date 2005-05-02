@@ -721,7 +721,6 @@
               $form .= $this->ret_td('<label for="'.$field["name"].'">'.$field["label"].'</label>: ', 'valign="top"');
             else 
               $form .= $this->ret_td($field["label"].': <br />','valign="top"');
-              $form.="</tr><tr>";
           }
           /* If there's no label, the other td's have to be filled up. */
           else $tdcount++;
