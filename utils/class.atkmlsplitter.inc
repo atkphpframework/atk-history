@@ -290,6 +290,7 @@
    
     function mergeMlRecords(&$node, &$recordset)
     {
+      $lngattribs=array();
       foreach($node->m_attribList as $attribname=>$attrib)
       {
         if($node->m_attribList[$attribname]->m_mlattribute) $lngattribs[$attribname] = &$node->m_attribList[$attribname];
@@ -301,6 +302,7 @@
       {
         if(is_array($recordset[$i]["atklngrecordmodes"]))  // keep track off atkactions
           $ml_record[0]["atklngrecordmodes"] = array_merge($ml_record[0]["atklngrecordmodes"],$recordset[$i]["atklngrecordmodes"]);
+        $lngattribvalues=array();
         foreach($lngattribs as $lngattribname=>$lngattrib)
         {
           $lngattribvalues[$lngattribname][$recordset[$i][$node->m_lngfield]]=$recordset[$i][$lngattribname];
