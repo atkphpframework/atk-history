@@ -6,6 +6,7 @@ Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 
 Changes in ATK 5.2.0
 --------------------
++ Added getInstance() for the atkMlSplitter class. [Martin]
 + Added the SimpleTest testframework for unittesting, including a set of test
   utilities. [Ivo]
 + Added atkFckAttribute (wysywig editor). [Fabrizio, Ivo]
@@ -36,6 +37,8 @@ Changes in ATK 5.2.0
   a value [Boy]
 + Added executeDelete() and executeSelect() to atkQuery. (bug #381) [Arnold]
 + Added atkAggregatedColumn for grouping columns in lists. (bug #426) [Yury]
+* atkmlsplitter::addmlcondition() is now recursive to support relations
+  with multiple mlnodes. [Martin]
 * Fixed typo in php version check. [Ivo]
 * Fixed bug in cascade delete. (bug #419) [Ivo]
 * atkManyToOneRelation no longer searches on primary key values and 
