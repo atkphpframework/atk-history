@@ -2388,7 +2388,7 @@
 
       $mltool->addMlCondition($query,$this,$mode);
       
-      $querystring = $query->buildCount($this->hasFlag(NF_ML));
+      $querystring = $query->buildCount();
       $result = $this->m_db->getrows($querystring);
 
       // group by fix:
