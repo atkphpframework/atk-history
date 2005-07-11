@@ -14,6 +14,8 @@ Changes in ATK 5.2.0
 + Added support for turning CSV file-exporting off in customRecordList. [Boy]
 + Added ability to add custom HTML to MRA form. [Ivo, Boy]
 + datetochar() date format is now configurable. [Boy]
++ Added extraparams in atkTreeNode for putting extra params 
+  in the url when expanding/collapsing [Wouter]
 + Added plain text search functionality to date- and timeattribute. [Ivo, Boy]
 + Added ability to detect PDA (handheld) clients. [Boy]
 + atkDateAttribute now has a simplified gui on handheld devices. [Boy]
