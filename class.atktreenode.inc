@@ -54,6 +54,11 @@
      * parent Attribute flag (treeview)
      */
      var $m_parent;    
+     
+     /**
+     * var for giving the link for expanding/collapsing the tree extra params 
+     */
+     var $xtraparams = "";    
   
     /**
      * Constructor
@@ -229,7 +234,7 @@
       $img_leaflink = $icon_path."tree_leaf_link.gif"; 
 	    $img_spc      = $icon_path."tree_space.gif"; 
       $img_extfile  = $icon_path."tree_extfile.gif"; 
-       
+      
       $res="";
       $lastlevel=0;
      // echo $this->m_tree[0]["expand"]."--".$this->m_tree[0]["colapse"];
@@ -362,6 +367,9 @@
       }
       $res.= "</tr>\n"; 
     	$cnt=0; 
+    	
+    	
+    	
       while ($cnt<count($this->m_tree)) 
 	    { 
 	    	if ($visible[$cnt]) 
@@ -416,6 +424,7 @@
 							    } 
 							    $i++; 
 						    } 
+						    if($this->extraparams) $params=$params.$this->extraparams; 
                 if($this->m_tree[$cnt]["isleaf"]==1)
                 {
 						      if($cnt!=0) $res.= "<td>".href($PHP_SELF."?atknodetype=".$this->atknodetype()."&atkaction=".$this->m_action."&".$params,"<img src=\"".$img_end_plus."\" border=0>")."</td>\n";
@@ -446,7 +455,8 @@
 								    $params=$params."|"; 
 							    } 
 							    $i++; 
-						    }                
+						    }
+						    if($this->extraparams) $params=$params.$this->extraparams;
                 if($this->m_tree[$cnt]["isleaf"]==1)
                 {                  
                   if($cnt!=0) 
@@ -511,7 +521,7 @@
 					      } 
 					      $i++; 
 				      } 
-				                    
+				      if($this->extraparams) $params=$params.$this->extraparams;              
 				      if ($expand[$cnt]==0) 
   					    $res.= "<td>".href($PHP_SELF."?".$params,"<img src=\"".$img_expand."\" border=0>")."</td>\n"; 
 				      else 
