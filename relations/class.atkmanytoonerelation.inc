@@ -211,7 +211,7 @@
             $autolink.= "&nbsp;".href("dispatch.php?atknodetype=".$this->m_destination."&atkaction=add".($filter!=""?"&atkfilter=".rawurlencode($filter):""),text("new"),SESSION_NESTED,true);
           }
           $result.= '<select name="'.$fieldprefix.$this->formName().'">';
-          if ($this->hasFlag(AF_OBLIGATORY)==false)
+          if ($this->hasFlag(AF_OBLIGATORY)==false || atkconfig('obligatory_no_default'))
           {
             // Relation may be empty, so we must provide an empty selectable..
             $result.= '<option value="'.$this->m_destInstance->m_table.".".$this->m_destInstance->primaryKeyField().'=">'.text('select_none');
