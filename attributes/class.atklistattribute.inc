@@ -134,8 +134,14 @@
       }
 
       $result = '<select name="'.$fieldprefix.$this->formName().$namePostFix.'" '.$multiSelect.'>';
+      if ($this->hasFlag(AF_OBLIGATORY)==true && atkconfig('obligatory_no_default'))
+      {
+        $result.= '<option value="">'.text('select_none');
+      }
+      
       for ($i=0;$i<count($this->m_values);$i++)
       {
+      	
         if ($this->m_values[$i] == $record[$this->fieldName()] && $record[$this->fieldName()]!="")
         {
           $sel = "selected";
