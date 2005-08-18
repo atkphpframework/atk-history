@@ -187,4 +187,8 @@
   // user("harry","password",3);
   // user("harry","password","admins");  
 
+  // If you have a atkmanytoonerelation or atklistattribute that is obligatory, the selectbox defaults to
+  // the first option. If you set this option to true, the default value is 'None'. Failing to change this
+  // value will result in an error, so you can force the user to make a choice.
+  $config_obligatory_no_default = false;
 ?>
