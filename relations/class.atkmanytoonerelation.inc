@@ -285,7 +285,7 @@
           {
             $this->registerKeyListener($id, KB_CTRLCURSOR|KB_LEFTRIGHT);
             $result.= '<select id="'.$id.'" name="'.$id.'">';
-            if ($this->hasFlag(AF_OBLIGATORY)==false)
+            if ($this->hasFlag(AF_OBLIGATORY)==false || atkconfig('obligatory_no_default', false))
             {
               //get the select_none string
               $nodename = $this->m_destInstance->m_type;
