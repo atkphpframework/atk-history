@@ -40,7 +40,7 @@ class atkCurrencyAttribute extends atkNumberAttribute
     $this->atkNumberAttribute($name,$flags,$size,$decimals); // base class constructor
     $this->m_valutasymbol = $valutasymbol;
   }
-  
+
   /**
    * overrides the edit function to put the currencysymbol in from of the input field
    */
@@ -48,13 +48,13 @@ class atkCurrencyAttribute extends atkNumberAttribute
   {
     return $this->m_valutasymbol." ".parent::edit($record,$fieldprefix);
   }
-  
+
   /**
    * overrides the display function to put the currencysymbol in from of the input field
    */
   function display($record, $mode="")
   {
-    return $this->m_valutasymbol.number_format(parent::display($record,$mode),2,",",".");
+    return $this->m_valutasymbol.parent::display($record,$mode)
   }
 }
 
