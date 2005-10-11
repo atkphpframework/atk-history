@@ -25,6 +25,9 @@
                             // this to false only if you know what you're
                             // doing. When in doubt, 'true' is usually the
                             // best option.
+                            
+    var $m_onchangecode = array();  // contains lines of javascript to execute
+                                    // when the value of our selectbox changes
                
     /**
      * Constructor
@@ -210,7 +213,17 @@
             $autolink = "<a href='javascript:atkSubmit(mto_parse(\"".atkurlencode($editlink)."\", document.entryform.".$fieldprefix.$this->fieldName().".value))'>".text('edit')."</a>";
             $autolink.= "&nbsp;".href("dispatch.php?atknodetype=".$this->m_destination."&atkaction=add".($filter!=""?"&atkfilter=".rawurlencode($filter):""),text("new"),SESSION_NESTED,true);
           }
-          $result.= '<select name="'.$fieldprefix.$this->formName().'">';
+          
+          $id = $fieldprefix.$this->formName();
+          
+          $onchange='';
+          if (count($this->m_onchangecode))
+          {
+            $onchange = ' onChange="'.$id.'_onChange(this);"';
+            $this->renderChangeHandler($fieldprefix);
+          }
+          
+          $result.= '<select id="'.$id.'" name="'.$id.'" '.$onchange.'>';
           if ($this->hasFlag(AF_OBLIGATORY)==false || atkconfig('obligatory_no_default'))
           {
             // Relation may be empty, so we must provide an empty selectable..
@@ -389,6 +402,28 @@
       } 
     }
 
+    /** 
+     * Add a javascript onchange event handler.
+     * @param $jscode A block of valid javascript code.
+     */
+    function addOnChangeHandler($jscode)
+    {
+      $this->m_onchangecode[] = $jscode;
+    }
+    
+    function renderChangeHandler($fieldprefix)
+    {
+      global $g_layout;
+      
+      if (count($this->m_onchangecode))
+      {
+        $g_layout->register_script_code("function ".$fieldprefix.$this->formName()."_onChange(el)
+                                         {
+                                           newvalue = el.options[el.selectedIndex].value;
+                                           ".implode("\n", $this->m_onchangecode)."
+                                         }\n");
+      }
+    }
 
     /**
      * Dummy function

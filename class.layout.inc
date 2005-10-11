@@ -28,7 +28,8 @@
     var $m_submitscripts = array();
     var $m_scripts = array();
     var $m_stylesheets = array();
-
+    var $m_onloadscripts = array();
+    
     /**
      * The directory where the current template files are located..
      */
@@ -233,6 +234,35 @@
     {
       if (!in_array($file, $this->m_scripts)) $this->m_scripts[] = $file;
     }
+    
+    /**
+     * Register a block of javascript to be executed on body.onLoad()
+     * @param $code the code to be executed
+     */
+    function register_script_code($code)
+    {
+      $this->m_onloadscripts[] = $code;
+    }
+    
+    /**
+     * Render the onload javascript into a function and return the code
+     */
+    function render_onload_script()
+    {
+      if (count($this->m_onloadscripts))
+      {
+        $ret  = "<script language='JavaScript'>\n";
+        
+        foreach($this->m_onloadscripts as $s)
+        {
+          $ret .= str_replace(";",";\n",$s);
+          $ret .= "\n";
+        }
+        $ret .= "</script>";
+        
+        return $ret;
+      } else return "";
+    }
 
     function register_submitscript($code)
     {
@@ -326,6 +356,8 @@
       $res.="return retval;
                }
              </script>\n";
+      
+      $res.=$this->render_onload_script();
 
       for ($i = 0; $i < count($this->m_stylesheets); $i++)
         $res.='  <link href="'.$this->m_stylesheets[$i].'" rel="stylesheet" type="text/css">'."\n";
