@@ -286,11 +286,6 @@
     var $m_fuzzyFilters = array();
 
     /**
-     * GROUP BY options
-     */
-    var $m_groupBys = array();
-
-    /**
      * For speed, we keep a list of fields we don't have to load in recordlists.
      */
     var $m_listExcludes = array();
@@ -3400,13 +3395,6 @@
       $query->addTable($this->m_table);
       $query->addCondition($selector);
       $query->m_searchmethod = $this->m_postvars['atksearchmethod'];
-
-      // Add GROUP BY
-      foreach ($this->m_groupBys AS $key=>$val)
-      {
-        atkdebug("Adding GROUP BY ".$val);
-        $query->addGroupBy($val);
-      }
 
       if (!$this->hasFlag(NF_NO_FILTER))
       {
