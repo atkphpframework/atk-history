@@ -31,7 +31,18 @@
      * # rows to show (multiselect listbox).
      */
     var $m_listrows = 1;     
-
+    
+    /**
+     * Array for storing JavaScript that will be executed when 
+     * the value of the selectBox changes
+     */
+    var $m_onchangecode = Array();
+    
+    /**
+     * Overrides currently selected item in selectBox (even if
+     * the database value is something else)
+     */
+    var $m_selected_value_override;
 
     /**
      * Constructor.
@@ -133,22 +144,39 @@
         $namePostFix = "[]";
       }
 
-      $result = '<select name="'.$fieldprefix.$this->formName().$namePostFix.'" '.$multiSelect.'>';
+      $id = $fieldprefix.$this->formName().$namePostFix;
+      
+      if (count($this->m_onchangecode))
+      {
+        $onchange = 'onChange="'.$id.'_onChange(this);"';
+        $this->renderChangeHandler($fieldprefix);
+      } else $onchange = "";
+      
+      $result = '<select name="'.$id.'" id="'.$id.'" '.$multiSelect.' '.$onchange.'>';
       if ($this->hasFlag(AF_OBLIGATORY)==true && atkconfig('obligatory_no_default'))
       {
         $result.= '<option value="">'.text('select_none');
       }
-      
+
       for ($i=0;$i<count($this->m_values);$i++)
       {
       	
-        if ($this->m_values[$i] == $record[$this->fieldName()] && $record[$this->fieldName()]!="")
+        if (!$this->m_selected_value_override)
         {
-          $sel = "selected";
+          // default functionality (database values)
+          if ($this->m_values[$i] == $record[$this->fieldName()] && $record[$this->fieldName()]!="")
+          {
+            $sel = "selected";
+          }
+          else
+          {
+            $sel = "";
+          }
         }
-        else
+        else 
         {
-          $sel = "";
+          // explicit forced to show m_selected_value_override value
+          $sel = ((string)$this->m_values[$i] == $this->m_selected_value_override ? "selected" : "");
         }
         $result.= '<option value="'.$this->m_values[$i].'" '.$sel.'>'.text($this->m_options[$i], $this->m_ownerInstance->m_type);
       }
@@ -256,6 +284,32 @@
       return $dummy;
     }
 
-
+    /** 
+     * Add a javascript onchange event handler.
+     * @param $jscode A block of valid javascript code.
+     */
+    function addOnChangeHandler($jscode)
+    {
+      $this->m_onchangecode[] = $jscode;
+    }
+    
+    function renderChangeHandler($fieldprefix)
+    {
+      global $g_layout;
+      
+      if (count($this->m_onchangecode))
+      {
+        $g_layout->register_script_code("function ".$fieldprefix.$this->formName()."_onChange(el)
+                                         {
+                                           newvalue = el.options[el.selectedIndex].value;
+                                           ".implode("\n", $this->m_onchangecode)."
+                                         }\n");
+      }
+    }
+    
+    function overrideSelectedValue($value)
+    {
+      $this->m_selected_value_override = $value;
+    }
   }
 ?>
