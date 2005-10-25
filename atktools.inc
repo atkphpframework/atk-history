@@ -1586,6 +1586,28 @@
   }
 
   /**
+   * Return a singleton instance of the specified class.
+   *
+   * This works for all singletons that implement the getInstance() method.
+   *
+   * @param string $fullclassname the ATK classname of the class ("map1.map2.classname")
+   * @return obj instance of the class
+   * */
+  function &atkinstance($fullclassname)
+  {
+    static $s_instances = array();
+    if (!isset($s_instances[$fullclassname]))
+    {
+      atkimport($fullclassname);
+      $elems = explode(".", strtolower($fullclassname));
+      $classname = $elems[count($elems)-1];
+      atkdebug("Getting singleton instance $fullclassname");
+      eval("\$s_instances[\$fullclassname] = &".$classname."::getInstance();");
+    }
+    return $s_instances[$fullclassname];
+  }
+
+  /**
    * Compares two assosiative multi dimensonal array's
    * if arrays differ, differences are returned otherwise it returns false
    * @param array $array1 original array
@@ -1655,7 +1677,7 @@
    * you may spend a loooong time waiting on your application
    *
    * @param String $needle The value which will be searched in the haystack
-   * @package Array $haystack Array with values
+   * @param Array $haystack Array with values
    * @return Boolean True if needle exists in haystack
    */
   function atk_in_array_recursive($needle, $haystack)

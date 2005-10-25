@@ -75,6 +75,9 @@
   function &getModule($modname)
   {
     global $g_moduleRepository, $g_modules;
+    
+    atkimport("atk.atknode");
+    
     if (!isset($g_moduleRepository[$modname])||!is_object($g_moduleRepository[$modname]))
     {
       atkimport("atk.modules.atkmodule");
