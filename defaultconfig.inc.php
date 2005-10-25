@@ -662,4 +662,10 @@
    */
   $config_enable_ssl_encryption = false;
   
+  /**
+   * Enable / disable sending of e-mails (works only if the atk.utils.atkMail::mail 
+   * function has been used for sending e-mails).
+   * @var bool
+   */
+  $config_mail_enabled = true;
 ?>
