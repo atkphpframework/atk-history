@@ -2,7 +2,7 @@
   /**
    * This file is part of the Achievo ATK distribution.
    * Detailed copyright and licensing information can be found
-   * in the doc/COPYRIGHT and doc/LICENSE files which should be 
+   * in the doc/COPYRIGHT and doc/LICENSE files which should be
    * included in the distribution.
    *
    * @package atk
@@ -14,9 +14,9 @@
    * @version $Revision$
    * $Id$
    */
-   
+
   /**
-   * Driver for authentication using an ldap server. 
+   * Driver for authentication using an ldap server.
    *
    * Does not support authorization.
    *
@@ -28,44 +28,45 @@
   class auth_ldap extends auth_interface
   {
     function validateUser($user, $passwd)
-    { 
-       $ldap = ldap_connect(atkconfig("authentication_ldap_host"));
-
-       // find the dn for this uid, the uid is not always in the dn
-       $query     = atkconfig("authentication_ldap_field")."=".$user;
-       $sri       = ldap_search($ldap, atkconfig("authentication_ldap_context"), $query);
-       $allValues = ldap_get_entries($ldap, $sri);
-
-       if ($allValues["count"] > 0)
+    {
+       if($ldap = ldap_connect(atkconfig("auth_ldap_host")))
        {
-         // we only care about the first dn
-         $userDN = $allValues[0]["dn"];
+        atkdebug("successful connection to ".atkconfig("auth_ldap_host"));
+        if(atkconfig("auth_ldap_bind_tree"))
+        {
+          if ($bindID = @ldap_bind($ldap, atkconfig("auth_ldap_bind_dn") , atkconfig("auth_ldap_bind_pw")))
+          {
+            atkdebug("Succesfully bound to ". atkconfig("auth_ldap_bind_dn") . " with id: ".$bindID . " conn_id ". $ldap);
+          }
+          else
+          {
+            atkdebug("<b>Error binding to</b> ".atkconfig("auth_ldap_bind_dn") ." ". atkconfig("auth_ldap_bind_pw"));
+            return AUTH_ERROR;
+          }
+        }
 
-         // generate a bogus password to pass if the user doesn't give us one
-         // this gets around systems that are anonymous search enabled 
-         if (empty($passwd)) $passwd = crypt(microtime()); 
+        // find the dn for this uid, the uid is not always in the dn
+        $filter = (atkconfig("auth_ldap_search_filter") != "" ? atkconfig("auth_ldap_search_filter") : "uid");
+        $sri = ldap_search($ldap, atkconfig("auth_ldap_context"), $filter."=$user");
+        $allValues = ldap_get_entries($ldap, $sri);
+        if($allValues["count"] > 0)
+        {
+          // we only care about the first dn
+      	  $userDN = $allValues[0]["dn"];
+      	  // generate a bogus password to pass if the user doesn't give us one
+	  // this gets around systems that are anonymous search enabled
+          if (empty($passwd)) $passwd = crypt(microtime());
+      	  // try to bind as the user with user suplied password
+      	  if (ldap_bind($ldap,$userDN, $passwd)) return AUTH_SUCCESS;
+        }
+	atkdebug("LDAP did not successfully authenticate $user");
 
-         // try to bind as the user with user suplied password
-         $bound  = @ldap_bind($ldap, $userDN, $passwd);
- 
-         if ($bound)
-         {
-           ldap_close($ldap);
-           return AUTH_SUCCESS;
-         }
-         else
-         {
-           ldap_close($ldap);
-           return AUTH_MISMATCH;
-         }
+        // dn not found or password wrong TODO/FIXME: return -1 if dn not found
+        return AUTH_MISMATCH;
        }
-       else
-       {
-         ldap_close($ldap);
-         return AUTH_MISMATCH;
-       }
+       else return AUTH_ERROR;
     }
-                         
+
     function canMd5()
     {
       return false; // ?? Is this correct? can we store passwords as md5 in ldap?

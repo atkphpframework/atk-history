@@ -1116,6 +1116,12 @@
         $result[] = '<input type="submit" class="btn_save" name="atknoclose" value="'.text('save').'">';
         $result[] = '<input type="submit" class="btn_cancel" name="atkcancel" value="'.text('cancel').'">';
       }
+      elseif ($mode == "view")
+      {
+        $result.= '<input type="hidden" name="atkaction" value="edit">'.
+                   '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">'.
+                   '&nbsp;<input type="submit" value="'.text('edit').'">&nbsp;';
+      }
 
       return $result;
     }

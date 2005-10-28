@@ -3,7 +3,7 @@
   /**
    * This file is part of the Achievo ATK distribution.
    * Detailed copyright and licensing information can be found
-   * in the doc/COPYRIGHT and doc/LICENSE files which should be 
+   * in the doc/COPYRIGHT and doc/LICENSE files which should be
    * included in the distribution.
    *
    * @package atk
@@ -15,8 +15,8 @@
    * @version $Revision$
    * $Id$
    */
-   
-   /** 
+
+   /**
     * Flags for the attribute
     */
    define("AF_NO_TRANSLATION", AF_SPECIFIC_1); // Do not translate the options
@@ -25,7 +25,7 @@
 
   /**
    * The atkListAttribute class represents an attribute of a node
-   * that has a selectbox to select from predefined values. 
+   * that has a selectbox to select from predefined values.
    *
    * @author Ivo Jansch <ivo@achievo.org>
    * @package atk
@@ -49,22 +49,22 @@
      * Array for fast lookup of what value belongs to what option.
      */
     var $m_lookup = array();
-    
+
     /**
      * Array for onchange code
      */
     var $m_onchangecode = array();
-    
+
     /**
      * Attribute that is to be selected
      */
     var $m_selected;
-    
+
     /**
      * Value that is used when list is empty, normally empty
      */
      var $m_emptyvalue;
-     
+
      /**
       * The width of the dropdown list in pixels
       * @var int
@@ -136,7 +136,7 @@
         return text($this->m_lookup[$record[$this->fieldName()]], $this->m_ownerInstance->m_type, $this->m_ownerInstance->m_module);
       }
     }
-    
+
     /**
      * Returns a piece of html code that can be used in a form to edit this
      * attribute's value.
@@ -147,22 +147,22 @@
     {
       // todo: configurable rows
       $id = $this->getHtmlId($fieldprefix);
-      $this->registerKeyListener($id, KB_CTRLCURSOR|KB_LEFTRIGHT);  
-      
+      $this->registerKeyListener($id, KB_CTRLCURSOR|KB_LEFTRIGHT);
+
       $onchange='';
       if (count($this->m_onchangecode))
       {
         $onchange = 'onChange="'.$id.'_onChange(this);"';
         $this->renderChangeHandler($fieldprefix);
       }
-      
+
       $result = '<select id="'.$id.'" name="'.$id.'" '.$onchange.($this->m_width?" style='width: {$this->m_width}px'":"").'>';
-      
+
       if(!$this->hasFlag(AF_OBLIGATORY)||(atkconfig("list_obligatory_null_item")&&$record[$this->fieldName()]==""&&!$this->hasFlag(AF_LIST_NO_OBLIGATORY_NULL_ITEM)))
       {
-        $result.= '<option value="'.$this->m_emptyvalue.'">'.text('list_null_value', $this->m_ownerInstance->m_type);   
+        $result.= '<option value="'.$this->m_emptyvalue.'">'.text('list_null_value', $this->m_ownerInstance->m_type);
       }
-      
+
       for ($i=0;$i<count($this->m_values);$i++)
       {
         if ($this->m_values[$i] == $this->m_selected || $this->m_values[$i] == $record[$this->fieldName()] && $record[$this->fieldName()]!="")
@@ -175,8 +175,8 @@
         }
         if ($this->hasFlag(AF_NO_TRANSLATION)) $option=$this->m_options[$i];
         else $option=atktext($this->m_options[$i],$this->m_ownerInstance->m_module);
-        
-        $result.= '<option value="'.$this->m_values[$i].'" '.$sel.'>'.$option;
+
+        $result.= '<option value="'.str_replace("\"","&quot;",$this->m_values[$i]).'" '.$sel.'>'.$option;
       }
       $result.='</select>';
       return $result;
@@ -200,11 +200,11 @@
         $result.='name="atksearch['. $fieldprefix.$this->fieldName().'][]">';
       else
         $result.='name="atksearch'.$fieldprefix.'['.$this->formName().'][]">';
-        
+
       $result.= '<option value="">'.text('search_all');
 
       for ($i=0,$_i=count($this->m_values);$i<$_i;$i++)
-      {                
+      {
         if (atk_in_array(((string)$this->m_values[$i]),$record[$this->fieldName()], true) && $record[$this->fieldName()]!=="")
         {
           $sel = "selected";
@@ -213,7 +213,7 @@
         {
           $sel = "";
         }
-        $result.= '<option value="'.$this->m_values[$i].'" '.$sel.'>'.text($this->m_options[$i], $this->m_ownerInstance->m_type);
+        $result.= '<option value="'.str_replace("\"","&quot;",$this->m_values[$i]).'" '.$sel.'>'.text($this->m_options[$i], $this->m_ownerInstance->m_type);
       }
       $result.='</select>';
       return $result;
@@ -229,7 +229,7 @@
     {
       $query->addSearchCondition($this->getSearchCondition($query, $table, $value, $searchmode));
     }
-    
+
     function getSearchCondition(&$query, $table, $value, $searchmode)
     {
     	// We only support 'exact' matches.
@@ -264,8 +264,8 @@
       // Fieldtype was determined in the constructor.
       return $this->m_dbfieldtype;
     }
-    
-    /** 
+
+    /**
      * Add a javascript onchange event handler.
      * @param $jscode A block of valid javascript code.
      */
@@ -273,7 +273,7 @@
     {
       $this->m_onchangecode[] = $jscode;
     }
-    
+
     function renderChangeHandler($fieldprefix)
     {
       if (count($this->m_onchangecode))
@@ -286,7 +286,7 @@
                                     }\n");
       }
     }
-    
+
     function setAutoHide($attrib, $valuearr)
     {
       $conditions = array();
@@ -296,7 +296,7 @@
       }
       $this->addOnChangeHandler("if (".implode('||', $conditions).") hideAttrib('$attrib'); else showAttrib('$attrib');");
     }
-    
+
     /**
      * Sets the selected listitem
      * @param string $selected the listitem you want to have selected
@@ -305,7 +305,7 @@
     {
       $this->m_selected = $selected;
     }
-    
+
     /**
      * Gets the selected listattribute
      * @return string the selected listitem
@@ -314,7 +314,7 @@
     {
       return $this->m_selected;
     }
-    
+
     /**
      * Sets the value for the empty entry in the list attribute
      * In normal cases you would just leave this empty, but certain cases
@@ -325,16 +325,16 @@
     {
       $this->m_emptyvalue = $value;
     }
-    
+
     /**
      * Gets the value for the empty entry in the list attribute
-     * @return string 
+     * @return string
      */
     function getEmptyValue()
     {
       return $this->m_emptyvalue;
     }
-    
+
     /**
      * Convert a String representation into an internal value.
      *
@@ -363,7 +363,7 @@
 
       return $this->m_value[0];
     }
-    
+
     /**
      * Set the width of the dropdown list in pixels
      * @param int $width The width of the dropdown list in pixels
@@ -372,7 +372,7 @@
     {
       $this->m_width=$width;
     }
-    
+
     /**
      * Gets the width of the dropdown list in pixels
      * @return int The width of the dropdown list in pixels
