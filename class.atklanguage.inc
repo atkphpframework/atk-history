@@ -180,7 +180,8 @@
      */
     function _getModules($module, $firstfallback="", $modulefallback=false)
     {
-      $arr = array($module);
+      $arr = array();
+      if ($module) $arr[] = $module;
       if ($firstfallback!="") $arr[] = $firstfallback;
       $modules = array_merge($this->m_overridemodules, $arr, $this->_getFallbackModules($modulefallback));
       return $modules;
@@ -256,6 +257,7 @@
     {
       if (!isset($this->m_cachedlangfiles[$module][$lng])||$this->m_cachedlangfiles[$module][$lng] != 1)
       {
+        $this->m_cachedlangfiles[$module][$lng] = 1;
         if ($module=="atk")
         {
           $path = atkconfig("atkroot")."atk/".$this->LANGDIR;
@@ -274,7 +276,6 @@
         if (file_exists($file))
         {
           include($file);
-          $this->m_cachedlangfiles[$module][$lng] = 1;
           $this->m_cachedlang[$module][$lng] = $$lng;        
           return true;
         }

@@ -12,6 +12,34 @@ Changes in ATK 5.4?
 
 Changes in ATK 5.3RC2
 ---------------------
++ Made it possible to reset a node in the node repository by adding a
+  fourth param to getNode(). [Boy]
++ If newNode() calls the missing class handler it passes along a module 
+  to the params. [Boy]
++ Added utils/langconvert.sh, a bash shell script that converts ATK4 style
+  language files to ATK5 style. [Boy]
+* Improved errorhandeling in themecompiling. [Boy]
+* Made it possible to use 'scan dir1/dir2;dir1/dir3' without wrapping the
+  directories in single quotes. [Boy]
+* Made themecomiler use moduleDir() instead of figuring out the directory 
+  structure itsself, making it possible to use theme elements from outside
+  the ATK application root. [Boy]
+* Fixed php errors in atkProfileAttribute. [Ivo]
+* Added 'grantall' privilege; if users have a privilege defined by 
+  $config_auth_grantall_privilege, they can grant privileges that they do not
+  explicitly have themselves. [Ivo]
+* Fixed Local File Include Vulnerability in sourceviewer of the demo
+  application. [Ivo]
+* Fixed bug in atkCurrencyAttribute, decimal separator was not correctly
+  retrieved. Also, both thousands- and decimal separator now have a default 
+  value if none is set in the language file. [Ivo]
+* Set search portion of the top frame in outlook theme to 'nowrap'. [Ivo]
+* Fixed atkProfileAttribute translations. [Ivo]
+* atkLanguage no longer tries to include languagefiles it can't find. [Yury]
+* Descriptortrace (breadcrumbtrail top of page) now also shows what node
+  you are currently preforming an action in. [Boy]
+* Calling text() without module would cause unnecessary call 
+  to filesystem. [Yury]
 
 Changes in ATK 5.3RC1
 ---------------------
