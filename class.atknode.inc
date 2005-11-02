@@ -756,6 +756,8 @@
         $this->m_relations[strtolower(get_class($attribute))][$attribute->fieldName()]=&$attribute;
       }
 
+
+      $attribute->setTabs($this->m_attributeTabs[$attribute->fieldName()]);
       return $attribute;
     }
 
@@ -1807,13 +1809,6 @@
       foreach (array_keys($this->m_attribList) as $attribname)
       {
         $p_attrib = &$this->m_attribList[$attribname];
-        if (!method_exists($p_attrib, "setTabs"))
-        {
-          echo "ATTR: $attribname\n";
-          echo get_class($p_attrib)."\n";
-          echo $this->atkNodeType()."\n";
-        }
-        
         $p_attrib->setTabs($this->m_attributeTabs[$attribname]);
       }
 
