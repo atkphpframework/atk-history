@@ -1104,7 +1104,7 @@
     function getFormButtons($mode, $record)
     {
       $result = array();
-
+      
       // edit mode
       if ($mode == "edit")
       {
@@ -1120,9 +1120,15 @@
       }
       elseif ($mode == "view")
       {
-        $result.= '<input type="hidden" name="atkaction" value="edit">'.
-                   '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">'.
-                   '&nbsp;<input type="submit" value="'.text('edit').'">&nbsp;';
+        if(atkLevel() > 0)
+          $result[] = '<input type="submit" class="btn_cancel" name="atkback" value="&lt;&lt; '.text('back').'">';
+        // if appropriate, display an edit button.
+        if (!$this->hasFlag(NF_NO_EDIT)&&$this->allowed("edit", $record))
+        {
+          $result[] = '<input type="hidden" name="atkaction" value="edit">'.
+                      '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">'.
+                      '&nbsp;<input type="submit" class="btn_save" value="'.text('edit').'">&nbsp;';
+        }              
       }
 
       return $result;

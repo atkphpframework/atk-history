@@ -117,14 +117,7 @@
         $params["content"] = $node->tabulate("view", $innerform);
 
         $params["formstart"] = '<form method="get">'.session_form(SESSION_NESTED);
-        if(atkLevel() > 0)
-          $params["buttons"][] = '<input type="submit" class="btn_cancel" name="atkback" value="&lt;&lt; '.text('back').'">';
-
-        // if appropriate, display an edit button.
-        if (!$node->hasFlag(NF_NO_EDIT)&&$node->allowed("edit", $record))
-        {
-          $params["buttons"][] = $node->getFormButtons("view", $record);
-        }
+        $params["buttons"]   = $node->getFormButtons("view", $record);
 
         $params["formend"] = '</form>';
 
