@@ -10,6 +10,18 @@ Changes in ATK 5.4?
   does, but with the ability to disable the sending of e-mails (and in the 
   future send e-mails to other addresses etc.) [Peter]
 + Added support for configuration file overrides by other sections. [Peter]
++ Added hide() function for atkboolattribute. [Lineke]
+* Fixed setTabs call for attributes. [Peter]
+* Bugfix in atkListAttribute. All quotes in options are now replaced with
+  &quot;. [Lineke]
+* Bugfix in atkMultiSelectattribute. Always add escapeSql to value in 
+  checkbox. [Lineke]
+* Include atkattribute in atkTextAttribute. [Lineke]
+* View action now uses getFormButtons to get the appropriate buttons. 
+  [Lineke]
+* Reset atkstartat to zero after a new search in recordList. [Lineke]
+* Ldap changes to get the authorization through ldap work better. [Lineke]
+* Added extra header option for layout. [Lineke]
 
 Changes in ATK 5.3RC2
 ---------------------
