@@ -668,6 +668,17 @@
     }
 
   }
+  
+  /**
+   * Returns the atkSessionManager instance.
+   *
+   * @return atkSessionManager session mnanager
+   */
+  function &atkGetSessionManager()
+  {
+    global $g_sessionManager;
+    return $g_sessionManager;
+  }
 
   /**
    * Store a variable in the current namespace.
