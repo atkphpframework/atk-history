@@ -11,6 +11,11 @@ Changes in ATK 5.4?
   future send e-mails to other addresses etc.) [Peter]
 + Added support for configuration file overrides by other sections. [Peter]
 + Added hide() function for atkboolattribute. [Lineke]
++ Added validate method to atkDateTimeAttribute which calls the validate 
+  method of the atkDateAttribute and the atkTimeAttribute. [Lineke]
++ Flags for the atkDateTimeAttribute are now also passed to the 
+  atkDateAttribute and the atkTimeAttribute. [Lineke]
++ Added translation for title_select. [Lineke]
 * Fixed setTabs call for attributes. [Peter]
 * Bugfix in atkListAttribute. All quotes in options are now replaced with
   &quot;. [Lineke]

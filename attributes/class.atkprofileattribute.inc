@@ -199,7 +199,10 @@
             if (method_exists($instance, "getNodes"))
               $instance->getNodes();
           }
-
+        }
+        // retrieve all actions after we registered all actions
+        foreach (array_keys($g_modules) as $module)
+        {
           // retrieve actions for each node
           $nodes = isset($g_nodes[$module]) ? $g_nodes[$module] : array();
           foreach ($nodes as $node => $actions)

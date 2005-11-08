@@ -51,9 +51,15 @@
 			if($default_date=="") { $default_date = ""; }
 			if($default_time=="") { $default_time = date("H:i"); }
 			
-		  $this->m_time = new atkTimeattribute($name,0,23,$default_steps,$default_time);
-			$this->m_date = new atkDateattribute($name,$default_date);
+		  $this->m_time = new atkTimeattribute($name,0,23,$default_steps,$default_time, $flags);
+			$this->m_date = new atkDateattribute($name,$default_date,'',0,0,$flags);
       $this->atkAttribute($name,$flags); // base class constructor
+    }
+    
+    function validate(&$record, $mode)
+    {
+      $this->m_date->validate($record,$mode);
+      $this->m_time->validate($record,$mode);
     }
 
     function init()

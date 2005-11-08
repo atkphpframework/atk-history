@@ -224,6 +224,7 @@
   "thu" => "Don",
   "thursday" => "donderdag",
   "title_delete" => "Bevestig verwijderen",
+  "title_select" => "Selecteer",
   "title_session_expired" => "Sessie verlopen",
   "today" => "Vandaag",
   "tue" => "Din",
