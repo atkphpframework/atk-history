@@ -153,18 +153,18 @@
 
             if (count($node->getTabs($node->m_action)) > 1
                  && $error["tab"])
-              $error_tab = ' ('.text("error_tab").' '.'<a href="javascript:showTab(\''.$error["tab"].'\');">'.text("tab_".$error["tab"]).'</a> )';
+              $error_tab = ' ('.atktext("error_tab").' '.'<a href="javascript:showTab(\''.$error["tab"].'\');">'.atktext("tab_".$error["tab"], $this->m_module).'</a> )';
             else $error_tab = "";
 
             if(!is_array($error['attrib_name']))
             {
-              $label = text($error['attrib_name'], $type);
+              $label = atktext($error['attrib_name'], $node->m_module, $type);
             }
             else
             {
               $label = array();
               foreach($error['attrib_name'] as $attrib)
-                $label[] = text($attrib, $type);
+                $label[] = atktext($attrib, $node->m_module, $type);
 
                 $label= implode(", ", $label);
             }
@@ -179,7 +179,7 @@
             $pk_err_msg .= text($pk_err_attrib[$i]);
             if (($i+1) < count($pk_err_attrib)) $pk_err_msg .= ", ";
           }
-          $errors[] = array("label"=>text("error_primarykey_exists"),
+          $errors[] = array("label"=>atktext("error_primarykey_exists"),
                             "msg"=>$pk_err_msg);
         }
 
