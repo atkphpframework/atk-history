@@ -16,6 +16,7 @@ Changes in ATK 5.4?
 + Flags for the atkDateTimeAttribute are now also passed to the 
   atkDateAttribute and the atkTimeAttribute. [Lineke]
 + Added translation for title_select. [Lineke]
++ Added ability to force update on attribute with setForceUpdate() [Boy]
 * Fixed setTabs call for attributes. [Peter]
 * Bugfix in atkListAttribute. All quotes in options are now replaced with
   &quot;. [Lineke]
