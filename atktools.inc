@@ -898,6 +898,7 @@
 
       $body.= "\nDEBUGMESSAGES\n".str_repeat("-",70)."\n";
 
+      $lines = array();
       for($i=0, $_=count($g_debug_msg);$i<$_;$i++)
       {
         $lines[] = _wordwrap($g_debug_msg[$i]);

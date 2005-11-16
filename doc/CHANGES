@@ -28,6 +28,8 @@ Changes in ATK 5.4?
 * Reset atkstartat to zero after a new search in recordList. [Lineke]
 * Ldap changes to get the authorization through ldap work better. [Lineke]
 * Added extra header option for layout. [Lineke]
+* Instantiated $lines in mailreport because this can cause warnings using
+implode. [Lineke]
 
 Changes in ATK 5.3RC2
 ---------------------
