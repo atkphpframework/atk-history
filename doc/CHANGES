@@ -39,6 +39,18 @@ Changes in ATK 5.3RC2
   to the params. [Boy]
 + Added utils/langconvert.sh, a bash shell script that converts ATK4 style
   language files to ATK5 style. [Boy]
++ Document directory containing generic DocumentWriter class and
+  OpenDocumentWriter implementation (which wraps the TinyButStrong
+  OpenOffice.org template engine). [Guido]
++ Document action handler (and action icon in default theme for use in
+  recordlists). [Guido]
++ DocumentAttribute class for offering access to the Document action through
+  a document selector, which is displayed as an attribute in the list, edit
+  or view screen of a node. [Guido]
++ Ability to register dynamic block Smarty plugins. [Boy]
++ Ability to add output filter to Smarty. [Ivo,Boy]
++ Ability to add cache attributes to dynamic function Smarty function. [Boy]
++ Added AF_LIST_NO_NULL_ITEM flag for atkListAttribute. [Ivo]
 * Improved errorhandeling in themecompiling. [Boy]
 * Made it possible to use 'scan dir1/dir2;dir1/dir3' without wrapping the
   directories in single quotes. [Boy]
@@ -61,6 +73,19 @@ Changes in ATK 5.3RC2
   you are currently preforming an action in. [Boy]
 * Calling text() without module would cause unnecessary call 
   to filesystem. [Yury]
+* Fixed bug in findDestinationAttribute method of atkMetaPolicy. [Peter]
+* Fixed bug when searching in an embedded recordlist containing an
+  oneToManyRelation [Harrie]
+* Fixed: atkhtmlattribute now executes useattrib("atktextattribute") to
+  load its parent class file [Yury]
+* Fixed MySQLi driver:
+  * Fixed the atkDDL call, it now creates the correct one (mysql41 instead
+    of mysqli) [Sandy]
+  * Fixed retrieving the correct field types [Sandy]
+  * Fixed retrieving the correct field flags [Sandy]
+* Fixed bug in atkThemeCompiler, theme is now set from atkTheme instead of
+  retrieved from the config. [Ivo]
+* Fixed php error message in atkImportHandler. [Ivo]
 
 Changes in ATK 5.3RC1
 ---------------------

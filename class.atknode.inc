@@ -586,6 +586,11 @@
      * @var String
      */
     var $m_descTemplate = NULL;
+    
+    /**
+     * List of action listeners
+     */
+    var $m_listeners = array();
 
     /**
      * Constructor.
@@ -3606,5 +3611,20 @@
           $this->m_securityMap[$key] = $newmapped;
       }
     }
+    
+    function addListener(&$listener)
+    {
+      $listener->setNode($this);
+      $this->m_listeners[] = $listener;
+    }
+
+    function notify($action, $record)
+    {
+      for($i=0, $_i=count($this->m_listeners); $i<$_i; $i++)
+      {
+        $this->m_listeners[$i]->notify($action, $record);
+      }
+    } 
+    
   }
 ?>
