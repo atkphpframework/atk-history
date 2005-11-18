@@ -91,7 +91,7 @@ function smarty_core_read_cache_file(&$params, &$smarty)
     }
 
     foreach ($_cache_info['cache_serials'] as $_include_file_path=>$_cache_serial) {
-        if (empty($smarty->_cache_serials[$_include_file_path])) {
+        /*if (empty($smarty->_cache_serials[$_include_file_path]))*/ {
             $smarty->_include($_include_file_path, true);
         }
 

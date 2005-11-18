@@ -30,6 +30,10 @@ Changes in ATK 5.4?
 * Added extra header option for layout. [Lineke]
 * Initialised $lines in mailreport because this can cause warnings using
 implode. [Lineke]
+* Smarty changes in regular expression for detecting 0th param. [Lineke]
+* Smarty bugfix in core.read_cache_file.php. More information:
+http://www.phpinsider.com/smarty-forum/viewtopic.php?t=4188&highlight=
+smartytplfunc. [Lineke]
 
 Changes in ATK 5.3RC2
 ---------------------
