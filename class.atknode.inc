@@ -1815,7 +1815,10 @@
             $mod->$modifiername($this);
           }
         }
-      }
+      }    
+      
+      $this->_addListeners();
+      
       // We set the tabs for the attributes
       foreach (array_keys($this->m_attribList) as $attribname)
       {
@@ -1834,6 +1837,47 @@
 
 
       $this->m_initialised = true;
+    }
+    
+    /**
+     * Add the listeners for the current node
+     * A listener can be defined either by passing it as an instantiated object
+     * or by passing the full location in atkimport style notation
+     * @access private
+     */
+    function _addListeners()
+    {
+      global $g_nodeListeners;
+      if (isset($g_nodeListeners[$this->atknodetype()]))
+      {
+        foreach ($g_nodeListeners[$this->atknodetype()] as $listener)
+        {          
+          if (is_object($listener))
+          {
+            $this->addListener($listenerinst);
+          }
+          else 
+          {
+            if (is_string($listener))
+            {
+              atkimport($listener);
+              $exploded = explode(".",$listener);
+              $classname = array_pop($exploded);
+              if ($classname)
+              {
+                $listener = &new $classname();
+                $this->addListener($listener);
+              }
+              else 
+                atkdebug("We couldn't find a classname for listener with supposed nodetype: '$listener'");
+            }
+            else 
+            {
+              atkdebug("Failed to add listener with supposed nodetype: '$listener'");
+            }
+          }
+        }
+      }
     }
 
     /**

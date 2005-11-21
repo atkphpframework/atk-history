@@ -30,6 +30,9 @@
 
   // registered node action handlers
   $g_nodeHandlers = array();
+  
+  // registered node listeners
+  $g_nodeListeners = array();
 
   /**
    * Gets the node type of a node string
@@ -368,7 +371,7 @@
    */
   function atkPreloadModules()
   {
-    global $g_modules, $g_modifiers, $g_overloaders, $g_moduleflags;
+    global $g_modules, $g_modifiers, $g_overloaders, $g_moduleflags, $g_nodeListeners;
     
     foreach ($g_modules as $modname => $modpath)
     {
@@ -399,6 +402,7 @@
         // the include file may specify modifiers.
         $modifiers = array();
         $overloaders = array();
+        $listeners = array();
         include_once($filename);
         
         for ($i=0, $_i = count($modifiers); $i < $_i; $i++)
@@ -406,6 +410,9 @@
   
         if (count($overloaders) > 0)
           $g_overloaders = array_merge($g_overloaders, $overloaders);
+        
+        if (count($listeners) > 0)  
+          $g_nodeListeners = array_merge_recursive($g_nodeListeners, $listeners);
       }
     }
   }
