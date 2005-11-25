@@ -184,7 +184,7 @@
      *                     whereas the rest are probably select queries.     
      */
     function addToQuery(&$query, $tablename="", $fieldaliasprefix="", $rec="", $level=0, $mode="")
-    {   
+    {
       if ($this->createDestination())
       {
         if ($mode!= "update" && $mode!="add")
@@ -480,7 +480,7 @@
           {
             //if the a onetoonerelation has no relation on the other side the m_refKey is not an array          
             // experimental, will the next line always work?
-            $vars[$this->m_refKey] = $this->m_ownerInstance->m_attribList[$this->m_ownerInstance->primaryKeyField()]->value2db($record);
+            $vars[$this->m_refKey][$this->m_ownerInstance->primaryKeyField()] = $this->m_ownerInstance->m_attribList[$this->m_ownerInstance->primaryKeyField()]->value2db($vars[$this->m_refKey]);            
           }
         }
         else
@@ -548,7 +548,7 @@
           // of the target node.
           $attrib = $this->m_destInstance->m_attribList[$this->m_destInstance->m_primaryKey[0]];
         }
-        if (is_object($attrib) && strpos(get_class($attrib), "elation")!==false) return true;
+        if (is_object($attrib) && strpos(get_class($attrib), "elation")) return true;
       }
       return false;
     }
