@@ -708,10 +708,10 @@
      *                     config.inc.php file (defaults to 'default')
      * @return atkDb Instance of the database class.
      */
-    function &getInstance($conn="default")
+    function &getInstance($conn="default", $reset=false)
     {
       static $s_instances = array();
-      if (!isset($s_instances[$conn]))
+      if (!isset($s_instances[$conn]) || $reset)
       {
         atkdebug("Creating new db instance for connection $conn");
         $dbconfig = atkconfig("db");

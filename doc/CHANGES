@@ -17,6 +17,7 @@ Changes in ATK 5.4?
   atkDateAttribute and the atkTimeAttribute. [Lineke]
 + Added translation for title_select. [Lineke]
 + Added ability to force update on attribute with setForceUpdate() [Boy]
++ Added 'mock' database drivers [Boy]
 * Fixed setTabs call for attributes. [Peter]
 * Bugfix in atkListAttribute. All quotes in options are now replaced with
   &quot;. [Lineke]
@@ -29,11 +30,12 @@ Changes in ATK 5.4?
 * Ldap changes to get the authorization through ldap work better. [Lineke]
 * Added extra header option for layout. [Lineke]
 * Initialised $lines in mailreport because this can cause warnings using
-implode. [Lineke]
+  implode. [Lineke]
 * Smarty changes in regular expression for detecting 0th param. [Lineke]
 * Smarty bugfix in core.read_cache_file.php. More information:
-http://www.phpinsider.com/smarty-forum/viewtopic.php?t=4188&highlight=
-smartytplfunc. [Lineke]
+  http://www.phpinsider.com/smarty-forum/viewtopic.php?t=4188&highlight=
+  smartytplfunc. [Lineke]
+* Added ability to reset database connection. [Boy]
 
 Changes in ATK 5.3RC2
 ---------------------
