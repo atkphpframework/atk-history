@@ -89,6 +89,11 @@
        }
        return implode(', ',$res);
     }
+ 
+    function display_plain($record)
+    {
+      return $this->display($record);
+    }
 
     /**
      * Returns a piece of html code that can be used in a form to edit this
@@ -125,7 +130,7 @@
         {
           $sel = "";
         }
-        $result .= '<td class="table" valign="top"><input type="checkbox" name="'.$fieldprefix.$this->fieldName().'[]" value="'.$this->m_values[$i].'" '.$sel.'>'.text($this->m_options[$i]).'</td>';
+        $result .= '<td class="table" valign="top"><input type="checkbox" name="'.$fieldprefix.$this->fieldName().'[]" value="'.escapeSQL($this->m_values[$i]).'" '.$sel.'>'.text($this->m_options[$i]).'</td>';
         if ($i%$cols == $modcols) $result .="</tr><tr>\n";
         
       }
