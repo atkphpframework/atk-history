@@ -78,7 +78,7 @@
       else return array();
     }
     
-    function display($record)
+    function display($record, $char=", ")
     {
        //$values = explode('|',$record[$this->fieldName()]);
        $values = $record[$this->fieldName()];
@@ -87,12 +87,12 @@
        {
          $res[] = text($this->m_lookup[$values[$i]]);
        }
-       return implode(', ',$res);
+       return implode($char,$res);
     }
  
     function display_plain($record)
     {
-      return $this->display($record);
+      return $this->display($record, "|");
     }
 
     /**
