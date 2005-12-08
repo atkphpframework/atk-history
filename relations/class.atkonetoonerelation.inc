@@ -478,9 +478,25 @@
           }
           else
           {
-            //if the a onetoonerelation has no relation on the other side the m_refKey is not an array          
+            //if the a onetoonerelation has no relation on the other side the m_refKey is not an array
             // experimental, will the next line always work?
-            $vars[$this->m_refKey][$this->m_ownerInstance->primaryKeyField()] = $this->m_ownerInstance->m_attribList[$this->m_ownerInstance->primaryKeyField()]->value2db($vars[$this->m_refKey]);            
+            $refattr = $this->m_destInstance->getAttribute($this->m_refKey);
+            if ($refattr->m_destination)
+            {
+              /**
+               * If we have a destination, the ref key is a non-onetoone relation!
+               * So we have to treat the record as such... this is specifically geared towards
+               * the manytoone relation and may not work for others
+               * A way should be found to make this work for whatever
+               * maybe use value2db and db2value on eachother or something?
+               */
+              $vars[$this->m_refKey][$this->m_ownerInstance->primaryKeyField()] =
+                $this->m_ownerInstance->m_attribList[$this->m_ownerInstance->primaryKeyField()]->value2db($vars[$this->m_refKey]);
+            }
+            else
+            {
+              $vars[$this->m_refKey] = $this->m_ownerInstance->m_attribList[$this->m_ownerInstance->primaryKeyField()]->value2db($record);
+            }
           }
         }
         else
