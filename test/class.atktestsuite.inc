@@ -104,7 +104,7 @@
       
       if ($module!="")
       {        
-        $traverser->travers(moduleDir($module));
+        $traverser->traverse(moduleDir($module));
       }
       else 
       {
