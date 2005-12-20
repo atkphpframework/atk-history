@@ -175,7 +175,7 @@
           }
           // if flag is primary
           else if ($p_attrib->hasFlag(AF_UNIQUE) && !$p_attrib->hasFlag(AF_PRIMARY) &&
-                   count($db->getrows("SELECT ".$p_attrib->fieldName()." FROM ".$this->m_nodeObj->m_table." WHERE $attribname='".escapeSQL($this->m_nodeObj->m_postvars[$this->m_nodeObj->m_attribList[$attribname]->fieldName()])."' AND NOT (".$this->m_nodeObj->primaryKey($record).")"))>0
+                   count($db->getrows("SELECT ".$p_attrib->fieldName()." FROM ".$this->m_nodeObj->m_table." WHERE $attribname='".escapeSQL($record[$attribname])."' AND NOT (".$this->m_nodeObj->primaryKey($record).")"))>0
                   )
           {
             triggerError($record, $attribname, 'error_uniquefield', '', $p_attrib->m_tabs[0]);
@@ -189,7 +189,10 @@
       {
         for ($i = 0, $_i = count($record["atkerror"]); $i < $_i; $i++)
           $record["atkerror"][$i]["node"] = $this->m_nodeObj->m_type;        
+        return false;
       }
+      
+      return true;
     }
 
     /**
