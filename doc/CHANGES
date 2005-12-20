@@ -38,6 +38,9 @@ Changes in ATK 5.4?
   http://www.phpinsider.com/smarty-forum/viewtopic.php?t=4188&highlight=
   smartytplfunc. [Lineke]
 * Added ability to reset database connection. [Boy]
+* Fixed AF_UNIQUE check in atkNodeValidator (used postvars 
+  instead of record for validation) [Peter]
+
 
 Changes in ATK 5.3RC2
 ---------------------
