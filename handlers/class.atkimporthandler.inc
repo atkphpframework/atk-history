@@ -812,10 +812,9 @@
         }
       }
 
-      $initial_values = $this->m_node->initial_values();
-
       $importerror = "";
 
+      $initial_values = $this->m_node->initial_values();
       $importerror = $this->checkImport($col_map,$initial_values);
       
       if(is_array($importerror))
@@ -837,6 +836,7 @@
       if($skipfirstrow == "1") $line = fgets($fp);
       for($line = fgets($fp); $line!==false; $line = fgets($fp))
       {        
+        $initial_values = $this->m_node->initial_values();
         //if we have an empty line, pass it
         if(trim($line)=="")
           continue;
@@ -929,7 +929,7 @@
         return false;
       }
 
-      $this->m_node->addDb($record);
+      $this->m_node->addDb($record,true,'import');
       
       if(isset($record['atkerror']))
       {
