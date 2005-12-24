@@ -128,7 +128,8 @@
    * Add CSV export ability to the node.
    */
   define("NF_EXPORT",             262144);
-
+  
+  
   /**
    * Disable csv import feature
    * @deprecated since ATK 5.2
@@ -145,6 +146,13 @@
    */
   define("NF_CACHE_RECORDLIST",  1048576);
 
+
+  /**
+   * After adding a new record add another one instantaniously.
+   */
+  define("NF_ADDAFTERADD",       2097152);  
+
+  
   /**
    * Specific node flag 1
    */
@@ -1128,7 +1136,7 @@
     function getFormButtons($mode, $record)
     {
       $result = array();
-
+      
       // edit mode
       if ($mode == "edit")
       {
@@ -1137,15 +1145,23 @@
         // the 'saveandclose' button. Unless, a feedback screen is configured.
         if (atkLevel() >0 || hasFlag($this->m_feedback["update"], ACTION_SUCCESS))
         {
-          $result[] = '<input type="submit" class="btn_saveandclose" name="atksaveandclose" value="'.atktext('saveandclose').'">';
+          $result[] = '<input type="submit" class="btn_saveandclose" name="atksaveandclose" value="'.atktext('saveandclose', "atk").'">';
         }
-        $result[] = '<input type="submit" class="btn_save" name="atknoclose" value="'.atktext('save').'">';
-        $result[] = '<input type="submit" class="btn_cancel" name="atkcancel" value="'.atktext('cancel').'">';
+        $result[] = '<input type="submit" class="btn_save" name="atknoclose" value="'.atktext("save", "atk").'">';
+        $result[] = '<input type="submit" class="btn_cancel" name="atkcancel" value="'.atktext("cancel", "atk").'">';
+      }
+      elseif ($mode == "add")
+      {
+        $result[] = '<input type="submit" class="btn_save" value="'.atktext("save", "atk").'">';
+        // if action is admin, we don't show the cancelbutton or the add next button
+        if ($this->hasFlag(NF_ADDAFTERADD) && !$this->hasFlag(NF_EDITAFTERADD))
+          $result[] = '<input type="submit" class="btn_saveandnext" name="atksaveandnext" value="'.atktext("saveandnext", "atk").'">';
+        $result[] = '<input type="submit" class="btn_cancel" name="atkcancel" value="'.atktext("cancel", "atk").'">';
       }
 
       return $result;
     }
-
+    
     /**
      * Generate a box displaying a message that the current record is locked.
      * @return String The HTML fragment containing a box with the message and

@@ -16,19 +16,85 @@ Changes in ATK aphrodite
 
 Changes in ATK 5.3.1
 --------------------
-+ Added ability for attributes to define if they want to wrap fields and tables 
-  in quotes and turned this on for MySQL and make atkAttribute do it. [Boy]
++ Significantly enhanced the CSV export feature (atkExportHandler) (bug #603)
+  + The user can now select which columns to export. [Stefano]
+  + Attributes which are hidden in the list can be exported now. [Stefano]
+  + Configurable delimiter and enclosure. [Stefano]
+  * The default export filename is now export_[node name].csv. [Stefano]
+  * If the recordlist was filtered by searchcriteria, only those records
+    listed are displayed. [Stefano]
+  * Records in export are now sorted according to the selected order from
+    the recordlist. [Stefano]
+  * Fixed some translations. [Ivo]
 + Added atkColumnConfig class for elaborate sorting options in recordlists.
   (multi column sort, determinable sort direction per column, NF_EXT_SORT
   flag for adding a sort toolbar to recordlist). [Ivo]
-+ Added correct errorhandling for atkFileAttribute [Peter]
++ Added getIcon/getIconPath methods to atkTreeNode to override icons
+  more easily (without the need for creating a separate theme). [Peter]
++ Added atkGetSessionManager function. [Peter]
++ Added default configs/ directory to skel, including readme file. [Ivo]
++ Added str_replace javascript function to ATK javascript tools. [Boy]
++ Added NF_ADDAFTERADD node flag to continue adding records after
+  adding a record. [Peter]
++ atkOneToManyRelation filters are now parsed so values from the current
+  record can be used in the filter. (bug #584) [Yury]
++ Attribute tooltips are now displayed in view pages. (bug #595) [Yury]
+* atkaddhandler now uses getFormButtons.[Guido]
+* Attributes can now define if they want to quote field- and tablenames.
+  atkAttribute does this by default now. [Boy]
 * Sorting on atkManyToOneRelation columns now sorts on the actual value
   instead of on the id. [Ivo]
 * Moved addOnChangeHandler() to atkAttribute. [Boy]
-* atkNumberAttributes now renders NULL values as "" instead of 0. [Ivo]
-* Replaced some deprecated text() calls with atktext(). [Yury, Guido]. 
+* atkNumberAttribute now renders NULL values as "" instead of 0. [Ivo]
+* Replaced some deprecated text() calls with atktext(). [Yury, Guido] 
 * Decomposed atkNode::dispatch() to loadDispatchPage() which does the actual
   loading of the page for dispatch() to render. [Boy]
+* Fixed bug in atkTreeNode that didn't allow the usage of string based key and
+  parent fields. [Peter]
+* Fixed bug in atkOneToOneRelation that caused the foreign key in the record 
+  to be stored to be an array instead of a value. [Boy]
+* Made atkThemeCompiler able to handle modules not located in the atkroot. i
+  [Boy]
+* Added ability to reset instances created by atkinstance if supported by the
+  node and added support for atkTheme. [Boy]
+* Fixed error reporting for embeded atkOneToManyRelation. [Boy]
+* atkOneToManyRelation navigation links are not shown if there is no 
+  filter. [Boy]
+* AF_UNIQUE validation is no longer performed on the postvars, but on the 
+  record passed. [Boy]
+* AF_UNIQUE can now handle values that contain quotes. (bug #600) [Yury]
+* Added new param to dispatch_url allowing you to dispatch to other php files 
+  than dispatch.php. [Boy]
+* Added 'class' HTML attribute with name of attribute for atkAttribute,
+  atkDateAttribute, atkListAttribute, atkNumberAttribute, atkOneToManyRelation 
+  and atkManyToOnerelation. [Boy] 
+* Fixed ATK sometimes placing focus on hidden objects. [Boy]
+* Upgraded Smarty to version 2.6.11. [Boy]
+* Fixed error handling for atkFileAttribute. [Peter]
+* Fixed problem with the session expiring at login on some servers. [Ivo]
+* Mailreporting removes JS debugger links from debug output and transforms
+  html special chars to normal special chars. [Boy]
+* Login screen is now skipped when $config_authentication is "none". (bug #585) 
+  [Ivo]
+* Fixed a php error in atkMatrixRelation. (bug #587) [Roberto]
+* atkManyToOneRelation and atkOneToManyRelation now recognise 'csv' display
+  mode so they do not add html to CSV exports. (bug #589) [Yury]
+* Fixed a reference copy bug in the atkActionListener and added a unittest to
+  prevent future breakage. (bug #591) [Yury]
+* Tooltips for fields added by a modifier are now retrieved from the correct
+  language file (the module that applied the modifier). (bug #594) [Yury]
+* Mailreports now show whats in arrays, remove javascript debugger
+  links from debugging info and remove HTML entities so traces are human 
+  readable. [Boy]
+* Added html_entity_decode for PHP versions lacking it. [PHP.net,Boy]
+* atkSelectHandler now properly parses [pk] template variable in select links.
+  (bug #597) [Yury, Ivo]
+* The preCopy() trigger is now called when a record is copied in the
+  atkTreeNode. (bug #602) [Olav]
+* The preAdd() trigger is now called when records are added through an
+  atkOneToOneRelation. [Ivo]
+* Mail Error reports at debuglevel 0 now contain the debugoutput again. Use
+  $config_debug = -1 to prevent collection and save some memory. [Ivo]
 
 Changes in ATK 5.3
 ------------------

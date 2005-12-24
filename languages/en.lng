@@ -96,6 +96,9 @@
   "error_file_size" => "File is too big",
   "error_file_unknown" => "Unknown error during upload of file",
   "export" => "Export",
+  "export_config_explanation" => "Please select the options for the CSV export.",
+  "export_generatetitlerow" => "Include a title row",
+  "export_selectcolumns" => "Select which columns to export",
   "feb" => "Feb",
   "february" => "February",
   "feedback" => "Feedback",
@@ -254,6 +257,7 @@
   "wysiwyg_merge_cell" => "Merge cells",
   "wysiwyg_split_cell" => "Split cells",
   "yes" => "Yes",
+  "saveandnext" => "Save and next",
 );
 
 ?>

@@ -787,7 +787,7 @@
    * Checks wether or not the sessionid that was passed along is valid
    * A session id can become invalid because of tampering and would otherwise
    * cause a php error.
-   * A valid session id consists of 32 alphanumeric characters.
+   * A valid session id consists only of alphanumeric characters.
    * Mind you, an empty sessionid is also valid,
    * simply because there is no session yet
    * @return bool Wether or not the sessionid is valid
@@ -809,11 +809,21 @@
 
     if ($sessionid=="") return true;
 
-    for ($position=0; $position<32; $position++)
+    for ($position=0; $position<strlen($sessionid); $position++)
     {
       if (!eregi('[a-zA-Z0-9]', $sessionid[$position])) return false;
     }
     return true;
+  }
+  
+  /**
+   * Returns the sessionmanager.
+   * @return atkSessionManager  session manager
+   */
+  function &atkGetSessionManager()
+  {
+    global $g_sessionManager;
+    return $g_sessionManager;
   }
 
 ?>

@@ -211,7 +211,7 @@
      * @param $record Record
      * @return a displayable string
      */
-    function display($record)
+    function display($record, $mode)
     {
       if ($this->createDestination())
       {
@@ -238,7 +238,7 @@
 
         $result = $title; // default result is just the title.
 
-        if ($this->hasFlag(AF_RELATION_AUTOLINK)) // create link to edit/view screen
+        if ($this->hasFlag(AF_RELATION_AUTOLINK) && $mode<>"csv") // create link to edit/view screen
         {
           if (($this->m_destInstance->allowed("view"))&&!$this->m_destInstance->hasFlag(NF_NO_VIEW)&&$title!="")
           {
@@ -307,11 +307,11 @@
             if (count($this->m_onchangecode))
             {
               $onchange = 'onChange="'.$id.'_onChange(this);"';
-              $this->renderChangeHandler($fieldprefix);
+              $this->_renderChangeHandler($fieldprefix);
             }
 
             $this->registerKeyListener($id, KB_CTRLCURSOR|KB_LEFTRIGHT);
-            $result.= '<select id="'.$id.'" name="'.$id.'" '.$onchange.'>';
+            $result.= '<select id="'.$id.'" name="'.$id.'" class="atkmanytoonerelation" '.$onchange.'>';
             if (!$this->hasFlag(AF_OBLIGATORY)||(atkconfig("list_obligatory_null_item")&&!is_array($value)))
             {
               //get the select_none string
@@ -395,7 +395,7 @@
                            "&atkaction=select&atkfilter=".$filter."&atktarget=".$atktarget,
                            atktext("link_select_".getNodeType($this->m_destination), getNodeModule($this->m_destination),getNodeType($this->m_destination)),
                            SESSION_NESTED,
-                           true);
+                           true,'class="atkmanytoonerelation"');
           }
           else
           {
@@ -403,7 +403,7 @@
                            "&atkaction=select&atktarget=".$atktarget,
                            atktext("link_select_".getNodeType($this->m_destination), getNodeModule($this->m_destination),getNodeType($this->m_destination)),
                            SESSION_NESTED,
-                           true);
+                           true,'class="atkmanytoonerelation"');
           }
         }
 
@@ -493,7 +493,7 @@
           }
           $recordset = $this->m_destInstance->selectDb("","","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
 
-          $result = '<select ';
+          $result = '<select class="'.get_class($this).'" ';
           if ($extended)
           {
             $result.='multiple size="'.min(5,count($recordset)+1).'"';
@@ -525,7 +525,7 @@
       {
         $id = "atksearch[".$fieldprefix.$this->fieldName()."]";
         $this->registerKeyListener($id, KB_CTRLCURSOR|KB_UPDOWN);
-        $result = '<input type="text" id="'.$id.'" name="'.$id.'" value="'.$record[$this->fieldName()].'"'.
+        $result = '<input type="text" id="'.$id.'" class="'.get_class($this).'" name="'.$id.'" value="'.$record[$this->fieldName()].'"'.
           ($this->m_searchsize > 0 ? ' size="'.$this->m_searchsize.'"' : '').
           ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>';
         return $result;

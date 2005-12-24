@@ -32,14 +32,19 @@
   $theme['ol_wincolor']='#eeeee0';
   $theme['ol_background']='#677EB1';
   
-  $theme['doctype'] = '<?xml version="1.0" encoding="UTF-8"?>'.
+  $theme['doctype'] = '<?xml version="1.0" encoding="UTF-8"?>'."\n".
                       '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"'.
                       ' "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">';
                       
-  $theme['menu_delimiter'] = "<br>";
-  $theme['menu_pos'] = "left";
-  $theme['menu_layout'] = "plain";
-  $theme['menu_align'] = "center";
+  $theme['menu']= array(
+    'plain' => array(
+      'delimiter' => "<br>",
+      'pos' => "left",
+      'menu_align' => "center",
+      ),
+    'theme default'=>'plain'
+  );
+  
   $theme['top_frame'] = 0;
   $theme['recordlist_orientation']  = "left";
   $theme['recordlist_vorientation'] = "middle";

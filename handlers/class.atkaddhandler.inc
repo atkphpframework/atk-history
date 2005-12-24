@@ -53,6 +53,7 @@
       // Utility.
       $edithandler = &$node->getHandler("edit");
 
+      $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");
       $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
       $node->addStyle("style.css");
 
@@ -79,12 +80,7 @@
 
         $params["content"] = $node->tabulate("add", $form);
 
-        $params["buttons"][] = '<input type="submit" class="btn_save" value="'.atktext('save').'">';
-        if ($node->m_action=="add")
-        {
-          // if action is admin, we don't show the cancelbutton..
-          $params["buttons"][] ='<input type="submit" class="btn_cancel" name="atkcancel" value="'.atktext('cancel').'">';
-        }
+				$params["buttons"] = $this->m_node->getFormButtons("add", $record);
         $params["formend"] = '</form><SCRIPT type="text/javascript" language="JavaScript">placeFocus()</SCRIPT>';
 
         $output = $ui->renderAction("add", $params);

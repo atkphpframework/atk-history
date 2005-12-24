@@ -145,7 +145,9 @@
    */
   function atkdebug($txt, $viewhtml=false)
   {
-    if (atkconfig("debug")>0)
+    global $g_debug_msg;
+    $level = atkconfig("debug");
+    if ($level>0)
     {
       if($viewhtml)
         $txt = htmlentities($txt);
@@ -153,20 +155,23 @@
       atkWriteLog($txt);
       $line = atkGetTimingInfo().$txt;
 
-      if (atkconfig("debug")>1)
+      if ($level>1)
       {
         atkimport("atk.utils.atkdebugger");
         if (!atkDebugger::addStatement($line))
         {
-          global $g_debug_msg;
           $g_debug_msg[]=$line;
         }
       }
       else
       {
-        global $g_debug_msg;
         $g_debug_msg[]=$line;
       }
+    }
+    else if ($level>-1) // at 0 we still collect the info so we
+                        // have it in error reports. At -1, we don't collect
+    {
+      $g_debug_msg[]=$txt;
     }
   }
 
@@ -909,7 +914,7 @@
 
       for($i=0, $_=count($g_debug_msg);$i<$_;$i++)
       {
-        $lines[] = _wordwrap($g_debug_msg[$i]);
+        $lines[] = _wordwrap(html_entity_decode(preg_replace('(\[<a.*</a>\])','',$g_debug_msg[$i])));
       }
       $body.= implode("\n",$lines);
 
@@ -918,7 +923,7 @@
         $body.= "\n\n_GET\n".str_repeat("-",70)."\n";
         foreach ($_GET as $key=>$value)
         {
-          $body.=_wordwrap($key.str_repeat(" ",max(1,20-strlen($key)))." = ".$value)."\n";
+          $body.=_wordwrap($key.str_repeat(" ",max(1,20-strlen($key)))." = ".var_export($value,1))."\n";
         }
       }
 
@@ -927,7 +932,7 @@
         $body.= "\n\n_GET\n".str_repeat("-",70)."\n";
         foreach ($_GET as $key=>$value)
         {
-          $body.=_wordwrap($key.str_repeat(" ",max(1,20-strlen($key)))." = ".$value)."\n";
+          $body.=_wordwrap($key.str_repeat(" ",max(1,20-strlen($key)))." = ".var_export($value,1))."\n";
         }
       }
 
@@ -939,7 +944,7 @@
           $body.= "\n\nREQUEST INFORMATION\n".str_repeat("-",70)."\n";
           foreach($request as $key=>$value)
           {
-            $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value)."\n";
+            $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".var_export($value,1))."\n";
           }
         }
       }
@@ -949,7 +954,7 @@
         $body.= "\n\n_POST\n".str_repeat("-",70)."\n";
         foreach ($_POST as $key=>$value)
         {
-          $body.=_wordwrap($key.str_repeat(" ",max(1,20-strlen($key)))." = ".$value)."\n";
+          $body.=_wordwrap($key.str_repeat(" ",max(1,20-strlen($key)))." = ".var_export($value,1))."\n";
         }
       }
       $body.= "\n\nATK CONFIGURATION\n".str_repeat("-",70)."\n";
@@ -957,7 +962,7 @@
       {
         if (substr($key,0,7)=="config_")
         {
-          $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value)."\n";
+          $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".var_export($value,1))."\n";
         }
       }
 
@@ -966,7 +971,7 @@
       {
         foreach($g_user as $key => $value)
         {
-          $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value)."\n";
+          $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".var_export($value,1))."\n";
         }
       }
       else $body.= "Not known\n";
@@ -984,7 +989,7 @@
 	       {
             foreach ($item as $key=>$value)
             {
-              $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value)."\n";
+              $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".var_export($value,1))."\n";
             }
           }
         }
@@ -994,7 +999,7 @@
           $body.="\nNamespace globals:\n";
           foreach ($ns_globals as $key=>$value)
           {
-            $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value)."\n";
+            $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".var_export($value,1))."\n";
           }
         }
         $globals = $g_sessionData["globals"];
@@ -1003,7 +1008,7 @@
           $body.="\nGlobals:\n";
           foreach ($globals as $key=>$value)
           {
-            $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".$value)."\n";
+            $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".var_export($value,1))."\n";
           }
         }
       }
@@ -1012,7 +1017,7 @@
 
       foreach ($_SERVER as $key=>$value)
       {
-        $body.=_wordwrap($key.str_repeat(" ",max(1,20-strlen($key)))." = ".$value)."\n";
+        $body.=_wordwrap($key.str_repeat(" ",max(1,20-strlen($key)))." = ".var_export($value,1))."\n";
       }
 
       mail($config_mailreport,$subject,$body,"From: $from <atkinfo@ibuildings.nl>");
@@ -1274,7 +1279,24 @@
     return false;
   }
 
+  /**
+   * Includes the file containing the specified attribute
+   *
+   * @param string $attribute The attribute to include in the format "module.attribute". ATK will
+   *                          search in [moduledir]/attributes/ for the attribute file.
+   *                          When no modulename is specified ATK will search for the attribute
+   *                          in [atkdir]/attributes/
+   */
   function useattrib($attribute)  { atkuse("attribute", $attribute); }
+
+  /**
+   * Includes the file containing the specified relation
+   *
+   * @param string $relation  The relation to include in the format "module.relation". ATK will
+   *                          search in [moduledir]/relations/ for the relation file.
+   *                          When no modulename is specified ATK will search for the relation
+   *                          in [atkdir]/relations/
+   */
   function userelation($relation) { atkuse("relation" , $relation);  }
   function usefilter($filter)     { atkuse("filter"   , $filter);    }
 
@@ -1400,12 +1422,13 @@
    * @param string $node the (module.)node name
    * @param string $action the atk action the link will perform
    * @param string $params: A key/value array with extra options for the url
+   * @param string $phpfile The php file to use for dispatching, defaults to dispatch.php
    * @return string url for the node with the action
    */
-  function dispatch_url($node, $action, $params="")
+  function dispatch_url($node, $action, $params="",$phpfile='dispatch.php')
   {
     /* create url */
-    $url = "dispatch.php?atknodetype=".$node."&atkaction=".$action;
+    $url = $phpfile."?atknodetype=".$node."&atkaction=".$action;
     if ($params!=""&&is_array($params))
     {
       foreach ($params as $key => $value)
@@ -1602,16 +1625,16 @@
    * @param string $fullclassname the ATK classname of the class ("map1.map2.classname")
    * @return obj instance of the class
    * */
-  function &atkinstance($fullclassname)
+  function &atkinstance($fullclassname, $reset=false)
   {
     static $s_instances = array();
-    if (!isset($s_instances[$fullclassname]))
+    if (!isset($s_instances[$fullclassname]) || $reset)
     {
       atkimport($fullclassname);
       $elems = explode(".", strtolower($fullclassname));
       $classname = $elems[count($elems)-1];
       atkdebug("Getting singleton instance $fullclassname");
-      eval("\$s_instances[\$fullclassname] = &".$classname."::getInstance();");
+      eval("\$s_instances[\$fullclassname] = &".$classname."::getInstance($reset);");
     }
     return $s_instances[$fullclassname];
   }
@@ -1722,6 +1745,42 @@
       $escaped.=$curchar;
     }
     return $escaped;
+  }
+  
+  /**
+   * Escapes quotes in a given string
+   *
+   * @param String $string
+   * @param String $quote
+   * @return String
+   */
+  function atkEscapeQuotes($string,$quote="'")
+  {
+    // Because we don't want to escape already escaped quotes, we unescape those
+    // before we do the actual escaping, where we re-escape them again.
+    return str_replace($quote,'\\'.$quote,str_replace ('\\'.$quote, $quote, $string));
+  }
+
+  if (!function_exists('html_entity_decode'))
+  {
+    /**
+     * Convert all HTML entities to their applicable characters.
+     * Reverse of htmlspecialchars.
+     * Standard PHP function in PHP >= 4.3.0.
+     * Taken from http://www.php.net/manual/en/function.html-entity-decode.php.
+     *
+     * @param String $str The string to translate the characters of
+     * @return String The translated String
+     */
+    function html_entity_decode($str)
+    {
+      // replace numeric entities
+      $str = preg_replace('~&#x([0-9a-f]+);~ei', 'chr(hexdec("\\1"))', $str);
+      $str = preg_replace('~&#([0-9]+);~e', 'chr(\\1)', $str);
+      // replace literal entities
+      $trans_table = array_flip(get_html_translation_table(HTML_ENTITIES));
+      return strtr($str, $trans_table);
+    }
   }
 
 ?>
