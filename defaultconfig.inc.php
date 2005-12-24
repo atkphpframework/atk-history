@@ -25,8 +25,10 @@
 
   /**
    * The application root
-   * @var String The application root
-   * @todo update this bit of documentation as it doesn't really say much
+   * if you're using urlrewrites within your httpd or htaccess configuration i think this should be '/'
+   * be careful with this setting because it could create a major securityhole.
+   * It is used to set the cookiepath when using PHP sessions.
+   * @var String
    */
   $config_application_root = "/";
 
@@ -47,7 +49,14 @@
    */
   $config_module_path = $config_atkroot."modules";
 
+  /**
+   * @todo add documentation!
+   */
   $config_corporate_node_base = "";
+  
+  /**
+   * @todo add documentation!
+   */
   $config_corporate_module_base = "";
 
   /**
@@ -136,9 +145,13 @@
   /********************************** SECURITY *******************************/
 
   /**
-   * The password to use for administrator login.
-   * An administrator password that is empty will *DISABLE* administrator login!
-   * @var mixed
+   * If you specify an administrator password here, you are always able
+   * to login using user 'administrator' and the specified password,
+   * regardless of the type of authentication used!
+   * if you set it to nothing (""), administrator login is disabled,
+   * and only valid users are allowed to login (depending on the type of
+   * authentication used).
+   * @var String
    */
   $config_administratorpassword = "";
 
@@ -156,13 +169,39 @@
   $config_authentication = "none";
 
   /**
-   *
+   * The type of authorization (what is a user allowed to do?)
+   * Normally this will be the same as the authentication, but in
+   * special cases like POP3 authentication you might want to
+   * authorize via a table in the database.
+   * $config_authorization = "none";
+
+   * NOTE, the following options are only useful if authentication is not
+   * set to "none".
+
+   * This parameter specifies whether the passwords are stored as an md5
+   * string in the database / configfile / whatever.
+   * If set to false, the passwords are assumed to be plain text.
+   * Note: Not all authentication methods support md5! e.g, if you use
+   *       pop3 authentication, set this to false.
+   * Note2: If set to false, and authentication_cookie is set to true,
+   *        the password in the cookie will be stored plaintext!!!
    * @var bool
    */
   $config_authentication_md5 = true;
+  
+  /**
+   * This parameter specified whether passwords are stored using the
+   * php/perl crypt() function. Applications using this are Bugzilla.
+   * Setting this to true, and setting $config_authentication_md5 to
+   * false, allows users to login to applications where the database
+   * uses crypted passwords.
+   * @var bool
+   */
+  $config_auth_usecryptedpassword = false;
 
   /**
-   *
+   * If set to true, a cookie with username/password is written, so
+   * users will stay logged in, even if they close their browser.
    * @var bool
    */
   $config_authentication_cookie = false;
@@ -180,14 +219,21 @@
   $config_authentication_session = true;
 
   /**
-   *
+   * The security scheme is used to determine who is allowed to do what.
+   * Currently supported:
+   * "none"   - anyone who is logged in may do anything.
+   * "level"  - users have a certain level, and certain features of the
+   *            application require a minimum level.
+   * "group"  - users belong to a group, and certain features may only
+   *            be executed by a specific group.
    * @var String
    */
   $config_securityscheme = "none";
 
   /**
-   *
-   * @var bool
+   * If config_restrictive is set to true, access is denied for all features
+   * for which no access requirements are set. If set to false, access is
+   * always granted if no access requirements are set.
    */
   $config_restrictive = true;
 
@@ -204,27 +250,31 @@
   $config_auth_grantall_privilege = "";
 
   /**
-   * Zero is no logging
+   * Atk can write security events to a logfile.
+   * There are several values you can choose for $config_logging.
+   * 0 - No logging
+   * 1 - Log logins
+   * 2 - Log actions ("User x performed action x on module y")
    * @var int
    */
   $config_logging = 0;
 
   /**
-   *
+   * The file to write the log to
    * @var String
    */
   $config_logfile = "/tmp/atk-security.log";
 
   /************************** AUTHENTICATION *********************************/
-
+  
   /**
-   *
+   * The table to use for user authentication
    * @var String
    */
   $config_auth_usertable   = "user";
 
   /**
-   * Defaults to usertable
+   * Table where levels are stored. Defaults to usertable
    * @var String
    */
   $config_auth_leveltable  = "";
@@ -236,7 +286,7 @@
   $config_auth_accesstable = "access";
 
   /**
-   *
+   * The field where the login name of the user is stored
    * @var String
    */
   $config_auth_userfield   = "userid";
@@ -248,7 +298,7 @@
   $config_auth_userpk = "userid";
 
   /**
-   *
+   * The field where the password of the user is stored
    * @var String
    */
   $config_auth_passwordfield = "password";
@@ -260,7 +310,7 @@
   $config_auth_accountdisablefield = "";
 
   /**
-   *
+   * The field where we store the level of a user (?)
    * @var String
    */
   $config_auth_levelfield = "entity";
@@ -305,6 +355,7 @@
   $config_auth_usecryptedpassword = false;
 
   /**
+   * The maximum amount a visitor may try to login.
    * 0 = no maximum.
    * @var int
    */
@@ -328,6 +379,62 @@
    * @var String
    */
   $config_auth_accountenableexpression = "";
+  
+  /**
+   * Setting this to true will make ATK use a loginform instead of a browser
+   * popup.
+   * @var bool
+   */
+  $config_auth_loginform = true;
+  
+  /**
+   * The maximum amount a visitor may try to login.
+   * 0 = no maximum.
+   * @var int
+   */
+  $config_max_loginattempts = 5;
+
+  /**
+   * if you use "pop3" or "imap" as authentication, you have to fill in
+   * these parameters:
+
+   * Set this to true if you have virtual mail domains.
+   * Atk will append '@' and the config_auth_mail_suffix
+   * to the login name.
+   * @var bool
+   */
+   $config_auth_mail_virtual = false;
+
+  /**
+   * Mail suffix, if mail_virtual is set to true.
+   * @var String
+   */
+  $config_auth_mail_suffix = "";
+
+  /**
+   * Mail server name
+   * @var String
+   */
+   $config_auth_mail_server = "localhost";
+
+  /**
+   * Port of the mail server (default is 110 (pop3) but you can set it
+   * to 143 (imap) or something else.
+   * @var int
+   */
+   $config_auth_mail_port = 143;
+
+  /**
+   * The hostname of the LDAP server
+   * @var String
+   */
+   $config_auth_ldap_host = "";
+   
+   /**
+    * The context of the LDAP server (?)
+    * @var String
+    */
+   $config_auth_ldap_context = "";
 
 
   /***************************** LDAP settings *******************************/
@@ -356,7 +463,10 @@
   /***************** DEBUGGING AND ERROR HANDLING ****************************/
 
   /**
-   *
+   * The debug level.
+   * 0 - No debug information
+   * 1 - Print some debug information at the bottom of each screen
+   * 2 - Print debug information, and pause before redirects
    * @var int
    */
   $config_debug = 0;
@@ -368,8 +478,14 @@
   $config_debuglog = "";
 
   /**
+   * Smart debug parameters. Is used to dynamically enable debugging for
+   * certain IP addresses or if for example the special atkdebug[key] request
+   * variable equals a configured key etc. If smart debugging is enabled
+   * you can also change the debug level dynamically using the special
+   * atkdebug[level] request variable.
    *
-   * @var Array
+   * @example $config_smart_debug[] = array("type" => "request", "key" => "test");
+   *          $config_smart_debug[] = array("type" => "ip", "list" => array("10.0.0.4"));
    */
   $config_smart_debug = array();
 
@@ -386,6 +502,11 @@
   $config_halt_on_error = "critical";
 
   /**
+   * The automatic error reporter
+   * Error reports are sent to the given email address.
+   * If you set this to "", error reporting will be turned off.
+   * WARNING: DO NOT LEAVE THIS TO THE DEFAULT ADDRESS OR PREPARE TO BE
+   * SEVERELY FLAMED!
    * Automatic error reporting is turned off by default.
    * @var String
    */
@@ -394,14 +515,24 @@
   /************************************ LAYOUT *******************************/
 
   /**
-   * The default theme to use
+   * The theme defines the layout of your application. You can see which
+   * themes there are in the directory atk/themes.
    * @var String
    */
   $config_defaulttheme = "default";
+  
+  /**
+   * The layout of the menu to use.
+   * This has to be supported by the theme you are using otherwise
+   * the default menu layout will be used.
+   * @var String
+   */
+  $config_menu_layout = "plain";
 
   /**
-   * Fullscreen mode (IE only)
-   * @var String
+   * If the users are using IE, then the application can be run in fullscreen
+   * mode. Set the next variable to true to enable this:
+   * @var bool
    */
   $config_fullscreen = false;
 
@@ -412,7 +543,8 @@
   $config_tabs = true;
 
   /**
-   * The number of records to display on a single page
+   * In admin pages, atk shows you a number of records with previous and
+   * next buttons. You can specify the number of records to show on a page.
    * @var int
    */
   $config_recordsperpage=25;
@@ -433,7 +565,8 @@
   /********************************** LANGUAGE *******************************/
 
   /**
-   * The language to use for the application
+   * The language of the application. You can use any language for which
+   * a language file is present in the atk/languages directory.
    * @var String
    */
   $config_language="en";
@@ -514,7 +647,7 @@
   /****************** MISCELLANEOUS CONFIGURATION OPTIONS ********************/
 
   /**
-   * The application identifier (used for sessions)
+   * The unique application identifier (used for sessions)
    * @var String
    * @todo update this bit of documentation as it doesn't really say much
    */
@@ -612,5 +745,41 @@
    * @var bool
    */
   $config_enable_ssl_encryption = false;
+  
+  /**
+   * Lists that are obligatory, by default have no 'Select none' option. In
+   * some applications, this leads to the user just selecting the first item
+   * since that is the default. If this is a problem set this config variable
+   * to true; this will add a 'Select none' option to obligatory lists so the
+   * user is forced to make a selection.
+   * @var bool
+   */
+  $config_list_obligatory_null_item = false;
+
+  /**
+   * For document attributes, ATK automatically searches for template
+   * documents in a specific directory. The base directory to search in
+   * can be specified below. The document templates must be put in a
+   * specific directory structure under this base directory: first of all
+   * a subdirectory must be made for every module for which you want to
+   * include document templates (equal to the modulename of that module, as
+   * set in config.inc.php). Then a subdirectory in that directory must be
+   * made according to the name of the node for which you want to include
+   * document templates. In this subdirectory you can put your document
+   * template files. So if you have $config_doctemplatedir set to
+   * "doctemplates/", then you can put your documents in
+   * "doctemplates/modulename/nodename/".
+   */
+  $config_doctemplatedir = "doctemplates/";
+
+  /**
+   * @todo document me!
+   */
+  $config_supported_languages = array("EN","NL","DE");
+  
+  /**
+   * @todo document me!
+   */
+  $config_defaultlanguage="EN";
 
 ?>
