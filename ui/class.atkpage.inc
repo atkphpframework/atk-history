@@ -210,7 +210,6 @@
      */
     function head($title, $extra_header="")
     {
-      atkdebug("HEAD TITLE: $title");
       $res = "<head>\n  <title>$title</title>\n";
 
       // $Name$ is the CVS tag.
