@@ -510,6 +510,27 @@
     {
       return "";
     }
+    
+    /**
+     * Create the where clause for the referential key that is used to
+     * retrieve the destination records.
+     * @access private
+     *
+     * @param array $record The master record
+     * @return String SQL where clause
+     */
+    function _getLoadWhereClause($record)
+    {
+      if (count($this->m_refKey)==0||$this->m_refKey[0]=="") $this->m_refKey[0]=$this->m_owner;
+
+      for ($i=0, $_i = count($this->m_refKey); $i<$_i; $i++)
+      {
+        $primkeyattr = &$this->m_ownerInstance->m_attribList[$this->m_ownerInstance->m_primaryKey[$i]];
+        $whereelems[] = $this->m_destInstance->m_table.".".$this->m_refKey[$i]."='".$primkeyattr->value2db($record)."'";
+      }
+
+      return implode(" AND ", $whereelems);
+    }
 
     /**
      * Retrieve detail records from the database.
@@ -540,15 +561,7 @@
       {
         if ($this->createDestination())
         {
-          if (count($this->m_refKey)==0||$this->m_refKey[0]=="") $this->m_refKey[0]=$this->m_owner;
-
-          for ($i=0, $_i = count($this->m_refKey); $i<$_i; $i++)
-          {
-            $primkeyattr = &$this->m_ownerInstance->m_attribList[$this->m_ownerInstance->m_primaryKey[$i]];
-            $whereelems[] = $this->m_destInstance->m_table.".".$this->m_refKey[$i]."='".$primkeyattr->value2db($record)."'";
-          }
-
-          $where = implode(" AND ", $whereelems);
+          $where = $this->_getLoadWhereClause(record);
 
           if ($this->m_destinationFilter!="")
           {

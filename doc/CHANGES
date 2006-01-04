@@ -43,6 +43,8 @@ Changes in ATK 5.4?
 * Fixed some outlook tree icons that were corrupted. [Lineke]
 * Recordlist icon names are now assumed to be lowercase. [Ivo]
 * atkTheme attributes are now case insensitive. [Ivo]
+* atkOneToManyRelation now builds the referential where clause in a separate
+  overridable method _getLoadWhereClause(). [Ivo]
 
 
 Changes in ATK 5.3RC2
