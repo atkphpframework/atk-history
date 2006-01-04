@@ -561,7 +561,7 @@
       {
         if ($this->createDestination())
         {
-          $where = $this->_getLoadWhereClause(record);
+          $where = $this->_getLoadWhereClause($record);
 
           if ($this->m_destinationFilter!="")
           {
