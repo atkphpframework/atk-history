@@ -40,6 +40,7 @@ Changes in ATK 5.4?
 * Added ability to reset database connection. [Boy]
 * Fixed AF_UNIQUE check in atkNodeValidator (used postvars 
   instead of record for validation) [Peter]
+* Fixed some outlook tree icons that were corrupted [Lineke]
 
 
 Changes in ATK 5.3RC2
