@@ -38,9 +38,11 @@ Changes in ATK 5.4?
   http://www.phpinsider.com/smarty-forum/viewtopic.php?t=4188&highlight=
   smartytplfunc. [Lineke]
 * Added ability to reset database connection. [Boy]
-* Fixed AF_UNIQUE check in atkNodeValidator (used postvars 
-  instead of record for validation) [Peter]
-* Fixed some outlook tree icons that were corrupted [Lineke]
+* Fixed AF_UNIQUE check in atkNodeValidator (used postvars instead of record
+  for validation)i. [Peter]
+* Fixed some outlook tree icons that were corrupted. [Lineke]
+* Recordlist icon names are now assumed to be lowercase. [Ivo]
+* atkTheme attributes are now case insensitive. [Ivo]
 
 
 Changes in ATK 5.3RC2

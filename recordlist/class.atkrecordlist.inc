@@ -343,7 +343,7 @@
 
 	    if($icons == true)
 	    {
-	      $icon = $theme->iconPath($name,"recordlist");
+	      $icon = $theme->iconPath(strtolower($name),"recordlist");
   	      $link = '<img width="16" height="16" border="0" src="'.$icon.'" title="'.text($name,$this->m_node->m_type,$this->m_node->m_module).'">';
 	    }
 	    else
