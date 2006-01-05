@@ -1523,7 +1523,7 @@ class Smarty_Compiler extends Smarty {
                     /* If the token is a valid identifier, we set attribute name
                        and go to state 1. */
                     // SANDY HACK, the regular expression is changed, org was: !^\w+$!
-                    if (preg_match('!^((?>\w|#|/|\$)(\w|-|_|:|#|/|\.)*|[\'"](?>\w|/|\$)(\w|-|_|\?|=|:|#|/|\.|\s)*[\'"])$!', $token)) 
+                    if (preg_match('!^((?>\w|#|/|\$)(\w|@|-|_|:|#|/|\.)*|[\'"](?>\w|/|\$)(\w|@|-|_|\?|&|=|:|#|/|\.|\s)*[\'"])$!', $token)) 
                     {
                       $attr_name = str_replace(array("'", '"'), '', $token);
                       $state = 1;

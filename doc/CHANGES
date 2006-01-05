@@ -45,6 +45,7 @@ Changes in ATK 5.4?
 * atkTheme attributes are now case insensitive. [Ivo]
 * atkOneToManyRelation now builds the referential where clause in a separate
   overridable method _getLoadWhereClause(). [Ivo]
+* Using single quotes in smarty tags is now also allowed. [Lineke]
 
 
 Changes in ATK 5.3RC2
