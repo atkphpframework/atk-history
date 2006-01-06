@@ -35,7 +35,10 @@
     function mail()
     {
       if (atkconfig("mail_enabled", true))
-        return call_user_func_array("mail", func_get_args());
+      {
+        $args = func_get_args();
+        return call_user_func_array("mail", $args);
+      }  
       else return true;
     }
   }
