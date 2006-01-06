@@ -23,6 +23,7 @@
   require_once(atkconfig("atkroot")."atk/test/simpletest/reporter.php");
   atkimport("atk.test.atktestreporter");
   atkimport("atk.test.atkattributetestcase");
+  atkimport("atk.test.atktestcase");
 
   /**
    * atkTestCaseCollector is a visitor that can be passed to an
@@ -92,6 +93,7 @@
      *                           text automaticly
      * @param string $module Run only tests from a single module. Passing an
      *                       empty string (default) will run all available tests.
+     *                       passing "atk" will only run atk's own tests.
      */
     function run($reporttype="html", $module="")
     {
@@ -104,7 +106,15 @@
       
       if ($module!="")
       {        
-        $traverser->traverse(moduleDir($module));
+        if ($module=="atk") // make it possible to only test atk.
+        {
+          $dir = atkconfig("atkroot")."atk/";
+        }
+        else 
+        {
+          $dir = moduleDir($moduls);
+        }
+        $traverser->traverse($dir);
       }
       else 
       {
