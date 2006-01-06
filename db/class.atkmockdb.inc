@@ -6,62 +6,13 @@
     var $m_results = array();
     var $m_regex_results = array();
     var $m_query_history = array();
-    
-    function atkMockDb()
-    {
-      return true;
-    }
-    
-    /**
-     * Get the current connection.
-     * @return Connection resource id
-     */
-    function link_id()
-    {
-      return 0;
-    }
-
-    /**
-     * Determine whether an error that occurred is a recoverable (user) error
-     * or a system error.
-     * @return String "user" or "system"
-     */
-    function getErrorType()
-    {
-      return "system";
-    }
-
-    /*
-     * Get generic atk errorccode
-     * @return int One of the ATK DB_* codes.
-     */
-    function getAtkDbErrno()
-    {
-      return "";
-    }
-
+          
     /**
      * Connect to the database.
      * @return int Connection status
      * @abstract
      */
     function connect()
-    {
-      return true;
-    }
-
-
-    /**
-     * Translate database-vendor dependent error messages into an ATK generic
-     * error code.
-     *
-     * Derived classes should implement this method and translate their error
-     * codes.
-     * @access private
-     * @param mixed Vendor-dependent error code.
-     * @return int ATK error code
-     */
-    function _translateError($errno)
     {
       return true;
     }
@@ -114,29 +65,6 @@
       if (is_array($res))
         return $res;
       return array();
-    }
-
-    /**
-     * Get database instance.
-     *
-     * This method instantiates and returns the correct (vendor specific)
-     * database instance, depending on the configuration.
-     *
-     * @static
-     * @param String $conn The name of the connection as defined in the
-     *                     config.inc.php file (defaults to 'default')
-     * @return atkDb Instance of the database class.
-     */
-    function &getInstance($conn="default")
-    {
-      static $s_instances = array();
-      if (!isset($s_instances[$conn]))
-      {
-        atkdebug("Creating new db instance for connection $conn");
-         // include DB stuff
-        $s_instances[$conn] = &atknew("atk.db.atkmockdb");
-      }
-      return $s_instances[$conn];
     }
     
     function setResult($result, $query, $offset=-1, $limit=-1)
