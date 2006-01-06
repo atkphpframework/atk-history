@@ -20,6 +20,8 @@ Changes in ATK 5.4?
 + Added 'mock' database drivers. [Boy]
 + Added ability to pass atkmodule=modname to test.php to run only the tests of
   a specified module. [Ivo]
++ Added atkTestCase baseclass for unittests, that features the ability to
+  replace database connections with mock objects. [Ivo, Boy]
 * Fixed setTabs call for attributes. [Peter]
 * Bugfix in atkListAttribute. All quotes in options are now replaced with
   &quot;. [Lineke]
