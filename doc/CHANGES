@@ -22,6 +22,7 @@ Changes in ATK 5.4?
   a specified module. [Ivo]
 + Added atkTestCase baseclass for unittests, that features the ability to
   replace database connections with mock objects. [Ivo, Boy]
++ Added addFallbackModule method to atkLanguage. [Ivo]
 * Fixed setTabs call for attributes. [Peter]
 * Bugfix in atkListAttribute. All quotes in options are now replaced with
   &quot;. [Lineke]
