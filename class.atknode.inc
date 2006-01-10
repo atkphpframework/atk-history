@@ -994,6 +994,9 @@
     function getTabs($action)
     {
       $list = &$this->m_tabList[$action];
+      
+      $this->checkTabRights($list);
+      
       $tabAttribSet = array();
       $tabCode = "";
 
@@ -1007,6 +1010,21 @@
       foreach(array_keys($this->m_attribList) as $attribname)
       {
         $p_attrib = &$this->m_attribList[$attribname];
+        
+        // Only display the attribute if the attribute
+        // resides on at least on visible tab
+        $hideme = true;
+        for($i=0;$i <= sizeof($p_attrib->m_tabList);$i++)
+        {
+          if (in_array($p_attrib->m_tabs[$i],$list))
+          {
+            $hideme = false;
+            break;
+          }
+        }
+        if ($hideme)
+          $p_attrib->m_flags |= AF_HIDE_LIST;
+        
         if(is_object($p_attrib))
         {
           $list = atk_array_merge($list, $p_attrib->getAdditionalTabs($action));
@@ -1029,6 +1047,55 @@
       // so we don't end up with empty tabs
       $tabList = $this->checkEmptyTabs($list);
       return $tabList;
+    }
+    
+    /**
+     * Check if the user has the rights to access existing tabs and
+     * removes tabs from the list that may not be accessed
+     *
+     * @param array $tablist Array containing the current tablist
+     */
+    function checkTabRights(&$tablist)
+    {
+      global $g_nodes;
+      
+      for ($i = 0; $i <= sizeof($tablist); $i++)
+      {
+        if ($tablist[$i] == "" || $tablist[$i] == "default") continue;
+        $secMgr = &atkGetSecurityManager();
+        
+        // load the $g_nodes array to find out what tabs are required
+        if (!is_array($g_nodes[$this->m_module][$this->m_type]))
+        {      
+          include_once(atkconfig("atkroot") . "atk/atknodetools.inc");  
+          $module = &getModule($this->m_module);
+          $module->getNodes();
+        }
+        
+        $priv = "tab_" . $tablist[$i];
+        if (in_array($priv,$g_nodes[$this->m_module][$this->m_type]))
+        {
+          // authorisation is required
+          if (!$secMgr->allowed($this->m_module.".".$this->m_type,"tab_" . $tablist[$i]))
+          {
+            atkdebug("Removing TAB ". $tablist[$i] . " because access to this tab was denied</b>");
+            unset($tablist[$i]);
+          }
+        }
+        else atkdebug("TAB " . $tablist[$i] . " does not need authorisation");
+      }
+      
+      if (is_array($tablist))
+      {
+        // we might have now something like:
+        // [0]=>tabA,[3]=>tabD
+        // we convert this to a 'normal' array:
+        // [0]=>tabA,[1]=>tabD;
+        $newarray = array();
+        foreach($tablist as $tab)
+          $newarray[] = $tab;
+        $tablist = $newarray;       
+      }
     }
 
     /**

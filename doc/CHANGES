@@ -23,6 +23,10 @@ Changes in ATK 5.4?
 + Added atkTestCase baseclass for unittests, that features the ability to
   replace database connections with mock objects. [Ivo, Boy]
 + Added addFallbackModule method to atkLanguage. [Ivo]
++ Added collapsable groups in atkProfileAttribute. [Harrie]
++ Added 'select all'/'select none' buttons per group 
+  in atkProfileAttribute. [Harrie]
++ Added possibility to authorize usergroups for seeing tabs [Harrie]
 * Fixed setTabs call for attributes. [Peter]
 * Bugfix in atkListAttribute. All quotes in options are now replaced with
   &quot;. [Lineke]
@@ -49,7 +53,7 @@ Changes in ATK 5.4?
 * atkOneToManyRelation now builds the referential where clause in a separate
   overridable method _getLoadWhereClause(). [Ivo]
 * Using single quotes in smarty tags is now also allowed. [Lineke]
-
+* Fixed securityissue atkProfileAttribute [Harrie]
 
 Changes in ATK 5.3RC2
 ---------------------
