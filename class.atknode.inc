@@ -1073,7 +1073,7 @@
         }
         
         $priv = "tab_" . $tablist[$i];
-        if (in_array($priv,$g_nodes[$this->m_module][$this->m_type]))
+        if (atk_in_array($priv,$g_nodes[$this->m_module][$this->m_type]))
         {
           // authorisation is required
           if (!$secMgr->allowed($this->m_module.".".$this->m_type,"tab_" . $tablist[$i]))
