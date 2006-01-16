@@ -1,4 +1,4 @@
-<?PHP
+<?php
 
   /**
    * This file is part of the Achievo ATK distribution.
@@ -69,7 +69,7 @@
      */
     function setMode($mode)
     {	
-      $this->m_mode = &$mode;
+      $this->m_mode = $mode;
     }
 
     /**
@@ -79,7 +79,7 @@
      */
     function setNode(&$nodeObj)
     {	
-      $this->m_nodeObj = $nodeObj;
+      $this->m_nodeObj = &$nodeObj;
     }
 
     /**
@@ -101,14 +101,14 @@
      */
     function validate($mode="", $ignoreList=array())
     {	
-      atkdebug("validate() with mode $mode for node ".$this->m_nodeObj->atkNodeType());
-
       // check overrides
       if(count($ignoreList))
         $this->setIgnoreList($ignoreList);
 
       if($mode != "")
         $this->setMode($mode);
+
+       atkdebug("validate() with mode ".$this->m_mode." for node ".$this->m_nodeObj->atkNodeType());
       
       // set the record
       $record = &$this->m_record;
@@ -175,7 +175,7 @@
           }
           // if flag is primary
           else if ($p_attrib->hasFlag(AF_UNIQUE) && !$p_attrib->hasFlag(AF_PRIMARY) &&
-                   count($db->getrows("SELECT ".$p_attrib->fieldName()." FROM ".$this->m_nodeObj->m_table." WHERE $attribname='".escapeSQL($record[$attribname])."' AND NOT (".$this->m_nodeObj->primaryKey($record).")"))>0
+                   count($db->getrows("SELECT ".$p_attrib->fieldName()." FROM ".$this->m_nodeObj->m_table." WHERE $attribname='".escapeSQL($p_attrib->value2db($record))."' AND NOT (".$this->m_nodeObj->primaryKey($record).")"))>0
                   )
           {
             triggerError($record, $attribname, 'error_uniquefield', '', $p_attrib->m_tabs[0]);

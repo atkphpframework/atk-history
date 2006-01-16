@@ -16,14 +16,23 @@
    * $Id$
    */
 
-   /**
-    * Flags for the attribute
-    */
-   define("AF_NO_TRANSLATION", AF_SPECIFIC_1); // Do not translate the options
-   define("AF_LIST_NO_OBLIGATORY_NULL_ITEM", AF_SPECIFIC_2); // Do not add a default
-                                                             // null option.
-   define("AF_LIST_NO_NULL_ITEM", AF_SPECIFIC_3); // do not add null option ever
+  /**
+   * Do not translate the options
+   */
+  define("AF_NO_TRANSLATION", AF_SPECIFIC_1);
+   
+  /**
+   * Do not add a default null option.
+   */
+  define("AF_LIST_NO_OBLIGATORY_NULL_ITEM", AF_SPECIFIC_2);
+   
+  /**
+   * Do not add null option ever
+   */
+  define("AF_LIST_NO_NULL_ITEM", AF_SPECIFIC_3);
 
+  atkimport("atk.attributes.atkattribute");   
+   
   /**
    * The atkListAttribute class represents an attribute of a node
    * that has a selectbox to select from predefined values.
@@ -33,7 +42,6 @@
    * @subpackage attributes
    *
    */
-  atkimport("atk.attributes.atkattribute");
   class atkListAttribute extends atkAttribute
   {
     /**
@@ -71,6 +79,8 @@
       * @var int
       */
      var $m_width;
+     
+     var $m_onchangehandler_init = "newvalue = el.options[el.selectedIndex].value;\n";
 
     /**
      * Constructor.
@@ -134,7 +144,10 @@
     {
       if(isset($this->m_lookup[$record[$this->fieldName()]]))
       {
-        return text($this->m_lookup[$record[$this->fieldName()]], $this->m_ownerInstance->m_type, $this->m_ownerInstance->m_module);
+        if($this->hasFlag(AF_NO_TRANSLATION)) $res = $this->m_lookup[$record[$this->fieldName()]];
+        else $res = atktext($this->m_lookup[$record[$this->fieldName()]],$this->m_ownerInstance->m_module, $this->m_owner);
+
+        return $res;
       }
     }
 
@@ -156,18 +169,19 @@
         $onchange = 'onChange="'.$id.'_onChange(this);"';
         $this->renderChangeHandler($fieldprefix);
       }
-
-      $result = '<select id="'.$id.'" name="'.$id.'" '.$onchange.($this->m_width?" style='width: {$this->m_width}px'":"").'>';
-
       
+      $result = '<select id="'.$id.'" name="'.$id.'"  class="atklistattribute" '.$onchange.($this->m_width?" style='width: {$this->m_width}px'":"").'>';
+
       if(!$this->hasFlag(AF_OBLIGATORY)&&!$this->hasFlag(AF_LIST_NO_NULL_ITEM)||(atkconfig("list_obligatory_null_item")&&$record[$this->fieldName()]==""&&!$this->hasFlag(AF_LIST_NO_OBLIGATORY_NULL_ITEM)))
       {
-        $result.= '<option value="'.$this->m_emptyvalue.'">'.text('list_null_value', $this->m_ownerInstance->m_type);
+        $result.= '<option value="'.$this->m_emptyvalue.'">'.atktext('list_null_value', '', $this->m_ownerInstance->m_type);
       }
-
+      
       for ($i=0;$i<count($this->m_values);$i++)
       {
-        if ($this->m_values[$i] == $this->m_selected || $this->m_values[$i] == $record[$this->fieldName()] && $record[$this->fieldName()]!="")
+        // If the current value is selected or occurs in the record
+        if ((!is_null($this->m_selected) && $this->m_values[$i] == $this->m_selected) || 
+            ( is_null($this->m_selected) && $this->m_values[$i] == $record[$this->fieldName()] && $record[$this->fieldName()]!=""))
         {
           $sel = "selected";
         }
@@ -176,9 +190,9 @@
           $sel = "";
         }
         if ($this->hasFlag(AF_NO_TRANSLATION)) $option=$this->m_options[$i];
-        else $option=atktext($this->m_options[$i],$this->m_ownerInstance->m_module);
+        else $option = atktext($this->m_options[$i],$this->m_ownerInstance->m_module, $this->m_owner);
 
-        $result.= '<option value="'.str_replace("\"","&quot;",$this->m_values[$i]).'" '.$sel.'>'.$option;
+        $result.= '<option value="'.$this->m_values[$i].'" '.$sel.'>'.$option;
       }
       $result.='</select>';
       return $result;
@@ -203,7 +217,7 @@
       else
         $result.='name="atksearch'.$fieldprefix.'['.$this->formName().'][]">';
 
-      $result.= '<option value="">'.text('search_all');
+      $result.= '<option value="">'.atktext('search_all');
 
       for ($i=0,$_i=count($this->m_values);$i<$_i;$i++)
       {
@@ -215,7 +229,11 @@
         {
           $sel = "";
         }
-        $result.= '<option value="'.str_replace("\"","&quot;",$this->m_values[$i]).'" '.$sel.'>'.text($this->m_options[$i], $this->m_ownerInstance->m_type);
+        
+        if($this->hasFlag(AF_NO_TRANSLATION)) $string = $this->m_options[$i];
+        else $string = atktext($this->m_options[$i], $this->m_ownerInstance->m_module);
+
+        $result.= '<option value="'.$this->m_values[$i].'" '.$sel.'>'.$string;
       }
       $result.='</select>';
       return $result;
@@ -358,7 +376,7 @@
         if(strtolower($stringvalue) == strtolower($option))
           return $this->m_values[$i];
 
-        if(strtolower(text($stringvalue)) == strtolower($option))
+        if(strtolower(atktext($stringvalue)) == strtolower($option))
           return $this->m_values[$i];
         $i++;
       }

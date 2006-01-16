@@ -24,6 +24,7 @@
   define("RL_MRA",                            16); // multi-record-actions enabled
   define("RL_MRPA",                           32); // multi-record-priority-actions enabled
   define("RL_LOCK",                           64); // records can be locked
+  define("RL_EXT_SORT",                      128); // extended sort feature
 
   atkimport("atk.utils.atkstringparser");
 
@@ -64,6 +65,7 @@
       $result |= hasFlag($flags, NF_LOCK) ? RL_LOCK : 0;
       $result |= hasFlag($flags, NF_NO_SEARCH) ? RL_NO_SEARCH : 0;
       $result |= hasFlag($flags, NF_NO_EXTENDED_SEARCH) ? RL_NO_EXTENDED_SEARCH : 0;
+      $result |= hasFlag($flags, NF_EXT_SORT) ? RL_EXT_SORT : 0;
       return $result;
     }
 
@@ -158,6 +160,45 @@
         }
 
         /**************/
+        /* SORT   ROW */
+        /**************/
+        $sortcols = array();
+        $sortstart=""; $sortend="";
+        if (hasFlag($flags, RL_EXT_SORT))
+        {
+          $button = '<input type="submit" value="'.text("sort").'">';
+          if (hasFlag($flags, RL_MRA) || hasFlag($flags, RL_MRPA))
+          {
+            $sortcols[] = array("content"=>""); // Empty leader on top of mra action list.
+          }
+          if (hasFlag($flags, RL_LOCK))
+          {
+            $sortcols[] = array("content"=>"");
+          }
+          if ($orientation == "left" || $orientation == "both")
+          {
+            $sortcols[] = array("content"=>$button);
+          }
+
+          $sortstart = '<a name="sortform"></a>'.
+                         '<form action="'.$_SERVER["PHP_SELF"].'?'.SID.'" method="get">'.
+                         session_form().
+                           '<input type="hidden" name="atkstartat" value="0">'; // reset atkstartat to first page after a new sort
+
+          foreach (array_keys($list["heading"]) as $key)
+          {
+            if (isset($list["sort"][$key])) $sortcols[] = array("content"=>$list["sort"][$key]);
+          }
+
+          $sortend = '</form>';
+
+          if ($orientation == "right" || $orientation == "both")
+          {
+            $headercols[] = array("content"=>$button);
+          }
+        }
+
+        /**************/
         /* SEARCH ROW */
         /**************/
 
@@ -180,11 +221,11 @@
             $searchmode = $searchmode[$keys[0]];
           }
 
-          $button = '<input type="submit" class="btn_search" value="'.text("search").'">';
+          $button = '<input type="submit" class="btn_search" value="'.atktext("search").'">';
           if (!hasFlag($flags, RL_NO_EXTENDED_SEARCH)&&!$this->m_node->hasFlag(NF_NO_EXTENDED_SEARCH))
           {
             $button .= '<br>'.href($_SERVER["PHP_SELF"]."?atknodetype=".$this->m_node->atkNodeType()."&atkaction=search&atksearchmode=".
-                                               $searchmode,"(".text("search_extended").")",SESSION_NESTED);
+                                               $searchmode,"(".atktext("search_extended").")",SESSION_NESTED);
           }
 
           $searchstart = '<a name="searchform"></a>';
@@ -297,6 +338,7 @@
           $record["highlight"] = $bgh;
           $record["rownum"] = $i;
           $record["id"] = $listName.'_'.$i;
+          $record["type"] = $list["rows"][$i]["type"];
 
           /* multi-record-priority-actions -> priority selection */
           if (hasFlag($flags, RL_MRPA))
@@ -337,24 +379,26 @@
 
           foreach ($list["rows"][$i]["actions"] as $name => $url)
           {
-  	    $actionloader.="\nrl_a['".$listName."'][".$i."]['".$name."'] = '".$url."';";
-
-	    $link = $name;
-
-	    if($icons == true)
-	    {
-	      $icon = $theme->iconPath(strtolower($name),"recordlist");
-  	      $link = '<img width="16" height="16" border="0" src="'.$icon.'" title="'.text($name,$this->m_node->m_type,$this->m_node->m_module).'">';
-	    }
-	    else
-	    {
-	      $link = text($name);
-	    }
+      	    $actionloader.="\nrl_a['".$listName."'][".$i."]['".$name."'] = '".$url."';";
+    
+    	      $link = $name;
+    
+    	      if($icons == true)
+    	      {
+    	        $icon = $theme->iconPath(strtolower($name),"recordlist");
+      	      $link = '<img width="16" height="16" border="0" src="'.$icon.'" title="'.atktext($name, $this->m_node->m_module, $this->m_node->m_type).'">';
+    	      }
+    	      else
+    	      {
+    	        $link = atktext($name);
+	          }
+	          
             $confirmtext= "false";
             if (atkconfig("recordlist_javascript_delete") && $name=="delete")
             $confirmtext = "'".$this->m_node->confirmActionText($name)."'";
             $str_actions.='<a href="'."javascript:rl_do('$listName',$i,'$name',$confirmtext);".'">'.$link.'</a>&nbsp;';
           }
+          
           $str_actions.="</span>";
           /* actions (left) */
           if ($orientation == "left" || $orientation == "both")
@@ -416,20 +460,20 @@
           if (count($this->m_node->m_priority_actions) > 1)
           {
             $mra = '<select name="'.$listName.'_atkaction">'.
-                         '<option value="">'.text("with_selected").':</option>';
+                         '<option value="">'.atktext("with_selected").':</option>';
 
             foreach ($this->m_node->m_priority_actions as $name)
-              $mra .= '<option value="'.$name.'">'.text($name).'</option>';
+              $mra .= '<option value="'.$name.'">'.atktext($name).'</option>';
 
             $mra .= '</select>&nbsp;'.$this->getCustomMraHtml().
-                       '<input type="button" class="btn" value="'.text("submit").'" onclick="atkSubmitMRPA(\''.$listName.'\', this.form, \''.$target.'\')">';
+                       '<input type="button" class="btn" value="'.atktext("submit").'" onclick="atkSubmitMRPA(\''.$listName.'\', this.form, \''.$target.'\')">';
           }
 
           /* one action -> only the submit button */
           else
           {
             $mra= $this->getCustomMraHtml().'<input type="hidden" name="'.$listName.'_atkaction" value="'.$this->m_node->m_priority_actions[0].'">'.
-                       '<input type="button" class="btn" value="'.text($this->m_node->m_priority_actions[0]).'" onclick="atkSubmitMRPA(\''.$listName.'\', this.form, \''.$target.'\')">';
+                       '<input type="button" class="btn" value="'.atktext($this->m_node->m_priority_actions[0]).'" onclick="atkSubmitMRPA(\''.$listName.'\', this.form, \''.$target.'\')">';
           }
 
           if (!hasFlag($flags, RL_EMBED))
@@ -446,9 +490,9 @@
           $target = session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->m_node->atkNodeType(), SESSION_NESTED);
 
           $mra = (count($list["rows"]) > 1 ?
-                      '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'all\')">'.text("select_all").'</a> / '.
-                      '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'none\')">'.text("deselect_all").'</a> / '.
-                      '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'invert\')">'.text("select_invert").'</a>'
+                      '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'all\')">'.atktext("select_all").'</a> / '.
+                      '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'none\')">'.atktext("deselect_all").'</a> / '.
+                      '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'invert\')">'.atktext("select_invert").'</a>'
                      :
                       '<img src="'.atkconfig("atkroot").'atk/images/dummy.gif" border="0" height="1" width="1">');
 
@@ -456,13 +500,13 @@
           if (count($list["mra"]) > 1)
           {
             $mra .= '<select name="'.$listName.'_atkaction" onchange="javascript:updateSelectable(\''.$listName.'\', this.form)">'.
-                       '<option value="">'.text("with_selected").':</option>';
+                       '<option value="">'.atktext("with_selected").':</option>';
 
             foreach ($list["mra"] as $name)
-              $mra .= '<option value="'.$name.'">'.text($name,$this->m_node->m_type,$this->m_node->m_module).'</option>';
+              $mra .= '<option value="'.$name.'">'.atktext($name, $this->m_node->m_module, $this->m_node->m_type).'</option>';
 
             $mra .= '</select>&nbsp;'.$this->getCustomMraHtml().
-                       '<input type="button" class="btn" value="'.text("submit").'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\')">';
+                       '<input type="button" class="btn" value="'.atktext("submit").'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\')">';
           }
 
           /* one action -> only the submit button */
@@ -470,7 +514,7 @@
           {
             $mra .= '&nbsp; <input type="hidden" name="'.$listName.'_atkaction" value="'.$list["mra"][0].'">'.
             $this->getCustomMraHtml().
-                       '<input type="button" class="btn" value="'.text($list["mra"][0]).'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\')">';
+                       '<input type="button" class="btn" value="'.atktext($list["mra"][0]).'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\')">';
           }
 
           if (!hasFlag($flags, RL_EMBED)) $listend = '</form>';
@@ -486,9 +530,12 @@
                                                    "rows"=>$records,
                                                    "header"=>$headercols,
                                                    "search"=>$searchcols,
+                                                   "sort"=>$sortcols,
                                                    "total"=>$totalcols,
                                                    "searchstart"=>$searchstart,
                                                    "searchend"=>$searchend,
+                                                   "sortstart"=>$sortstart,
+                                                   "sortend"=>$sortend,
                                                    "liststart"=>$liststart,
                                                    "listend"=>$listend,
                                                    "listid"=>$listName,
@@ -537,6 +584,8 @@
         $prefix = $embedprefix."][";
       }
 
+      $columnConfig = &$this->m_node->getColumnConfig();
+
       /* get the heading and search columns */
       if (!hasFlag($flags, RL_NO_SEARCH)) $this->m_node->setAttribSizes();
       foreach (array_keys($this->m_node->m_attribIndexList) as $r)
@@ -546,7 +595,7 @@
         {
           $attribute = &$this->m_node->m_attribList[$name];
           $attribute->addToListArrayHeader($this->m_node->m_action, $result, $prefix, $flags,
-                                           @$this->m_node->m_postvars["atksearch"], @$this->m_node->m_postvars["atkorderby"]);
+                                           @$this->m_node->m_postvars["atksearch"], $columnConfig);
         }
       }
 
@@ -564,6 +613,7 @@
       {
         $result["rows"][$i] = array("columns" => array(), "actions" => $actions, "mra" => $mra, "record" => &$recordset[$i], "data" => array());
         $result["rows"][$i]["selector"] = $this->m_node->primaryKey($recordset[$i]);
+        $result["rows"][$i]["type"]="data";
         $row = &$result["rows"][$i];
 
         /* locked */
@@ -616,6 +666,13 @@
             $attribute->addToListArrayRow($this->m_node->m_action, $result, $i, $prefix, $flags);
           }
         }
+      }
+
+      if (hasFlag($flags, RL_EXT_SORT) && $columnConfig->hasSubTotals())
+      {
+        atkimport("atk.recordlist.atktotalizer");
+        $totalizer = &new atkTotalizer($this->m_node, $columnConfig);
+        $result["rows"] = $totalizer->totalize($result["rows"]);
       }
 
       if (hasFlag($flags, RL_MRA))

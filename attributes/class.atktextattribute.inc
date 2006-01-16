@@ -16,11 +16,12 @@
    */
 
 
-   /**
-    * include
-    */
-   include_once(atkconfig("atkroot")."atk/atkbrowsertools.inc");
-
+  /**
+   * include
+   */
+  include_once(atkconfig("atkroot")."atk/atkbrowsertools.inc");
+  atkimport("atk.attributes.atkattribute");
+   
   /**
    * The atkTextAttribute class represents an attribute of a node
    * that is a big text field.
@@ -31,7 +32,6 @@
    * @todo autadjust needs to be modified as not every character == 1 column,
    *       perhaps forcing every textattribute to use a non-proportional font?
    */
-  atkimport("atk.attributes.atkattribute");
   class atkTextAttribute extends atkAttribute
   {
     // number of rows of the edit box
@@ -140,7 +140,15 @@
      */
     function value2db($rec)
     {
-      if (atkconfig('database') != 'oci9')
+      if (is_object($this->m_ownerInstance))
+      {
+        $db = &$this->m_ownerInstance->getDb();
+      }
+      else
+      {
+        $db = &atkGetDb();
+      }
+      if ($db->getType() != "oci9")
         return escapeSQL($rec[$this->fieldName()]);
       else
         return $rec[$this->fieldName()]; //CLOB in oci9 don't need quotes to be escaped EVIL HACK! THIS IS NOT ATKTEXTATTRIBUTE's PROBLEM!

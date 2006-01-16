@@ -28,11 +28,6 @@
   userelation("atkrelation");
 
   /**
-   * @internal include used utility class(es)
-   */
-  atkimport("atk.utils.atkstringparser");
-
-  /**
    * A N:1 relation between two classes.
    *
    * For example, projects all have one coordinator, but one
@@ -85,6 +80,8 @@
      * @var array
      */
     var $m_selectableRecords = array();
+
+    var $m_onchangehandler_init = "newvalue = el.options[el.selectedIndex].value;\n";
 
 
     /**
@@ -214,7 +211,7 @@
      * @param $record Record
      * @return a displayable string
      */
-    function display($record)
+    function display($record, $mode)
     {
       if ($this->createDestination())
       {
@@ -241,7 +238,7 @@
 
         $result = $title; // default result is just the title.
 
-        if ($this->hasFlag(AF_RELATION_AUTOLINK)) // create link to edit/view screen
+        if ($this->hasFlag(AF_RELATION_AUTOLINK) && (!in_array($mode, array("csv", "plain")))) // create link to edit/view screen
         {
           if (($this->m_destInstance->allowed("view"))&&!$this->m_destInstance->hasFlag(NF_NO_VIEW)&&$title!="")
           {
@@ -264,7 +261,6 @@
     function edit(&$record, $fieldprefix="")
     {
       global $ATK_VARS;
-      atkimport("atk.utils.atkstringparser");
 
       // Two variances.. one with a dropdownbox containing all records,
       // and one with a dropdownbox that contains the last 10 used records,
@@ -277,6 +273,7 @@
         $filter="";
         if ($this->m_destinationFilter!="")
         {
+          atkimport("atk.utils.atkstringparser");
           $parser = new atkStringParser($this->m_destinationFilter);
           $filter = $parser->parse($record);
         }
@@ -306,8 +303,15 @@
           }
           else
           {
+            $onchange='';
+            if (count($this->m_onchangecode))
+            {
+              $onchange = 'onChange="'.$id.'_onChange(this);"';
+              $this->_renderChangeHandler($fieldprefix);
+            }
+
             $this->registerKeyListener($id, KB_CTRLCURSOR|KB_LEFTRIGHT);
-            $result.= '<select id="'.$id.'" name="'.$id.'">';
+            $result.= '<select id="'.$id.'" name="'.$id.'" class="atkmanytoonerelation" '.$onchange.'>';
             if (!$this->hasFlag(AF_OBLIGATORY)||(atkconfig("list_obligatory_null_item")&&!is_array($value)))
             {
               //get the select_none string
@@ -389,17 +393,17 @@
           {
             $result.= href("dispatch.php?atknodetype=".$this->m_destination.
                            "&atkaction=select&atkfilter=".$filter."&atktarget=".$atktarget,
-                           text("link_select_".getNodeType($this->m_destination)),
+                           atktext("link_select_".getNodeType($this->m_destination), getNodeModule($this->m_destination),getNodeType($this->m_destination)),
                            SESSION_NESTED,
-                           true);
+                           true,'class="atkmanytoonerelation"');
           }
           else
           {
             $result.= href("dispatch.php?atknodetype=".$this->m_destination.
                            "&atkaction=select&atktarget=".$atktarget,
-                           text("link_select_".getNodeType($this->m_destination)),
+                           atktext("link_select_".getNodeType($this->m_destination), getNodeModule($this->m_destination),getNodeType($this->m_destination)),
                            SESSION_NESTED,
-                           true);
+                           true,'class="atkmanytoonerelation"');
           }
         }
 
@@ -426,11 +430,11 @@
         if ($this->m_destInstance->allowed("edit"))
         {
           $editlink = session_url("dispatch.php?atknodetype=".$this->m_destination."&atkaction=edit&atkselector=REPLACEME",SESSION_NESTED);
-          $autolink['edit'] = "&nbsp;<a href='javascript:atkSubmit(mto_parse(\"".atkurlencode($editlink)."\", document.entryform.".$id.".value))'>".text('edit')."</a>";
+          $autolink['edit'] = "&nbsp;<a href='javascript:atkSubmit(mto_parse(\"".atkurlencode($editlink)."\", document.entryform.".$id.".value))'>".atktext('edit')."</a>";
         }
         if ($this->m_destInstance->allowed("add"))
         {
-          $autolink['add'] = "&nbsp;".href("dispatch.php?atknodetype=".$this->m_destination."&atkaction=add&atkpkret=".$id."_ret".($filter!=""?"&atkfilter=".rawurlencode($filter):""),text("new"),SESSION_NESTED,true);
+          $autolink['add'] = "&nbsp;".href("dispatch.php?atknodetype=".$this->m_destination."&atkaction=add&atkpkret=".$id."_ret".($filter!=""?"&atkfilter=".rawurlencode($filter):""),atktext("new"),SESSION_NESTED,true);
         }
       }
       return $autolink;
@@ -482,13 +486,14 @@
         {
           if ($this->m_destinationFilter!="")
           {
+            atkimport("atk.utils.atkstringparser");
             $parser = new atkStringParser($this->m_destinationFilter);
             $filter = $parser->parse($record);
             $this->m_destInstance->addFilter($filter);
           }
           $recordset = $this->m_destInstance->selectDb("","","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
 
-          $result = '<select ';
+          $result = '<select class="'.get_class($this).'" ';
           if ($extended)
           {
             $result.='multiple size="'.min(5,count($recordset)+1).'"';
@@ -520,7 +525,7 @@
       {
         $id = "atksearch[".$fieldprefix.$this->fieldName()."]";
         $this->registerKeyListener($id, KB_CTRLCURSOR|KB_UPDOWN);
-        $result = '<input type="text" id="'.$id.'" name="'.$id.'" value="'.$record[$this->fieldName()].'"'.
+        $result = '<input type="text" id="'.$id.'" class="'.get_class($this).'" name="'.$id.'" value="'.$record[$this->fieldName()].'"'.
           ($this->m_searchsize > 0 ? ' size="'.$this->m_searchsize.'"' : '').
           ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>';
         return $result;
@@ -810,6 +815,16 @@
         }
       }
       return parent::addToEditArray($mode, $arr, $defaults, $error, $fieldprefix);
+    }
+
+    function getOrderByStatement()
+    {
+      if ($this->createDestination())
+      {
+        // In queries, relations are alias'd by their attribute name, so we use that for the sort prefix here.
+        return $this->fieldName().".".$this->m_destInstance->m_default_order;
+      }
+      return parent::getOrderByStatement();
     }
   }
 

@@ -28,6 +28,7 @@ atkimport("atk.meta.atkmetatools");
 class atkMetaPolicy
 {
   var $m_node = NULL;
+  var $m_grammar = NULL;
   
   var $m_includes = NULL;
   var $m_excludes = NULL;
@@ -54,6 +55,45 @@ class atkMetaPolicy
       
     return new atkMetaPolicy();
   }
+  
+  /**
+   * Returns the meta grammar.
+   * 
+   * @return atkMetaGrammar the meta grammar
+   */
+  function &getGrammar()
+  {
+    return $this->m_grammar;
+  }
+    
+  /**
+   * Sets the meta grammar.
+   * 
+   * @param atkMetaGrammar $grammar the meta grammar
+   */
+  function setGrammar(&$grammar)
+  {
+    $this->m_grammar = &$grammar;
+  }
+  
+  /**
+   * Calls a method of this object with the given parameters.
+   *
+   * @param String $method the method name
+   * @param Array $params the method parameters
+   * @return unknown
+   */
+  function _call($method, $params)
+  {
+    // unfortunately call_user_func_array(array($this, $method), $params) makes
+    // a copy of $this, instead of calling the method on the original $this
+    // so we use eval instead...
+    $call = "\$this->$method(";
+    foreach (array_keys($params) as $i)
+      $call .= ($i > 0 ? ", " : "")."\$params[$i]";
+    $call .= ");";  
+    return eval($call);    
+  }  
   
   /**
    * Get auto-detected flags for the given attribute.
@@ -86,6 +126,12 @@ class atkMetaPolicy
     
     if (in_array($name, array("passw", "password")))
       $type = "atk.attributes.atkpasswordattribute";
+      
+    else if (in_array($name, array("email", "e-mail")))
+    {
+      $type = "atk.attributes.atkemailattribute";    
+      $params = array(false);
+    }
       
     else
     {
@@ -162,13 +208,17 @@ class atkMetaPolicy
     // table is already set
     if ($this->m_node->getTable() !== NULL)
       return $this->m_node->getTable();
+    
+    $type = $this->m_node->m_type;
+    if ($type == NULL)  
+      $type = get_class($this->m_node);
       
-    // type is already set
-    if ($this->m_node->m_type !== NULL)
-      return $this->m_node->m_type;
-      
-    // by class
-    return get_class($this->m_node);
+    $db = $this->m_node->getDb();
+    if ($db->tableExists($type)) return $type;
+    elseif ($db->tableExists($this->m_grammar->singularize($type))) 
+      return $this->m_grammar->singularize($type);
+    elseif ($db->tableExists($this->m_grammar->pluralize($type))) 
+      return $this->m_grammar->pluralize($type);
   }
   
   /**
@@ -210,7 +260,7 @@ class atkMetaPolicy
    */
   function setIncludes($attrs)
   {
-    if (func_num_args() > 1)
+    if (!is_array($attrs))
       $attrs = func_get_args();
   
     $this->m_includes = $attrs;
@@ -224,7 +274,7 @@ class atkMetaPolicy
    */
   function setExcludes($attrs)
   {
-    if (func_num_args() > 1)
+    if (!is_array($attrs))
       $attrs = func_get_args();
   
     $this->m_excludes = $attrs;
@@ -254,7 +304,7 @@ class atkMetaPolicy
    * auto-detected flags will be added later on.
    */
 
-  function setFlag($attrs, $flag) { call_user_func_array(array($this, "setFlags"), func_get_args()); }   
+  function setFlag($attrs, $flag) { $params = func_get_args(); $this->_call("setFlags", $params); }   
   function setFlags($attrs, $flags)
   {
     if (func_num_args() > 2)
@@ -274,7 +324,7 @@ class atkMetaPolicy
   /**
    * Add flag(s) to the given attribute or list of attributes.
    */
-  function addFlag($attrs, $flag) { $args = func_get_args(); call_user_func_array(array($this, "addFlags"), $args); }
+  function addFlag($attrs, $flag) { $params = func_get_args(); $this->_call("addFlags", $params); }
   function addFlags($attrs, $flags)
   {
     if (func_num_args() > 2)
@@ -282,7 +332,6 @@ class atkMetaPolicy
       $attrs = func_get_args();
       $flags = array_pop($attrs);
     }
-    
     else if (!is_array($attrs))
       $attrs = array($attrs);
 
@@ -294,7 +343,7 @@ class atkMetaPolicy
   /**
    * Remove flag(s) from the given attribute or list of attributes.
    */
-  function removeFlag($attrs, $flag) { $args = func_get_args(); call_user_func_array(array($this, "removeFlags"), $args); }   
+  function removeFlag($attrs, $flag) { $params = func_get_args(); $this->_call("removeFlags", $params); }   
   function removeFlags($attrs, $flags)
   {
     if (func_num_args() > 2)
@@ -314,7 +363,7 @@ class atkMetaPolicy
   /**
    * Set the tab(s) for the given attribute or list of attributes.
    */
-  function setTab($attrs, $tab) { $args = func_get_args(); call_user_func_array(array(&$this, "setTabs"), $args); }
+  function setTab($attrs, $tab) { $params = func_get_args(); $this->_call("setTabs", $params); }
   function setTabs($attrs, $tabs)
   {
     if (func_num_args() > 2)
@@ -329,6 +378,36 @@ class atkMetaPolicy
     foreach ($attrs as $attr)
       if (array_key_exists($attr, $this->m_attrs))
         $this->m_attrs[$attr]["tabs"] = $tabs;
+  }
+
+  /**
+   * Sets the attribute type. All extra arguments after the two
+   * standard arguments will be threated as parameters for the
+   * attribute. If you need to pass arguments by reference you can
+   * better use the setTypeAndParams method.
+   * 
+   * @param $attr  the attribute name
+   * @param $type  full ATK attribute class (e.g. atk.attributes.atkboolattribute)
+   * @param $...   all other arguments will be threated as parameters
+   */
+  function setType($attr, $type)
+  {
+    $params = func_get_args();
+    $params = array_slice($params, 2);
+    $this->setTypeAndParams($attr, $type, $params);
+  }
+  
+  /**
+   * Sets the attribute type and parameters.
+   * 
+   * @param $attr    the attribute name
+   * @param $type    full ATK attribute class (e.g. atk.attributes.atkboolattribute)
+   * @param $params  parameters for the attribute (optional)
+   */
+  function setTypeAndParams($attr, $type, $params=array())
+  {
+    $this->m_attrs[$attr]["type"] = $type;
+    $this->m_attrs[$attr]["params"] = $params;
   }
   
   /**
@@ -366,21 +445,21 @@ class atkMetaPolicy
       if (nodeExists("$module.$node"))
         return "$module.$node";
         
-      if ($toMany && nodeExists("$module.".atkMetaTools::singularize($node)))
-        return "$module.".atkMetaTools::singularize($node);
+      if ($toMany && nodeExists("$module.".$this->m_grammar->singularize($node)))
+        return "$module.".$this->m_grammar->singularize($node);
 
-      if (!$toMany && nodeExists("$module.".atkMetaTools::pluralize($node)))
-        return "$module.".atkMetaTools::pluralize($node);
+      if (!$toMany && nodeExists("$module.".$this->m_grammar->pluralize($node)))
+        return "$module.".$this->m_grammar->pluralize($node);
     }
     
     if (nodeExists($node))
       return $node;
     
-    if ($toMany && nodeExists(atkMetaTools::singularize($node)))
-      return atkMetaTools::singularize($node);
+    if ($toMany && nodeExists($this->m_grammar->singularize($node)))
+      return $this->m_grammar->singularize($node);
 
-    if (!$toMany && nodeExists(atkMetaTools::pluralize($node)))
-      return atkMetaTools::pluralize($node);
+    if (!$toMany && nodeExists($this->m_grammar->pluralize($node)))
+      return $this->m_grammar->pluralize($node);
       
     return NULL;
   }
@@ -405,16 +484,28 @@ class atkMetaPolicy
       $attr = $relation->m_options["destination"];      
     else if (in_array("{$table}_id", $attrs))
       $attr = "{$table}_id";
+    else if (in_array($this->m_grammar->singularize($table)."_id", $attrs))
+      $attr = $this->m_grammar->singularize($table)."_id";
     else if (in_array("{$node}_id", $attrs))
       $attr = "{$node}_id";
+    else if (in_array($this->m_grammar->singularize($node)."_id", $attrs))
+      $attr = $this->m_grammar->singularize($node)."_id";      
     else if (in_array("{$table}id", $attrs))
       $attr = "{$table}id";
+    else if (in_array($this->m_grammar->singularize($table)."id", $attrs))
+      $attr = $this->m_grammar->singularize($table)."id";      
     else if (in_array("{$node}id", $attrs))
       $attr = "{$node}id";
+    else if (in_array($this->m_grammar->singularize($node)."id", $attrs))
+      $attr = $this->m_grammar->singularize($node)."id";      
     else if (in_array($table, $attrs))
       $attr = $table;
+    else if (in_array($this->m_grammar->singularize($table), $attrs))
+      $attr = $this->m_grammar->singularize($table);
     else if (in_array($node, $attrs))
       $attr = $node;
+    else if (in_array($this->m_grammar->singularize($node), $attrs))
+      $attr = $this->m_grammar->singularize($node);
       
     return $attr;
   }
@@ -512,14 +603,14 @@ class atkMetaPolicy
           $attr = "{$node}_id";
         else if ($name == "{$node}id")
           $attr = "{$node}id";
-        else if ($name == atkMetaTools::singularize($node)."_id")
-          $attr = atkMetaTools::singularize($node)."_id";
-        else if ($name == atkMetaTools::singularize($node)."id")
-          $attr = atkMetaTools::singularize($node)."id";
+        else if ($name == $this->m_grammar->singularize($node)."_id")
+          $attr = $this->m_grammar->singularize($node)."_id";
+        else if ($name == $this->m_grammar->singularize($node)."id")
+          $attr = $this->m_grammar->singularize($node)."id";
         else if ($name == $node)
           $attr = $node;
-        else if ($name == atkMetaTools::singularize($node))
-          $attr = atkMetaTools::singularize($node);
+        else if ($name == $this->m_grammar->singularize($node))
+          $attr = $this->m_grammar->singularize($node);
           
         if ($attr != NULL) break;
       }
@@ -569,14 +660,47 @@ class atkMetaPolicy
   }  
   
   /**
+   * Checks if a certain attribute should be included or not.
+   * Checks both the include and exclude lists.
+   *
+   * @param String $name
+   * @return Boolean attribute included?
+   */
+  function _isAttributeIncluded($name)
+  {
+    if ($this->m_includes !== NULL && in_array($name, $this->m_includes)) return true;
+    if ($this->m_excludes !== NULL && in_array($name, $this->m_excludes)) return false;
+    
+    if ($this->m_includes !== NULL)
+    {
+      foreach ($this->m_includes as $include)
+        if ($include{0} == '/' && preg_match($include, $name)) return true;
+      return false;
+    }
+    
+    if ($this->m_excludes !== NULL)
+    {
+      foreach ($this->m_excludes as $exclude)
+        if ($exclude{0} == '/' && preg_match($exclude, $name)) return false;
+      return true;
+    }
+    
+    return true;
+  }
+  
+  /**
    * Apply attribute.
    */
   function _applyAttribute($name, $type, $params, $flags, $tabs, $order)
   {
-    if ($this->m_includes !== NULL && !in_array($name, $this->m_includes)) return;
-    if ($this->m_excludes !== NULL && in_array($name, $this->m_excludes)) return;
+    if (!$this->_isAttributeIncluded($name)) return;
   
-    atkimport($type);
+    if (atkexists("attribute", $type))
+      atkuse("attribute", $type);
+    elseif (atkexists("relation", $type))
+      atkuse("relation", $type);
+    else atkimport($type);
+    
     if (strrpos($type, ".") !== FALSE)
       $type = substr($type, strrpos($type, ".") + 1);
 

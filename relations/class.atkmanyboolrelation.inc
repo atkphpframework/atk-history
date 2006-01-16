@@ -88,11 +88,11 @@
 	  
       $result ='<div align="left"><font size="-2">
                 [<a href="javascript:profile_checkAll(\''.$this->fieldName().'\')">'.
-                     text("check_all").
+                     atktext("check_all", "atk").
                 '</a> <a href="javascript:profile_checkNone(\''.$this->fieldName().'\')">'.
-                     text("check_none").
+                     atktext("check_none", "atk").
                 '</a> <a href="javascript:profile_checkInvert(\''.$this->fieldName().'\')">'.
-                     text("invert_selection").'</a>]</font></div>';
+                     atktext("invert_selection", "atk").'</a>]</font></div>';
        	
       $result.= '<table border="0"><tr>';
       for ($i=0;$i<count($recordset);$i++)
@@ -110,7 +110,7 @@
 
             // Create link to details.
             $detaillink = href(dispatch_url($this->m_link, "edit", array("atkselector"=>$selector)),
-              "[".text("details")."]",
+              "[".atktext("details", "atk")."]",
               SESSION_NESTED,
               true);
           }
@@ -246,7 +246,7 @@
         
         $pkfield = $this->m_destInstance->primaryKeyField();
 
-        $result.= '<option value="">'.text('search_all');
+        $result.= '<option value="">'.atktext("search_all", "atk");
 
         for ($i=0;$i<count($recordset);$i++)
         {
@@ -272,15 +272,15 @@
       if (is_array($value) && count($value)>0 && $value[0]!="") // This last condition is for when the user selected the 'search all' option, in which case, we don't add conditions at all.
       {
     		$this->createLink();
-    		$query->addJoin($this->m_linkInstance->m_table, $this->fieldName(),$table.".id"."=".$this->m_linkInstance->m_table.".".$this->getLocalKey(),FALSE );//!$this->hasFlag(AF_OBLIGATORY)
+    		$query->addJoin($this->m_linkInstance->m_table, $this->fieldName(), $table.".".$this->m_ownerInstance->primaryKeyField()."=".$this->fieldName().".".$this->getLocalKey(),FALSE );//!$this->hasFlag(AF_OBLIGATORY)
     		$query->setDistinct(TRUE);
         if (count($value)==1) // exactly one value
         {
-          $query->addSearchCondition($query->exactCondition($this->m_linkInstance->m_table.".".$this->getRemoteKey(),escapeSQL($value[0])));
+          $query->addSearchCondition($query->exactCondition($this->fieldName().".".$this->getRemoteKey(),escapeSQL($value[0])));
         }
         else // search for more values using IN()
         {
-          $query->addSearchCondition($this->m_linkInstance->m_table.".".$this->remoteKey()." IN ('".implode("','",$value)."')");
+          $query->addSearchCondition($this->fieldName().".".$this->remoteKey()." IN ('".implode("','",$value)."')");
         }
       }
     }

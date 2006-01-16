@@ -76,7 +76,7 @@
       /* store the text calls */
       if(!isset($langcache[$month]))
       {
-        $langcache[$month]= text(strtolower($month),"","atk");
+        $langcache[$month]= atktext(strtolower($month),"atk");
       }
 
       if(!isset($langcache[$shortmonth]))
@@ -87,7 +87,7 @@
       /* replace month/week name */
       $str_date = str_replace("%-%", $langcache[$shortmonth], $str_date);
       $str_date = str_replace("%=%", $langcache[$month], $str_date);
-      if ($weekday) $str_date = str_replace("%*%", text(strtolower($date["weekday"]),"","atk"), $str_date);
+      if ($weekday) $str_date = str_replace("%*%", atktext(strtolower($date["weekday"]),"atk"), $str_date);
 
       /* return string */
       return $str_date;
@@ -246,11 +246,11 @@
         elseif ($obligatory) $value = adodb_date("Y-m-d");
         else $value = "";
         $this->registerKeyListener($fieldname, KB_CTRLCURSOR|KB_UPDOWN);
-        $result = '<input type="text" id="'.$fieldname.'" name="'.$fieldname.'" value="'.$value.'" size="10">';
+        $result = '<input type="text" id="'.$fieldname.'" class="atkdateattribute" name="'.$fieldname.'" value="'.$value.'" size="10">';
 
         if (!$this->hasFlag(AF_DATE_NO_CALENDAR))
         {
-          $result.=' <input type="reset" value="..." onclick="return showCalendar(\''.$fieldname.'\', \''.$fieldname.'\', \'y-mm-dd\', false);">';
+          $result.=' <input class="button" class="atkdateattribute" type="reset" value="..." onclick="return showCalendar(\''.$fieldname.'\', \''.$fieldname.'\', \'y-mm-dd\', false);">';
         }
         return $result;
       }
@@ -357,7 +357,7 @@
           if(!empty($current["y_max"]) && !empty($current["y_min"]) && $current["y_max"] - $current["y_min"] <= $this->m_maxyears)
           {
             $this->registerKeyListener($fieldname.'[year]', KB_CTRLCURSOR|KB_LEFTRIGHT);
-            $result .= '<select id="'.$fieldname.'[year]" name="'.$fieldname.'[year]" onChange="'.$str_script.'">';
+            $result .= '<select id="'.$fieldname.'[year]" name="'.$fieldname.'[year]" class="atkdateattribute" onChange="'.$str_script.'">';
             if (!$obligatory || $this->hasflag(AF_DATE_EMPTYFIELD))
               $result .= '<option value="0"'.($current === NULL ? ' selected' : '').'></option>';
             for($j = $current["y_min"]; $j <= $current["y_max"]; $j++)
@@ -376,7 +376,7 @@
           else
           {
             $this->registerKeyListener($fieldname.'[year]', KB_CTRLCURSOR|KB_UPDOWN);
-            $result .= '<input type="text" id="'.$fieldname.'[year]" name="'.$fieldname.'[year]" size="4" maxlength="4" onChange="'.$str_script.'" value="'.(isset($current["year"])?$current["year"]:"").'">';
+            $result .= '<input type="text" id="'.$fieldname.'[year]" name="'.$fieldname.'[year]" class="atkdateattribute" size="4" maxlength="4" onChange="'.$str_script.'" value="'.(isset($current["year"])?$current["year"]:"").'">';
           }
         }
 
@@ -384,7 +384,7 @@
         elseif ($str_format[$i] == "j" || $str_format[$i] == "d")
         {
           $this->registerKeyListener($fieldname.'[day]', KB_CTRLCURSOR|KB_LEFTRIGHT);
-          $result .= '<select id="'.$fieldname.'[day]" name="'.$fieldname.'[day]" onChange="'.$str_script.'">';
+          $result .= '<select id="'.$fieldname.'[day]" name="'.$fieldname.'[day]" class="atkdateattribute" onChange="'.$str_script.'">';
           if (!$obligatory || $this->hasflag(AF_DATE_EMPTYFIELD))
             $result .= '<option value="0"'.($current === NULL ? ' selected' : '').'></option>';
           if (!$pda)
@@ -426,7 +426,7 @@
         elseif($str_format[$i] == "m" || $str_format[$i] == "n" || $str_format[$i] == "M" || $str_format[$i] == "F")
         {
           $this->registerKeyListener($fieldname.'[month]', KB_CTRLCURSOR|KB_LEFTRIGHT);
-          $result .= '<select id="'.$fieldname.'[month]" name="'.$fieldname.'[month]" onChange="'.$str_script.'">';
+          $result .= '<select id="'.$fieldname.'[month]" name="'.$fieldname.'[month]" class="atkdateattribute" onChange="'.$str_script.'">';
           if (!$obligatory || $this->hasflag(AF_DATE_EMPTYFIELD))
             $result .= '<option value="0"'.($current === NULL ? ' selected' : '').'></option>';
           if (!$pda)
@@ -456,7 +456,7 @@
 
       if (!$this->hasFlag(AF_DATE_NO_CALENDAR) && !$yeardropdown && !$pda)
       {
-        $result.=' <input type="reset" value="..." onclick="return showCalendar(\''.$fieldname.'\', \''.$fieldname.'[year]\', \'y-mm-dd\', true);">';
+        $result.=' <input class="button" type="reset" value="..." onclick="return showCalendar(\''.$fieldname.'\', \''.$fieldname.'[year]\', \'y-mm-dd\', true);">';
       }
 
       /* return result */
@@ -524,7 +524,7 @@
 
       // FIXME, we need a way to set the date to 'nothing' (i.e., unselected)
       $res = $this->draw($record, "atksearch_AE_".$fieldprefix, "_AE_from");
-      $res.= "&nbsp;".text("until").": ".$this->draw($record, "atksearch_AE_".$fieldprefix, "_AE_to");
+      $res.= "&nbsp;".atktext("until").": ".$this->draw($record, "atksearch_AE_".$fieldprefix, "_AE_to");
       return $res;
     }
 
@@ -775,13 +775,13 @@
       /* date < minimum */
       if (!empty($minimum) && $current < $minimum)
       {
-        triggerError($record, $this->fieldName(), 'error_date_minimum', text("error_date_minimum")." ". $this->formatDate(adodb_getdate($minimum), $this->m_date_format_view, 0));
+        triggerError($record, $this->fieldName(), 'error_date_minimum', atktext("error_date_minimum")." ". $this->formatDate(adodb_getdate($minimum), $this->m_date_format_view, 0));
         return;
       }
 
       /* date > maximum */
       if (!empty($maximum) && $current > $maximum)
-        triggerError($record, $this->fieldName(), 'error_date_maximum', text("error_date_maximum")." ". $this->formatDate(adodb_getdate($maximum), $this->m_date_format_view, 0));
+        triggerError($record, $this->fieldName(), 'error_date_maximum', atktext("error_date_maximum")." ". $this->formatDate(adodb_getdate($maximum), $this->m_date_format_view, 0));
     }
 
     /**

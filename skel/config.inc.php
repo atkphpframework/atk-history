@@ -190,13 +190,13 @@
   $config_auth_usertable   = "user";
   $config_auth_userfield   = "userid";
   $config_auth_passwordfield = "password";
-
-  // if you work with groups/levels  you need these parameters
+  
+  // If you work with groups/levels  you need these parameters
   $config_auth_leveltable  = "users";
   $config_auth_levelfield  = "entity";
 
-  // use this if you want a loginform instead off an htaccess boxske
-  // currently this is only supported when using the outlook theme
+  // Setting this to true will make ATK use a loginform instead of a browser
+  // popup.
   $config_auth_loginform = true;
   $config_max_loginattempts = 5;
 
@@ -247,11 +247,31 @@
   // If you have config_authentication set to "config", you may now specify
   // a set of usernames and passwords (in plain text).
   // Example:
-  // user("harry","password");
+  // atkConfig::addUser("harry","password");
 
   // If securityscheme is "level" or "group", you may also specify the
   // level or group as third parameter:
-  // user("harry","password",3);
-  // user("harry","password","admins");
+  // atkConfig::addUser("harry","password",3);
+  // atkConfig::addUser("harry","password","admins");
 
+ // -------------- DOCUMENT WRITER CONFIGURATION ---------------
+
+  // For document attributes, ATK automatically searches for template
+  // documents in a specific directory. The base directory to search in
+  // can be specified below. The document templates must be put in a
+  // specific directory structure under this base directory: first of all
+  // a subdirectory must be made for every module for which you want to
+  // include document templates (equal to the modulename of that module, as
+  // set in config.inc.php). Then a subdirectory in that directory must be
+  // made according to the name of the node for which you want to include
+  // document templates. In this subdirectory you can put your document
+  // template files. So if you have $config_doctemplatedir set to
+  // "doctemplates/", then you can put your documents in
+  // "doctemplates/modulename/nodename/".
+  $config_doctemplatedir = "doctemplates/";
+
+  // --------- DATE INTERNATIONALISATION CONFIGURATION ---------
+
+  $config_supported_languages = array("EN","NL","DE");
+  $config_defaultlanguage="EN";
 ?>

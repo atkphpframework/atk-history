@@ -146,7 +146,7 @@
         {
           $result = "";
           /* display in list mode */
-          if ($mode == "list")
+          if (($mode == "list") || ($mode == "csv"))
             for ($i = 0; $i < count($myrecords);$i++)
               $result .= ($i > 0 ? "<br>" : "").$this->m_destInstance->descriptor($myrecords[$i]);
 
@@ -193,7 +193,8 @@
             return $cache;
           }
         }
-        $output = $this->_getEditOutput($record,$fieldprefix);
+        $output = $error;
+        $output .= $this->_getEditOutput($record,$fieldprefix);
         if ($this->m_recordlistcache) $this->m_recordlistcache->writeCache($output, $this->m_recordlist->m_actionloader);
         return $output;
       }
@@ -246,6 +247,7 @@
               }
             }
           }
+
           $this->m_destInstance->validate($this->m_ownerInstance->m_postvars[$this->fieldName()],"add");
           if (!$this->m_ownerInstance->m_postvars[$this->fieldName()]['atkerror'])
           {
@@ -253,7 +255,7 @@
           }
           else
           {
-            $error = "<span class='error'>".$this->m_ownerInstance->m_postvars[$this->fieldName()]['atkerror'][0]['msg']."</span><br />";
+            $error = "<span class='error'>".$this->m_ownerInstance->m_postvars[$this->fieldName()]['atkerror'][0]['attrib_name'].': '.$this->m_ownerInstance->m_postvars[$this->fieldName()]['atkerror'][0]['msg']."</span><br />";
           }
         }
       }
@@ -368,7 +370,7 @@
      * @return String The generated recordlist
      */
     function _getRecordList($myrecords)
-    {      
+    {
       if (count($myrecords)!=0 || isset($this->m_ownerInstance->m_postvars['atksearch']))
       {
         $actions = array();
@@ -426,10 +428,10 @@
      * @param Array $record     The record that holds the value for this attribute.
      * @return String  The link to add records to the onetomany
      */
-    function _addAddLink($myrecords, $record)
+    function _addAddLink($myrecords, $record,$saveform=true)
     {
       $url = "";
-      if (($this->m_maxRecords==0||$this->m_maxRecords>count($myrecords))&&!$this->m_destInstance->hasFlag(NF_NO_ADD))
+      if (($this->m_maxRecords==0||$this->m_maxRecords>count($myrecords))&&$this->createDestination() && !$this->m_destInstance->hasFlag(NF_NO_ADD))
       {
         if ($this->destinationHasRelation())
         {
@@ -454,25 +456,43 @@
         $strfilter = implode(" AND ", $filterelems);
         if ($this->m_destinationFilter!="")
         {
-          $strfilter.=' AND '.$this->m_destinationFilter;
+	        atkimport("atk.utils.atkstringparser");
+	        $parser = new atkStringParser($this->m_destinationFilter);
+	        $filter = $parser->parse($record);
+        	$strfilter.=' AND '.$filter;
         }
         $add_url = 'dispatch.php?atknodetype='.$this->m_destination.'&atkaction=add&atkfilter='.rawurlencode($strfilter);
-        $key = "link_".$this->fieldName()."_add";
+        $label = $this->getAddLabel();
 
-        $label = atktext($key,$this->m_destInstance->m_module);
-        if ($label==""||strtolower($label)==str_replace('_',' ',strtolower($key)))
+        if (count($this->m_onchangecode))
         {
-          $key = "link_".getNodeType($this->m_destination)."_add";
-          $label = atktext($key,$this->m_destInstance->m_module);
-          if ($label==""||strtolower($label)==str_replace('_',' ',strtolower($key)))
-          {
-            $key = atktext(getNodeType($this->m_destination),$this->m_destInstance->m_module)." ".strtolower(atktext("add"));
-            $label = atktext($key,$this->m_destInstance->m_module);
-          }
+          $onchange = 'onChange="'.$this->fieldName().'_onChange(this);"';
+          $this->_renderChangeHandler($fieldprefix);
         }
-        $url = href($add_url,$label,SESSION_NESTED,true);
+        $url = href($add_url,$label,SESSION_NESTED,$saveform,$onchange.' class="atkonetomanyrelation"');
       }
       return $url;
+    }
+
+    /**
+     * Attempts to get a translated label which can be used when composing an "add" link
+     *
+     * @return String Localised "add" label
+     */
+    function getAddLabel()
+    {
+      $key = "link_".$this->fieldName()."_add";
+      $label = atktext($key,$this->m_destInstance->m_module, "", "", "", true);
+      if ($label=="")
+      {
+        $key = "link_".getNodeType($this->m_destination)."_add";
+        $label = atktext($key,$this->m_destInstance->m_module, "", "", "", true);
+        if ($label=="")
+        {
+          $label = atktext(getNodeType($this->m_destination),$this->m_destInstance->m_module)." ".strtolower(atktext("add", "atk"));
+        }
+      }
+      return $label;
     }
 
     /**
@@ -565,7 +585,10 @@
 
           if ($this->m_destinationFilter!="")
           {
-            $this->m_destInstance->addFilter($this->m_destinationFilter);
+	          atkimport("atk.utils.atkstringparser");
+	          $parser = new atkStringParser($this->m_destinationFilter);
+	          $filter = $parser->parse($record);
+            $this->m_destInstance->addFilter($filter);
           }
 
           if ($mode=="admin" || $mode=="select" || $mode=="view")
@@ -781,7 +804,7 @@
     {
       $id = "atksearch[".$fieldprefix.$this->formName()."]";
       $this->registerKeyListener($id, KB_CTRLCURSOR|KB_UPDOWN);
-      $result= '<input type="text" id="'.$id.'" name="'.$id.'" value="'.$record[$this->fieldName()].'"'.
+      $result= '<input type="text" id="'.$id.'" class="'.get_class($this).'" name="'.$id.'" value="'.$record[$this->fieldName()].'"'.
                 ($this->m_searchsize > 0 ? ' size="'.$this->m_searchsize.'"' : '').
                 ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>';
       return $result;
@@ -849,13 +872,13 @@
          $alias = $this->fieldName() . "_AE_" . $this->m_destInstance->m_table;
          $attr = &$this->m_destInstance->getAttribute($field);
          $attr->searchCondition($query, $alias, $value, $searchmode);
-         
+
          $condition = array();
          for ($i = 0; $i < sizeof($this->m_ownerInstance->m_primaryKey); $i++)
          {
             $condition[] = $this->m_ownerInstance->m_table . "." . $this->m_ownerInstance->m_primaryKey[$i] . "=". $alias . "." . $this->m_refKey[$i];
          }
-         
+
          $query->addJoin($table,$alias,implode(" AND ",$condition),false);
        }
      }
@@ -986,10 +1009,13 @@
         // otherwise we just don't set a filter
       }
 
-      // create a navigator and let it create the navigation links using the temporary node
-      $navigator  = &atknew("atk.utils.atknavigator");
-      $navigation = $navigator->getNavigationUrls($this->m_destInstance,"admin", $destfilter);
-      $navstr     = $navigator->buildNavigation($this->m_destInstance,"admin",$navigation, true);
+      if ($destfilter)
+      {
+        // create a navigator and let it create the navigation links using the temporary node
+        $navigator  = &atknew("atk.utils.atknavigator");
+        $navigation = $navigator->getNavigationUrls($this->m_destInstance,"admin", $destfilter);
+        $navstr     = $navigator->buildNavigation($this->m_destInstance,"admin",$navigation, true);
+      }
 
       // add the navigation to the top and bottom of the page
       if ($navstr) $output = $navstr . "<br />" . $output . $navstr."<br />";

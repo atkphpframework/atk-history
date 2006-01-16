@@ -29,6 +29,8 @@
   {
     function validateUser($user, $passwd)
     {
+       if ($user=="") return AUTH_UNVERIFIED; // can't verify if we have no userid
+  
        if($ldap = ldap_connect(atkconfig("auth_ldap_host")))
        {
         atkdebug("successful connection to ".atkconfig("auth_ldap_host"));

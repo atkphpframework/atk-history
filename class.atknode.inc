@@ -82,7 +82,7 @@
 
   /**
    * If set, atk stores the old values of
-   * a record as ["atkold"] in the $rec that
+   * a record as ["atkorgrec"] in the $rec that
    * gets passed to the postUpdate
    */
   define("NF_TRACK_CHANGES",        1024);
@@ -127,7 +127,8 @@
   /**
    * Add CSV export ability to the node.
    */
-  define("NF_EXPORT",         1073741824);
+  define("NF_EXPORT",             262144);
+
 
   /**
    * Disable csv import feature
@@ -136,9 +137,21 @@
   define("NF_NO_IMPORT",               0);
 
   /**
+   * Enable extended sorting (multicolumn sort)
+   */
+  define("NF_EXT_SORT",           524288);
+
+  /**
    * Makes a node cache it's recordlist
    */
-  define("NF_CACHE_RECORDLIST",   262144);
+  define("NF_CACHE_RECORDLIST",  1048576);
+
+
+  /**
+   * After adding a new record add another one instantaniously.
+   */
+  define("NF_ADDAFTERADD",       2097152);
+
 
   /**
    * Specific node flag 1
@@ -583,14 +596,26 @@
 
     /**
      * Descriptor template.
+     * @access protected
      * @var String
      */
     var $m_descTemplate = NULL;
-    
+
     /**
      * List of action listeners
+     * @access protected
+     * @var Array
      */
     var $m_listeners = array();
+
+    /**
+     * Tracker variable to see if we are currently in 'modifier mode' (running inside
+     * the scope of a modname_nodename_modifier() method). The variable contains the
+     * name of the modifying module.
+     * @access private
+     * @var String
+     */
+    var $m_modifier = "";
 
     /**
      * Constructor.
@@ -629,6 +654,10 @@
       static $attrib_order = 100;
       static $attrib_index = 0;
       $attribute->m_owner = $this->m_type;
+
+      // If we're running inside modifier scope, we have to tell the attribute
+      // what module he originated from.
+      if ($this->m_modifier!="") $attribute->m_module = $this->m_modifier;
 
       // *** API HACK ***
       // Because tabs will probably be used more than the order override option
@@ -1185,10 +1214,18 @@
         // the 'saveandclose' button. Unless, a feedback screen is configured.
         if (atkLevel() >0 || hasFlag($this->m_feedback["update"], ACTION_SUCCESS))
         {
-          $result[] = '<input type="submit" class="btn_saveandclose" name="atksaveandclose" value="'.text('saveandclose').'">';
+          $result[] = '<input type="submit" class="btn_saveandclose" name="atksaveandclose" value="'.atktext('saveandclose', "atk").'">';
         }
-        $result[] = '<input type="submit" class="btn_save" name="atknoclose" value="'.text('save').'">';
-        $result[] = '<input type="submit" class="btn_cancel" name="atkcancel" value="'.text('cancel').'">';
+        $result[] = '<input type="submit" class="btn_save" name="atknoclose" value="'.atktext("save", "atk").'">';
+        $result[] = '<input type="submit" class="btn_cancel" name="atkcancel" value="'.atktext("cancel", "atk").'">';
+      }
+      elseif ($mode == "add")
+      {
+        $result[] = '<input type="submit" class="btn_save" value="'.atktext("save", "atk").'">';
+        // if action is admin, we don't show the cancelbutton or the add next button
+        if ($this->hasFlag(NF_ADDAFTERADD) && !$this->hasFlag(NF_EDITAFTERADD))
+          $result[] = '<input type="submit" class="btn_saveandnext" name="atksaveandnext" value="'.atktext("saveandnext", "atk").'">';
+        $result[] = '<input type="submit" class="btn_cancel" name="atkcancel" value="'.atktext("cancel", "atk").'">';
       }
       elseif ($mode == "view")
       {
@@ -1214,9 +1251,9 @@
     function lockPage()
     {
       $output = $this->statusbar();
-      $output.= '<img src="'.atkconfig("atkroot").'atk/images/lock.gif"><br><br>'.text("lock_locked").'<br>';
+      $output.= '<img src="'.atkconfig("atkroot").'atk/images/lock.gif"><br><br>'.atktext("lock_locked").'<br>';
       $output.= '<br><form method="get">'.session_form(SESSION_BACK).
-                        '<input type="submit" class="btn_cancel" value="&lt;&lt; '.text('back').'"></form>';
+                        '<input type="submit" class="btn_cancel" value="&lt;&lt; '.atktext('back').'"></form>';
 
       $ui = &$this->getUi();
       if (is_object($ui))
@@ -1261,7 +1298,7 @@
         $descr = $this->descriptor($record);
         $g_sessionManager->pageVar("descriptor",$descr);
       }
-      
+
       $descriptortrace = $g_sessionManager->descriptorTrace();
       $nomodule=false;
       if (!empty($descriptortrace))
@@ -1355,7 +1392,7 @@
         atkdebug("Restoring formdata from session");
         $this->modifyRecord($defaults, $this->m_postvars["atkformdata"]);
         $this->m_postvars["atkformdata"]="";
-        $g_sessionData["default"]["stack"][atkStackID()][atkLevel()]["atkformdata"]="";
+        $g_sessionData[$this->m_action]['stack'][atkStackID()][atkLevel()]['atkformdata']="";
       }
 
       /* edit mode */
@@ -1587,6 +1624,7 @@
      * tab etc).
      * @param String $action The action for which the tabs should be generated.
      * @return array List of tabs
+     * @todo Make translation of tabs module aware
      */
     function buildTabs($action="")
     {
@@ -1609,7 +1647,9 @@
         $newtab["total"] = count($list);
         foreach ($list as $t)
         {
-          $newtab["title"] = atktext("tab_$t",$this->m_module,$this->m_type);
+          $newtab["title"] = atktext("tab_$t",$this->m_module,$this->m_type, "", "", true);
+          if ($newtab["title"] == "")
+            $newtab["title"] = atktext($t,$this->m_module,$this->m_type);
           $newtab["tab"] = $t;
           $url = $_SERVER["PHP_SELF"]."?atknodetype=".$this->atkNodeType()."&atkaction=".$this->m_action."&atktab=".$t;
           if ($this->m_action == "view")
@@ -1757,8 +1797,8 @@
       $formstart.='<input type="hidden" name="atkselector" value="'.$atkselector_str.'">';
 
       $buttons = array();
-      $buttons[] = '<input name="confirm" class="btn" type="submit" value="'.text('yes').'">';
-      $buttons[] = '<input name="cancel" type="submit" class="btn_cancel" value="'.text('no').'">';
+      $buttons[] = '<input name="confirm" class="btn" type="submit" value="'.atktext('yes').'">';
+      $buttons[] = '<input name="cancel" type="submit" class="btn_cancel" value="'.atktext('no').'">';
 
       $content = "";
       $recs = $this->selectDb($atkselector_str, "", "", "", $this->descriptorFields());
@@ -1807,7 +1847,7 @@
     {
       $method = 'confirm'.$action.'text';
       if ($checkoverride && method_exists($this, $method)) return $this->$method($atkselector);
-      else return text("confirm_$action".(is_array($atkselector) && count($atkselector) > 1 ? '_multi' : ''), $this->m_type, $this->m_module);
+      else return atktext("confirm_$action".(is_array($atkselector) && count($atkselector) > 1 ? '_multi' : ''), $this->m_module, $this->m_type);
     }
 
     /**
@@ -1859,7 +1899,9 @@
           if (method_exists($mod,$modifiername))
           {
             atkdebug("Applying modifier from module $modname to ".$this->m_type);
+            $this->m_modifier = $modname;
             $mod->$modifiername($this);
+            $this->m_modifier = "";
           }
           else
           {
@@ -1879,7 +1921,9 @@
           if (method_exists($mod,$modifiername))
           {
             atkdebug("Applying modifier from module $modname to ".$this->atknodetype());
+            $this->m_modifier = $modname;
             $mod->$modifiername($this);
+            $this->m_modifier = "";
           }
         }
       }    
@@ -1901,7 +1945,6 @@
       else $this->removeFlag(NF_LOCK);
 
       $this->m_defaultlanguage = strtoupper(atkconfig("defaultlanguage"));
-
 
       $this->m_initialised = true;
     }
@@ -1991,6 +2034,29 @@
      */
     function dispatch($postvars, $fullpage=true)
     {
+      $this->loadDispatchPage($postvars);
+
+      $ui = &$this->getUi();
+      $page = &$this->getPage();
+      $screen = $page->render(atktext('app_shorttitle')." - ".$ui->title($this->m_module, $this->m_type,$this->m_postvars['atkaction']), $fullpage);
+
+      $output = &atkOutput::getInstance();
+      $output->output($screen);
+
+      // This is the end of all things for this page..
+      // so we clean up some resources..
+      $db = &$this->getDb();
+      if (is_object($db)) $db->disconnect();
+      atkdebug("disconnected from the database");
+    }
+
+    /**
+     * Does the actual loading of the dispatch page
+     * And adds it to the page for the dispatch() method to render.
+     * @param array $postvars The request variables for the node.
+     */
+    function loadDispatchPage($postvars)
+    {
       $this->m_postvars = $postvars;
 
       $this->m_action = $postvars['atkaction'];
@@ -2014,20 +2080,8 @@
       }
       else
       {
-        $page->addContent($this->genericPage(text('access_denied'), "<br><br>".text("error_node_action_access_denied", $this->m_type)."<br><br><br>"));
+        $page->addContent($this->genericPage(atktext('access_denied'), "<br><br>".atktext("error_node_action_access_denied", "", $this->m_type)."<br><br><br>"));
       }
-
-      $ui = &$this->getUi();
-      $screen = $page->render(text('app_shorttitle')." - ".$ui->title($this->m_module, $this->m_type,$this->m_postvars['atkaction']), $fullpage);
-
-      $output = &atkOutput::getInstance();
-      $output->output($screen);
-
-      // This is the end of all things for this page..
-      // so we clean up some resources..
-      $db = &$this->getDb();
-      if (is_object($db)) $db->disconnect();
-      atkdebug("disconnected from the database");
     }
 
     /**
@@ -2448,7 +2502,7 @@
         $return =  $this->postUpdate($record);
         if(!isSet($return))
         {
-          atkdebug("<font color=red>Undefined return:".$this->atkNodeType().".postUpdate doesn't return anything, it should return a boolean!</font>");
+          atkdebug("Undefined return:".$this->atkNodeType().".postUpdate doesn't return anything, it should return a boolean!", DEBUG_WARNING);
           $return = true;
         }
         return $return;
@@ -2574,7 +2628,8 @@
       if (isset($this->m_postvars['atksearch']) && is_array($this->m_postvars['atksearch']) && count($this->m_postvars['atksearch'])>0)
       {
         $searchArray = $this->m_postvars['atksearch'];
-        $searchmode = $this->m_postvars["atksearchmode"];
+        //The searchmode of an index should be used only once, therefore it uses atksinglesearchmode instead of atksearchmode.
+        $searchmode = (@$this->m_postvars["atksinglesearchmode"]?@$this->m_postvars["atksinglesearchmode"]:@$this->m_postvars["atksearchmode"]);
         if ($searchmode=="") $searchmode = atkconfig("search_defaultmode");
         while (list($key,$value) = each($searchArray))
         {
@@ -2697,7 +2752,9 @@
         if (is_array($searchArray) && count($searchArray)>0)
         {
           $searching = true;
-          $searchmode = @$this->m_postvars["atksearchmode"];
+          //The searchmode of an index should be used only once, therefore it uses atksinglesearchmode instead of atksearchmode.
+          $searchmode = (@$this->m_postvars["atksinglesearchmode"]?@$this->m_postvars["atksinglesearchmode"]:@$this->m_postvars["atksearchmode"]);
+          
           if ($searchmode=="") $searchmode = atkconfig("search_defaultmode");
         }
       }
@@ -2775,7 +2832,7 @@
         {
           while (list($key,$value) = each($searchArray))
           {
-            if ($value!="")
+            if( (($value!="") && ($mode=="admin")) || (($value!="") && in_array($key,$querylist)) )
             {
               $p_attrib = &$this->m_attribList[$key];
 
@@ -2959,15 +3016,18 @@
       {
         list($attribname) = explode(".", $usedfield);
         $p_attrib = &$this->m_attribList[$attribname];
-        if (is_object($p_attrib)) $loadmode = $p_attrib->loadType("");
-        else atkdebug("$attribname is not an object?! Check your descriptor_def for non-existant fields");
-        if ($loadmode && hasFlag($loadmode, ADDTOQUERY))
+        if (is_object($p_attrib)) 
         {
-          if ($usefieldalias) $fieldaliasprefix = $alias."_AE_";
+          $loadmode = $p_attrib->loadType("");
 
-          $p_attrib->addToQuery($query,$alias, $fieldaliasprefix,"",$level+1, "select");
+          if ($loadmode && hasFlag($loadmode, ADDTOQUERY))
+          {
+            if ($usefieldalias) $fieldaliasprefix = $alias."_AE_";
+
+            $p_attrib->addToQuery($query,$alias, $fieldaliasprefix,"",$level+1, "select");
+          }
         }
-
+        else atkdebug("$attribname is not an object?! Check your descriptor_def for non-existant fields");
       }
     }
 
@@ -3049,7 +3109,7 @@
         $return = $this->postAdd($record, $mode);
         if(!isSet($return))
         {
-          atkdebug("<font color=red>Undefined return:".$this->atkNodeType().".postAdd doesn't return anything, it should return a boolean!</font>");
+          atkdebug("Undefined return:".$this->atkNodeType().".postAdd doesn't return anything, it should return a boolean!", DEBUG_WARNING);
           $return = true;
         }
         if (!$return)
@@ -3082,6 +3142,11 @@
     {
       $recordset = $this->selectDb($selector,"","","","","delete");
 
+      if (method_exists($this,'preDelete')) 
+      {        
+        if (!$this->preDelete($recordset)) return atkerror('preDelete failed!');
+      }
+      
       if (count($this->m_cascadingAttribs)>0)
       {
         for ($i = 0, $_i = count($recordset); $i < $_i; $i++)
@@ -3106,10 +3171,10 @@
       {
         for ($i = 0, $_i = count($recordset); $i < $_i; $i++)
         {
-          $return = $this->postDel($recordset[$i]);
+          $return = ($this->postDel($recordset[$i]) && $this->postDelete($recordset[$i]));
           if(!isSet($return))
           {
-            atkdebug("<font color=red>Undefined return:".$this->atkNodeType().".postDel doesn't return anything, it should return a boolean!</font>");
+            atkdebug("Undefined return:".$this->atkNodeType().".postDel and postDelete don't return anything, they should return a boolean!", DEBUG_WARNING);
             $return = true;
           }
 
@@ -3185,19 +3250,50 @@
 
     /**
      * Function that is called by the framework, just before an existing
-     * record will be saved to the database.
+     * record will be saved to the database. 
      *
      * This function does essentially nothing, but it can be overriden in
      * derived classes if you want to modify the record just before it will
      * be saved.
      *
      * @param array $record The record that will be updated in the database.
+     * @return bool Wether or not we succeeded in what we wanted to do.
      */
     function preUpdate(&$record)
     {
       // Do nothing
+    }    
+    
+    /**
+     * Function that is called by the framework, right before a record will be
+     * deleted. Should this method return false the deleting will halt.
+     *
+     * This function does essentially nothing, but it can be overriden in
+     * derived classes if you want to do something special after a record is
+     * deleted.
+     * 
+     * If this function returns false the delete action will not continue.
+     *
+     * @param array $record The record that has just been deleted.
+     */
+    function preDelete()
+    {
+      return true;
     }
 
+    /**
+     * Deprecated function that is called by the framework, 
+     * right after a record has been deleted.
+     * Please use postDelete() instead.
+     * @param array $record The record that has just been deleted.
+     * @return bool Wether or not we succeeded in what we wanted to do.
+     */
+    function postDel($record)
+    {
+      // Do nothing
+      return true;
+    }
+    
     /**
      * Function that is called by the framework, right after a record has been
      * deleted.
@@ -3207,8 +3303,9 @@
      * deleted.
      *
      * @param array $record The record that has just been deleted.
+     * @return bool Wether or not we succeeded in what we wanted to do.
      */
-    function postDel($record)
+    function postDelete($record)
     {
       // Do nothing
       return true;
@@ -3415,7 +3512,7 @@
       {
         $page = &$this->getPage();
         $page->register_script(atkconfig("atkroot")."atk/javascript/newwindow.js");
-        $res["helplabel"] = text("help");
+        $res["helplabel"] = atktext("help");
         $res["helplink"] = '<a href="'.$res["helpurl"].'">'.$res["helplabel"].'</a>';
       }
       return $res;
@@ -3454,7 +3551,7 @@
       }
       else
       {
-       $name = text("help");
+       $name = atktext("help");
        $node = $this->m_type;
        return atkPopup('atk/popups/help.inc','node='.$node,$name,650,650,'yes','no');
       }
@@ -3638,7 +3735,7 @@
         list($relation_new, $dummy) = explode($sqloperator, $relation);
 
         // check if the fieldname is in the attriblist
-      	if (in_array(trim($relation_new), array_keys($this->m_attribList))) return $filter;
+        if (in_array(trim($relation_new), array_keys($this->m_attribList))) return $filter;
       }
       return "";
     }
@@ -3722,20 +3819,43 @@
           $this->m_securityMap[$key] = $newmapped;
       }
     }
-    
+
+    /**
+     * Add an atkActionListener to the node.
+     *
+     * @param atkActionListener $listener
+     */
     function addListener(&$listener)
     {
       $listener->setNode($this);
       $this->m_listeners[] = $listener;
     }
 
+    /**
+     * Notify all listeners of the occurance of a certain action.
+     *
+     * @param String $action The action that occurred
+     * @param array $record The record on which the action was performed
+     */
     function notify($action, $record)
     {
       for($i=0, $_i=count($this->m_listeners); $i<$_i; $i++)
       {
         $this->m_listeners[$i]->notify($action, $record);
       }
-    } 
-    
+    }
+
+    /**
+     * Get the column configuration object
+     *
+     * @return atkColumnConfig
+     */
+    function &getColumnConfig()
+    {
+      atkimport("atk.recordlist.atkcolumnconfig");
+      $columnConfig = &atkColumnConfig::getConfig($this);
+      return $columnConfig;
+    }
+
   }
 ?>

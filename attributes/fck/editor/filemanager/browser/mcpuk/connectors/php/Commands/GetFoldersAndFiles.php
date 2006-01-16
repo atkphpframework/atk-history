@@ -1,4 +1,4 @@
-<?php 
+<?php
 /*
  * FCKeditor - The text editor for internet
  * Copyright (C) 2003-2005 Frederico Caldeira Knabben
@@ -24,10 +24,16 @@ class GetFoldersAndFiles {
 	var $actual_cwd;
 	
 	function GetFoldersAndFiles($fckphp_config,$type,$cwd) {
+	  
+	  
 		$this->fckphp_config=$fckphp_config;
 		$this->type=$type;
 		$this->raw_cwd=$cwd;
-		$this->actual_cwd=str_replace("//","/",($fckphp_config['UserFilesPath']."/$type/".$this->raw_cwd));
+		//HARRIEHACK
+		if ($fckphp_config['UseTypeDirs'])
+		  $this->actual_cwd=str_replace("//","/",($fckphp_config['UserFilesPath']."/$type/".$this->raw_cwd));
+		else 
+		  $this->actual_cwd=str_replace("//","/",($fckphp_config['UserFilesPath']."/".$this->raw_cwd));
 		$this->real_cwd=str_replace("//","/",($this->fckphp_config['basedir']."/".$this->actual_cwd));
 	}
 	

@@ -16,9 +16,11 @@
    * $Id$
    */
 
-  /** @internal Includes */
-  include_once($config_atkroot."atk/attributes/class.atkdateattribute.inc");
-  include_once($config_atkroot."atk/attributes/class.atktimeattribute.inc");
+  /**
+   * @internal Includes
+   */
+  atkimport("atk.attributes.atkdateattribute");
+  atkimport("atk.attributes.atktimeattribute");
 
   /**
    * The atkDateTimeAttribute class can be used for date and time entry.
@@ -36,6 +38,14 @@
 
     /**
      * Constructor
+     *
+     * @todo I don't know who added the default_date and default_time parameters,
+     *       but at least the atkDateAttribute doesn't support a default date. if
+     *       you want to set a default date you should use initial_values anyways
+     *       so I think the default_date / default_time parameters should be removed.
+     *       But can we keep this backwards compatible somehow? At least now we
+     *       are certain it doesn't work. ;) (PCV)
+     *
      * @param $name        Name of the attribute
      * @param $default_date   start date
      * @param $default_time     start time
@@ -48,11 +58,19 @@
       {
         $default_steps[$i] = $i;
       }
+
+      if (is_numeric($default_date))
+      {
+        $flags = $default_date;
+        $default_date = "";
+      }
+
+
       if($default_date=="") { $default_date = ""; }
       if($default_time=="") { $default_time = date("H:i"); }
-      
+
       $this->m_time = new atkTimeattribute($name,0,23,$default_steps,$default_time, $flags);
-      $this->m_date = new atkDateattribute($name,$default_date,'',0,0,$flags);
+      $this->m_date = new atkDateattribute($name,'','',0,0,$flags);
 
       $this->atkAttribute($name,$flags); // base class constructor
     }
@@ -63,6 +81,23 @@
       $this->m_time->validate($record,$mode);
     }
 
+    /**
+     * Converts a date/time string (YYYYMMDDHHMISS) to an
+     * array with 5 fields (day, month, year, hours, minutes, seconds).
+     * Defaults to current date/time.
+     * 
+     * @param $datetime the time string
+     * @return array with 6 fields (day, month, year, hours, minutes, seconds)
+     */
+    function datetimeArray($datetime=NULL)
+    {
+      if ($datetime == NULL)
+        $datetime = date("YmdHi");
+      $date = substr($datetime, 0, 8);
+      $time = substr($datetime, 8, 6);
+      return array_merge(atkDateAttribute::dateArray($date), atkTimeAttribute::timeArray($time));
+    }       
+    
     function init()
     {
 
@@ -144,6 +179,7 @@
 
         $tmp_rec = $rec;
         $tmp_rec[$this->fieldname()]=$datetime[0];
+        
         $result_date=$this->m_date->db2value($tmp_rec);
 
         $tmp_rec = $rec;
@@ -173,7 +209,8 @@
         }
         else
         {
-          if (atkconfig('database') != 'oci9')
+          $db = &$this->m_ownerInstance->getDb();
+          if ($db->getType() != 'oci9')
             $query->addField($this->fieldName(),$this->value2db($rec),"","",!$this->hasFlag(AF_NO_QUOTES));
           else
           {

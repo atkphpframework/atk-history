@@ -68,6 +68,7 @@
     {
       $node = &$this->m_node;
       $page = &$this->getPage();
+      $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");
       $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
       $page->register_script(atkconfig("atkroot")."atk/javascript/dhtml_formtools.js");
       $node->addStyle("style.css");
@@ -139,7 +140,7 @@
       $errors = array();
       if (count($data['error']) > 0)
       {
-        $error_title = '<b>'.text('error_formdataerror').'</b>';
+        $error_title = '<b>'.atktext('error_formdataerror').'</b>';
 
         foreach ($data["error"] as $error)
         {
@@ -151,9 +152,8 @@
           {
             $type = (empty($error["node"]) ? $node->m_type : $error["node"]);
 
-            if (count($node->getTabs($node->m_action)) > 1
-                 && $error["tab"])
-              $error_tab = ' ('.atktext("error_tab").' '.'<a href="javascript:showTab(\''.$error["tab"].'\');">'.atktext("tab_".$error["tab"], $this->m_module).'</a> )';
+            if (count($node->getTabs($node->m_action)) > 1 && $error["tab"])
+              $error_tab = ' ('.atktext("error_tab").' '.'<a href="javascript:showTab(\''.$error["tab"].'\');">'.atktext("tab_".$error["tab"],$node->m_module).'</a> )';
             else $error_tab = "";
 
             if(!is_array($error['attrib_name']))
@@ -166,7 +166,7 @@
               foreach($error['attrib_name'] as $attrib)
                 $label[] = atktext($attrib, $node->m_module, $type);
 
-                $label= implode(", ", $label);
+              $label= implode(", ", $label);
             }
 
             $errors[] = array("msg"=>$error['msg'].$error_tab, "label"=>$label);
@@ -176,7 +176,7 @@
         {
           for($i=0;$i<count($pk_err_attrib); $i++)
           {
-            $pk_err_msg .= text($pk_err_attrib[$i]);
+            $pk_err_msg .= atktext($pk_err_attrib[$i], $node->m_module);
             if (($i+1) < count($pk_err_attrib)) $pk_err_msg .= ", ";
           }
           $errors[] = array("label"=>atktext("error_primarykey_exists"),
@@ -189,9 +189,8 @@
       // load images
       $theme = &atkinstance("atk.ui.atktheme");
       $tipimg = $theme->imgPath("help.gif");
-      $reqimg = '<img align="top" onMouseOver="javascript:window.status=\''.
-                   addslashes(text("field_obligatory")).'\';" src="'.$theme->imgPath("required_field.gif").'" border="0" alt="'.
-                   text("field_obligatory").'">';
+      $reqimg = '<img align="top" src="'.$theme->imgPath("required_field.gif").'" border="0"
+                  alt="'.atktext("field_obligatory").'" title="'.atktext("field_obligatory").'">';
 
       /* display the edit fields */
       $fields = array();
@@ -265,8 +264,11 @@
           $editsrc = $field["html"];
 
           /* tooltip */
-          if ($node->m_attribList[$field['name']]->m_ownerInstance->m_module) $module = $node->m_attribList[$field['name']]->m_ownerInstance->m_module;
-          else $module = "atk";
+          if (is_object($node->m_attribList[$field['name']]))
+          {
+            $module = $node->m_attribList[$field['name']]->getModule();
+          }
+          if (!$module) $module = "atk";
           $ttip = atktext($node->m_type."_".$field["name"]."_tooltip", $module, "", "", "", true);
 
           if ($ttip)

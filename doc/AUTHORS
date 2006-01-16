@@ -62,6 +62,7 @@ Braz. Portuguese: Armando M. Baratti   <ambaratti@aduaneiras.com.br>
                   Marcus TB de Aquino  <tulio@mondo.com.br>
                   Wanderlei Antonio Cavassin <cavassin@conectiva.com.br>
                   Roberto Berto        <roberto.berto@gmail.com>
+                  Elton Luís Minetto   <elm@unochapeco.edu.br>
 Catalan         : Llu?s Torrent        <lluis6a@teleline.es>
 Chinese         : Chin-Tang Chang      <ictchang@gate.sinica.edu.tw>
 Czech           : Jakub Kahovec        <jakub.kahovec@newton.cz>
@@ -153,6 +154,18 @@ Yury Golovnya <YGolovnya@kyiv.utel.com.ua>
 
   Yury contributed a large number of patches for numerous errors and features.
 
+Guido van Biemen <guido@ibuildings.nl>
+
+  Guido, among other things, integrated the TinyButStrong Open Office
+  template engine in ATK.
+
+
+Theme Designers
+---------------
+'outlook'   Paul Verhoeff   <paul@ibuildings.nl>
+'win2k'     Markus Schubert <achievo@schubert24.com>
+'moronic'   Sandy Pleyte    <sandy@achievo.org>
+  
 
 Other Contributors
 ------------------
@@ -169,7 +182,7 @@ J.Enrique Ruiz [Ruiz]                 <devquique@yahoo.es>
 C?sar Ordi?ana [Cesar]                <cordin@disid.com>
 Harrie Verveer                        <harrie@ibuildings.nl>
 Thom Dyson                            <tdyson@sybex.com>
-Andres Attemann			      <attemann@mk.ee>
+Andres Attemann                       <attemann@mk.ee>
 Brian Gillis                          <brian@thegillis.net>
 Martin Looise [MartinL]               <mlooise@ibuildings.nl>
 Gabriele Gallacci                     <infouser@gallacci.com>
@@ -183,6 +196,12 @@ Alberto Galanti                       <alberto@officinadigitale.it>
 Bas de Nooijer                        <bas@ibuildings.nl>
 Guido van Biemen                      <guido@ibuildings.nl>
 Tjeerd Bijlsma                        <tjeerd@ibuildings.nl>
+Przemek Piotrowski                    <przemek.piotrowski@nic.com.pl>
+Olav B. Lygre                         <olav@lygre.no>
+Renato Furter                         <renato.furter@swisslife.ch>
+Stefano Salvador                      <stefano.s@webindustry.it>
+Roberto Berto                         <roberto.berto@gmail.com>
+Nico de Boer                          <nico@ibuildings.nl>
 
 Names between [] are the names they are refered by in the CHANGES file. (If
 different from their first name).

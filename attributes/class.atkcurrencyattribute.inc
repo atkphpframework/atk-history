@@ -40,7 +40,7 @@ class atkCurrencyAttribute extends atkNumberAttribute
     * @param string $thousandsseparator The separator which is printed for the thousands.
     *
     */
-  function atkCurrencyAttribute($name,$flags,$size=10,$currencysymbol="",$decimals=2,$decimalseparator="",$thousandsseparator="")
+  function atkCurrencyAttribute($name,$flags=0,$size=10,$currencysymbol="",$decimals=2,$decimalseparator="",$thousandsseparator="")
   {
     $this->atkNumberAttribute($name,$flags,$size,$decimals); // base class constructor
 
@@ -66,7 +66,7 @@ class atkCurrencyAttribute extends atkNumberAttribute
    */
   function display($record, $mode="")
   {
-    return $this->m_currencysymbol." ".number_format(parent::display($record,$mode),$this->m_decimals,$this->m_decimalseparator,$this->m_thousandsseparator);
+    return $this->m_currencysymbol."&nbsp;".number_format($record[$this->fieldName()],$this->m_decimals,$this->m_decimalseparator,$this->m_thousandsseparator);
   }
 }
 

@@ -16,9 +16,9 @@
    */
 
   /** Defines */
-  define(AF_NO_TOGGLELINKS, AF_SPECIFIC_2);
-  define(AF_CHECK_ALL, AF_SPECIFIC_3);
-  define(AF_LINKS_BOTTOM, AF_SPECIFIC_4);
+  define("AF_NO_TOGGLELINKS", AF_SPECIFIC_2);
+  define("AF_CHECK_ALL", AF_SPECIFIC_3);
+  define("AF_LINKS_BOTTOM", AF_SPECIFIC_4);
 
   /** @internal Include base class */
   useattrib("atklistattribute");
@@ -104,7 +104,8 @@
        $res=array();
        for ($i=0;$i<count($values);$i++)
        {
-         $res[] = atktext($this->m_lookup[$values[$i]],$this->m_ownerInstance->m_module);
+         if($this->hasFlag(AF_NO_TRANSLATION)) $res[] = $this->m_lookup[$values[$i]];
+         else $res[] = atktext($this->m_lookup[$values[$i]],$this->m_ownerInstance->m_module);
        }
        return implode(', ',$res);
     }
@@ -141,7 +142,11 @@
         {
           $sel = "checked";
         }
-        $result .= '<td class="table" valign="top"><input type="checkbox" id="'.$id.'_'.$i.'" name="'.$fieldprefix.$this->fieldName().'[]" value="'.escapeSQL($this->m_values[$i]).'" '.$sel.'>'.atktext($this->m_options[$i],$this->m_ownerInstance->m_module).'</td>';
+        
+        if($this->hasFlag(AF_NO_TRANSLATION)) $string = $this->m_options[$i];
+        else $string = atktext($this->m_options[$i],$this->m_ownerInstance->m_module);
+
+        $result .= '<td class="table" valign="top"><input type="checkbox" id="'.$id.'_'.$i.'" name="'.$fieldprefix.$this->fieldName().'[]" value="'.$this->m_values[$i].'" '.$sel.'>'.$string.'</td>';
         $this->registerKeyListener($id.'_'.$i, KB_CTRLCURSOR|KB_UPDOWN);
 
         if ($i%$cols == $modcols) $result .="</tr><tr>\n";

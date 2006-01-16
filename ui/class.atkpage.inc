@@ -216,8 +216,10 @@
       $version = atkversion();
       if ("\$Name$"!="\$"."Name:  $") $version.=" ($Name$)";
       $res.= '  <META NAME="atkversion" CONTENT="'.$version.'">'."\n";
-      $res.= '  <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset='.text("charset","","atk").'">'."\n";
+
+      $res.= '  <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset='.atktext("charset","","atk").'">'."\n";
       if ($extra_header != "") $res.= $extra_header."\n";
+      
       $this->addScripts($res);
 
       for ($i = 0; $i < count($this->m_stylesheets); $i++)
@@ -232,7 +234,7 @@
         $res.= '<link rel="icon" href="'.$favico.'" type="image/x-icon">
                 <link rel="shortcut icon" href="'.$favico.'" type="image/x-icon">'."\n";
       }
-	
+
       $res.="</head>\n";
       return $res;
     }

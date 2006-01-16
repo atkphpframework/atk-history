@@ -367,6 +367,13 @@
     var $m_owner = "";
 
     /**
+     * The module of the attribute (if empty, the module from the owner node
+     * should be assumed).
+     * @var String
+     */
+    var $m_module = "";
+
+    /**
      * Instance that owns this attribute
      * @var atkNode
      */
@@ -432,6 +439,8 @@
      *
      * This var exists so that you can assign searchmodes to specific attributes
      * instead of having a general searchmode for the entire search
+     * @access private
+     * @var String
      */
     var $m_searchmode = "";
     
@@ -441,6 +450,21 @@
      * @var bool
      */
     var $m_forceupdate=false;
+
+    /**
+     * Array for onchange code
+     * @access private
+     * @var Array
+     */
+    var $m_onchangecode = array();
+
+    /**
+     * Variable to store initialisation javascript code
+     * in for the changehandler.
+     * @access private
+     * @var String
+     */
+    var $m_onchangehandler_init = "";
 
     /**
      * Constructor
@@ -528,8 +552,6 @@
     {
       if($this->hasFlag($flag)) $this->m_flags ^= $flag;
     }
-
-
 
     /**
      * Returns the name of the attribute.
@@ -643,12 +665,47 @@
       $id = $this->getHtmlId($fieldprefix);
       $this->registerKeyListener($id, KB_CTRLCURSOR|KB_UPDOWN);
 
-      $result = '<input type="text" id="'.$id.'" name="'.$id.
+      if (count($this->m_onchangecode))
+      {
+        $onchange = 'onChange="'.$id.'_onChange(this);"';
+        $this->_renderChangeHandler($fieldprefix);
+      }
+
+      $result = '<input type="text" id="'.$id.'" name="'.$id.'" class="atkattribute"'.
                 '" value="'.(isset($record[$this->fieldName()])?htmlspecialchars($record[$this->fieldName()]):"").'"'.
                 ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').
-                ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>';
+                ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').' '.$onchange.' />';
 
       return $result;
+    }
+
+    /**
+     * Add a javascript onchange event handler.
+     * @param $jscode A block of valid javascript code.
+     * @return bool Returns wether or not it was possible to set the onchange code
+     */
+    function addOnChangeHandler($jscode)
+    {
+      $this->m_onchangecode[] = $jscode;
+      return true;
+    }
+
+    /**
+     * Renders the onchange code on the page
+     *
+     * @param String $fieldprefix The prefix to the field
+     */
+    function _renderChangeHandler($fieldprefix)
+    {
+      if (count($this->m_onchangecode))
+      {
+        $page = &$this->m_ownerInstance->getPage();
+        $page->register_scriptcode("function ".$this->getHtmlId($fieldprefix)."_onChange(el)
+                                    {
+                                      {$this->m_onchangehandler_init}
+                                      ".implode("\n", $this->m_onchangecode)."
+                                    }\n");
+      }
     }
 
     /**
@@ -842,27 +899,31 @@
      * @param String $fieldprefix the fieldprefix
      * @param int    $flags the recordlist flags
      * @param array  $atksearch the current ATK search list (if not empty)
-     * @param String $atkorderby the current ATK orderby string (if not empty)
+     * @param atkColumnConfig $columnConfig Column configuration object
      * @see atkNode::listArray
      */
-    function addToListArrayHeader($action, &$arr, $fieldprefix, $flags, $atksearch, $atkorderby)
+    function addToListArrayHeader($action, &$arr, $fieldprefix, $flags, $atksearch, &$columnConfig)
     {
       global $g_sessionManager, $ATK_VARS;
 
       if (!$this->hasFlag(AF_HIDE_LIST) && !($this->hasFlag(AF_HIDE_SELECT) && $action == "select"))
       {
-        $arr["heading"][$fieldprefix.$this->fieldName()]["title"] = atktext($this->fieldName(), $this->m_ownerInstance->m_module, $this->m_ownerInstance->m_type);
+        $key = $fieldprefix.$this->fieldName();
+
+        $arr["heading"][$key]["title"] = $this->label();
 
         if (!hasFlag($flags, RL_NO_SORT) && !$this->hasFlag(AF_NO_SORT))
         {
-          $order = $this->m_ownerInstance->m_table.".".$this->fieldName();
-          if ($atkorderby == $order) $order .= " DESC";
-          $arr["heading"][$fieldprefix.$this->fieldName()]["url"] =
-            session_url($_SERVER["PHP_SELF"].'?atknodetype='.$ATK_VARS["atknodetype"].'&atkaction='.$ATK_VARS["atkaction"].'&atkorderby='.rawurlencode($order));
+          $arr["heading"][$key]["url"] = $this->listHeaderSortUrl($columnConfig);
+        }
+
+        if (hasFlag($flags, RL_EXT_SORT))
+        {
+          $arr["sort"][$key] = $this->extendedSort($columnConfig);
         }
 
         if (!hasFlag($flags, RL_NO_SEARCH) && $this->hasFlag(AF_SEARCHABLE))
-          $arr["search"][$fieldprefix.$this->fieldName()] = $this->search($atksearch,null,$fieldprefix);
+          $arr["search"][$key] = $this->search($atksearch,null,$fieldprefix);
       }
     }
 
@@ -938,7 +999,7 @@
       }
 
       $this->registerKeyListener($id, KB_CTRLCURSOR|KB_UPDOWN);
-      $result= '<input type="text" id="'.$id.'" name="'.$id.'" value="'.$value.'"'.
+      $result= '<input type="text" id="'.$id.'" class="'.get_class($this).'" name="'.$id.'" value="'.$value.'"'.
                 ($this->m_searchsize > 0 ? ' size="'.$this->m_searchsize.'"' : '').
                 ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>';
 
@@ -1088,9 +1149,9 @@
     function addToQuery(&$query, $tablename="", $fieldaliasprefix="", $rec="", $level, $mode)
     {
       if ($mode == "add" || $mode == "update")
-        $query->addField($this->fieldName(),$this->value2db($rec),"","",!$this->hasFlag(AF_NO_QUOTES));
+        $query->addField($this->fieldName(),$this->value2db($rec),"","",!$this->hasFlag(AF_NO_QUOTES),true);
       else
-        $query->addField($this->fieldName(),"",$tablename,$fieldaliasprefix,!$this->hasFlag(AF_NO_QUOTES));
+        $query->addField($this->fieldName(),"",$tablename,$fieldaliasprefix,!$this->hasFlag(AF_NO_QUOTES),true);
     }
 
     /**
@@ -1395,8 +1456,22 @@
      */
     function label($record = array())
     {
-      return text($this->fieldName(),$this->m_ownerInstance->m_type,
-                  $this->m_ownerInstance->m_module);
+      return atktext($this->fieldName(),$this->getModule(), $this->m_ownerInstance->m_type);
+    }
+
+    /**
+     * Get the module that this attribute originated from.
+     *
+     * By default, this is the module of the owning node of this attribute.
+     * However, if the attribute was added using a modifier from a different
+     * module, then the module that added the attribute is returned.
+     *
+     * @return String The name of the module of this attribute
+     */
+    function getModule()
+    {
+      if ($this->m_module!="") return $this->m_module;
+      return $this->m_ownerInstance->m_module;
     }
 
     /**
@@ -1638,8 +1713,10 @@
 
       // set "searchmode" value:
       if(count($searchModes)==1)
-      $field["searchmode"] = '<input type="hidden" name="atksearchmode['.$this->m_name.']" value="'.$searchModes[0].'">'.text("search_".$searchModes[0]);
-      else
+      {
+        $field["searchmode"] = '<input type="hidden" name="atksearchmode['.$this->m_name.']" value="'.$searchModes[0].'">'.atktext("search_".$searchModes[0]);
+      }
+      else if (count($searchModes)>1)
       {
         $sel = '<select name="atksearchmode['.$this->m_name.']">';
         foreach (array_values($searchModes) as $searchMode)
@@ -1649,7 +1726,7 @@
           if ($node->m_postvars["atksearchmode"][$this->m_name]==$searchMode||
           ((!is_array($node->m_postvars["atksearchmode"]) || $node->m_postvars["atksearchmode"][$this->m_name]=="")&&
           $searchMode=="substring")) $selected="selected";
-          $sel.= '<option value="'.$searchMode.'" '.$selected.'>'.text("search_".$searchMode);
+          $sel.= '<option value="'.$searchMode.'" '.$selected.'>'.atktext("search_".$searchMode);
         }
         $sel.= '</select>';
         $field["searchmode"] = $sel;
@@ -1671,6 +1748,77 @@
 
       // add $field to fields array
       $fields[] = $field;
+    }
+
+    function extendedSort(&$columnConfig)
+    {
+      $specificOptions = $this->sortOptions($columnConfig);
+      if ($specificOptions!="")
+      {
+        $res.= $specificOptions;
+      }
+      $res.= ' '.$this->sortOrder($columnConfig);
+      return $res;
+    }
+
+    /**
+     * Default atkAttribute does not have fancy sort options.
+     */
+    function sortOptions(&$columnConfig)
+    {
+      if (!$this->hasFlag(AF_TOTAL) && $columnConfig->totalizable())
+      {
+        // if we are not the sumcolumn itself, but there are totalcolumns present, we can perform subtotalling
+        $cmd = ($columnConfig->hasSubTotal($this->fieldName())?"unsubtotal":"subtotal");
+        return href('dispatch.php?'.$columnConfig->getUrlCommand($this->fieldName(), $cmd), atktext("column_".$cmd)).' ';
+      }
+      return "";
+    }
+
+    function sortOrder(&$columnConfig)
+    {
+      $fieldname = $this->fieldName();
+      $currentOrder = $columnConfig->getOrder($fieldname);
+
+      $res="";
+      if ($currentOrder>0)
+      {
+        $direction = ($columnConfig->getSortDirection($this->fieldName())=="desc" ? "asc":"desc");
+        $res= href('dispatch.php?'.$columnConfig->getUrlCommand($fieldname, $direction), atktext("column_".$direction)).' ';
+      }
+
+      $res.= '<select name="atkcolcmd[][setorder]['.$fieldname.']">';
+      $res.= '<option value="">';
+      for ($i=1; $i<6; $i++)
+      {
+        $selected = ($currentOrder==$i?"selected":"");
+        $res.='<option value="'.$i.'" '.$selected.'>'.$i;
+      }
+      $res.= '</select>';
+
+      return $res;
+    }
+
+    function listHeaderSortUrl(&$columnConfig)
+    {
+      global $ATK_VARS;
+
+      $order = $this->fieldName();
+
+      if (isset($columnConfig->m_colcfg[$order]))
+      {
+        $direction = $columnConfig->getDirection($order);
+        if ($direction=="asc") $order.=" desc";
+      }
+
+      //if ($columnConfig->getDirection($order) != "asc") $order .= " ASC";
+
+      return session_url($_SERVER["PHP_SELF"].'?atknodetype='.$ATK_VARS["atknodetype"].'&atkaction='.$ATK_VARS["atkaction"].'&atkorderby='.rawurlencode($order));
+    }
+
+    function getOrderByStatement()
+    {
+      return $this->m_ownerInstance->m_table.".".$this->fieldName();
     }
   }
 ?>
