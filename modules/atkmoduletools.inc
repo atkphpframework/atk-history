@@ -76,6 +76,26 @@
     }
     return $g_nodeRepository[$cache_id][$node];
   }
+  
+  /**
+   * Replace, at runtime, the in-memory instance of a node.
+   * 
+   * This is useful to replace nodes with mocks for testing purposes.
+   *
+   * @param String $nodename The full name of the node (module.nodename)
+   * @param atkNode $node The node instance to replace the current one
+   * @param String $cache_id If set, replaces only the instance with a certain
+   *                         cache_id
+   * @return atkNode The current node, useful to restore afterwards. Can be
+   *                 NULL.
+   */
+  function &setNode($nodename, &$node, $cache_id="default")
+  {
+    global $g_nodeRepository;    
+    $org = &$g_nodeRepository[$cache_id][$nodename];
+    $g_nodeRepository[$cache_id][$nodename] = &$node;
+    return $org;
+  }
 
   function &getModule($modname)
   {
