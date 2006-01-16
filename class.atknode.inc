@@ -1086,12 +1086,11 @@
      */
     function checkTabRights(&$tablist)
     {
-      global $g_nodes;
-      
-      for ($i = 0; $i <= sizeof($tablist); $i++)
+      global $g_nodes;      
+      for ($i=0, $_i=count($tablist); $i<$_i; $i++)
       {
         if ($tablist[$i] == "" || $tablist[$i] == "default") continue;
-        $secMgr = &atkGetSecurityManager();
+        $secMgr = &atkGetSecurityManager();        
         
         // load the $g_nodes array to find out what tabs are required
         if (!is_array($g_nodes[$this->m_module][$this->m_type]))
@@ -1106,13 +1105,13 @@
         {
           // authorisation is required
           if (!$secMgr->allowed($this->m_module.".".$this->m_type,"tab_" . $tablist[$i]))
-          {
+          {            
             atkdebug("Removing TAB ". $tablist[$i] . " because access to this tab was denied</b>");
             unset($tablist[$i]);
           }
         }
         else atkdebug("TAB " . $tablist[$i] . " does not need authorisation");
-      }
+      }            
       
       if (is_array($tablist))
       {
