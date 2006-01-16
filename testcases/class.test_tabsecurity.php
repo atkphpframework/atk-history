@@ -1,21 +1,6 @@
 <?
 
-  require_once(atkconfig("atkroot")."atk/test/simpletest/unit_tester.php"); 
-
-  class mockSecurityManager
-  {
-    var $m_result = NULL;
-    
-    function setResult($result)
-    {
-      $this->m_result = $result;
-    }
-    
-    function allowed($node, $privilege)
-    {
-      return $this->m_result;
-    }
-  }
+  require_once(atkconfig("atkroot")."atk/test/simpletest/unit_tester.php");  
   
   /**
    * Tests the tabs security
@@ -25,11 +10,11 @@
    *
    * @author harrie <harrie@ibuildings.nl>
    */
-  class test_tabsecurity extends UnitTestCase
+  class test_tabsecurity extends atkTestCase 
   {
     function test_tabAllowed()
     { 
-      global $g_securityManager, $g_nodes;
+      global $g_nodes;
 
       // fake g_nodes
       // (advanced is a required tab)
@@ -37,19 +22,23 @@
       
       $tabs = array("default", "advanced");
       
-      $g_securityManager = &new mockSecurityManager();
-      $g_securityManager->setResult(false);
+      $secMgr = &new atkMockSecurityManager();
+      $secMgr->setAllowed(false);            
+      $this->setMockSecurityManager($secMgr);
       
+      atkimport("atk.atknode");
       $myNode = new atkNode("testnode");
       $myNode->m_module="unittest";
-      $myNode->checkTabRights($tabs);
+      $myNode->checkTabRights($tabs);       
+      
+      $this->restoreSecurityManager();     
       
       $this->assertEqual($tabs,array("default"),"Checking tabrights method");
     }
     
     function test_tabAllowed_backward_comp()
     { 
-      global $g_securityManager, $g_nodes;
+      global $g_nodes;
 
       // fake g_nodes
       // (advanced is a required tab)
@@ -57,14 +46,18 @@
       
       $tabs = array("default", "advanced");
       
-      $g_securityManager = &new mockSecurityManager();
-      $g_securityManager->setResult(false);
+      $secMgr = &new atkMockSecurityManager();
+      $secMgr->setAllowed(false);      
+      $this->setMockSecurityManager($secMgr);
       
+      atkimport("atk.atknode");
       $myNode = new atkNode("testnode");
       $myNode->m_module="unittest";
       $myNode->checkTabRights($tabs);
       
       $this->assertEqual($tabs,array("default","advanced"),"Checking tabrights method (backward compatibility)");
+      
+      $this->restoreSecurityManager();
     }
   }
 
