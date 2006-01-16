@@ -1,12 +1,13 @@
 <?php
 
- class test_atktestcase extends atkTestCase 
-  {
+
+  class test_atktestcase extends atkTestCase 
+  {    
     function test_mockswap()
-    {           
+    {                 
       $db1 = &atkGetDb();      
-      $this->assertNotEqual($db1->m_type, "mock", 'database is now not a mock');
-      
+      $this->assertNotEqual($db1->m_type, "mock", 'database is not a mock');
+          
       $this->setMockDb();
       
       $db2 = &atkGetDb();                
@@ -15,14 +16,14 @@
       
       $this->restoreDb();
       
-      $db3 = &atkGetDb();                  
+      $db3 = &atkGetDb();                              
+            
+      $this->assertNotEqual($db3->m_type, "mock", 'database is now not a mock - '.$db3->m_type);
       
-      $this->assertEqual($db3->m_type, "mysql", 'database is now not a mock');
-      
-      $this->assertReference($db1, $db3, "make sure db is not copied");
-      
+      $this->assertReference($db1, $db3, "make sure db is not copied");      
       
     }
+        
   }
 
 ?>
