@@ -1137,15 +1137,18 @@
     {
       $tabList = array();
 
-      foreach ($list AS $tabEntry)
+      if (is_array($list))
       {
-        if (isset($this->m_filledTabs[$tabEntry]))
+        foreach ($list AS $tabEntry)
         {
-          $tabList[] = $tabEntry;
-        }
-        else
-        {
-          atkdebug("Removing TAB ".$tabEntry." because it had no attributes assigned");
+          if (isset($this->m_filledTabs[$tabEntry]))
+          {
+            $tabList[] = $tabEntry;
+          }
+          else
+          {
+            atkdebug("Removing TAB ".$tabEntry." because it had no attributes assigned");
+          }
         }
       }
 
