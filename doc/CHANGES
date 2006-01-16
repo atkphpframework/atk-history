@@ -17,17 +17,25 @@ Changes in ATK 5.4?
   atkDateAttribute and the atkTimeAttribute. [Lineke]
 + Added translation for title_select. [Lineke]
 + Added ability to force update on attribute with setForceUpdate(). [Boy]
-+ Added 'mock' database drivers. [Boy]
++ Added 'mock' database drivers for testing purposes. [Boy]
++ Added atkMockNode to emulate a node, for testing purposes. [Ivo]
 + Added ability to pass atkmodule=modname to test.php to run only the tests of
   a specified module. [Ivo]
 + Added atkTestCase baseclass for unittests, that features the ability to
-  replace database connections with mock objects. [Ivo, Boy]
+  replace database connections, nodes and the securitymanager with mock 
+  objects. [Ivo, Boy]
 + Added addFallbackModule method to atkLanguage. [Ivo]
 + Added collapsable groups in atkProfileAttribute. [Harrie]
 + Added 'select all'/'select none' buttons per group 
   in atkProfileAttribute. [Harrie]
 + Added possibility to authorize usergroups for seeing tabs [Harrie]
++ Added atkSetNode() counterpart for atkGetNode(), to set nodes to a different
+  instance at runtime. [Ivo]
++ Added atkSetSecurityManager() counterpart for atkGetSecurityManager(), to set
+  the securitymanager to a different instance at runtime. [Ivo]
 * Fixed setTabs call for attributes. [Peter]
+* getNode() is now called atkGetNode to be more consistent with naming
+  convention. (getNode() is still present as deprecated function). [Ivo]
 * Bugfix in atkListAttribute. All quotes in options are now replaced with
   &quot;. [Lineke]
 * Bugfix in atkMultiSelectattribute. Always add escapeSql to value in 
@@ -53,7 +61,9 @@ Changes in ATK 5.4?
 * atkOneToManyRelation now builds the referential where clause in a separate
   overridable method _getLoadWhereClause(). [Ivo]
 * Using single quotes in smarty tags is now also allowed. [Lineke]
-* Fixed securityissue atkProfileAttribute [Harrie]
+* Fixed securityissue atkProfileAttribute. [Harrie]
+* atkNode::getTabs can now handle actions without tabs. [Ivo]
+* Cleanup of atkSecurityManager constructor. [Ivo]
 
 Changes in ATK 5.3.1
 --------------------
