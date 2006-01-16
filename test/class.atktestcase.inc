@@ -29,6 +29,8 @@
   class atkTestCase extends UnitTestCase
   {
     var $m_restoreDb = array();
+    var $m_restoreNode = array();
+    var $m_restoreSecMgr = NULL;
     
     function &setMockDb($conn="default")
     {
@@ -43,6 +45,26 @@
     function restoreDb($conn="default")
     {
       atkDb::setInstance($conn, $this->m_restoreDb[$conn]);
+    }
+    
+    function &setMockNode($nodename, &$mocknode)
+    {
+      $this->m_restoreNode[$nodename] = &atkSetNode($nodename, $mocknode);      
+    }
+    
+    function restoreNode($nodename)
+    {
+      atkSetNode($nodename, $this->m_restoreNode[$nodename]);
+    }
+    
+    function &setMockSecurityManager(&$mockmanager)
+    {
+      $this->m_restoreSecMgr = &atkSetSecurityManager($mockmanager);     
+    }
+    
+    function restoreSecurityManager()
+    {
+      atkSetSecurityManager($this->m_restoreSecMgr);
     }
   }
 
