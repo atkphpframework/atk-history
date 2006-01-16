@@ -35,8 +35,7 @@
    */
   class atkMockSecurityManager extends atkSecurityManager 
   {
-    var $m_resultallowed = array();
-    var $m_type = "iets";
+    var $m_resultallowed = array();  
     
     function setAllowed($result, $nodeprivilege="all")
     {
