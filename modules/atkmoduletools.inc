@@ -60,6 +60,7 @@
 
   /**
    * Get an instance of a node. If an instance doesn't exist, it is created.
+   * @deprecated Use atkGetNode instead.
    * @param String $node     The node string
    * @param bool   $init     Initialize the node?
    * @param String $cache_id The cache id in the node repository
@@ -67,6 +68,19 @@
    * @return atkNode the created instance
    */
   function &getNode($node, $init=TRUE, $cache_id="default", $reset=false)
+  {
+    return atkGetNode($node, $init, $cache_id, $reset);
+  }
+
+  /**
+   * Get an instance of a node. If an instance doesn't exist, it is created.
+   * @param String $node     The node string
+   * @param bool   $init     Initialize the node?
+   * @param String $cache_id The cache id in the node repository
+   * @param bool   $reset    Wether or not to reset the particulair node in the repository
+   * @return atkNode the created instance
+   */
+  function &atkGetNode($node, $init=TRUE, $cache_id="default", $reset=false)
   {
     global $g_nodeRepository;
     if (!isset($g_nodeRepository[$cache_id][$node])||!is_object($g_nodeRepository[$cache_id][$node]) || $reset)
@@ -89,7 +103,7 @@
    * @return atkNode The current node, useful to restore afterwards. Can be
    *                 NULL.
    */
-  function &setNode($nodename, &$node, $cache_id="default")
+  function &atkSetNode($nodename, &$node, $cache_id="default")
   {
     global $g_nodeRepository;    
     $org = &$g_nodeRepository[$cache_id][$nodename];
