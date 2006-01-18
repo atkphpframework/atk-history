@@ -112,7 +112,7 @@
         }
         else 
         {
-          $dir = moduleDir($moduls);
+          $dir = moduleDir($module);
         }
         $traverser->traverse($dir);
       }
