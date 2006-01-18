@@ -141,50 +141,21 @@
               break;
             }
         }
-
-        $params["header"] = $this->invoke("adminHeader");
-
-        if ($this->getHeaderLinks()) $params["header"].= $this->getHeaderLinks();
-
-        $recordlistName = $node->m_postvars["atkrecordlist"];
-        if (empty($recordlistName))
-          $recordlistName = "rl_".getUniqueId("normalRecordList");        
         
-        // create index and navigation bar
-        $navigator = &atknew("atk.utils.atknavigator");
-        if ($node->m_index != "")
-        {
-          $params["index"] = $navigator->buildIndex($node, (count($recordset)>0?$recordset[0][$node->m_index]:""));
-        }
+        /* @var $container atkRecordListContainer */
+        $container = &atknew("atk.recordlist.atkrecordlistcontainer");
+        $container->setNode($this->m_node);
+        $container->setAction('admin');
+        $container->setRecords($recordset);
+        $container->setHeader($this->invoke("adminHeader").$this->getHeaderLinks());
+        $container->setFooter($this->invoke("adminFooter"));
+        if (!empty($this->m_postvars['atkrecordlist']))
+          $container->setName($this->m_postvars['atkrecordlist']);
+        $output = $container->render($this->m_partial != NULL);
 
-        $navigation = $navigator->getNavigationUrls($this->m_node, "admin", "", $recordlistName);
-
-        if ($navigation)
-        {
-          if (isset($params["index"])) $params["index"].="<br />";
-          $params["navbar"] = $navigator->buildNavigation($this->m_node, "admin", $navigation, false, $recordlistName);
-        }
-
-        if(!is_array($actions))
-        {
-          $actions = $node->defaultActions("admin");
-        }
-        $recordlist = &atknew("atk.recordlist.atkrecordlist");
-        $flags = atkRecordList::convertFlags($node->getFlags());
-        $params["list"] = $recordlist->render($node, $recordset, $actions, $flags, "", "", $navigation, "", $recordlistName);
-
-        $params["footer"] = $this->invoke("adminFooter");
-
-        $output = $ui->renderList("admin", $params);
+        if ($this->m_partial == NULL)
+          $output = $ui->renderBox(array("title"=>$node->actionTitle('admin'), "content"=>$output));
         
-        if ($this->m_partial != NULL)
-          return $output;
-        else
-          $output = '<div id="'.$recordlistName.'_div">'.$output.'</div>';
-        
-
-        $output = $ui->renderBox(array("title"=>$node->actionTitle('admin'),
-                                    "content"=>$output));
         if ($this->m_node->hasFlag(NF_CACHE_RECORDLIST)) $recordlistcache->writeCache($output, $recordlist->m_actionloader);
       }
       else
