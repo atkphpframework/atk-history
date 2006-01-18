@@ -78,9 +78,10 @@
      * @param String  $formName     if embedded the form name in which we are embedded
      * @param Array   $navigation   Navigation links
      * @param String  $embedprefix  The prefix for embeded fields
+     * @param String  $listName     The recordlist name.
      * @return String The rendered recordlist
      */
-    function render(&$node, $recordset, $actions, $flags=0, $suppressList="", $formName="", $navigation=array(),$embedprefix="")
+    function render(&$node, $recordset, $actions, $flags=0, $suppressList="", $formName="", $navigation=array(),$embedprefix="",$listName="")
     {
       $this->setNode($node);
       $this->m_flags = $flags;
@@ -89,8 +90,11 @@
       $page = &atkPage::getInstance();
       $page->register_style($theme->stylePath("recordlist.css"));
 
-      $listName = "rl_".getUniqueId("normalRecordList");
+      if (empty($listName))
+        $listName = "rl_".getUniqueId("normalRecordList");
+        
       $page->register_script(atkconfig("atkroot")."atk/javascript/recordlist.js");
+      $page->register_script(atkconfig("atkroot")."atk/javascript/prototype/prototype.js");
 
   	  $defaulthighlight = $theme->getAttribute("highlight");
       $selectcolor = $theme->getAttribute("select");

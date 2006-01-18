@@ -24,6 +24,7 @@
   define("HTML_DOCTYPE",4);                     // Add doctype to page
   define("HTML_ALL",HTML_BODY|HTML_HEADER);     // Shortcut
   define("HTML_STRICT",HTML_ALL|HTML_DOCTYPE);  // Shortcut
+  define("HTML_PARTIAL", 8);                    // Partial (only content, this flag can't be ANDed!)
 
 
   /**
@@ -240,36 +241,44 @@
      * Adds javascripts from the member variables to HTML output
      * @param String $res The HTML output
      */
-    function addScripts(&$res)
+    function addScripts(&$res, $partial=false)
     {
       for ($i = 0; $i < count($this->m_scriptfiles); $i++)
+        $res .= '<script type="text/javascript" language="JavaScript" src="'.$this->m_scriptfiles[$i].'"></script>'."\n";
+
+      $res .= '<script type="text/javascript">';      
+      
+      if (!$partial)
       {
-        $res.='  <script type="text/javascript" language="JavaScript" src="'.$this->m_scriptfiles[$i].'"></script>'."\n";
-      }
-
-      $res.="  <script type=\"text/javascript\">
-  function globalSubmit(form)
-  {
-     var retval = true;\n";
-
-      for ($i=0, $_i = count($this->m_submitscripts); $i<$_i; $i++)
-      {
-        $res.="    retval = ".$this->m_submitscripts[$i]."\n";
-        $res.="    if (retval!=true) return false;\n";
-      }
-
-      $res.="    return retval;
-   }\n";
-
-      if (count($this->m_loadscripts))
-      {
-        $res.="  function globalLoad()
-  {\n";
-        for ($i=0, $_i=count($this->m_loadscripts); $i<$_i; $i++)
+        $res .= "
+          function globalSubmit(form)
+          {
+            var retval = true;\n";
+  
+        for ($i=0, $_i = count($this->m_submitscripts); $i<$_i; $i++)
         {
-          $res.= $this->m_loadscripts[$i]."\n";
+          $res .= " retval = ".$this->m_submitscripts[$i]."\n";
+          $res .= " if (retval!=true) return false;\n";
         }
-        $res.="  }\n";
+  
+        $res .= " 
+            return retval;
+          }\n";
+  
+        if (count($this->m_loadscripts))
+        {
+          $res .= "  
+            function globalLoad()
+            {\n";
+          
+          for ($i=0, $_i=count($this->m_loadscripts); $i<$_i; $i++)
+          {
+            $res .= $this->m_loadscripts[$i]."\n";
+          }
+          
+          $res.= "
+            }\n";
+        }
       }
 
       // javascript code.
@@ -277,10 +286,17 @@
       {
         $res.= $this->m_scriptcode[$i]."\n";
       }
+      
+      if ($partial)
+      {
+        for ($i=0, $_i=count($this->m_loadscripts); $i<$_i; $i++)
+        {
+          $res .= $this->m_loadscripts[$i]."\n";
+        }        
+      }
 
-      $res.= "  </script>\n\n";
+      $res .= "</script>\n\n";
     }
-
 
     /**
      * Add content to the page.
@@ -323,7 +339,7 @@
      * @param string $extrabodyprops  Extra attributes to add to the <body> tag.
      * @return String The HTML page, including <html> and </html> tags.
      */
-    function render($title, $flags=7,$extrabodyprops="")
+    function render($title, $flags=HTML_STRICT,$extrabodyprops="")
     {
       if(is_bool($flags) && $flags==true)
       {
@@ -333,6 +349,11 @@
       {
         $flags=HTML_HEADER|HTML_DOCTYPE;
       }
+      elseif (hasFlag($flags, HTML_PARTIAL))
+      {
+        return $this->renderPartial();
+      }
+      
       $page = '';
       if(hasFlag($flags,HTML_DOCTYPE)) $page.=atkconfig("doctype");
       $page.= "\n<html>\n";
@@ -344,6 +365,16 @@
       $page.= "</html>\n";
 
       return $page;
+    }
+    
+    /**
+     * Render partial.
+     */
+    function renderPartial()
+    {
+      $result = $this->m_content;
+      $this->addScripts($result, true);
+      return $result;
     }
 
     /**

@@ -385,6 +385,12 @@
      * @var String
      */
     var $m_action;
+    
+    /**
+     * Contains the definition of what needs to rendered partially.
+     * If set to NULL not in partial rendering mode.
+     */
+    var $m_partial = NULL;
 
     /**
      * The active action handler.
@@ -1899,22 +1905,39 @@
      * handling the actual action.
      *
      * @param array $postvars The request variables for the node.
-     * @param boolean $fullpage If true (default), the dispatch function
-     *                          renders a complete html page, including
-     *                          <html><head><body> etc. If you set this to
-     *                          false, plain output is generated. Warning: If
-     *                          you set this to false, you are responsible for
-     *                          loading all the required scripts, stylesheets
-     *                          etc. (When $fullpage is true, these are
-     *                          automatically included in the page header.
+     * @param int $flags Render flags (see class atkPage). For backwards compatibility.
+     *                    If true (default), the dispatch function
+     *                    renders a complete html page, including
+     *                    <html><head><body> etc. If you set this to
+     *                    false, plain output is generated. Warning: If
+     *                    you set this to false, you are responsible for
+     *                    loading all the required scripts, stylesheets
+     *                    etc. (When $flags is true, these are
+     *                    automatically included in the page header.
      */
-    function dispatch($postvars, $fullpage=true)
+    function dispatch($postvars, $flags=HTML_STRICT)
     {
       $this->loadDispatchPage($postvars);
+      
+      if(is_bool($flags) && $flags==true)
+      {
+        $flags=HTML_STRICT;
+      }
+      elseif(is_bool($flags) && $flags==false)
+      {
+        $flags=HTML_HEADER|HTML_DOCTYPE;
+      }
+      
+      if (hasFlag($flags, HTML_PARTIAL) && !$postvars["atkdebug"]["force"])
+      {
+        global $config_debug;
+        $config_debug = 0;
+      }
 
       $ui = &$this->getUi();
       $page = &$this->getPage();
-      $screen = $page->render(atktext('app_shorttitle')." - ".$ui->title($this->m_module, $this->m_type,$this->m_postvars['atkaction']), $fullpage);
+      
+      $screen = $page->render(atktext('app_shorttitle')." - ".$ui->title($this->m_module, $this->m_type,$this->m_postvars['atkaction']), $flags);
 
       $output = &atkOutput::getInstance();
       $output->output($screen);
@@ -1934,9 +1957,9 @@
     function loadDispatchPage($postvars)
     {
       $this->m_postvars = $postvars;
-
       $this->m_action = $postvars['atkaction'];
-
+      $this->m_partial = $postvars["atkpartial"];
+      
       /** DIRTY HACK
           if action is something else than edit, we clear the atkformdata sessionstuff **/
       if ($this->m_action!="edit"&&$this->m_action!="add"&&$this->m_action!="admin")

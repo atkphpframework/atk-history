@@ -30,7 +30,7 @@
    */
   class atkNavigator
   {
-    function buildNavigation(&$node, $mode="", $navurls="", $embedded=false)
+    function buildNavigation(&$node, $mode="", $navurls="", $embedded=false, $recordlistName="")
     {
       if ($navurls=="")
       {
@@ -40,7 +40,7 @@
       $links=array();
       foreach ($navurls as $key=>$nav)
       {
-        $links[] = href($nav["url"], $nav["title"], SESSION_DEFAULT, $embedded);
+        $links[] = '<a href="#" onclick="new Ajax.Updater(\''.$recordlistName.'_div\', \''.session_url($nav["url"], SESSION_DEFAULT, $embedded).'\', {evalScripts: true})">'.$nav["title"].'</a>';
       }
       return implode("&nbsp;|&nbsp;", $links);
     }
@@ -55,7 +55,7 @@
      * @param string $filter a filter for the destination node
      * @return string a HTML string for navigating through records
      */
-    function getNavigationUrls(&$node, $mode="", $filter="")
+    function getNavigationUrls(&$node, $mode="", $filter="", $recordlistName="")
     {
       global $ATK_VARS;
 
@@ -100,6 +100,8 @@
                                   "url"=>$_SERVER["PHP_SELF"].
                                           "?atknodetype=".$ATK_VARS["atknodetype"].
                                           "&atkaction=".$action.
+                                          "&atkrecordlist=".$recordlistName.
+                                          "&atkpartial=recordlist".
                                           (isset($ATK_VARS["atktarget"])?"&atktarget=".rawurlencode($ATK_VARS["atktarget"]):"").
                                           "&atkstartat".(isset($node->m_postvars["limitPostfix"])?$node->m_postvars["limitPostfix"]:"")."=".$newstart);
       }
@@ -111,6 +113,8 @@
                                "url"=>$_SERVER["PHP_SELF"].
                                         "?atknodetype=".$ATK_VARS["atknodetype"].
                                         "&atkaction=".$action.
+                                        "&atkrecordlist=".$recordlistName.                                        
+                                        "&atkpartial=recordlist".                                        
                                         "&atkstartat".(isset($node->m_postvars["limitPostfix"])?$node->m_postvars["limitPostfix"]:"")."=".max(0, ($i-1) * $limit).
                                         (isset($ATK_VARS["atkselector"])?"&atkselector=".rawurlencode($ATK_VARS['atkselector']):"").
                                         (isset($ATK_VARS["atktarget"])?"&atktarget=".rawurlencode($ATK_VARS["atktarget"]):""));
@@ -123,6 +127,8 @@
                               "url"=>$_SERVER["PHP_SELF"].
                                       "?atknodetype=".$ATK_VARS["atknodetype"].
                                       "&atkaction=".$node->m_action.
+                                      "&atkrecordlist=".$recordlistName.                                      
+                                      "&atkpartial=recordlist".                                      
                                       "&atkstartat".(isset($node->m_postvars["limitPostfix"])?$node->m_postvars["limitPostfix"]:"")."=".$newstart.
                                       (isset($ATK_VARS["atktarget"])?"&atktarget=".rawurlencode($ATK_VARS["atktarget"]):""));
       }
