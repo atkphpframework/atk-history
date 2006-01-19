@@ -98,8 +98,8 @@
         $newstart = $node->m_postvars['atkstartat'] - $limit;
         $res['previous'] = array( "title"=>atktext("previous", "atk"),
                                   "url"=>$_SERVER["PHP_SELF"].
-                                          "?atknodetype=".$ATK_VARS["atknodetype"].
-                                          "&atkaction=".$action.
+                                          "?atknodetype=".$node->atkNodeType().
+                                          "&atkaction=".$node->m_action.
                                           "&atkrecordlist=".$recordlistName.
                                           "&atkpartial=recordlist".
                                           (isset($ATK_VARS["atktarget"])?"&atktarget=".rawurlencode($ATK_VARS["atktarget"]):"").
@@ -111,8 +111,8 @@
          if ($i==$curr) $res[$i] = array("title"=>"<b>$i</b>", "url"=>"");
          else $res[$i] = array("title"=>$i,
                                "url"=>$_SERVER["PHP_SELF"].
-                                        "?atknodetype=".$ATK_VARS["atknodetype"].
-                                        "&atkaction=".$action.
+                                        "?atknodetype=".$node->atkNodeType().
+                                        "&atkaction=".$node->m_action.
                                         "&atkrecordlist=".$recordlistName.                                        
                                         "&atkpartial=recordlist".                                        
                                         "&atkstartat".(isset($node->m_postvars["limitPostfix"])?$node->m_postvars["limitPostfix"]:"")."=".max(0, ($i-1) * $limit).
@@ -125,7 +125,7 @@
         $newstart = $node->m_postvars['atkstartat'] + $limit;
         $res['next'] = array("title"=>atktext("next", "atk"),
                               "url"=>$_SERVER["PHP_SELF"].
-                                      "?atknodetype=".$ATK_VARS["atknodetype"].
+                                      "?atknodetype=".$node->atkNodeType().
                                       "&atkaction=".$node->m_action.
                                       "&atkrecordlist=".$recordlistName.                                      
                                       "&atkpartial=recordlist".                                      

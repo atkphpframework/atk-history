@@ -85,6 +85,21 @@
     {
       $this->setNode($node);
       $this->m_flags = $flags;
+      
+      if (!hasFlag($this->m_flags, RL_EMBED))
+      {
+        if (empty($formName)) 
+          $formName = $listName;
+          
+        $formstart = 
+          '<form name="'.$formName.'" method="post">'.
+          session_form(SESSION_DEFAULT).
+          '<input type="hidden" name="atknodetype" value="'.$this->m_node->atkNodeType().'">'.
+          '<input type="hidden" name="atkaction" value="'.$this->m_node->m_action.'">'.
+          '<input type="hidden" name="atkstartat" value="0">'; // reset atkstartat to first page          
+          
+        $formend = '</form>';       
+      }      
 
       $theme = &atkinstance("atk.ui.atktheme");
       $page = &atkPage::getInstance();
@@ -154,7 +169,10 @@
           }
           else
           {
-            $headercols[] = array("content"=>href($head["url"], $head["title"]));
+            $url = $head["url"].'&atkpartial=recordlist';
+            $onclick = "new Ajax.Updater('{$listName}_container', '$url', {method: 'post', parameters: Form.serialize('$formName'), evalScripts: true, asynchronous: true })";
+            $href = '<a href="#" onclick="'.$onclick.'">'.$head["title"].'</a>';
+            $headercols[] = array("content"=>$href);
           }
         }
 
@@ -184,17 +202,14 @@
             $sortcols[] = array("content"=>$button);
           }
 
-          $sortstart = '<a name="sortform"></a>'.
-                         '<form action="'.$_SERVER["PHP_SELF"].'?'.SID.'" method="get">'.
-                         session_form().
-                           '<input type="hidden" name="atkstartat" value="0">'; // reset atkstartat to first page after a new sort
+          //$sortstart = '<a name="sortform"></a>';
 
           foreach (array_keys($list["heading"]) as $key)
           {
             if (isset($list["sort"][$key])) $sortcols[] = array("content"=>$list["sort"][$key]);
           }
 
-          $sortend = '</form>';
+          $sortend = '';
 
           if ($orientation == "right" || $orientation == "both")
           {
@@ -235,13 +250,10 @@
                                                $searchmode,"(".atktext("search_extended").")",SESSION_NESTED);
           }
 
-          $searchstart = '<a name="searchform"></a>';
+          //$searchstart = '<a name="searchform"></a>';
           if (!hasFlag($this->m_flags, RL_EMBED))
           {
-            $searchstart.='<form action="'.$_SERVER["PHP_SELF"].'?'.SID.'" method="get">'.session_form();
-            $searchstart.= '<input type="hidden" name="atknodetype" value="'.$this->m_node->atkNodeType().'">'.
-                           '<input type="hidden" name="atkaction" value="'.$this->m_node->m_action.'">'.
-                           '<input type="hidden" name="atksearchmode" value="'.$searchmode.'">';
+            $formstart.= '<input type="hidden" name="atksearchmode" value="'.$searchmode.'">';
           }
 
           if (hasFlag($flags, RL_MRA) || hasFlag($flags, RL_MRPA))
@@ -274,7 +286,7 @@
           }
 
           $searchend = "";
-          if (!hasFlag($this->m_flags, RL_EMBED)) $searchend = '</form>';
+          if (!hasFlag($this->m_flags, RL_EMBED)) $searchend = '';
         }
 
         /*******************************************/
@@ -285,15 +297,6 @@
         if (hasFlag($flags, RL_MRA) || hasFlag($flags, RL_MRPA))
         {
           $page->register_script(atkconfig("atkroot")."atk/javascript/formselect.js");
-
-          if (!hasFlag($flags, RL_EMBED))
-          {
-            if (empty($formName)) $formName = $listName;
-            $liststart = '<form name="'.$formName.'" method="post">'.
-                       session_form(SESSION_DEFAULT).
-                       '<input type="hidden" name="atknodetype" value="'.$this->m_node->atkNodeType().'">'.
-                       '<input type="hidden" name="atkaction" value="'.$this->m_node->m_action.'">';
-          }
 
           if (hasFlag($flags, RL_MRA))
           {
@@ -479,11 +482,6 @@
             $mra= $this->getCustomMraHtml().'<input type="hidden" name="'.$listName.'_atkaction" value="'.$this->m_node->m_priority_actions[0].'">'.
                        '<input type="button" class="btn" value="'.atktext($this->m_node->m_priority_actions[0]).'" onclick="atkSubmitMRPA(\''.$listName.'\', this.form, \''.$target.'\')">';
           }
-
-          if (!hasFlag($flags, RL_EMBED))
-          {
-            $listend= '</form>';
-          }
         }
 
         /****************************************/
@@ -520,8 +518,6 @@
             $this->getCustomMraHtml().
                        '<input type="button" class="btn" value="'.atktext($list["mra"][0]).'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\')">';
           }
-
-          if (!hasFlag($flags, RL_EMBED)) $listend = '</form>';
         }
 
         if (atkconfig("use_keyboard_handler"))
@@ -543,6 +539,8 @@
                                                    "liststart"=>$liststart,
                                                    "listend"=>$listend,
                                                    "listid"=>$listName,
+                                                   "formstart"=>$formstart,
+                                                   "formend"=>$formend,
                                                    "mra"=>$mra));
         return $res;
       }
@@ -597,6 +595,7 @@
         $name = $this->m_node->m_attribIndexList[$r]["name"];
         if (!in_array($name, $suppress))
         {
+          /* @var $attribute atkAttribute */
           $attribute = &$this->m_node->m_attribList[$name];
           $attribute->addToListArrayHeader($this->m_node->m_action, $result, $prefix, $flags,
                                            @$this->m_node->m_postvars["atksearch"], $columnConfig);

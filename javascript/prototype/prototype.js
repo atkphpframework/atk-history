@@ -1253,6 +1253,29 @@ var Form = {
 
   reset: function(form) {
     $(form).reset();
+  },
+  
+  submit: function(form, prefix) {
+    form = ($form);
+        
+    if (prefix) 
+    {
+      var elements = Form.getElements(form);
+      for (var i = 0; i < elements.length; i++) {
+        var element = elements[i];
+        
+        if (element.name.substring(0, prefix.length()) == prefix) { 
+          element.blur();
+          element.disabled = 'true';
+        }
+        else
+        {
+          element.name = element.name.substring(prefix.length());
+        }
+      }
+    }
+    
+    form.submit(); 
   }
 }
 

@@ -1788,7 +1788,7 @@
 
       //if ($columnConfig->getDirection($order) != "asc") $order .= " ASC";
 
-      return session_url($_SERVER["PHP_SELF"].'?atknodetype='.$ATK_VARS["atknodetype"].'&atkaction='.$ATK_VARS["atkaction"].'&atkorderby='.rawurlencode($order));
+      return session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->m_ownerInstance->atkNodeType().'&atkaction='.$this->m_ownerInstance->m_action.'&atkorderby='.rawurlencode($order));
     }
 
     function getOrderByStatement()

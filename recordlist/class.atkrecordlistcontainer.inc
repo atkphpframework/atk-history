@@ -103,8 +103,13 @@ class atkRecordListContainer
   
   function render($partial=false)
   {
+    $preAction = $this->m_node->m_action;
+    $this->m_node->m_action = $this->m_action;
+    
     $params = array();
     
+    /* @var $navigator atkNavigator */
+    /* @var $recordlist atkRecordList */
     $navigator = $this->_createNavigator();
     $recordlist = &$this->_createRecordList();
     
@@ -147,6 +152,8 @@ class atkRecordListContainer
         
     if (!$partial)
       $output = "<div id=\"{$name}_container\">{$output}</div>";
+      
+    $this->m_node->m_action = $preAction;
       
     return $output;
   }
