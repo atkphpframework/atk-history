@@ -211,7 +211,7 @@
      * @param $record Record
      * @return a displayable string
      */
-    function display($record, $mode)
+    function display($record, $mode='list')
     {
       if ($this->createDestination())
       {
@@ -245,8 +245,11 @@
             $result = href("dispatch.php?atknodetype=".$this->m_destination."&atkaction=view&atkselector=".rawurlencode($this->m_destInstance->primaryKey($record[$this->fieldName()])), $title, SESSION_NESTED);
           }
         }
-
         return $result;
+      }
+      else 
+      {
+       atkdebug("Can't create destination! ($this->m_destination");  
       }
       return "";
     }
@@ -411,7 +414,7 @@
         $result.= $autolink['add'];
         return $result;
       }
-      return atkerror("Could not create destination for $this->m_destination!");
+      return atkerror("Could not create destination for destination: $this->m_destination!");
     }
 
     /**
