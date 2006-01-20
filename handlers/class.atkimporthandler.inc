@@ -41,8 +41,13 @@
           $this->m_postvars[$key] = $value;
 
       //need to keep the selected item after an importerror
-      if(!isset($ATK_VARS[$ATK_VARS['allField']."_newsel"]))
-        $ATK_VARS[$ATK_VARS['allField']."_newsel"] = $ATK_VARS[$ATK_VARS['allField']];
+      if (is_array($ATK_VARS['allFields'])) $keys = array_keys($ATK_VARS['allFields']);
+      foreach ($keys as $key)
+      {
+        if(!isset($ATK_VARS[$ATK_VARS['allFields'][$key]."_newsel"]))
+          $ATK_VARS[$ATK_VARS['allFields'][$key]."_newsel"] = $ATK_VARS[$ATK_VARS['allFields'][$key]];
+      }
+      
 
       $phase = ($this->m_postvars["phase"]!=""?$this->m_postvars["phase"]:"init");
 
@@ -142,12 +147,12 @@
       $enclosure =        $g_sessionManager->pageVar("enclosure");
       if ($enclosure=="") $enclosure = $this->estimateEnclosure($rows);
 
-      $allField =           $g_sessionManager->pageVar("allField");
+      $allFields =          $g_sessionManager->pageVar("allFields");
       $skipfirstrow =       $this->m_postvars['skipfirstrow'];
       $doupdate =           $this->m_postvars['doupdate'];
       $updatekey1 =         $this->m_postvars['updatekey1'];
       $onfalseidentifier =  $this->m_postvars['onfalseid'];
-      $novalidatefirst =      $this->m_postvars['novalidatefirst'];
+      $novalidatefirst =    $this->m_postvars['novalidatefirst'];
 
       $columncount =    $this->estimateColumnCount($rows, $delimiter);
 
@@ -177,7 +182,7 @@
 
       $content.= $sample;
 
-      $content.=$this->_getAnalyseExtraOptions($skipfirstrow, $doupdate, $updatekey1, $onfalseidentifier, $allField, $novalidatefirst);
+      $content.=$this->_getAnalyseExtraOptions($skipfirstrow, $doupdate, $updatekey1, $onfalseidentifier, $allFields, $novalidatefirst);
 
       $content.=$this->_getAnalyseFooter();
 
@@ -310,9 +315,9 @@
             {
               $display = $this->_getSampleValue($col_map[$j],trim($line[$j]));
               if ($display) $sample.= $display;
-              else $sample.= atktext($attr->m_name);
+              else $sample.= atktext($col_map[$j]);
 
-              if ((string)$newval!==(string)$line[$j])
+              if ((string)$display!==(string)$line[$j])
               {
                 // Also display raw value so we can verify
                 $sample.= ' <i style="color: #777777">('.trim($line[$j]).")</i>";
@@ -374,25 +379,35 @@
      * @param String $onfalseidentifier What to do on a false identifier
      * @return String The HTML with the extra options
      */
-    function _getAnalyseExtraOptions($skipfirstrow, $doupdate, $updatekey1, $onfalseidentifier, $allField, $novalidatefirst)
+    function _getAnalyseExtraOptions($skipfirstrow, $doupdate, $updatekey1, $onfalseidentifier, $allFields, $novalidatefirst)
     {
       $content.= '<br /><table id="importoptions">';
       $content.= '  <tr>';
       $content.= '    <td>';
-      $content.= atktext("import_allfield").': </td><td>'.$this->getAttributeSelector(0,$allField,"allField");
-
-      if ($allField!="")
+      
+      foreach ($allFields as $allfield)
       {
-        $attr = $this->getUsableAttribute($allField);
+        if (!$this->m_postvars[$allfield]) $noallfieldvalue=true;
+      }
+      
+      if (empty($allFields) || !$noallfieldvalue) $allFields[] = '';
+      foreach ($allFields as $allField)
+      {
+        $content.= atktext("import_allfield").': </td><td>'.$this->getAttributeSelector(0,$allField,"allFields[]");
 
-        if(is_object($attr))
+        if ($allField!="")
         {
-          $fakeeditarray = array();
-          $content.= ' '.atktext("value").': '.$attr->edit($fakeeditarray,"","edit").'<br/>';
+          $attr = $this->getUsableAttribute($allField);
+
+          if(is_object($attr))
+          {
+            $fakeeditarray = array($allField=>$this->m_postvars[$allField]);
+            $content.= ' '.atktext("value").': '.$attr->edit($fakeeditarray,"","edit").'<br/>';
+          }
         }
+        $content.= '</td></tr><tr><td>';
       }
 
-      $content.= '</td></tr><tr><td>';
       $content.= atktext("import_skipfirstrow").': </td><td><input type="checkbox" name="skipfirstrow" value="1" '.($skipfirstrow?"CHECKED":"").'/>';
       $content.= '</td></tr><tr><td>';
       $content.= atktext("import_doupdate").': </td><td> <input type="checkbox" name="doupdate" value="1" '.($doupdate?"CHECKED":"").'/>';
@@ -430,6 +445,7 @@
      */
     function getTmpFileDestination($fileid)
     {
+      halt('getTmpFileDestination('.$fileid.')');
       return atkconfig("atktempdir")."csv_import_$fileid.csv";
     }
 
@@ -654,7 +670,7 @@
      */
     function isHide($attr)
     {
-      return ($attr->hasFlag(AF_HIDE) || ($attr->hasFlag(AF_HIDE_ADD) && $attr->hasFlag(AF_HIDE_EDIT)));
+      return (($attr->hasFlag(AF_HIDE) || ($attr->hasFlag(AF_HIDE_ADD) && $attr->hasFlag(AF_HIDE_EDIT)))&& !$attr->hasFlag(AF_FORCE_LOAD));
     }
 
     /**
@@ -870,7 +886,6 @@
 
       foreach($firstRecord as $value)
       {
-
         $key = $this->inArray($attributes,$value);
         if($key)
         {
@@ -900,55 +915,81 @@
      * @param Array $col_map The map of columns (!stub)
      * @return mixed The value for the field to use with all records
      */
-    function getAllFieldValue(&$col_map)
+    function getAllFieldsValues(&$col_map)
     {
-      $allField =     $this->m_postvars["allField"];
+      $allFields =     $this->m_postvars["allFields"];
 
-      if ($allField!="")
+      foreach ($allFields as $key=>$allField)
       {
-        $attr = &$this->getUsableAttribute($allField);
-        if($attr)
+        if ($allField!="")
         {
-          $col_map[] = $allField;
-        }
+          $attr = &$this->getUsableAttribute($allField);
+          if($attr)
+          {
+            $col_map[] = $allField;
+          }
 
-        //get the value from the postvars
-        $allFieldValue = $this->m_postvars[$allField];
-        if(strstr($allFieldValue,"="))
-        {
-          $allFieldValue = substr(strstr($allFieldValue,"="),2);
-          $allFieldValue = substr($allFieldValue,0,strlen($allFieldValue)-1);
+          //get the value from the postvars
+          $allFieldValue = $this->m_postvars[$allField];
+          if(strstr($allFieldValue,"="))
+          {
+            $allFieldValue = substr(strstr($allFieldValue,"="),2);
+            $allFieldValue = substr($allFieldValue,0,strlen($allFieldValue)-1);
+          }
+          $allFieldsValues[$allField] = $allFieldValue;
         }
       }
-      return $allFieldValue;
+      return $allFieldsValues;
     }
 
     /**
      * The real import function actually imports the importfile
      */
-    function doImport()
+    function doImport($nopost=false)
     {
-      $allField =     $this->m_postvars["allField"];
-      $col_map =      $this->m_postvars["col_map"];
       $fileid =       $this->m_postvars["fileid"];
-      $file =         $this->getTmpFileDestination($fileid);
+      $file =         $this->getTmpFileDestination($fileid);  
+      
+      $validated = $this->getValidatedRecords($file);
+      $this->addRecords($validated['importerrors'], $validated['validatedrecs'], $validated['fp'], $file);
+      if (!$nopost) $this->postImport();
+    }
+    
+    function postImport()
+    {
+      $this->clearCache();
+      if ($this->showErrors($importerrors, array("msg"=>atktext("import_importedreminder")))) return;
+
+      //return;
+      fclose($fp);
+
+      // remove the csv file
+      unlink($file);
+
+      $this->m_node->redirect();
+    }
+    
+    function getValidatedRecords($file)
+    {
       $enclosure =    $this->m_postvars["enclosure"];
       $delimiter =    $this->m_postvars["delimiter"];
       $columncount =  $this->m_postvars["columncount"];
       $skipfirstrow = $this->m_postvars['skipfirstrow'];
+      $allFields =     $this->m_postvars["allFields"];
+      $col_map =      $this->m_postvars["col_map"];
 
-      $importerrors = array();
-      $importerrors[0]=array();
+      $allFieldsValues = $this->getAllFieldsValues($col_map);
+      $initial_values = $this->m_node->initial_values();
+      
       $validatedrecs = array();
       $validatedrecs["add"]=array();
       $validatedrecs["update"] = array();
-
-      $allFieldValue = $this->getAllFieldValue($col_map);
-      $initial_values = $this->m_node->initial_values();
+      $importerrors = array();
+      $importerrors[0]=array();
 
       $importerrors[0] = array_merge($importerrors[0],$this->checkImport($col_map,$initial_values));
-      $importerrors[0] = array_merge($this->checkAllField($allField,$allFieldValue),$importerrors[0]);
-
+      $importerrors[0][] = $this->checkAllFields($allFields,$allFieldsValues);
+      
       //copy the csv in a record and add it to the db
       $fp = fopen($file, "r");
       if($skipfirstrow == "1") $line = fgets($fp);
@@ -971,21 +1012,20 @@
         {
           if ($col_map[$i]!="-")
           {
-            if($i != $_i-1 || $col_map[$i] != $allField)// column is mapped
+            if(!in_array($col_map[$i],$allFields))// column is mapped
             {
-              $value = $this->_getAttributeValue($col_map[$i], $allField, $data[$i], $importerrors,$counter,$rec);
+              $value = $this->_getAttributeValue($col_map[$i], $allFields, $data[$i], $importerrors,$counter,$rec);
             }
             else //this is the allField
             {
-              $value = $allFieldValue;
+              $value = $allFieldsValues[$col_map[$i]];
             }
-
             $this->addToRecord($rec,$col_map[$i],$value);
           }
         }
         $this->validateRecord($rec, $validatedrecs, $importerrors, $counter);
       }
-      $this->addRecords($importerrors, $validatedrecs, $fp, $file);
+      return array('fp'=>&$fp,'importerrors'=>$importerrors, 'validatedrecs'=>$validatedrecs);
     }
 
     /**
@@ -997,12 +1037,12 @@
      * @param Array  &$importerrors  Any import errors which may occur or may have occured
      * @return mixed The ATK value of the field
      */
-    function _getAttributeValue($attributename, $allField, $value, &$importerrors, $counter, $rec)
+    function _getAttributeValue($attributename, $allFields, $value, &$importerrors, $counter, $rec)
     {
       $updatekey1 =     $this->m_postvars['updatekey1'];
       $attr = &$this->getUsableAttribute($attributename);
 
-      if (method_exists($attr, "createDestination") && $attr->createDestination() && $attributename!==$allField)
+      if (method_exists($attr, "createDestination") && $attr->createDestination() && !in_array($attributename,$allFields))
       {
         $relationselect = $attr->m_destInstance->selectDb($attr->m_destInstance->m_table.".".$attr->m_destInstance->primaryKeyField().' = \''.$value."'");
         if (count($relationselect)==0 || count($relationselect)>1)
@@ -1053,7 +1093,7 @@
     {
       foreach ($importerrors as $importerror)
       {
-        if (is_array($importerror) && !empty($importerror))
+        if (is_array($importerror) && !empty($importerror[0]))
         {
           $errorfound=true;
         }
@@ -1089,16 +1129,6 @@
           $this->$action($validrec);
         }
       }
-      $this->clearCache();
-      if ($this->showErrors($importerrors, array("msg"=>atktext("import_importedreminder")))) return;
-
-      //return;
-      fclose($fp);
-
-      // remove the csv file
-      unlink($file);
-
-      $this->m_node->redirect();
     }
 
     /**
@@ -1237,25 +1267,29 @@
      * @param mixed   &$value The value of the field
      * @return Array An array with an error message, if an error occurred
      */
-    function checkAllField($field, &$value)
+    function checkAllFields($fields, &$values)
     {
-      $attr = &$this->getUsableAttribute($field);
-      if(!$attr)
+      foreach ($fields as $field)
+      {
+        $attr = &$this->getUsableAttribute($field);
+        if(!$attr)
         return;
 
-      $record = array();
-      $this->addToRecord($record,$field,$value);
-      $result = $attr->display($record);
+        $record = array();
+        $this->addToRecord($record,$field,$values[$field]);
+        
+        $result = $attr->display($record);
 
-      if(!$result)
+        if(!$result)
         if(in_array($field,$this->getObligatoryAttributes()))
         {
-          return array('msg' => atktext("import_error_allfieldnocorrectdata"));
+          return array('msg' => sprintf(atktext("import_error_allfieldnocorrectdata"),atktext($field,$this->m_node->m_module,$this->m_node->m_type),var_export($values[$field],1)));
         }
         else
         {
           $value = "";
         }
+      }
 
       return;
     }
@@ -1335,11 +1369,14 @@
       // The keys to update the record on
       $updatekey1 =     $this->m_postvars['updatekey1'];
       $updatekey1val =  $this->getValueFromRecord($record, $updatekey1);
-      $allField =       $g_sessionManager->pageVar("allField");
-      $allFieldValue =  $this->m_postvars[$allField];
+      $allFields =       $g_sessionManager->pageVar("allFields");
+      foreach ($allFields as $allField)
+      {
+        $allFieldsValues[$allField] =  $this->m_postvars[$allField];
+      }
 
       $this->m_node->m_postvars["atksearchmode"] = "exact";
-      if (!in_array($allFieldValue)) $this->m_node->m_fuzzyFilters[] = $allFieldValue;
+//      if (!in_array($allFieldValue)) $this->m_node->m_fuzzyFilters[] = $allFieldValue;
 
       $dbrec = $this->m_node->searchDb(array($updatekey1=>$updatekey1val));
 
