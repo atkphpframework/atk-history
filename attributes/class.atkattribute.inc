@@ -1263,7 +1263,16 @@
      */
     function needsUpdate($record)
     {
-      return (!$this->hasFlag(AF_READONLY_EDIT) && !$this->hasFlag(AF_HIDE_EDIT));
+      return ((!$this->hasFlag(AF_READONLY_EDIT) && !$this->hasFlag(AF_HIDE_EDIT)) || $this->m_forceupdate);
+    }
+    
+    /**
+     * Used to force an attribute to update with every updateDb() call
+     * @param bool $force Wether or not to force the attribute to update
+     */
+    function setForceUpdate($force)
+    {
+      $this->m_forceupdate = $force;
     }
 
     /**
