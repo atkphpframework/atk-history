@@ -147,6 +147,8 @@
      */
     function text($string, $module, $node="", $lng="", $firstfallback="", $nodefaulttext=false,$modulefallback=false)
     {
+      // We don't translate nothing
+      if ($string=='') return '';
       if ($lng=="") $lng = atkLanguage::getLanguage();
       $atklanguage =& atkLanguage::getInstance();
 
