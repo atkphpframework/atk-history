@@ -136,7 +136,6 @@
           if (is_array($rec[$this->fieldName()]))
           {
             $pkfield = $this->m_destInstance->m_primaryKey[0];
-            //return $rec[$this->fieldName()][$pkfield];
             $pkattr = &$this->m_destInstance->getAttribute($pkfield);
             return $pkattr->value2db($rec[$this->fieldName()]);
           }
@@ -694,8 +693,14 @@
             }
             else
             {
-              $fk = &$this->m_destInstance->getAttribute($this->m_destInstance->m_primaryKey[$i]);
-              $query->addField($this->m_refKey[$i],$fk->value2db($rec[$this->fieldName()]),"","",!$this->hasFlag(AF_NO_QUOTES));
+              $value = $rec[$this->fieldName()];
+              if (is_array($value))
+              {
+                $fk = &$this->m_destInstance->getAttribute($this->m_destInstance->m_primaryKey[$i]);                
+                $value = $fk->value2db($value);
+              }
+              
+              $query->addField($this->m_refKey[$i],$value,"","",!$this->hasFlag(AF_NO_QUOTES));
             }
           }
         }

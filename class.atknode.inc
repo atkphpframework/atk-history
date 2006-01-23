@@ -2975,6 +2975,8 @@
           $record[$p_attrib->fieldName()]=$db->nextid($this->m_seq);
         }
 
+       atkdebug("ADD ATTR TO QUERY ".$storelist["query"][$i]);
+       atk_var_dump($record, "RECORD ".get_class($p_attrib));
         $p_attrib->addToQuery($query,$this->m_table,"",$record,1,"add"); // start at level 1
       }
 
