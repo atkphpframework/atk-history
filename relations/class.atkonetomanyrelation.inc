@@ -24,7 +24,7 @@
    * flag(s) specific for atkManyToOneRelation
    */
   define("AF_RESTRICTED_DELETE", AF_SPECIFIC_1); // Only allow deletion of master item when there are no child records
-  define("AF_ONETOMANY_EMBED", AF_SPECIFIC_2);
+  define("AF_ONETOMANY_NO_EMBED", AF_SPECIFIC_2);
 
   /**
    * Implementation of one-to-many relationships.
@@ -227,7 +227,7 @@
     function _checkIntegratedSave()
     {
       $error = "";
-      if ($this->hasFlag(AF_ONETOMANY_EMBED))
+      if (!$this->hasFlag(AF_ONETOMANY_NO_EMBED))
       {
         if ($this->m_ownerInstance->m_postvars[$this->fieldName()."_save"])
         {
