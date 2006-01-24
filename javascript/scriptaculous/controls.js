@@ -336,6 +336,44 @@ Object.extend(Object.extend(Ajax.Autocompleter.prototype, Autocompleter.Base.pro
 
 });
 
+Ajax.AdvancedAutocompleter = Class.create();
+Object.extend(Object.extend(Ajax.AdvancedAutocompleter.prototype, Ajax.Autocompleter.prototype), {
+  initialize: function(element, update, selection, value, url, options) {
+    Ajax.Autocompleter.prototype.initialize.apply(this, new Array(element, update, url, options));
+    this.selection = $(selection);
+    this.value = $(value);
+  },
+  
+  findFirstNodeByClass: function(element, className) {
+    var nodes = $(element).childNodes;
+    for (var i = 0; i < nodes.length; i++)
+    {
+      if (nodes[i].nodeType != 3 && Element.hasClassName(nodes[i], className)) return nodes[i];
+      else if (nodes[i].nodeType != 3)
+      {
+        node = this.findFirstNodeByClass(nodes[i], className)
+        if (node != null) return node;
+      }
+    }
+    return null;
+  },  
+
+  updateElement: function(selectedElement) {
+    var value = this.findFirstNodeByClass(selectedElement, 'value').innerHTML;
+    var selection = this.findFirstNodeByClass(selectedElement, 'selection').innerHTML;
+    
+    this.value.value = value;
+    this.element.value = '';
+    this.element.focus();
+    
+    this.selection.innerHTML = selection;    
+    new Effect.Highlight(this.selection);
+
+    if (this.options.afterUpdateElement)
+      this.options.afterUpdateElement(this.element, selectedElement);    
+  }  
+});
+
 // The local array autocompleter. Used when you'd prefer to
 // inject an array of autocompletion options into the page, rather
 // than sending out Ajax queries, which can be quite slow sometimes.
