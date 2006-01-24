@@ -7,9 +7,13 @@ Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 Changes in tomorrow branch
 --------------------
 + Ported setForceUpdate from discovery branch. [Boy]
++ Added 'partial' handler, which handles xmlhttp requests 
+   for parts of a node. [Boy]
++ Added atkChainSelectAttribute. [Boy]
 * atkLanguage doesn't bother translating an empty string anymore. [Boy]
 * Improvements to error reporting of importing and added ability 
   to add multiple fields for the entire import ('allfields'). [Boy]
+* Added id to field td. [Boy]
 
 Changes in ATK 5.3.1
 --------------------
