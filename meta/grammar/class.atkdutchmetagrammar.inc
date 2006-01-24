@@ -56,7 +56,7 @@ class atkDutchMetaGrammar extends atkMetaGrammar
       '/ium$/i' => 'ia',
       '/oon$/i' => 'onen',
       '/aar$/i' => 'aren',
-      '/ie$/i' => 'ieen',
+      '/([^t])ie$/i' => '\1ieen',
       '/ing$/i' => 'ingen',
       '/([aoeiu])$/i' => '\1s',
       '/([^aoeiu])$/i' => '\1en'
