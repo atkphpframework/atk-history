@@ -279,6 +279,8 @@
             $tplfield["tooltip"] = $tooltip;
             $editsrc.=$tooltip."&nbsp;";
           }
+          
+          $tplfield['id']=str_replace('.','_',$node->atknodetype().'_'.$field["name"]);
 
           $tplfield["full"] = $editsrc;
         }
