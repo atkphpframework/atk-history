@@ -939,6 +939,16 @@
     {
       $this->m_default_order = $orderby;
     }
+    
+    /**
+     * Get default sort order for the node.
+     * @return String $orderby Default order by. Can be an attribute name or a
+     *                        SQL expression.
+     */
+    function getOrder()
+    {
+      return $this->m_default_order;
+    }
 
 
     /**
@@ -1943,7 +1953,9 @@
 
       $lockType = atkconfig("lock_type");
       if (!empty($lockType) && $this->hasFlag(NF_LOCK))
-        $this->m_lock = &atkLock::getInstance();
+      {
+        $this->m_lock = &atkinstance("atk.lock.atklock");
+      }  
       else $this->removeFlag(NF_LOCK);
 
       $this->m_defaultlanguage = strtoupper(atkconfig("defaultlanguage"));

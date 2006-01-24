@@ -64,6 +64,8 @@ Changes in ATK 5.4?
 * Fixed securityissue atkProfileAttribute. [Harrie]
 * atkNode::getTabs can now handle actions without tabs. [Ivo]
 * Cleanup of atkSecurityManager constructor. [Ivo]
+* AtkManyToOneRelation now uses primary key field as default order if not 
+  specified. [Lineke]
 
 Changes in ATK 5.3.1
 --------------------
