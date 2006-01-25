@@ -20,9 +20,9 @@
     
     
     function partial_attribute($attr)
-    {
+    {      
       $attribute = &$this->m_node->getAttribute($attr);
-      return $attribute->edit();
+      return $attribute->getEdit(array(),$this->m_node->initial_values(),'add').var_export($this->m_postvars,1);
     }    
   }
 

@@ -4,13 +4,17 @@
 
   class atkChainSelectAttribute extends atkAttribute 
   {
-    var $m_lists=array();
-    var $m_loader;
+    var $m_attributes=array();
     
-    function atkChainSelectAttribute($name,$lists,$loader)
+    function atkChainSelectAttribute($name)
     {
       $this->atkAttribute($name,AF_HIDE);
-      $this->m_lists = $lists;
+    }
+    
+    function add(&$attribute)
+    {
+      $this->m_ownerInstance->add($attribute);
+      $this->m_attributes[] = &$attribute;
     }
     
     function addToEditArray($mode, &$arr, &$defaults, &$error, $fieldprefix)
@@ -49,7 +53,9 @@
         \$('$elementName'), 
         function(event, value) {
           var url = '$url';
-          var params = Form.Element.serialize(this.element);
+          formaction = this.element.form.atkaction;
+          var params = Form.serialize(this.element);
+          alert('Form.Element.serialize(this.element): '+Form.Element.serialize(this.element));
           new Ajax.Updater('{$replaceElementName}', url, {method: 'post', parameters: params, evalScripts: true, asynchronous: true });        
         }
       );";     
