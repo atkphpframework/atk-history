@@ -10,6 +10,8 @@ Changes in tomorrow branch
 + Added 'partial' handler, which handles xmlhttp requests 
    for parts of a node. [Boy]
 + Added atkChainSelectAttribute. [Boy]
++ Added support for setting the security alias using var $securityAlias = ...
+  in the node or specifying it in the arguments array. [Peter]
 * atkLanguage doesn't bother translating an empty string anymore. [Boy]
 * Improvements to error reporting of importing and added ability 
   to add multiple fields for the entire import ('allfields'). [Boy]
