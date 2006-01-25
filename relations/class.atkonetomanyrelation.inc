@@ -273,14 +273,14 @@
     {
       if (atkconfig("onetomany_addlink_position","bottom")=="top")
       {
-        if ($this->hasFlag(AF_ONETOMANY_EMBED))
+        if (!$this->hasFlag(AF_ONETOMANY_NO_EMBED))
           $output=$this->_getEmbededOutput()."<br />".$output;
         else
           $output=$this->_addAddLink($myrecords, $record)."<br />".$output;
       }
       else if (atkconfig("onetomany_addlink_position","bottom")=="bottom")
       {
-        if ($this->hasFlag(AF_ONETOMANY_EMBED))
+        if (!$this->hasFlag(AF_ONETOMANY_NO_EMBED))
           $output.=$this->_getEmbededOutput();
         else
           $output.=$this->_addAddLink($myrecords, $record)."<br />";
