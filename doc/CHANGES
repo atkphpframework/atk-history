@@ -66,6 +66,7 @@ Changes in ATK 5.4?
 * Cleanup of atkSecurityManager constructor. [Ivo]
 * AtkManyToOneRelation now uses primary key field as default order if not 
   specified. [Lineke]
+* Remembering tabs should be per record. [Lineke]
 
 Changes in ATK 5.3.1
 --------------------
