@@ -920,11 +920,13 @@
       parent::addToListArrayHeader($action, $arr, $prefix, $flags, $atksearch[$this->fieldName()], $atkorderby);
       
       // only add extra columns when needed
-      if (!$this->createDestination() || count($this->m_listColumns) == 0) return;
+      if ($this->hasFlag(AF_HIDE_LIST) || !$this->createDestination() || count($this->m_listColumns) == 0) return;
 
       foreach ($this->m_listColumns as $attribname)
       {
         $p_attrib = &$this->m_destInstance->getAttribute($attribname);
+        $p_attrib->m_flags |= AF_HIDE_LIST;        
+        $p_attrib->m_flags ^= AF_HIDE_LIST;        
         $p_attrib->addToListArrayHeader($action, $arr, $prefix, $flags, $atksearch[$this->fieldName()], $atkorderby);
 
         $fieldPointer = &$arr["search"][$prefix.$p_attrib->fieldName()];
@@ -956,7 +958,7 @@
       parent::addToListArrayRow($action, $arr, $nr, $prefix, $flags);
 
       // only add extra columns when needed
-      if (!$this->createDestination() || count($this->m_listColumns) == 0) return;
+      if ($this->hasFlag(AF_HIDE_LIST) || !$this->createDestination() || count($this->m_listColumns) == 0) return;
 
       // small trick, the destination record is in a subarray. The destination
       // addToListArrayRow will not expect this though, so we have to modify the
@@ -967,6 +969,8 @@
       foreach ($this->m_listColumns as $attribname)
       {
         $p_attrib = &$this->m_destInstance->getAttribute($attribname);
+        $p_attrib->m_flags |= AF_HIDE_LIST;        
+        $p_attrib->m_flags ^= AF_HIDE_LIST;        
         $p_attrib->addToListArrayRow($action, $arr, $nr, $prefix, $flags);
       }
       
@@ -987,11 +991,13 @@
       parent::addToSearchformFields($fields,$node,$record, $prefix); 
       
       // only add extra columns when needed
-      if (!$this->createDestination() || count($this->m_listColumns) == 0) return;
+      if ($this->hasFlag(AF_HIDE_LIST) || !$this->createDestination() || count($this->m_listColumns) == 0) return;
 
       foreach ($this->m_listColumns as $attribname)
       {
         $p_attrib = &$this->m_destInstance->m_attribList[$attribname];
+        $p_attrib->m_flags |= AF_HIDE_LIST;        
+        $p_attrib->m_flags ^= AF_HIDE_LIST;        
         
         if (!$p_attrib->hasFlag(AF_HIDE_SEARCH))
         {
