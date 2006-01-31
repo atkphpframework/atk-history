@@ -13,11 +13,15 @@ Changes in tomorrow branch
 + Added atkChainSelectAttribute. [Boy]
 + Added support for setting the security alias using var $securityAlias = ...
   in the node or specifying it in the arguments array. [Peter]
++ Added addListColumn method to atkManyToOneRelation for adding
+  multiple list columns to the recordlist based on an n:1 relation. [Peter]
++ Added getAttributeOrder method to atkNode. [Peter]
 * atkLanguage doesn't bother translating an empty string anymore. [Boy]
 * PHP5 compat bugfix in atknew returning a ref. [Martin]
 * Improvements to error reporting of importing and added ability 
   to add multiple fields for the entire import ('allfields'). [Boy]
 * Added id to field td. [Boy]
+* atk_array_merge now supports 'unlimited' arrays. [Peter]
 
 Changes in ATK 5.3.1
 --------------------

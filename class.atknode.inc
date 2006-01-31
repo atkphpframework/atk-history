@@ -841,6 +841,15 @@
     {
       return $this->m_attribList[$name];
     }
+    
+    /**
+     * Gets the attribute order.
+     */
+    function getAttributeOrder($name)
+    {
+      return $this->m_attribIndexList[$this->m_attribList[$name]->m_index]["order"];
+    }
+    
 
     /**
      * Checks if the node has a certain flag set.
@@ -2534,9 +2543,9 @@
         {
           if ($value!="")
           {
-            $p_attrib = &$this->m_attribList[$key];
-            if (is_object($p_attrib))
+            if (array_key_exists($key, $this->m_attribList))
             {
+              $p_attrib = &$this->m_attribList[$key];              
               if(is_array($searchmode))
               {
                 $search = $searchmode[$key];
@@ -2733,11 +2742,11 @@
           {
             if( (($value!="") && ($mode=="admin")) || (($value!="") && in_array($key,$querylist)) )
             {
-              $p_attrib = &$this->m_attribList[$key];
-
-              if (is_object($p_attrib))
+              if (array_key_exists($key, $this->m_attribList))
               {
-                if (is_array($value) && isset($value[$key]))
+                $p_attrib = &$this->m_attribList[$key];                
+                
+                if (is_array($value) && isset($value[$key]) && count($value) == 1)
                 {
                   $value = $value[$key];
                 }
@@ -2883,7 +2892,7 @@
      *                           the primary key and fields from the desriptor
      *                           are added.
      */
-    function addToQuery(&$query, $alias="", $level=0, $allfields=false)
+    function addToQuery(&$query, $alias="", $level=0, $allfields=false,$includes=array())
     {
       $usefieldalias = false;
 
@@ -2905,7 +2914,7 @@
       }
       else
       {
-        $usedFields = atk_array_merge($this->descriptorFields(),$this->m_primaryKey);
+        $usedFields = atk_array_merge($this->descriptorFields(),$this->m_primaryKey,$includes);
         foreach (array_keys($this->m_attribList) as $name)
           if (is_object($this->m_attribList[$name]) && $this->m_attribList[$name]->hasFlag(AF_FORCE_LOAD)) $usedFields[] = $name;
         $usedFields = array_unique($usedFields);

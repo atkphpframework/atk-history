@@ -579,7 +579,9 @@
 
 
   /**
-   * Same as array_merge from php, but without duplicates..
+   * Same as array_merge from php, but without duplicates.. 
+   * Supports unlimited number of arrays as arguments.
+   * 
    * @param Array $array1 the first array
    * @param Array $array2 the second array
    * @return Array The result of the merge between $array1 and $array2
@@ -587,20 +589,19 @@
   function atk_array_merge($array1, $array2)
   {
     $res = Array();
-    for ($i=0;$i<count($array1);$i++)
+    
+    $arrays = func_get_args();
+    for ($i = 0, $_i = count($arrays); $i < $_i; $i++)
     {
-      if (!in_array($array1[$i],$res))
+      for ($j = 0, $_j = count($arrays[$i]); $j < $_j; $j++)
       {
-        $res[]=$array1[$i];
+        if (!in_array($arrays[$i][$j], $res))
+        {
+          $res[] = $arrays[$i][$j];
+        }
       }
     }
-    for ($i=0;$i<count($array2);$i++)
-    {
-      if (!in_array($array2[$i],$res))
-      {
-        $res[]=$array2[$i];
-      }
-    }
+    
     return $res;
   }
 

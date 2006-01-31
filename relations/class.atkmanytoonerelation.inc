@@ -80,6 +80,13 @@
      * @var array
      */
     var $m_selectableRecords = array();
+    
+    /**
+     * List columns.
+     * @Access private
+     * @var Array
+     */
+    var $m_listColumns = array();
 
     var $m_onchangehandler_init = "newvalue = el.options[el.selectedIndex].value;\n";
 
@@ -116,6 +123,26 @@
         $this->atkRelation($name, $destination, $flags);
       }
     }
+    
+    /**
+     * Add list column. An attribute of the destination node
+     * that (only) will be displayed in the recordlist.
+     */
+    function addListColumn($attr)
+    {
+      $this->m_listColumns[] = $attr;
+    }
+    
+    /**
+     * Add multiple list columns. Attributes of the destination node
+     * that (only) will be displayed in the recordlist.
+     */
+    function addListColumns()
+    {
+      $attrs = func_get_args();
+      foreach ($attrs as $attr)
+        $this->m_listColumns[] = $attr;
+    }    
 
     /**
      * Convert value to DataBase value
@@ -493,6 +520,7 @@
             $filter = $parser->parse($record);
             $this->m_destInstance->addFilter($filter);
           }
+          
           $recordset = $this->m_destInstance->selectDb("","","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
 
           $result = '<select class="'.get_class($this).'" ';
@@ -545,7 +573,8 @@
     function searchCondition(&$query, $table, $value, $searchmode)
     {
       $searchcondition = $this->getSearchCondition($query, $table, $value, $searchmode);
-      $query->addSearchCondition($searchcondition);
+      if (!empty($searchcondition))
+        $query->addSearchCondition($searchcondition);
 
     }
 
@@ -558,6 +587,25 @@
     		// which should work in any ansi compatible database.
     		if (is_array($value)) // This last condition is for when the user selected the 'search all' option, in which case, we don't add conditions at all.
     		{
+    		  $conditions = array();
+    		  
+    		  if (!array_key_exists(0, $value) && count($this->m_listColumns) > 0)
+    		  {
+    		    foreach ($this->m_listColumns as $attr)
+    		    {
+    		      $attrValue = $value[$attr];
+    		      if (!empty($attrValue))
+    		      {
+    		        $p_attrib = &$this->m_destInstance->m_attribList[$attr];
+    		        if (!$p_attrib == NULL)
+    		          $p_attrib->searchCondition($query, $this->fieldName(), $attrValue, $searchmode);
+    		      }
+    		    }
+    		    
+    		    $value = $value[$this->fieldName()];
+    		    if (!is_array($value)) return '';
+    		  }
+
     			if (count($value)==1) // exactly one value
     			{
     			  if ($value[0]!="")
@@ -681,7 +729,7 @@
                           $alias,
                           $this->getJoinCondition($query, $tablename, $alias),
                           $this->m_leftjoin);
-          $this->m_destInstance->addToQuery($query, $alias, $level+1);
+          $this->m_destInstance->addToQuery($query, $alias, $level+1, false, $this->m_listColumns);
         }
         else
         {
@@ -849,6 +897,114 @@
       }
       return parent::getOrderByStatement();
     }
-  }
+    
 
+    /**
+     * Adds the attribute / field to the list header. This includes the column name and search field.
+     *
+     * Framework method. It should not be necessary to call this method directly.
+     *
+     * @param String $action the action that is being performed on the node
+     * @param array  $arr reference to the the recordlist array
+     * @param String $fieldprefix the fieldprefix
+     * @param int    $flags the recordlist flags
+     * @param array  $atksearch the current ATK search list (if not empty)
+     * @param String $atkorderby the current ATK orderby string (if not empty)
+     * @see atkNode::listArray
+     */
+    function addToListArrayHeader($action, &$arr, $fieldprefix, $flags, $atksearch, $atkorderby)
+    {
+      $prefix = $fieldprefix . "_AE_" .$this->fieldName();
+      
+      // regular behaviour.
+      parent::addToListArrayHeader($action, $arr, $prefix, $flags, $atksearch[$this->fieldName()], $atkorderby);
+      
+      // only add extra columns when needed
+      if (!$this->createDestination() || count($this->m_listColumns) == 0) return;
+
+      foreach ($this->m_listColumns as $attribname)
+      {
+        $p_attrib = &$this->m_destInstance->getAttribute($attribname);
+        $p_attrib->addToListArrayHeader($action, $arr, $prefix, $flags, $atksearch[$this->fieldName()], $atkorderby);
+
+        $fieldPointer = &$arr["search"][$prefix.$p_attrib->fieldName()];
+        $fieldPointer =
+          str_replace(
+            "atksearch[".$p_attrib->fieldName()."]",
+            "atksearch_".$prefix."[" . $p_attrib->fieldName()."]",
+            $fieldPointer
+          );
+      }
+    }
+
+    /**
+     * Adds the attribute / field to the list row. And if the row is totalisable also to the total.
+     *
+     * Framework method. It should not be necessary to call this method directly.
+     *
+     * @param String $action the action that is being performed on the node
+     * @param array  $arr reference to the the recordlist array
+     * @param int    $nr the current row number
+     * @param String $fieldprefix the fieldprefix
+     * @param int    $flags the recordlist flags
+     * @see atkNode::listArray
+     */
+    function addToListArrayRow($action, &$arr, $nr, $fieldprefix, $flags)
+    {
+      $prefix = $fieldprefix . "_AE_" .$this->fieldName();      
+      
+      parent::addToListArrayRow($action, $arr, $nr, $prefix, $flags);
+
+      // only add extra columns when needed
+      if (!$this->createDestination() || count($this->m_listColumns) == 0) return;
+
+      // small trick, the destination record is in a subarray. The destination
+      // addToListArrayRow will not expect this though, so we have to modify the
+      // record a bit before passing it to the detail columns.
+      $backup = $arr["rows"][$nr]["record"];      
+      $arr["rows"][$nr]["record"] = $arr["rows"][$nr]["record"][$this->fieldName()];
+      
+      foreach ($this->m_listColumns as $attribname)
+      {
+        $p_attrib = &$this->m_destInstance->getAttribute($attribname);
+        $p_attrib->addToListArrayRow($action, $arr, $nr, $prefix, $flags);
+      }
+      
+      $arr["rows"][$nr]["record"] = $backup;
+    }
+    
+
+    /**
+     * Overridden method; in the integrated version, we should let the destination
+     * attributes hook themselves into the fieldlist instead of hooking the relation
+     * in it.
+     * For original documentation for this method, please see the atkAttribute class
+     */
+    function addToSearchformFields(&$fields, &$node, &$record, $fieldprefix = "")
+    {
+      $prefix = $fieldprefix . "_AE_" .$this->fieldName();            
+      
+      parent::addToSearchformFields($fields,$node,$record, $prefix); 
+      
+      // only add extra columns when needed
+      if (!$this->createDestination() || count($this->m_listColumns) == 0) return;
+
+      foreach ($this->m_listColumns as $attribname)
+      {
+        $p_attrib = &$this->m_destInstance->m_attribList[$attribname];
+        
+        if (!$p_attrib->hasFlag(AF_HIDE_SEARCH))
+        {
+          // TODO: This is an ugly way to make sure date attributes are changed as well
+          //       Furthermore it does nothing to save the javascript functionality
+          //       (which completely breaks) in searching a onetoone something like a 'searchname' should
+          //       be implemented and used.
+          if (method_exists($p_attrib, "atkDateAttribute"))
+            $p_attrib->addToSearchformFields($fields,$node,$record[$this->fieldName()], "{$prefix}_AE_".$this->fieldName()."_AE_");
+          else
+            $p_attrib->addToSearchformFields($fields,$node,$record[$this->fieldName()], "{$prefix}_AE_".$this->fieldName());
+        }
+      }
+    }    
+  }
 ?>

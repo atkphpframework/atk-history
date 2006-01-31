@@ -42,7 +42,16 @@ class atkMetaManyToOneRelation extends atkManyToOneRelation
     $this->m_options = $options;
     
     $this->setDescriptorTemplate($template);
-    $this->setDestinationFilter($options["filter"]);    
+    $this->setDestinationFilter($options["filter"]);  
+    
+    $cols = array();
+    if (array_key_exists('listcols', $options))  
+      $cols = $options['listcols'];
+    else if (array_key_exists('listcolumns', $options))
+      $cols = $options['listcolumns'];
+      
+    foreach ($cols as $col)
+      $this->addListColumn($col);
   }
   
   /**

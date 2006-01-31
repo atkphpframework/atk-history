@@ -630,7 +630,7 @@
    * Defaults to 1 (true), comment or set to null to remove keyboard handler
    * @var int
    */
-  $config_use_keyboard_handler = 1;
+  $config_use_keyboard_handler = 0;
 
 
   /**
