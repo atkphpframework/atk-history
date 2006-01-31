@@ -1647,7 +1647,8 @@
 
     if (class_exists($classname))
     {
-      return new $classname;
+      $obj = &new $classname();
+      return $obj;
     }
     else
     {

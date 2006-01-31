@@ -6,6 +6,7 @@ Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 
 Changes in tomorrow branch
 --------------------
++ support for custom authentication types. [Martin]
 + Ported setForceUpdate from discovery branch. [Boy]
 + Added 'partial' handler, which handles xmlhttp requests 
    for parts of a node. [Boy]
@@ -13,6 +14,7 @@ Changes in tomorrow branch
 + Added support for setting the security alias using var $securityAlias = ...
   in the node or specifying it in the arguments array. [Peter]
 * atkLanguage doesn't bother translating an empty string anymore. [Boy]
+* PHP5 compat bugfix in atknew returning a ref. [Martin]
 * Improvements to error reporting of importing and added ability 
   to add multiple fields for the entire import ('allfields'). [Boy]
 * Added id to field td. [Boy]

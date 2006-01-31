@@ -51,6 +51,51 @@
     // error message that caused the fatal error is put in this variable.
     var $m_fatalError = "";
 
+
+    /**
+     * returns the full classname for use with atkimport
+     *
+     * @param string $type
+     * @return string full classname
+     */
+    function _getclassname($type)
+    {
+      // assume that when a type includes a dot, the fullclassname is used.
+      if(!stristr($type,"."))
+      {
+        $cls = "atk.security.auth_$type";
+      }
+      else $cls=$type;
+      return $cls;
+    }
+    
+    /**
+     * returns an array of authentication types
+     * authentication_type is a comma delimeted string with
+     * native atk auth types like 'db' or 'none' or it can be a
+     * full classname like module.mymodule.myauthtype
+     *
+     * @param string $authentication_type
+     * @return array authetication types
+     */
+    function _getAuthTypes($authentication_type)
+    {
+      $authentication = explode(",",trim($authentication_type));
+      $types=array();
+      if(!is_array($authentication))
+      {
+        array_push($types,$this->_getclassname(trim($authentication)));
+      }
+      else
+      {
+        foreach ($authentication as $type)
+        {
+          array_push($types,$this->_getclassname(trim($type)));
+        }
+      }
+      return $types;
+    }
+    
     /**
      * Constructor
      * @access private
@@ -59,62 +104,22 @@
     {
       atkdebug("creating securityManager (authenticationtype: $authentication_type, authorizationtype: $authorization_type, scheme: $securityscheme)");
 
-      $atkroot = atkconfig("atkroot");
-      require_once($atkroot."atk/security/class.auth_interface.inc");
-
-      $authentication = explode(",",trim(atkconfig("authentication", "none")));
-      if(is_array($authentication))
+      // required interface;
+      atkimport("atk.security.auth_interface");
+      
+      $authentication = $this->_getAuthTypes($authentication_type);
+      foreach($authentication as $class)
       {
-        foreach($authentication as $value)
+        if(!$obj = &atknew($class))
         {
-          $value = trim($value);
-          if(is_file($atkroot."atk/security/class.auth_".$value.".inc"))
-          {
-            include_once($atkroot."atk/security/class.auth_".$value.".inc");
-          }
+          atkdebug("atkSecurityManager() unsupported authentication type or type no found for $class");
         }
-      }
-      else
-      {
-        if(is_file($atkroot."atk/security/class.auth_".$authentication.".inc"))
-        {
-          include_once($atkroot."atk/security/class.auth_".$authentication.".inc");
-        }
-      }
-
-      include_once($atkroot."atk/security/class.auth_".atkconfig("authorization", atkconfig("authentication", "none")).".inc");
-
-      /* authentication class */
-      $authentication = explode(",",trim($authentication_type));
-      if(is_array($authentication))
-      {
-        foreach($authentication as $class)
-        {
-          $class = trim($class);
-          if($class!="")
-          {
-            $classname = "auth_".$class;
-            if(class_exists($classname))
-            {
-              atkdebug("atkSecurityManager() constructing class $classname");
-              $this->m_authentication[$class] = new $classname;
-            }
-          }
-        }
-      }
-      else
-      {
-        $classname = "auth_".$authentication;
-        if(class_exists($classname))
-        {
-          atkdebug("atkSecurityManager() constructing class $classname");
-          $this->m_authentication[$authentication] = new $classname;
-        }
+        else $this->m_authentication[$class] = &$obj;
       }
 
       /* authorization class */
-      $classname = "auth_".$authorization_type;
-      $this->m_authorization = new $classname;
+      $clsname = $this->_getclassname($authorization_type);
+      $this->m_authorization = &atknew($clsname);
 
       /* security scheme */
       $this->m_scheme = $securityscheme;
