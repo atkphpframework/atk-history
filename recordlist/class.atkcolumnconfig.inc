@@ -227,7 +227,7 @@
     function doUrlCommands()
     {
       global $ATK_VARS;            
-          
+
       if (is_array($ATK_VARS["atkcolcmd"]))
       {
         foreach($ATK_VARS["atkcolcmd"] as $command)
@@ -249,6 +249,14 @@
             // attribute reference
             $this->addOrderByField($elem, "asc");
           }
+          else if (strtolower($elem)=="asc"||strtolower($elem)=="desc")
+          {
+            // direction modifier for previous statement
+            if ($lastattr!="")
+            {
+              $this->setSortDirection($lastattr, strtolower($elem));
+            }
+          }
           else 
           {
             // custom order by                     
@@ -260,6 +268,8 @@
             //echo 'yes';
             $this->addOrderByField($field, "asc");
           }
+          
+          $lastattr = $elem;
         }
       }
       

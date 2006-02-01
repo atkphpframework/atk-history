@@ -218,7 +218,7 @@
     function edit($record="", $fieldprefix="")
     {
       $result = '<input type="text" name="'.$fieldprefix.$this->formName().
-                '" value="'.htmlspecialchars($record[$this->fieldName()]).'"'.
+                '" id="'.$fieldprefix.$this->formName().'" value="'.htmlspecialchars($record[$this->fieldName()]).'"'.
                 ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').
                 ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>';
 
@@ -354,7 +354,7 @@
       global $ATK_VARS;
       $order = $this->m_ownerInstance->m_table.".".$this->fieldName();
       $order = $this->fieldName();
-      if ($atkorderby == $order) $order .= " DESC";      
+      if ($ATK_VARS['atkorderby'] == $order) $order .= " DESC";      
       return session_url($_SERVER["PHP_SELF"].'?atknodetype='.$ATK_VARS["atknodetype"].'&atkaction='.$ATK_VARS["atkaction"].'&atkorderby='.rawurlencode($order));
     }
     
