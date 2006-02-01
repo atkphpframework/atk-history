@@ -91,38 +91,38 @@ function atkSubmitMRA(name, form, target)
   if (typeof(index) == 'undefined') var atkaction = form.elements[name + '_atkaction'].value;
   else var atkaction = form.elements[name + '_atkaction'][index].value;
 
-  /* initial target URL */
-  target += '&atkaction=' + atkaction;
-
   /* get selectors */
   var list = form.elements[name + '_atkselector[]'];
 
   /* no selectors?! impossible situation, bail out! */
   if (typeof(list) == 'undefined') return;
 
-  /* add the selectors to the target URL */
+  /* add separator for possible additional action parameters */
+  if (form.action.indexOf('&') > 0 || form.action.indexOf('?') > 0)
+    form.action += '&';
+  else form.action += '?';
+  
+  /* count selectors */
   var selectorLength = 0;
   if (typeof(list.length) == 'undefined') list = new Array(list);
   for (var i = 0; i < list.length; i++)
     if (!list[i].disabled && list[i].checked)
     {
-      target += '&atkselector[]=' + list[i].value;
+      form.action += 'atkselector[' + i + ']=' + list[i].value + '&';
       selectorLength++;
     }
-    
-   // custom list
-   for (var i=0; i< form.elements.length; i++)
-   {    
-    if (form.elements[i].name.substring(0,7)=="custom_")
-    {
-       target += "&"+form.elements[i].name+'='+form.elements[i].value; 
-     }
-   }
 
-  /* change atkescape value and submit form */
+  /* change atkaction and atkrecordlist values and submit form */
   if (selectorLength > 0)
   {
-    form.atkescape.value = target;
+    if (form.atkaction == null)
+      form.action += 'atkaction=' + atkaction + '&';
+    else form.atkaction.value = atkaction;
+
+    if (form.atkrecordlist == null)
+      form.action += 'atkrecordlist=' + name + '&';
+    else form.atkrecordlist.value = name;
+    
     globalSubmit(form);
     form.submit();
   }

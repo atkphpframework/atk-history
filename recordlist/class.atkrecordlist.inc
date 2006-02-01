@@ -115,7 +115,7 @@
       $selectcolor = $theme->getAttribute("select");
 
       /* retrieve list array */
-      $list = $this->listArray($recordset, $flags, "", $actions, $suppressList, $embedprefix);
+      $list = $this->listArray($listName, $recordset, $flags, "", $actions, $suppressList, $embedprefix);
 
       /* Check if some flags are still valid or not... */
       if (hasFlag($flags, RL_MRA) && (count($list["mra"]) == 0 || count($list["rows"]) == 0)) $flags ^= RL_MRA;
@@ -365,8 +365,8 @@
           {
             if (count($list["rows"][$i]["mra"]) > 0)
               $record["cols"][] = array(
-                           "content"=>'<input type="checkbox" name="'.$listName.'_atkselector[]" value="'.rawurlencode($list["rows"][$i]["selector"]).'" onclick="if (this.disabled) this.checked = false">'.
-                                      '<script language="javascript"  type="text/javascript">'.$listName.'["'.rawurlencode($list["rows"][$i]["selector"]).'"] = new Array("'.implode($list["rows"][$i]["mra"], '","').'");</script>');
+                           "content"=>'<input type="checkbox" name="'.$listName.'_atkselector[]" value="'.$list["rows"][$i]["selector"].'" onclick="if (this.disabled) this.checked = false">'.
+                                      '<script language="javascript"  type="text/javascript">'.$listName.'["'.$list["rows"][$i]["selector"].'"] = new Array("'.implode($list["rows"][$i]["mra"], '","').'");</script>');
 
             else $record["cols"][] = array("content"=>"");
           }
@@ -558,6 +558,7 @@
     /**
      * Function outputs an array with all information necessary to output a recordlist.
      *
+     * @param String  $name         The recordlist name
      * @param Array   $recordset    List of records that need to be displayed
      * @param Integer $flags        Recordlist flags
      * @param String  $prefix       Prefix for each column name (used for subcalls)
@@ -566,6 +567,7 @@
      * @param String  $embedprefix  The prefix for embeded fields
      *
      * The result array contains the following information:
+     *  "name"     => the recordlist name
      *  "heading"  => for each visible column an array containing: "title" {, "url"}
      *  "search"   => for each visible column HTML input field(s) for searching
      *  "rows"     => list of rows, per row: "data", "actions", "mra", "record"
@@ -575,10 +577,10 @@
      *
      * @return see above
      */
-    function listArray(&$recordset, $flags=0, $prefix="", $actions=array(), $suppress=array(), $embedprefix="")
+    function listArray($name, &$recordset, $flags=0, $prefix="", $actions=array(), $suppress=array(), $embedprefix="")
     {
       if (!is_array($suppress)) $suppress = array();
-      $result = array("heading" => array(), "search" => array(), "rows" => array(),
+      $result = array("name" => $name, "heading" => array(), "search" => array(), "rows" => array(),
                       "totalraw" => array(), "total" => array(), "mra" => array());
 
       if (hasFlag($this->m_flags, RL_EMBED) && $embedprefix)

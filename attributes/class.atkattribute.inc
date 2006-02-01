@@ -938,7 +938,12 @@
       {
         /* an <attributename>_display function may be provided in a derived class to display an attribute */
         $function = $this->m_name."_display";
-        if (method_exists($this->m_ownerInstance, $function))
+        if (in_array($this->fieldName(), $this->m_ownerInstance->m_editableListAttributes))
+        {
+          $arr["rows"][$nr]["data"][$fieldprefix.$this->fieldName()] = 
+            $this->getEdit('list', $arr["rows"][$nr]["record"], 'atkrecordlistdata_AE_'.$arr['name'].'_AE_'.$nr.'_AE_');
+        }
+        elseif (method_exists($this->m_ownerInstance, $function))
           $arr["rows"][$nr]["data"][$fieldprefix.$this->fieldName()] = $this->m_ownerInstance->$function($arr["rows"][$nr]["record"], "list");
         else $arr["rows"][$nr]["data"][$fieldprefix.$this->fieldName()] = $this->display($arr["rows"][$nr]["record"], "list");
 

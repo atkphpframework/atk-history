@@ -239,7 +239,8 @@
       $fieldname = $fieldprefix.$this->fieldName().$postfix;
 
       /* text mode? */
-      if ($this->hasFlag(AF_DATE_STRING))
+      atkdebug("MODE $mode");
+      if ($this->hasFlag(AF_DATE_STRING) || $mode == 'list')
       {
         $value = &$record[$this->fieldName()];
 
@@ -249,7 +250,7 @@
         $this->registerKeyListener($fieldname, KB_CTRLCURSOR|KB_UPDOWN);
         $result = '<input type="text" id="'.$fieldname.'" class="atkdateattribute" name="'.$fieldname.'" value="'.$value.'" size="10">';
 
-        if (!$this->hasFlag(AF_DATE_NO_CALENDAR))
+        if (!$this->hasFlag(AF_DATE_NO_CALENDAR) && $mode != 'list')
         {
           $result.=' <input class="button" class="atkdateattribute" type="reset" value="..." onclick="return showCalendar(\''.$fieldname.'\', \''.$fieldname.'\', \'y-mm-dd\', false);">';
         }
@@ -455,7 +456,7 @@
         else $result .= $str_format[$i];
       }
 
-      if (!$this->hasFlag(AF_DATE_NO_CALENDAR) && !$yeardropdown && !$pda)
+      if (!$this->hasFlag(AF_DATE_NO_CALENDAR) && !$yeardropdown && !$pda && $mode != 'list')
       {
         $result.=' <input class="button" type="reset" value="..." onclick="return showCalendar(\''.$fieldname.'\', \''.$fieldname.'[year]\', \'y-mm-dd\', true);">';
       }

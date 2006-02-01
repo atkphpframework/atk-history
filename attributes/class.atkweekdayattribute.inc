@@ -85,14 +85,14 @@
      * @param $record Array with fields
      * @return piece of html code with a checkbox
      */
-    function edit($record="", $fieldprefix="")
+    function edit($record="", $fieldprefix="", $mode='add')
     {
       $result = ''; 
 
       $name = $fieldprefix.$this->fieldName();
       $value = (int)$record[$this->fieldName()];
 
-      $separator = $this->hasFlag(AF_WEEKDAY_SMALL_EDIT) ? '&nbsp;' : '<br>';      
+      $separator = $this->hasFlag(AF_WEEKDAY_SMALL_EDIT) || $mode == 'list' ? '&nbsp;' : '<br>';      
       
       $max = 7 + count($this->m_extra);
       for ($i = 1; $i <= $max; $i++)
@@ -100,14 +100,12 @@
         $day = pow(2, $i-1);
         
         if ($i <= 7)
-        {
-          $weekday = $this->m_mapping[$day];
-          if ($this->hasFlag(AF_WEEKDAY_SMALL_EDIT))
-            $weekday = substr($weekday, 0, 3);
-          $weekday = atktext($weekday);
-        }
+          $weekday = atktext($this->m_mapping[$day]);
         else $weekday = $this->m_extra[$i - 8];
-        
+
+        $weekday = ucfirst($weekday);
+        if ($this->hasFlag(AF_WEEKDAY_SMALL_EDIT) || $mode == 'list')
+          $weekday = substr($weekday, 0, 2);
         
         $checked = hasFlag($value, $day) ? ' checked' : '';
         

@@ -169,7 +169,7 @@
       atkWriteLog($txt);
       $line = atkGetTimingInfo().$txt;
 
-      if ($level>1)
+      if ($level>2)
       {
         atkimport("atk.utils.atkdebugger");
         if (!atkDebugger::addStatement($line))

@@ -622,6 +622,13 @@
      * @var String
      */
     var $m_modifier = "";
+    
+    /**
+     * List of editable list attributes.
+     * @access private
+     * @var Array
+     */
+    var $m_editableListAttributes = array();
 
     /**
      * Constructor.
@@ -887,6 +894,20 @@
     function getFlags()
     {
       return $this->m_flags;
+    }
+    
+    /**
+     * Sets the editable list attributes. If you supply this method
+     * with one or more string arguments, all arguments are collected in
+     * an array. Else the first parameter will be used.
+     * 
+     * @param $attrs Array list of attribute names
+     */
+    function setEditableListAttributes($attrs)
+    {
+      if (is_array($attrs))
+        $this->m_editableListAttributes = $attrs;
+      else $this->m_editableListAttributes = func_get_args();
     }
 
     /**
