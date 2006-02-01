@@ -58,7 +58,7 @@
      * @param string $type
      * @return string full classname
      */
-    function _getclassname($type)
+    function _getfullclassname($type)
     {
       // assume that when a type includes a dot, the fullclassname is used.
       if(!stristr($type,"."))
@@ -84,13 +84,13 @@
       $types=array();
       if(!is_array($authentication))
       {
-        array_push($types,$this->_getclassname(trim($authentication)));
+        array_push($types,$this->_getfullclassname(trim($authentication)));
       }
       else
       {
         foreach ($authentication as $type)
         {
-          array_push($types,$this->_getclassname(trim($type)));
+          array_push($types,$this->_getfullclassname(trim($type)));
         }
       }
       return $types;
@@ -118,7 +118,7 @@
       }
 
       /* authorization class */
-      $clsname = $this->_getclassname($authorization_type);
+      $clsname = $this->_getfullclassname($authorization_type);
       $this->m_authorization = &atknew($clsname);
 
       /* security scheme */

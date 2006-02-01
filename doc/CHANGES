@@ -16,6 +16,8 @@ Changes in tomorrow branch
 + Added addListColumn method to atkManyToOneRelation for adding
   multiple list columns to the recordlist based on an n:1 relation. [Peter]
 + Added getAttributeOrder method to atkNode. [Peter]
+* renamed getclassname to getfullclassname in the securitymanager. [Martin]
+* functional decomposition of the auth_db class. [Martin]
 * atkLanguage doesn't bother translating an empty string anymore. [Boy]
 * PHP5 compat bugfix in atknew returning a ref. [Martin]
 * Improvements to error reporting of importing and added ability 
