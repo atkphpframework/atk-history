@@ -627,11 +627,13 @@
 
   /**
    * Wether or not to use the keyboardhandler for attributes and the recordlist
-   * Defaults to 1 (true), comment or set to null to remove keyboard handler
+   * When set to true, arrow keys can be used to navigate through fields and
+   * records, as well as shortcuts 'e' for edit, 'd' for delete, and left/right
+   * cursor for paging. Note however, that using cursor keys to navigate
+   * through fields is not standard web application behaviour.
    * @var int
    */
-  $config_use_keyboard_handler = 0;
-
+  $config_use_keyboard_handler = false;
 
   /**
    * Session cache expire (minutes)
@@ -673,5 +675,11 @@
    * @var bool
    */
   $config_enable_ssl_encryption = false;
-
+  
+  /**
+   * Enable / disable sending of e-mails (works only if the atk.utils.atkMail::mail 
+   * function has been used for sending e-mails).
+   * @var bool
+   */
+  $config_mail_enabled = true;
 ?>

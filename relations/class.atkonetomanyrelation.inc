@@ -469,6 +469,10 @@
           $onchange = 'onChange="'.$this->fieldName().'_onChange(this);"';
           $this->_renderChangeHandler($fieldprefix);
         }
+        else
+        {
+          $onchange = '';
+        }
         $url = href($add_url,$label,SESSION_NESTED,$saveform,$onchange.' class="atkonetomanyrelation"');
       }
       return $url;
@@ -532,6 +536,33 @@
     }
 
     /**
+     * Create the where clause for the referential key that is used to
+     * retrieve the destination records.
+     * @access private
+     *
+     * @param array $record The master record
+     * @return String SQL where clause
+     */
+    function _getLoadWhereClause($record)
+    {
+      $whereelems = array();
+ 
+      if (count($this->m_refKey)==0||$this->m_refKey[0]=="") $this->m_refKey[0]=$this->m_owner;
+
+      for ($i=0, $_i = count($this->m_refKey); $i<$_i; $i++)
+      {
+        $primkeyattr = &$this->m_ownerInstance->m_attribList[$this->m_ownerInstance->m_primaryKey[$i]];
+
+        if (!$primkeyattr->isEmpty($record))
+        {
+          $whereelems[] = $this->m_destInstance->m_table.".".$this->m_refKey[$i]."='".$primkeyattr->value2db($record)."'";
+        }
+      }
+
+      return implode(" AND ", $whereelems);
+    }
+
+    /**
      * Retrieve detail records from the database.
      *
      * Called by the framework to load the detail records.
@@ -560,27 +591,16 @@
       {
         if ($this->createDestination())
         {
-          if (count($this->m_refKey)==0||$this->m_refKey[0]=="") $this->m_refKey[0]=$this->m_owner;
+          $where = $this->_getLoadWhereClause($record);
 
-          for ($i=0, $_i = count($this->m_refKey); $i<$_i; $i++)
+          if ($where!="")
           {
-            $primkeyattr = &$this->m_ownerInstance->m_attribList[$this->m_ownerInstance->m_primaryKey[$i]];
-
-            if (!$primkeyattr->isEmpty($record))
-            {
-              $whereelems[] = $this->m_destInstance->m_table.".".$this->m_refKey[$i]."='".$primkeyattr->value2db($record)."'";
-            }
-          }
-
-          if (count($whereelems)>0)
-          {
-            $where = implode(" AND ", $whereelems);
 
             if ($this->m_destinationFilter!="")
             {
-		          atkimport("atk.utils.atkstringparser");
-		          $parser = new atkStringParser($this->m_destinationFilter);
-		          $filter = $parser->parse($record);
+              atkimport("atk.utils.atkstringparser");
+              $parser = new atkStringParser($this->m_destinationFilter);
+              $filter = $parser->parse($record);
               $this->m_destInstance->addFilter($filter);
             }
 
@@ -603,9 +623,9 @@
               $this->m_destInstance->m_postvars['atksearchmode'] = $this->m_ownerInstance->m_postvars['atksearchmode'];
             }
             ($paging==true)?$limitarray=$this->fetchLimitArray():$limitarray="";
-            $recordset = $this->m_destInstance->selectDb($where,@$this->m_ownerInstance->m_postvars['atkorderby'],
-                                                         $limitarray,$excludes,"",$mode);
-
+            $atkorderby = isset($this->m_ownerInstance->m_postvars['atkorderby']) ? $this->m_ownerInstance->m_postvars['atkorderby'] : "";
+            $recordset = $this->m_destInstance->selectDb($where,$atkorderby,
+            $limitarray,$excludes,"",$mode);
             $this->m_loadFilter = $where;
             return $recordset;
           }

@@ -1,8 +1,39 @@
 <?php
 
+  /**
+   * This file is part of the Achievo ATK distribution.
+   * Detailed copyright and licensing information can be found
+   * in the doc/COPYRIGHT and doc/LICENSE files which should be
+   * included in the distribution.
+   *
+   * @package atk
+   * @subpackage recordlist
+   *
+   * @copyright (c)2003-2006 Ibuildings.nl BV
+   * @license http://www.achievo.org/atk/licensing ATK Open Source License
+   *
+   * @version $Revision$
+   * $Id$
+   */
+
+  /**
+   * Sort ascending
+   */
   define("RL_SORT_ASC" , 1);
+
+  /**
+   * Sort descending
+   */
   define("RL_SORT_DESC", 2);
 
+  /**
+   * The atkColumnConfig class is used to add extended sorting and grouping
+   * options to a recordlist.
+   *
+   * @author Ivo Jansch <ivo@achievo.org>
+   * @package atk
+   * @subpackage recordlist
+   */
   class atkColumnConfig
   {
     var $m_colcfg = array();
@@ -26,7 +57,7 @@
 
       $id = $node->atkNodeType();
 
-      if (!is_object($s_instances[$id]))
+      if (!isset($s_instances[$id]))
       {
         $s_instances[$id] = &new atkColumnConfig();
         $s_instances[$id]->setNode($node);
@@ -80,7 +111,7 @@
     {
       foreach (array_keys($this->m_node->m_attribIndexList) as $i)
       {
-        if ($this->m_attribIndexList[$i]["name"]!="")
+        if (isset($this->m_attribIndexList[$i]["name"]) && ($this->m_attribIndexList[$i]["name"]!=""))
         {
           $this->m_colcfg[$this->m_attribIndexList[$i]["name"]] = array();
         }
@@ -229,14 +260,14 @@
     {
       global $ATK_VARS;
 
-      if (is_array($ATK_VARS["atkcolcmd"]))
+      if (isset($ATK_VARS["atkcolcmd"]) && is_array($ATK_VARS["atkcolcmd"]))
       {
         foreach($ATK_VARS["atkcolcmd"] as $command)
         {
           $this->doUrlCommand($command);
         }
       }
-      else if ($ATK_VARS["atkorderby"]!="")
+      else if (isset($ATK_VARS["atkorderby"]) && ($ATK_VARS["atkorderby"]!=""))
       {
         // oldfashioned order by.
         $this->m_custom_atkorderby = $ATK_VARS["atkorderby"];

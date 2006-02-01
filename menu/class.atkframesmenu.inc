@@ -25,7 +25,6 @@
   atkimport("atk.menu.atkplainmenu");
   class atkFramesMenu extends atkPlainMenu
   {
-
     function render()
     {
        global $ATK_VARS,$g_menu, $g_menu_parent;
@@ -117,9 +116,6 @@
         $page->addContent($box);
 
         return $page->render("Menu", true);
-
     }
-
-
   }
 ?>

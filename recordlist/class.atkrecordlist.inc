@@ -29,11 +29,9 @@
   atkimport("atk.utils.atkstringparser");
 
   /**
-   * Handler for the 'editcopy' action of a node. It copies the selected
-   * record, and then redirects to the edit action for the copied record.
+   * The recordlist class is used to render tables containing records.
    *
    * @author Ivo Jansch <ivo@achievo.org>
-   * @author Peter C. Verhage <peter@ibuildings.nl>
    * @package atk
    * @subpackage recordlist
    *
@@ -388,24 +386,26 @@
 
           foreach ($list["rows"][$i]["actions"] as $name => $url)
           {
-  	    $actionloader.="\nrl_a['".$listName."'][".$i."]['".$name."'] = '".$url."';";
+      	    $actionloader.="\nrl_a['".$listName."'][".$i."]['".$name."'] = '".$url."';";
 
-	    $link = $name;
+    	      $link = $name;
 
-	    if($icons == true)
-	    {
-	      $icon = $theme->iconPath($name,"recordlist");
-  	      $link = '<img width="16" height="16" border="0" src="'.$icon.'" title="'.atktext($name, $this->m_node->m_module, $this->m_node->m_type).'">';
-	    }
-	    else
-	    {
-	      $link = atktext($name);
-	    }
+    	      if($icons == true)
+    	      {
+    	        $icon = $theme->iconPath(strtolower($name),"recordlist");
+      	      $link = '<img width="16" height="16" border="0" src="'.$icon.'" title="'.atktext($name, $this->m_node->m_module, $this->m_node->m_type).'">';
+    	      }
+    	      else
+    	      {
+    	        $link = atktext($name);
+	          }
+
             $confirmtext= "false";
             if (atkconfig("recordlist_javascript_delete") && $name=="delete")
             $confirmtext = "'".$this->m_node->confirmActionText($name)."'";
             $str_actions.='<a href="'."javascript:rl_do('$listName',$i,'$name',$confirmtext);".'">'.$link.'</a>&nbsp;';
           }
+
           $str_actions.="</span>";
           /* actions (left) */
           if ($orientation == "left" || $orientation == "both")
@@ -599,8 +599,8 @@
         {
           /* @var $attribute atkAttribute */
           $attribute = &$this->m_node->m_attribList[$name];
-          $attribute->addToListArrayHeader($this->m_node->m_action, $result, $prefix, $flags,
-                                           @$this->m_node->m_postvars["atksearch"], $columnConfig);
+          $atksearchpostvar = isset($this->m_node->m_postvars["atksearch"]) ? $this->m_node->m_postvars["atksearch"] : null;
+          $attribute->addToListArrayHeader($this->m_node->m_action, $result, $prefix, $flags, $atksearchpostvar, $columnConfig);
         }
       }
 

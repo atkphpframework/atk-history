@@ -21,7 +21,8 @@
    * flag(s) specific for atkManyToOneRelation
    */
   define("AF_RELATION_AUTOLINK", AF_SPECIFIC_1); // create edit/view links for the items in a manytoonerelation dropdown.
-
+  define("AF_RELATION_NO_NULL_ITEM", AF_SPECIFIC_2);// Do not add null option ever
+  
   /**
    * @internal include base class
    */
@@ -341,7 +342,7 @@
 
             $this->registerKeyListener($id, KB_CTRLCURSOR|KB_LEFTRIGHT);
             $result.= '<select id="'.$id.'" name="'.$id.'" class="atkmanytoonerelation" '.$onchange.'>';
-            if (!$this->hasFlag(AF_OBLIGATORY)||(atkconfig("list_obligatory_null_item")&&!is_array($value)))
+            if ((!$this->hasFlag(AF_OBLIGATORY) && !$this->hasFlag(AF_RELATION_NO_NULL_ITEM)) || (atkconfig("list_obligatory_null_item")&&!is_array($value)))
             {
               //get the select_none string
               $nodename = $this->m_destInstance->m_type;
@@ -418,11 +419,13 @@
           // we use the current level to automatically return to this page
           // when we come from the select..
           $atktarget = rawurlencode("dispatch.php?atklevel=".atkLevel()."&".$selname."=[pk]");
+          $linkname = atktext("link_select_".getNodeType($this->m_destination), getNodeModule($this->m_destination),getNodeType($this->m_destination),'','',true);
+          if (!$linkname) $linkname = atktext("select_a").' '.strtolower(atktext(getNodeType($this->m_destination), getNodeModule($this->m_destination),getNodeType($this->m_destination)));
           if ($this->m_destinationFilter!="")
           {
             $result.= href("dispatch.php?atknodetype=".$this->m_destination.
                            "&atkaction=select&atkfilter=".$filter."&atktarget=".$atktarget,
-                           atktext("link_select_".getNodeType($this->m_destination), getNodeModule($this->m_destination),getNodeType($this->m_destination)),
+                           $linkname,
                            SESSION_NESTED,
                            true,'class="atkmanytoonerelation"');
           }
@@ -430,7 +433,7 @@
           {
             $result.= href("dispatch.php?atknodetype=".$this->m_destination.
                            "&atkaction=select&atktarget=".$atktarget,
-                           atktext("link_select_".getNodeType($this->m_destination), getNodeModule($this->m_destination),getNodeType($this->m_destination)),
+                           $linkname,
                            SESSION_NESTED,
                            true,'class="atkmanytoonerelation"');
           }
@@ -877,12 +880,8 @@
     {
       if ($this->createDestination())
       {
-        // In queries, relations are alias'd by their attribute name, so we use that for the sort prefix here.
-        if (!empty($this->m_destInstance->m_default_order))
-        {
-          return $this->fieldName().".".$this->m_destInstance->m_default_order;
-        }
-        else 
+        $order = $this->m_destInstance->getOrder();
+        if ($order == "")
         {
           $fields = $this->m_destInstance->descriptorFields();
           if (count($fields) == 0)
@@ -891,9 +890,13 @@
           $order = "";            
           foreach ($fields as $field)
             $order .= (empty($order) ? '' : ', ').$this->fieldName().".".$field;
-            
-          return $order;
         }
+        else
+        {
+          $order = $this->fieldName().".".$order;
+        }
+
+        return $order;
       }
       return parent::getOrderByStatement();
     }

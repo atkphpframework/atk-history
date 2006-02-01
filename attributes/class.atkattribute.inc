@@ -8,8 +8,8 @@
    * @package atk
    * @subpackage attributes
    *
-   * @copyright (c)2000-2004 Ivo Jansch
-   * @copyright (c)2000-2004 Ibuildings.nl BV
+   * @copyright (c)2000-2006 Ivo Jansch
+   * @copyright (c)2000-2006 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
    * @version $Revision$
@@ -443,6 +443,13 @@
      * @var String
      */
     var $m_searchmode = "";
+    
+    /**
+     * Wether to force an update of the attribute
+     * @access private
+     * @var bool
+     */
+    var $m_forceupdate=false;
 
     /**
      * Array for onchange code
@@ -1187,9 +1194,9 @@
      * @return array A record containing the sum of $rec1 and $rec2
      */
     function sum($rec1, $rec2, $fieldprefix="")
-    {            
+    {
       $value1 = (isset($rec1[$this->fieldName()])?$rec1[$this->fieldName()]:0);
-      $value2 = (isset($rec2[$this->fieldName()])?$rec2[$this->fieldName()]:0);      
+      $value2 = (isset($rec2[$this->fieldName()])?$rec2[$this->fieldName()]:0);
       return array($this->fieldName() => ($value1+$value2));
     }
 
@@ -1278,6 +1285,15 @@
     function setForceUpdate($force)
     {
       $this->m_forceupdate = $force;
+    }
+    
+    /**
+     * Getter for wether or not an attribute is forced to update
+     * @return bool Wether or not an attribute is forced to update
+     */
+    function getForceUpdate()
+    {
+      return $this->m_forceupdate;
     }
 
     /**
