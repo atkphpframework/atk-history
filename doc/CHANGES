@@ -17,6 +17,7 @@ Changes in tomorrow branch
   multiple list columns to the recordlist based on an n:1 relation. [Peter]
 + Added getAttributeOrder method to atkNode. [Peter]
 + Added support for editable attributes in recordlists. [Peter]
+* function decomposition in list- and multiselectattribute. [Martin]
 * renamed getclassname to getfullclassname in the securitymanager. [Martin]
 * functional decomposition of the auth_db class. [Martin]
 * atkLanguage doesn't bother translating an empty string anymore. [Boy]

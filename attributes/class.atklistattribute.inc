@@ -58,6 +58,11 @@
      * Array for fast lookup of what value belongs to what option.
      */
     var $m_lookup = array();
+    
+    /**
+     * Array which holds the options,values and lookup array in cache
+     */
+    var $m_types = array();
 
     /**
      * Attribute that is to be selected
@@ -120,15 +125,56 @@
       }
 
       $this->atkAttribute($name, $flags, $size); // base class constructor
+      
+      // m_options and m_values array are still here for backwardscompatibility
       $this->m_options = $optionArray;
+      $this->_set("options",$optionArray);
       $this->m_values = $valueArray;
-
-      for ($i=0, $_i=count($optionArray); $i<$_i; $i++)
-      {
-        $this->m_lookup[$this->m_values[$i]] = $optionArray[$i];
-      }
+      $this->_set("values",$valueArray);
+      
+      $this->createLookupArray($optionArray,$valueArray);
     }
 
+    /**
+     * Creates a lookup array to speedup translations
+     *
+     * @param array $optionArray
+     * @param array $valueArray
+     */
+    function createLookupArray($optionArray,$valueArray)
+    {
+      for ($i=0, $_i=count($optionArray); $i<$_i; $i++)
+      {
+        $this->m_lookup[$valueArray[$i]] = $optionArray[$i];
+      }
+      $this->_set("lookup",$this->m_lookup);
+    }
+    
+    /**
+     * get functions to access member variables
+     */
+    function getOptions($rec=null) { return $this->_get("options",$rec); }
+    function getValues($rec=null) { return $this->_get("values",$rec); }
+    function getLookup($rec=null) { return $this->_get("lookup",$rec); }
+    
+    /**
+     * Returns one of the following arrays
+     * options => optionarray
+     * values => valuearray
+     * lookup => lookuparray
+     *
+     * @param string $type
+     */
+    function _get($type,$rec=null)
+    {
+      return $this->m_types[$type];
+    }
+    
+    function _set($type,$value)
+    {
+      $this->m_types[$type]=$value;
+      return true;
+    }
 
     /**
      * Display's text version of Record
@@ -137,13 +183,25 @@
      */
     function display($record)
     {
-      if(isset($this->m_lookup[$record[$this->fieldName()]]))
+      return $this->_translateValue($record[$this->fieldName()],$record);
+    }
+    
+    /**
+     * Translates the database value
+     *
+     * @param string $value
+     * @return string
+     */
+    function _translateValue($value,$rec=null)
+    {
+      $lookup = $this->getLookup($rec);
+      $res="";
+      if(isset($lookup[$value]))
       {
-        if($this->hasFlag(AF_NO_TRANSLATION)) $res = $this->m_lookup[$record[$this->fieldName()]];
-        else $res = atktext($this->m_lookup[$record[$this->fieldName()]],$this->m_ownerInstance->m_module, $this->m_owner);
-
-        return $res;
+        if($this->hasFlag(AF_NO_TRANSLATION)) $res = $lookup[$value];
+        else $res = atktext($lookup[$value],$this->m_ownerInstance->m_module, $this->m_owner);
       }
+      return $res;
     }
 
     /**
@@ -171,11 +229,13 @@
       {
         $result.= '<option value="'.$this->m_emptyvalue.'">'.atktext('list_null_value', '', $this->m_ownerInstance->m_type);
       }
-      for ($i=0;$i<count($this->m_values);$i++)
+      
+      $values = $this->getValues($record);
+      for ($i=0;$i<count($values);$i++)
       {
         // If the current value is selected or occurs in the record
-        if ((!is_null($this->m_selected) && $this->m_values[$i] == $this->m_selected) || 
-            ( is_null($this->m_selected) && $this->m_values[$i] == $record[$this->fieldName()] && $record[$this->fieldName()]!=""))
+        if ((!is_null($this->m_selected) && $values[$i] == $this->m_selected) || 
+            ( is_null($this->m_selected) && $values[$i] == $record[$this->fieldName()] && $record[$this->fieldName()]!=""))
         {
           $sel = "selected";
         }
@@ -183,10 +243,7 @@
         {
           $sel = "";
         }
-        if ($this->hasFlag(AF_NO_TRANSLATION)) $option=$this->m_options[$i];
-        else $option = atktext($this->m_options[$i],$this->m_ownerInstance->m_module, $this->m_owner);
-
-        $result.= '<option value="'.$this->m_values[$i].'" '.$sel.'>'.$option;
+        $result.= '<option value="'.$values[$i].'" '.$sel.'>'.$this->_translateValue($values[$i],$record);
       }
       $result.='</select>';
       return $result;
@@ -200,10 +257,12 @@
     function search($record="", $extended=false, $fieldprefix="")
     {
       // todo: configurable rows
+      
+      $values = $this->getValues($record);
       $result = '<select ';
       if ($extended)
       {
-        $result.='multiple size="'.min(5,count($this->m_values)+1).'"';
+        $result.='multiple size="'.min(5,count($values)+1).'"';
       }
 
       if (strstr($fieldprefix,"]["))
@@ -213,9 +272,9 @@
 
       $result.= '<option value="">'.atktext('search_all');
 
-      for ($i=0,$_i=count($this->m_values);$i<$_i;$i++)
+      for ($i=0,$_i=count($values);$i<$_i;$i++)
       {
-        if (atk_in_array(((string)$this->m_values[$i]),$record[$this->fieldName()], true) && $record[$this->fieldName()]!=="")
+        if (atk_in_array(((string)$values[$i]),$record[$this->fieldName()], true) && $record[$this->fieldName()]!=="")
         {
           $sel = "selected";
         }
@@ -223,10 +282,7 @@
         {
           $sel = "";
         }
-        if($this->hasFlag(AF_NO_TRANSLATION)) $string = $this->m_options[$i];
-        else $string = atktext($this->m_options[$i], $this->m_ownerInstance->m_module);
-
-        $result.= '<option value="'.$this->m_values[$i].'" '.$sel.'>'.$string;
+        $result.= '<option value="'.$values[$i].'" '.$sel.'>'.$this->_translateValue($values[$i],$record);
       }
       $result.='</select>';
       return $result;
@@ -350,22 +406,24 @@
      */
     function parseStringValue($stringvalue)
     {
-      foreach($this->m_values as $value)
+      $values = $this->getValues();
+      foreach($values as $value)
         if(strtolower($stringvalue) == strtolower($value))
           return $value;
 
       $i=0;
-      foreach($this->m_options as $option)
+      $options = $this->getOptions();
+      foreach($options as $option)
       {
         if(strtolower($stringvalue) == strtolower($option))
-          return $this->m_values[$i];
+          return $values[$i];
 
         if(strtolower(atktext($stringvalue)) == strtolower($option))
-          return $this->m_values[$i];
+          return $values[$i];
         $i++;
       }
 
-      return $this->m_value[0];
+      return $values[0];
     }
 
     /**
