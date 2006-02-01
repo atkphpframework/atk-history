@@ -104,12 +104,13 @@
         else $weekday = $this->m_extra[$i - 8];
 
         $weekday = ucfirst($weekday);
+        $fullWeekday = $weekday;
         if ($this->hasFlag(AF_WEEKDAY_SMALL_EDIT) || $mode == 'list')
           $weekday = substr($weekday, 0, 2);
         
         $checked = hasFlag($value, $day) ? ' checked' : '';
         
-        $result .= '<input type="checkbox" id="'.$name.'" name="'.$name.'['.$i.']" value="'.$day.'" '.$checked.'> '.$weekday.($i < $max ? $separator : '');
+        $result .= '<span title="'.$fullWeekday.'"><input type="checkbox" id="'.$name.'" name="'.$name.'['.$i.']" value="'.$day.'" '.$checked.'> '.$weekday.'</span>'.($i < $max ? $separator : '');
         $this->registerKeyListener($name.'['.$i.']', KB_CTRLCURSOR|KB_CURSOR);        
       }
 

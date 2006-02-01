@@ -6,7 +6,7 @@ Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 
 Changes in tomorrow branch
 --------------------
-+ support for custom authentication types. [Martin]
++ Support for custom authentication types. [Martin]
 + Ported setForceUpdate from discovery branch. [Boy]
 + Added 'partial' handler, which handles xmlhttp requests 
    for parts of a node. [Boy]
@@ -16,6 +16,7 @@ Changes in tomorrow branch
 + Added addListColumn method to atkManyToOneRelation for adding
   multiple list columns to the recordlist based on an n:1 relation. [Peter]
 + Added getAttributeOrder method to atkNode. [Peter]
++ Added support for editable attributes in recordlists. [Peter]
 * renamed getclassname to getfullclassname in the securitymanager. [Martin]
 * functional decomposition of the auth_db class. [Martin]
 * atkLanguage doesn't bother translating an empty string anymore. [Boy]
@@ -24,6 +25,7 @@ Changes in tomorrow branch
   to add multiple fields for the entire import ('allfields'). [Boy]
 * Added id to field td. [Boy]
 * atk_array_merge now supports 'unlimited' arrays. [Peter]
+* Moved traces to debug level 3. [Peter]
 
 Changes in ATK 5.3.1
 --------------------

@@ -516,7 +516,7 @@
           {
             $mra .= '&nbsp; <input type="hidden" name="'.$listName.'_atkaction" value="'.$list["mra"][0].'">'.
             $this->getCustomMraHtml().
-                       '<input type="button" class="btn" value="'.atktext($list["mra"][0]).'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\')">';
+                       '<input type="button" class="btn" value="'.atktext($list["mra"][0], $node->m_module, $node->m_type).'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\')">';
           }
         }
 
