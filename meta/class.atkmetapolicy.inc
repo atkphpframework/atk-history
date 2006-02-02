@@ -256,7 +256,7 @@ class atkMetaPolicy
   }
   
   /**
-   * Set includes.
+   * Set includes. Implicitly sets the order.
    */
   function setIncludes($attrs)
   {

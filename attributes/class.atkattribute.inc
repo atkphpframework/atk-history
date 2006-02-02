@@ -1829,5 +1829,13 @@
     {
       return $this->m_ownerInstance->m_table.".".$this->fieldName();
     }
+    
+    /**
+     * Translate using the owner instance's module and type.
+     */
+    function text($string)
+    {
+      return $this->m_ownerInstance->text($string);
+    }
   }
 ?>

@@ -20,6 +20,8 @@ Changes in tomorrow branch
 + Added support for setting a multi-record-action selection mode
   (MRA_MULTI_SELECT(default), MRA_SINGLE_SELECT, MRA_NO_SELECT) [Peter]
 + Added NF_NO_SORT flag for nodes (to disable sorting). [Peter]
++ Added text function to atkNode and atkAttribute, to simply
+  the usage of atktext (fills module and node type). [Peter]
 * function decomposition in list- and multiselectattribute. [Martin]
 * renamed getclassname to getfullclassname in the securitymanager. [Martin]
 * functional decomposition of the auth_db class. [Martin]
