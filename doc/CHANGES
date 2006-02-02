@@ -30,6 +30,9 @@ Changes in tomorrow branch
 * Added id to field td. [Boy]
 * atk_array_merge now supports 'unlimited' arrays. [Peter]
 * Moved traces to debug level 3. [Peter]
+* Added helper method to atkTmpFile class for reading the complete
+  file in a string. [Peter]
+
 
 Changes in ATK 5.4.1
 --------------------
