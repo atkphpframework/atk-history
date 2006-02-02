@@ -146,12 +146,15 @@
    */
   define("NF_CACHE_RECORDLIST",  1048576);
 
-
   /**
    * After adding a new record add another one instantaniously.
    */
   define("NF_ADDAFTERADD",       2097152);
 
+  /**
+   * No sorting possible.
+   */
+  define("NF_NO_SORT",           4194304);    
 
   /**
    * Specific node flag 1
@@ -222,6 +225,26 @@
    */
   define("ACTION_SUCCESS", 4);
 
+  
+  /**
+   * Multi-record-actions selection modes. These
+   * modes are mutually exclusive.
+   */
+  
+  /**
+   * Multiple selections possible.
+   */
+  define("MRA_MULTI_SELECT", 1);
+  
+  /**
+   * Only one selection possible.
+   */
+  define("MRA_SINGLE_SELECT", 2);
+  
+  /**
+   * No selection possible (e.g. action is always for all (visible) records!).
+   */
+  define("MRA_NO_SELECT", 3);
 
   /**
    * The atkNode class represents a piece of information that is part of an
@@ -629,6 +652,13 @@
      * @var Array
      */
     var $m_editableListAttributes = array();
+    
+    /**
+     * Multi-record actions, selection mode.
+     * @access private
+     * @var int
+     */
+    var $m_mraSelectionMode = MRA_MULTI_SELECT;
 
     /**
      * Constructor.
@@ -911,6 +941,27 @@
         $this->m_editableListAttributes = $attrs;
       else $this->m_editableListAttributes = func_get_args();
     }
+    
+    /**
+     * Sets the multi-record-action selection mode. Can either be
+     * MRA_MULTI_SELECT (default), MRA_SINGLE_SELECT or 
+     * MRA_NO_SELECT.
+     * 
+     * @param $mode selection mode
+     */
+    function setMRASelectionMode($mode)
+    {
+      $this->m_mraSelectionMode = $mode;
+    }
+    
+    /**
+     * Returns the multi-record-action selection mode.
+     * @return Integer multi-record-action selection mode
+     */
+    function getMRASelectionMode()
+    {
+      return $this->m_mraSelectionMode;
+    }    
 
     /**
      * Returns the primary key sql expression of a record.

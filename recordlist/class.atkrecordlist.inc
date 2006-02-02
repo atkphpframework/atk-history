@@ -64,22 +64,25 @@
       $result |= hasFlag($flags, NF_NO_SEARCH) ? RL_NO_SEARCH : 0;
       $result |= hasFlag($flags, NF_NO_EXTENDED_SEARCH) ? RL_NO_EXTENDED_SEARCH : 0;
       $result |= hasFlag($flags, NF_EXT_SORT) ? RL_EXT_SORT : 0;
+      $result |= hasFlag($flags, NF_NO_SORT) ? RL_NO_SORT : 0;
       return $result;
     }
 
     /**
      * Creates a normal recordlist based on the given parameters.
-     * @param Array   $recordset    the list of records
-     * @param Array   $actions      the default actions array
-     * @param Integer $flags        recordlist flags (see the top of this file)
-     * @param Array   $suppressList fields we don't display
-     * @param String  $formName     if embedded the form name in which we are embedded
-     * @param Array   $navigation   Navigation links
-     * @param String  $embedprefix  The prefix for embeded fields
-     * @param String  $listName     The recordlist name.
+     * 
+     * @param Array   $recordset         the list of records
+     * @param Array   $actions           the default actions array
+     * @param Integer $flags             recordlist flags (see the top of this file)
+     * @param Array   $suppressList      fields we don't display
+     * @param String  $formName          if embedded the form name in which we are embedded
+     * @param Array   $navigation        Navigation links
+     * @param String  $embedprefix       The prefix for embeded fields
+     * @param String  $listName          The recordlist name.
+     * @param Integer $mraSelectionMode  Multi-record-actions selection mode
      * @return String The rendered recordlist
      */
-    function render(&$node, $recordset, $actions, $flags=0, $suppressList="", $formName="", $navigation=array(),$embedprefix="",$listName="")
+    function render(&$node, $recordset, $actions, $flags=0, $suppressList="", $formName="", $navigation=array(),$embedprefix="",$listName="",$mraSelectionMode=MRA_MULTI_SELECT)
     {
       $this->setNode($node);
       $this->m_flags = $flags;
@@ -358,14 +361,30 @@
             $record["cols"][] = array("content" => $select);
           }
 
-          /* multi-record-actions -> checkbox */
+          /* multi-record-actions -> checkbox / radiobutton */
           elseif (hasFlag($flags, RL_MRA))
           {
             if (count($list["rows"][$i]["mra"]) > 0)
-              $record["cols"][] = array(
-                           "content"=>'<input type="checkbox" name="'.$listName.'_atkselector[]" value="'.$list["rows"][$i]["selector"].'" onclick="if (this.disabled) this.checked = false">'.
-                                      '<script language="javascript"  type="text/javascript">'.$listName.'["'.$list["rows"][$i]["selector"].'"] = new Array("'.implode($list["rows"][$i]["mra"], '","').'");</script>');
-
+            {
+              $inputHTML = '';
+              
+              switch($mraSelectionMode)
+              {
+                case MRA_SINGLE_SELECT:
+                  $inputHTML = '<input type="radio" name="'.$listName.'_atkselector[]" value="'.$list["rows"][$i]["selector"].'" onclick="if (this.disabled) this.checked = false">';                
+                  break;
+                case MRA_NO_SELECT:
+                  $inputHTML = 
+                    '<input type="checkbox" disabled="disabled" checked="checked">'.
+                    '<input type="hidden" name="'.$listName.'_atkselector[]" value="'.$list["rows"][$i]["selector"].'">';
+                  break;
+                case MRA_MULTI_SELECT:
+                default:
+                  $inputHTML = '<input type="checkbox" name="'.$listName.'_atkselector[]" value="'.$list["rows"][$i]["selector"].'" onclick="if (this.disabled) this.checked = false">';                
+              }              
+              
+              $record["cols"][] = array("content"=>$inputHTML.'<script language="javascript"  type="text/javascript">'.$listName.'["'.$list["rows"][$i]["selector"].'"] = new Array("'.implode($list["rows"][$i]["mra"], '","').'");</script>');
+            }
             else $record["cols"][] = array("content"=>"");
           }
 
@@ -491,10 +510,10 @@
         {
           $target = session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->m_node->atkNodeType(), SESSION_NESTED);
 
-          $mra = (count($list["rows"]) > 1 ?
+          $mra = (count($list["rows"]) > 1 && $mraSelectionMode != MRA_SINGLE_SELECT && $mraSelectionMode != MRA_NO_SELECT ?
                       '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'all\')">'.atktext("select_all").'</a> / '.
                       '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'none\')">'.atktext("deselect_all").'</a> / '.
-                      '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'invert\')">'.atktext("select_invert").'</a>'
+                      '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'invert\')">'.atktext("select_invert").'</a>&nbsp;'
                      :
                       '<img src="'.atkconfig("atkroot").'atk/images/dummy.gif" border="0" height="1" width="1">');
 
@@ -514,7 +533,7 @@
           /* one action -> only the submit button */
           else
           {
-            $mra .= '&nbsp; <input type="hidden" name="'.$listName.'_atkaction" value="'.$list["mra"][0].'">'.
+            $mra .= ' <input type="hidden" name="'.$listName.'_atkaction" value="'.$list["mra"][0].'">'.
             $this->getCustomMraHtml().
                        '<input type="button" class="btn" value="'.atktext($list["mra"][0], $node->m_module, $node->m_type).'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\')">';
           }

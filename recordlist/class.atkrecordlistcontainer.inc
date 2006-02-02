@@ -14,6 +14,7 @@ class atkRecordListContainer
   var $m_index  = NULL;  
   var $m_action = NULL;
   var $m_flags  = NULL;
+  var $m_mraSelectionMode = NULL;
   
   var $m_records = array();
     
@@ -54,6 +55,11 @@ class atkRecordListContainer
   function setFlags($flags)
   {
     $this->m_flags = $flags;
+  }
+  
+  function setMRASelectionMode($mode)
+  {
+    $this->m_mraSelectionMode = $mode;
   }
 
   function setRecords($records)
@@ -130,6 +136,10 @@ class atkRecordListContainer
     $index = $this->m_index;  
     if ($this->m_index === NULL)
       $index = $this->m_node->m_index;
+      
+    $mraSelectionMode = $this->m_mraSelectionMode;
+    if ($mraSelectionMode === NULL)
+      $mraSelectionMode = $this->m_node->m_mraSelectionMode;
     
     if ($index != FALSE && !empty($index))
       $params['index'] = $navigator->buildIndex($this->m_node, $count > 0 ? $records[0][$index] : '');
@@ -143,7 +153,7 @@ class atkRecordListContainer
       $params['navbar'] = $navigator->buildNavigation($this->m_node, $this->m_action, $navigation, false, $name);
     }
     
-    $params['list'] = $recordlist->render($this->m_node, $this->m_records, $actions, $flags, $this->m_excludes, '', $navigation, '', $name);
+    $params['list'] = $recordlist->render($this->m_node, $this->m_records, $actions, $flags, $this->m_excludes, '', $navigation, '', $name, $mraSelectionMode);
     $params['header'] = $this->m_header;
     $params['footer'] = $this->m_footer;
 

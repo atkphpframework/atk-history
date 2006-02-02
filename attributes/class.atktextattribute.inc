@@ -77,8 +77,11 @@
      * @param $size Array with field rows and cols for additional size of the text box
      * @return piece of html code with a textarea
      */
-    function edit($record="", $fieldprefix="")
+    function edit($record="", $fieldprefix="", $mode='add')
     {
+      if ($mode == 'list')
+        return parent::edit($record, $fieldprefix, $mode);
+      
       (isset($record[$this->fieldName()]))?$text=$record[$this->fieldName()]:$text="";
 
       if ($this->m_cols != 0)

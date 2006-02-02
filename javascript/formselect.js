@@ -106,7 +106,7 @@ function atkSubmitMRA(name, form, target)
   var selectorLength = 0;
   if (typeof(list.length) == 'undefined') list = new Array(list);
   for (var i = 0; i < list.length; i++)
-    if (!list[i].disabled && list[i].checked)
+    if (list[i].type == 'hidden' || (!list[i].disabled && list[i].checked))
     {
       form.action += 'atkselector[' + i + ']=' + list[i].value + '&';
       selectorLength++;
