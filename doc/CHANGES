@@ -34,7 +34,7 @@ Changes in tomorrow branch
 * Moved traces to debug level 3. [Peter]
 * Added helper method to atkTmpFile class for reading the complete
   file in a string. [Peter]
-
+* Added ability to add flags to hasMany(). [Boy]
 
 Changes in ATK 5.4.1
 --------------------
