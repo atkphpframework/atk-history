@@ -408,7 +408,7 @@
       $this->register_style((file_exists(atkconfig("atkroot")."./style.css") ? "." : atkconfig("atkroot")."atk").'/style.css');
 
       // Load default tab show script. TODO: move this to the places where the tabscript is registered.
-      $this->register_loadscript('if ( window.showTab ) {showTab(\'' . (isset($ATK_VARS['atktab']) ? $res.=$ATK_VARS['atktab'] : '') . '\');}');
+      $this->register_loadscript('if ( window.showTab ) {showTab(\'' . (isset($_REQUEST['atktab']) ? $res.=$_REQUEST['atktab'] : '') . '\');}');
     }
 
   }
