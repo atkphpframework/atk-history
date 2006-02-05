@@ -530,9 +530,11 @@ class atkMetaPolicy
    *
    * @param $accessor  accessor name (complete description is given above)
    * @param $options   list op options (complete description is given above)
+   * @param $flags 	   the flags for the relation
    */
-  function hasMany($accessor, $templateOrOptions=array(), $options=array())
+  function hasMany($accessor, $templateOrOptions=array(), $options=array(), $flags=0)
   {
+  	atkdebug("hasMany($accessor, $templateOrOptions=array(), $options=array(), $flags=0)");
     $template = NULL;
     if (is_array($templateOrOptions))
       $options = $templateOrOptions;
@@ -542,7 +544,7 @@ class atkMetaPolicy
       array(
         "type" => "atk.meta.relations.atkmetaonetomanyrelation",
         "params" => array($accessor, $template, $options),
-        "flags" => AF_HIDE_LIST,
+        "flags" => AF_HIDE_LIST|$flags,
         "tabs" => NULL,
         "order" => $this->_getMaxOrder() + 100
       );
