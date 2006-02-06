@@ -305,7 +305,8 @@
         $editrecord=array();
         foreach ($destInstanceCopy->m_attribList as $key=> $attribute)
         {
-          if (strtolower($attribute->m_destination)==strtolower($this->m_ownerInstance->atknodetype()))
+          // When we're in a OTM we need to hide MTOs back to the current owner
+          if (strtolower($attribute->m_destInstance->m_table)==strtolower($this->m_ownerInstance->m_table))
           {
             $selector = array_values(decodeKeyValuePair($this->m_ownerInstance->m_postvars["atkselector"]));
             $editrecord[$attribute->fieldname()] = array($this->m_ownerInstance->primaryKeyField()=>$selector[0]);
