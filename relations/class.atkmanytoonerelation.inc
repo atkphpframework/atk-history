@@ -290,8 +290,6 @@
      */
     function edit(&$record, $fieldprefix="")
     {
-      global $ATK_VARS;
-
       // Two variances.. one with a dropdownbox containing all records,
       // and one with a dropdownbox that contains the last 10 used records,
       // with a link to a selector with all records. This second one is for
@@ -375,39 +373,7 @@
           $id = $fieldprefix.$this->fieldName();
           $newlyadded = $this->m_ownerInstance->m_postvars[$id."_ret"];
 
-          if ($ATK_VARS[$selname]!="")
-          // new record selected
-          {
-            // $ATK_VARS[$selname] contains full primary key of selected record.
-            $recset = $this->m_destInstance->selectDb($ATK_VARS[$selname],"","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
-            $destrecord = $recset[0];
-            $record[$this->fieldName()] = $destrecord; // put destrecord inside original record.
-          }
-          elseif ($newlyadded!="")
-          {
-            $recset = $this->m_destInstance->selectDb($newlyadded,"","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
-            $destrecord = $recset[0];
-            $record[$this->fieldName()] = $destrecord; // put destrecord inside original record.
-		      }
-          elseif (is_array($record[$this->fieldName()]) && count($record[$this->fieldName()]) == count($this->m_destInstance->m_primaryKey))
-          // old record present, but probably only primary key fields are loaded (this happens after pressing 'save' on a record)
-          {
-            $currentPk = $this->m_destInstance->primaryKey($record[$this->fieldName()]);
-            $recset = $this->m_destInstance->selectDb($currentPk,"","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
-            $destrecord = $recset[0];
-            $record[$this->fieldName()] = $destrecord; // put destrecord inside original record.
-          }
-          elseif (is_array($record[$this->fieldName()]) && !$this->isEmpty($record))
-          // complete old record present
-          {
-            $destrecord = $record[$this->fieldName()];
-          }
-          else
-          // no record yet, empty value.
-          {
-            $destrecord = array();
-            $editflag = false;
-          }
+          $destrecord = $this->_getDestRecord($record);
 
           if (count($destrecord))
           {
@@ -443,7 +409,50 @@
         $result.= $autolink['add'];
         return $result;
       }
+      
       return atkerror("Could not create destination for destination: $this->m_destination!");
+    }
+    
+    /**
+     * Get the destination record for the edit action
+     *
+     * @param String $selname    The name that the selected variable uses in the URL
+     * @param String $newlyadded The name that the selected variable uses in the postvars
+     * @param Array $record      The original record
+     * @param bool $editflag     The edit flag (?)
+     * @return Array The destination record
+     */
+    function _getDestRecord($selname, $newlyadded, &$record, &$editflag)
+    {
+      global $ATK_VARS;
+      if ($ATK_VARS[$selname]!="" || $newlyadded!="")
+      // new record selected
+      {
+        // $ATK_VARS[$selname] contains full primary key of selected record.
+        $recset = $this->m_destInstance->selectDb(($ATK_VARS[$selname]?$ATK_VARS[$selname]:$newlyadded),"","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
+        $destrecord = $recset[0];
+        $record[$this->fieldName()] = $destrecord; // put destrecord inside original record.
+      }
+      elseif (is_array($record[$this->fieldName()]) && count($record[$this->fieldName()]) == count($this->m_destInstance->m_primaryKey))
+      // old record present, but probably only primary key fields are loaded (this happens after pressing 'save' on a record)
+      {
+        $currentPk = $this->m_destInstance->primaryKey($record[$this->fieldName()]);
+        $recset = $this->m_destInstance->selectDb($currentPk,"","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
+        $destrecord = $recset[0];
+        $record[$this->fieldName()] = $destrecord; // put destrecord inside original record.
+      }
+      elseif (is_array($record[$this->fieldName()]) && !$this->isEmpty($record))
+      // complete old record present
+      {
+        $destrecord = $record[$this->fieldName()];
+      }
+      else
+      // no record yet, empty value.
+      {
+        $destrecord = array();
+        $editflag = false;
+      }
+      return $destrecord;
     }
 
     /**
@@ -590,8 +599,6 @@
     		// which should work in any ansi compatible database.
     		if (is_array($value)) // This last condition is for when the user selected the 'search all' option, in which case, we don't add conditions at all.
     		{
-    		  $conditions = array();
-    		  
     		  if (!array_key_exists(0, $value) && count($this->m_listColumns) > 0)
     		  {
     		    foreach ($this->m_listColumns as $attr)
