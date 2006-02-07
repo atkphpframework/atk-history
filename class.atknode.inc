@@ -694,10 +694,11 @@
      */
     function &add($attribute,$tab=NULL,$order=0)
     {
+      if (!is_object($attribute) || !method_exists($attribute,"hasFlag")) return atkerror('Something is wrong with attribute: '.var_export($attribute,1).' in node: '.$this->atknodetype());
       static $attrib_order = 100;
       static $attrib_index = 0;
       $attribute->m_owner = $this->m_type;
-
+      
       // If we're running inside modifier scope, we have to tell the attribute
       // what module he originated from.
       if ($this->m_modifier!="") $attribute->m_module = $this->m_modifier;
@@ -727,7 +728,7 @@
             $attribute->m_flags |= AF_HIDE;
           }
         }
-
+        
         // check for parent fieldname (treeview)
         if($attribute->hasFlag(AF_PARENT))
         {
