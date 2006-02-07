@@ -988,7 +988,11 @@
       $importerrors[0]=array();
 
       $importerrors[0] = array_merge($importerrors[0],$this->checkImport($col_map,$initial_values));
-      $importerrors[0][] = $this->checkAllFields($allFields,$allFieldsValues);
+      $allfielderror = $this->checkAllFields($allFields,$allFieldsValues);
+      if ($allfielderror)
+      {
+        $importerrors[0][] = $allfielderror;
+      }
       
       //copy the csv in a record and add it to the db
       $fp = fopen($file, "r");
@@ -1113,7 +1117,7 @@
      * @param Object $fp             Pointer to the importfile
      * @param String $file           Filenmae
      */
-    function addRecords($importerrors, $validatedrecs, $fp, $file)
+    function addRecords(&$importerrors, $validatedrecs, $fp, $file)
     {
       if (!$this->m_postvars['novalidatefirst'])
         if ($this->showErrors($importerrors)) return;
@@ -1127,6 +1131,14 @@
           atkdebug("Doing $action for record nr $counter");
 
           $this->$action($validrec);
+          if (!empty($validrec['atkerror']))
+          {
+            foreach ($validrec['atkerror'] as $atkerror)
+            {
+              $importerrors[$counter][] = array("msg"=>"Fouten gedetecteerd op rij $counter: ",
+              "spec"=>$atkerror['msg']);
+            }
+          }
         }
       }
     }
