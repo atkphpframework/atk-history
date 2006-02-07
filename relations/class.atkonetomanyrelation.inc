@@ -231,31 +231,18 @@
       {
         if ($this->m_ownerInstance->m_postvars[$this->fieldName()."_save"])
         {
-          foreach (array_keys($this->m_ownerInstance->m_postvars[$this->fieldName()]) as $fieldname)
-          {
-            if (!in_array($fieldname,array("atkaction","atknodetype","atkprimkey")))
-            {
-              $attribute = &$this->m_destInstance->getAttribute($fieldname);
-              if (is_object($attribute))
-              {
-                $this->m_ownerInstance->m_postvars[$this->fieldName()][$fieldname] = $attribute->fetchValue($this->m_ownerInstance->m_postvars[$this->fieldName()]);
-              }
-              else
-              {
-                $this->m_ownerInstance->m_postvars[$this->fieldName()][$fieldname] = $this->m_ownerInstance->m_postvars[$this->fieldName()];
-                atkerror("$fieldname is no attribute for integrated save, is this correct?");
-              }
-            }
-          }
+          $destCopy = $this->m_destInstance;
+          $destCopy->m_postvars = $this->m_ownerInstance->m_postvars[$this->fieldName()];
+          $record = $destCopy->updateRecord();
 
-          $this->m_destInstance->validate($this->m_ownerInstance->m_postvars[$this->fieldName()],"add");
-          if (!$this->m_ownerInstance->m_postvars[$this->fieldName()]['atkerror'])
+          $this->m_destInstance->validate($record,"add");
+          if (!$record['atkerror'])
           {
-            $this->m_destInstance->addDb($this->m_ownerInstance->m_postvars[$this->fieldName()]);
+            $this->m_destInstance->addDb($record);
           }
           else
           {
-            $error = "<span class='error'>".$this->m_ownerInstance->m_postvars[$this->fieldName()]['atkerror'][0]['attrib_name'].': '.$this->m_ownerInstance->m_postvars[$this->fieldName()]['atkerror'][0]['msg']."</span><br />";
+            $error = "<span class='error'>".$record['atkerror'][0]['attrib_name'].': '.$record['atkerror'][0]['msg']."</span><br />";
           }
         }
       }
@@ -303,14 +290,14 @@
 
         $destInstanceCopy = $this->m_destInstance;
         $editrecord=array();
-        foreach ($destInstanceCopy->m_attribList as $key=> $attribute)
+        foreach (array_keys($destInstanceCopy->m_attribList) as $key)
         {
           // When we're in a OTM we need to hide MTOs back to the current owner
-          if (strtolower($attribute->m_destInstance->m_table)==strtolower($this->m_ownerInstance->m_table))
+          $p_attrib = &$destInstanceCopy->m_attribList[$key];          
+          if (strtolower($p_attrib->m_destInstance->m_table)==strtolower($this->m_ownerInstance->m_table))
           {
             $selector = array_values(decodeKeyValuePair($this->m_ownerInstance->m_postvars["atkselector"]));
-            $editrecord[$attribute->fieldname()] = array($this->m_ownerInstance->primaryKeyField()=>$selector[0]);
-            $p_attrib = &$destInstanceCopy->m_attribList[$key];
+            $editrecord[$p_attrib->fieldname()] = array($this->m_ownerInstance->primaryKeyField()=>$selector[0]);
             $p_attrib->addFlag(AF_HIDE);
           }
         }

@@ -35,6 +35,7 @@ Changes in tomorrow branch
 * Added helper method to atkTmpFile class for reading the complete
   file in a string. [Peter]
 * Added ability to add flags to hasMany(). [Boy]
+* Fixed handling of record in embeded one-to-many relation. [Peter]
 
 Changes in ATK 5.4.1
 --------------------
