@@ -22,6 +22,7 @@ Changes in tomorrow branch
 + Added NF_NO_SORT flag for nodes (to disable sorting). [Peter]
 + Added text function to atkNode and atkAttribute, to simply
   the usage of atktext (fills module and node type). [Peter]
++ Added new CSS dropdown menu. [Boy]
 * function decomposition in list- and multiselectattribute. [Martin]
 * renamed getclassname to getfullclassname in the securitymanager. [Martin]
 * functional decomposition of the auth_db class. [Martin]

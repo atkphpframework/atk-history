@@ -57,7 +57,7 @@
       {     
         atkdebug("Creating a new menu instance");                
         // Check if the menu config is one of the detail atk menus
-        if(!in_array(atkconfig("menu_layout"),array("plain","frames","outlook","dhtml")))
+        if(!in_array(atkconfig("menu_layout"),array("plain","frames","outlook","dhtml",'dropdown')))
         { 
           // Check the application menu dir for a class.[menu_layout].inc file
           $classname = "menu.".atkconfig("menu_layout");          
