@@ -947,6 +947,7 @@
      */
     function doImport($nopost=false)
     {
+      ini_set('max_execution_time',300);
       $fileid =       $this->m_postvars["fileid"];
       $file =         $this->getTmpFileDestination($fileid);  
       
@@ -1006,7 +1007,8 @@
 
         //large import are a problem for the maximum execution time, so we want to set for each
         //loop of the for-loop an maximum execution time
-        set_time_limit(30);
+        set_time_limit(60);
+        atkdebug('set_time_limit(60)');
 
         $data = $this->fgetcsvfromline($line, $columncount, $delimiter, $enclosure);
 
@@ -1029,7 +1031,7 @@
         }
         $this->validateRecord($rec, $validatedrecs, $importerrors, $counter);
       }
-      return array('fp'=>&$fp,'importerrors'=>$importerrors, 'validatedrecs'=>$validatedrecs);
+      return array('fp'=>&$fp,'importerrors'=>&$importerrors, 'validatedrecs'=>&$validatedrecs);
     }
 
     /**
@@ -1117,7 +1119,7 @@
      * @param Object $fp             Pointer to the importfile
      * @param String $file           Filenmae
      */
-    function addRecords(&$importerrors, $validatedrecs, $fp, $file)
+    function addRecords(&$importerrors, &$validatedrecs, $fp, $file)
     {
       if (!$this->m_postvars['novalidatefirst'])
         if ($this->showErrors($importerrors)) return;
@@ -1139,8 +1141,11 @@
               "spec"=>$atkerror['msg']);
             }
           }
+          unset($validrec);
         }
+        unset($validrecs);
       }
+      unset($validatedrecs);
     }
 
     /**
