@@ -37,7 +37,7 @@
     
     function load()
     {
-      global $ATK_VARS, $g_menu;
+      global $ATK_VARS,$g_menu;
       
       $page = &atkinstance('atk.ui.atkpage');
       $theme = &atkinstance("atk.ui.atktheme");
@@ -53,21 +53,9 @@
       $menu.="\n".'<ul>';
       foreach ($g_menu[$atkmenutop] as $menuitem)
       {
-        if (!$menuitem['url'])
-        {
-          $submenu='<ul>'."\n";
-          foreach ($g_menu[$menuitem['name']] as $submenuitem)
-          {
-            $submenu.=$this->getMenuItemHtml($submenuitem);
-          }
-          $submenu.='</ul>'."\n";
-          $menu.=$this->getMenuItemHtml($menuitem, $submenu);
-        }
-        else 
-        {
-          $menu.=$this->getMenuItemHtml($menuitem);
-        }
+        $menu .= $this->getMenuItem($menuitem);
       }
+      $menu.="<li><a href='app.php?atklogout=1'>".atktext('logout')."</a></li>";
       $menu.='</ul>'."\n";
       
       $menu.=$this->getFooter($atkmenutop);
@@ -75,13 +63,34 @@
       return $menu;
     }
     
-    function getMenuItemHtml($menuitem, $submenu="")
+    function getMenuItem($menuitem)
+    {
+      global $g_menu;
+      if (!$menuitem['url'])
+      {
+        $submenu='<ul>'."\n";
+        foreach ($g_menu[$menuitem['name']] as $submenuitem)
+        {
+          $submenu.=$this->getMenuItem($submenuitem);
+        }
+        $submenu.='</ul>'."\n";
+        $menu.=$this->getItemHtml($menuitem, $submenu);
+      }
+      else
+      {
+        $menu.=$this->getItemHtml($menuitem);
+      }
+      return $menu;
+    }
+    
+    function getItemHtml($menuitem, $submenu="")
     {
       $delimiter = atkconfig("menu_delimiter");
       
-      if ($menuitem['name']=='-') return;
+      if ($menuitem['name']=='-') return '';
       if ($menuitem['url']) $href = href($menuitem['url'],$this->getMenuTranslation($menuitem['name'],$menuitem['module']));
       else $href = '<a href ="#">'.$this->getMenuTranslation($menuitem['name'],$menuitem['module']).'</a>';
+      
       return "<li>".$href.$delimiter.$submenu."</li>\n";
     }
   }
