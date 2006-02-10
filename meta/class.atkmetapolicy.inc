@@ -463,6 +463,32 @@ class atkMetaPolicy
       
     return NULL;
   }
+  
+  /**
+   * Find destination attribute with the give $name
+   * (as starting point) in the given $attrs array.
+   *
+   * @param $name attribute name starting point
+   * @param $attrs attribute names array 
+   * @return attribute name
+   */
+  function _findDestinationAttribute($name, $attrs)
+  {
+    $attr = NULL;
+    if (in_array("{$name}_id", $attrs))
+      $attr = "{$name}_id";
+    else if (in_array($this->m_grammar->singularize($name)."_id", $attrs))
+      $attr = $this->m_grammar->singularize($name)."_id";
+    else if (in_array("{$name}id", $attrs))
+      $attr = "{$name}id";
+    else if (in_array($this->m_grammar->singularize($name)."id", $attrs))
+      $attr = $this->m_grammar->singularize($name)."id";      
+    else if (in_array($name, $attrs))
+      $attr = $name;
+    else if (in_array($this->m_grammar->singularize($name), $attrs))
+      $attr = $this->m_grammar->singularize($name);
+    return $attr;
+  }
 
   /**
    * Find destination attribute for the given relation.
@@ -477,37 +503,21 @@ class atkMetaPolicy
     $node = getNodeType($this->m_node->atkNodeType());
     $attrs = array_keys($relation->m_destInstance->m_attribList);
 
-    $attr = NULL;
     if (array_key_exists("dest", $relation->m_options))
-      $attr = $relation->m_options["dest"];
+      return $relation->m_options["dest"];
     else if (array_key_exists("destination", $relation->m_options))
-      $attr = $relation->m_options["destination"];      
-    else if (in_array("{$table}_id", $attrs))
-      $attr = "{$table}_id";
-    else if (in_array($this->m_grammar->singularize($table)."_id", $attrs))
-      $attr = $this->m_grammar->singularize($table)."_id";
-    else if (in_array("{$node}_id", $attrs))
-      $attr = "{$node}_id";
-    else if (in_array($this->m_grammar->singularize($node)."_id", $attrs))
-      $attr = $this->m_grammar->singularize($node)."_id";      
-    else if (in_array("{$table}id", $attrs))
-      $attr = "{$table}id";
-    else if (in_array($this->m_grammar->singularize($table)."id", $attrs))
-      $attr = $this->m_grammar->singularize($table)."id";      
-    else if (in_array("{$node}id", $attrs))
-      $attr = "{$node}id";
-    else if (in_array($this->m_grammar->singularize($node)."id", $attrs))
-      $attr = $this->m_grammar->singularize($node)."id";      
-    else if (in_array($table, $attrs))
-      $attr = $table;
-    else if (in_array($this->m_grammar->singularize($table), $attrs))
-      $attr = $this->m_grammar->singularize($table);
-    else if (in_array($node, $attrs))
-      $attr = $node;
-    else if (in_array($this->m_grammar->singularize($node), $attrs))
-      $attr = $this->m_grammar->singularize($node);
+      return $relation->m_options["destination"];      
+    else if (($attr = $this->_findDestinationAttribute($table, $attrs)) != NULL) 
+      return $attr;
+    
+    while ($node != NULL && !in_array($node, array('atknode', 'atkmetanode')))
+    {
+      if (($attr = $this->_findDestinationAttribute($node, $attrs)) != NULL) 
+        return $attr;
+      else $node = get_parent_class($node);
+    }
       
-    return $attr;
+    return NULL;
   }
   
   /**
