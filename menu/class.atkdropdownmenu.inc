@@ -66,7 +66,7 @@
     function getMenuItem($menuitem)
     {
       global $g_menu;
-      if (!$menuitem['url'])
+      if (!$menuitem['url'] && $g_menu[$menuitem['name']])
       {
         $submenu='<ul>'."\n";
         foreach ($g_menu[$menuitem['name']] as $submenuitem)
