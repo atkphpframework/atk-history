@@ -324,7 +324,7 @@
           // we don't autoselect, since user may wist to select 'none' instead
           // of the 1 record.
           $result = "";
-          if (count($recordset)==1&&$this->hasFlag(AF_OBLIGATORY))
+          if ((count($recordset)==1 || $this->_checkPrimaryKeysForSelector($recordset))&&$this->hasFlag(AF_OBLIGATORY))
           {
             $result.= $this->m_destInstance->descriptor($recordset[0])."&nbsp;&nbsp;";
             $result.= $this->hide(array($this->fieldName()=>$recordset[0]), $fieldprefix);
@@ -821,6 +821,26 @@
         }
       }
       return $this->m_selectableRecords;
+    }
+    
+    /**
+     * If the primary key of one of the records is the current selected selector 
+     * we should only be able to select that record so we set selectablerecords to that record
+     * and return true.
+     *
+     * @return bool Wether one of the records has the current selector or not
+     */
+    function _checkPrimaryKeysForSelector(&$recordset)
+    {
+      foreach ($recordset as $record)
+      {
+        if (str_replace("'","\'",$this->m_ownerInstance->m_postvars['atkselector'])==$this->m_ownerInstance->m_postvars['atkselector'])
+        {
+          $recordset = array($record);
+          return true;
+        }
+      }
+      return false;
     }
 
 
