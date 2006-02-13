@@ -1,4 +1,8 @@
 /* ------ HOOFDMENU ------ */
+BODY
+{
+  margin: 0px;
+}
 
 #nav
 {
