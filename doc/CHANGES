@@ -37,6 +37,8 @@ Changes in tomorrow branch
   file in a string. [Peter]
 * Added ability to add flags to hasMany(). [Boy]
 * Fixed handling of record in embeded one-to-many relation. [Peter]
+* Fixed handling of NULL values of atkNumberAttribute (and
+  other attributes which specify AF_NO_QUOTES). [Peter]
 
 Changes in ATK 5.4.1
 --------------------

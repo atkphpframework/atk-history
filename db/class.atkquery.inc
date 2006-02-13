@@ -165,7 +165,8 @@
       $this->m_fields[] = $fieldname;
       if ($quotefield) $this->m_quotedfields[] = $fieldname;
 
-      if ($quote||$value=="") $value = "'".$value."'";
+      if ($quote) $value = "'".$value."'";
+      elseif ($value === NULL || $value === '') $value = 'NULL';
 
       $this->m_values[$fieldname] = $value;
 
