@@ -32,7 +32,7 @@
       $menu = $this->load();
       $page->addContent($menu);
 
-      return $page->render("Menu", true,' leftmargin="0" topmargin="0" marginheight="0" marginwidth="0"');
+      return $page->render("Menu", true);
     }
 
     function load()
@@ -43,6 +43,7 @@
       $theme = &atkinstance("atk.ui.atktheme");
       $page->register_script(atkconfig('atkroot').'atk/javascript/dropdown_menu.js');
       $page->register_style($theme->stylePath("atkdropdownmenu.css"));
+      $page->m_loadscripts[] = "activateMenu('nav');";
 
       $atkmenutop = $ATK_VARS["atkmenutop"];
       if($atkmenutop=="") $atkmenutop="main";
