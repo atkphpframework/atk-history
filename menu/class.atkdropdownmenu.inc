@@ -90,7 +90,7 @@
       $delimiter = atkconfig("menu_delimiter");
 
       if ($menuitem['name']=='-') return "<li><a href='#'>-</a></li>\n";
-      if ($menuitem['url']) $href = href($menuitem['url'],$this->getMenuTranslation($menuitem['name'],$menuitem['module']));
+      if ($menuitem['url']) $href = href($menuitem['url'],$this->getMenuTranslation($menuitem['name'],$menuitem['module']), SESSION_NEW);
       else $href = '<a href ="#">'.$this->getMenuTranslation($menuitem['name'],$menuitem['module']).'</a>';
 
       return "<li>".$href.$delimiter.$submenu."</li>\n";
