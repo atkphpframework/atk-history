@@ -493,7 +493,7 @@
      * @param $record Array with values
      * @return Piece of htmlcode
      */
-    function hide($record="", $fieldprefix)
+    function hide($record="", $fieldprefix="")
     {
       $result="";
       $field = $record[$this->fieldName()];
