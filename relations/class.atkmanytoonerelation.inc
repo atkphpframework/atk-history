@@ -22,7 +22,7 @@
    */
   define("AF_RELATION_AUTOLINK", AF_SPECIFIC_1); // create edit/view links for the items in a manytoonerelation dropdown.
   define("AF_RELATION_NO_NULL_ITEM", AF_SPECIFIC_2);// Do not add null option ever
-  
+
   /**
    * @internal include base class
    */
@@ -81,7 +81,7 @@
      * @var array
      */
     var $m_selectableRecords = array();
-    
+
     /**
      * List columns.
      * @Access private
@@ -124,7 +124,7 @@
         $this->atkRelation($name, $destination, $flags);
       }
     }
-    
+
     /**
      * Add list column. An attribute of the destination node
      * that (only) will be displayed in the recordlist.
@@ -133,7 +133,7 @@
     {
       $this->m_listColumns[] = $attr;
     }
-    
+
     /**
      * Add multiple list columns. Attributes of the destination node
      * that (only) will be displayed in the recordlist.
@@ -143,7 +143,7 @@
       $attrs = func_get_args();
       foreach ($attrs as $attr)
         $this->m_listColumns[] = $attr;
-    }    
+    }
 
     /**
      * Convert value to DataBase value
@@ -274,9 +274,9 @@
         }
         return $result;
       }
-      else 
+      else
       {
-       atkdebug("Can't create destination! ($this->m_destination");  
+       atkdebug("Can't create destination! ($this->m_destination");
       }
       return "";
     }
@@ -355,6 +355,7 @@
             {
               $newlyadded = $this->m_ownerInstance->m_postvars[$id."_ret"];
             }
+
             for ($i=0, $_i=count($recordset);$i<$_i;$i++)
             {
               $pk = $this->m_destInstance->primaryKey($recordset[$i]);
@@ -409,10 +410,10 @@
         $result.= $autolink['add'];
         return $result;
       }
-      
+
       return atkerror("Could not create destination for destination: $this->m_destination!");
     }
-    
+
     /**
      * Get the destination record for the edit action
      *
@@ -532,7 +533,7 @@
             $filter = $parser->parse($record);
             $this->m_destInstance->addFilter($filter);
           }
-          
+
           $recordset = $this->m_destInstance->selectDb("","","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
 
           $result = '<select class="'.get_class($this).'" ';
@@ -611,7 +612,7 @@
     		          $p_attrib->searchCondition($query, $this->fieldName(), $attrValue, $searchmode);
     		      }
     		    }
-    		    
+
     		    $value = $value[$this->fieldName()];
     		    if (!is_array($value)) return '';
     		  }
@@ -754,10 +755,10 @@
               $value = $rec[$this->fieldName()];
               if (is_array($value))
               {
-                $fk = &$this->m_destInstance->getAttribute($this->m_destInstance->m_primaryKey[$i]);                
+                $fk = &$this->m_destInstance->getAttribute($this->m_destInstance->m_primaryKey[$i]);
                 $value = $fk->value2db($value);
               }
-              
+
               $query->addField($this->m_refKey[$i],$value,"","",!$this->hasFlag(AF_NO_QUOTES));
             }
           }
@@ -822,9 +823,9 @@
       }
       return $this->m_selectableRecords;
     }
-    
+
     /**
-     * If the primary key of one of the records is the current selected selector 
+     * If the primary key of one of the records is the current selected selector
      * we should only be able to select that record so we set selectablerecords to that record
      * and return true.
      *
@@ -832,12 +833,15 @@
      */
     function _checkPrimaryKeysForSelector(&$recordset)
     {
-      foreach ($recordset as $record)
+      if ($this->m_ownerInstance->m_postvars['atkselector'] && $this->m_ownerInstance->m_postvars['atkselector'])
       {
-        if (str_replace("'","\'",$this->m_ownerInstance->m_postvars['atkselector'])==$this->m_ownerInstance->m_postvars['atkselector'])
+        foreach ($recordset as $key=>$record)
         {
-          $recordset = array($record);
-          return true;
+          if (str_replace("'","\'",$this->m_ownerInstance->m_postvars['atkselector'])==$this->m_ownerInstance->m_postvars['atkselector'])
+          {
+            $recordset = array($record);
+            return true;
+          }
         }
       }
       return false;
@@ -914,7 +918,7 @@
           if (count($fields) == 0)
             $fields = array($this->m_destInstance->primaryKeyField());
 
-          $order = "";            
+          $order = "";
           foreach ($fields as $field)
             $order .= (empty($order) ? '' : ', ').$this->fieldName().".".$field;
         }
@@ -927,7 +931,7 @@
       }
       return parent::getOrderByStatement();
     }
-    
+
 
     /**
      * Adds the attribute / field to the list header. This includes the column name and search field.
@@ -945,18 +949,18 @@
     function addToListArrayHeader($action, &$arr, $fieldprefix, $flags, $atksearch, $atkorderby)
     {
       $prefix = $fieldprefix . "_AE_" .$this->fieldName();
-      
+
       // regular behaviour.
       parent::addToListArrayHeader($action, $arr, $prefix, $flags, $atksearch[$this->fieldName()], $atkorderby);
-      
+
       // only add extra columns when needed
       if ($this->hasFlag(AF_HIDE_LIST) || !$this->createDestination() || count($this->m_listColumns) == 0) return;
 
       foreach ($this->m_listColumns as $attribname)
       {
         $p_attrib = &$this->m_destInstance->getAttribute($attribname);
-        $p_attrib->m_flags |= AF_HIDE_LIST;        
-        $p_attrib->m_flags ^= AF_HIDE_LIST;        
+        $p_attrib->m_flags |= AF_HIDE_LIST;
+        $p_attrib->m_flags ^= AF_HIDE_LIST;
         $p_attrib->addToListArrayHeader($action, $arr, $prefix, $flags, $atksearch[$this->fieldName()], $atkorderby);
 
         $fieldPointer = &$arr["search"][$prefix.$p_attrib->fieldName()];
@@ -983,8 +987,8 @@
      */
     function addToListArrayRow($action, &$arr, $nr, $fieldprefix, $flags)
     {
-      $prefix = $fieldprefix . "_AE_" .$this->fieldName();      
-      
+      $prefix = $fieldprefix . "_AE_" .$this->fieldName();
+
       parent::addToListArrayRow($action, $arr, $nr, $prefix, $flags);
 
       // only add extra columns when needed
@@ -993,20 +997,20 @@
       // small trick, the destination record is in a subarray. The destination
       // addToListArrayRow will not expect this though, so we have to modify the
       // record a bit before passing it to the detail columns.
-      $backup = $arr["rows"][$nr]["record"];      
+      $backup = $arr["rows"][$nr]["record"];
       $arr["rows"][$nr]["record"] = $arr["rows"][$nr]["record"][$this->fieldName()];
-      
+
       foreach ($this->m_listColumns as $attribname)
       {
         $p_attrib = &$this->m_destInstance->getAttribute($attribname);
-        $p_attrib->m_flags |= AF_HIDE_LIST;        
-        $p_attrib->m_flags ^= AF_HIDE_LIST;        
+        $p_attrib->m_flags |= AF_HIDE_LIST;
+        $p_attrib->m_flags ^= AF_HIDE_LIST;
         $p_attrib->addToListArrayRow($action, $arr, $nr, $prefix, $flags);
       }
-      
+
       $arr["rows"][$nr]["record"] = $backup;
     }
-    
+
 
     /**
      * Overridden method; in the integrated version, we should let the destination
@@ -1016,19 +1020,19 @@
      */
     function addToSearchformFields(&$fields, &$node, &$record, $fieldprefix = "")
     {
-      $prefix = $fieldprefix . "_AE_" .$this->fieldName();            
-      
-      parent::addToSearchformFields($fields,$node,$record, $prefix); 
-      
+      $prefix = $fieldprefix . "_AE_" .$this->fieldName();
+
+      parent::addToSearchformFields($fields,$node,$record, $prefix);
+
       // only add extra columns when needed
       if ($this->hasFlag(AF_HIDE_LIST) || !$this->createDestination() || count($this->m_listColumns) == 0) return;
 
       foreach ($this->m_listColumns as $attribname)
       {
         $p_attrib = &$this->m_destInstance->m_attribList[$attribname];
-        $p_attrib->m_flags |= AF_HIDE_LIST;        
-        $p_attrib->m_flags ^= AF_HIDE_LIST;        
-        
+        $p_attrib->m_flags |= AF_HIDE_LIST;
+        $p_attrib->m_flags ^= AF_HIDE_LIST;
+
         if (!$p_attrib->hasFlag(AF_HIDE_SEARCH))
         {
           // TODO: This is an ugly way to make sure date attributes are changed as well
@@ -1041,6 +1045,6 @@
             $p_attrib->addToSearchformFields($fields,$node,$record[$this->fieldName()], "{$prefix}_AE_".$this->fieldName());
         }
       }
-    }    
+    }
   }
 ?>
