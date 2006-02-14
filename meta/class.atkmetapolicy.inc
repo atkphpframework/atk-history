@@ -703,7 +703,7 @@ class atkMetaPolicy
   /**
    * Apply attribute.
    */
-  function _applyAttribute($name, $type, $params, $flags, $tabs, $order)
+  function &_applyAttribute($name, $type, $params, $flags, $tabs, $order)
   {
     if (!$this->_isAttributeIncluded($name)) return;
   
@@ -722,7 +722,7 @@ class atkMetaPolicy
     $call .= ", \$flags);";  
     eval($call);
     
-    $this->m_node->add($attr, $tabs, $order);
+    return $this->m_node->add($attr, $tabs, $order);
   }  
   
   /**
