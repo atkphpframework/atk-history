@@ -135,6 +135,7 @@
     */
     function addField($name, $value="", $table="", $fieldaliasprefix="", $quote=true)
     {
+      if ($name==='name' && !$table) halt("addField($name, $value, $table, $fieldaliasprefix, $quote=true)");
       //$this->m_fields[] = strtr($name,"_",".");
       if ($table!="") $fieldname = $table.".".$name;
       else $fieldname = $name;
@@ -170,7 +171,7 @@
     * @param $alias Alias of table
     * @param $condition Condition for the Join
     */
-    function addJoin($table, $alias, $condition, $outer)
+    function addJoin($table, &$alias, $condition, $outer)
     {
       if ($outer)
       {

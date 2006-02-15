@@ -2742,7 +2742,7 @@
           }
           else
           {
-            atkerror("Attribute with name: $attribname and node: ".$this->m_type." is empty in attributelist or does not support db2value method");
+          //  atkerror("Attribute with name: $attribname and node: ".$this->m_type." is empty in attributelist or does not support db2value method");
           }
         }
 
@@ -3471,6 +3471,8 @@
      */
     function validateFilter($filter)
     {
+      return $filter;
+//      foreach ()
       // Get the field that it applies to
       // $relation holds the tablename and $field holds the field
       list($relation, $field) = explode('.', $filter);
@@ -3478,6 +3480,7 @@
       // if the filter includes a tablename
       if ($field != "")
       {
+        atkdebug('<h1>filter includes tablename: '.strtolower(trim($relation))." !== ".strtolower($this->m_table).'</h1>');
         // check if the filter table is the same as the nodes table
         if (strtolower(trim($relation)) !== strtolower($this->m_table)) return "";
 
@@ -3487,13 +3490,13 @@
 
       // All standard SQL operators
       $sqloperators = array('=','<>','>','<','>=','<=','BETWEEN','LIKE','IN');
-
+atk_var_dump(array_keys($this->m_attribList),"<h1>attriblist</h1>");
       // Check the filter for every operator
       foreach ($sqloperators as $sqloperator)
       {
         // split the fieldname from the fieldvalue
         list($relation_new, $dummy) = explode($sqloperator, $relation);
-
+atkdebug('<h1> checking for '.$relation_new.'</h1>');
         // check if the fieldname is in the attriblist
       	if (in_array(trim($relation_new), array_keys($this->m_attribList))) return $filter;
       }

@@ -20,20 +20,21 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
-   * $Id$
    */  
-	
+  
   /** @internal defines etc. */
-  global $g_menu, $atkmenutop, $g_menu_parent;
-	
+  global $g_menu, $atkmenutop, $g_menu_parent, $g_sessionManager, $selectedprogram;
+  
   atkimport("atk.ui.atkpage");
   $page = &atkPage::getInstance();
   $ui =   &atknew("atk.ui.atkui");
   $theme = &atkTheme::getInstance();
+  $selectedprogram_session = $g_sessionManager->stackVar("selectedprogram");
+  if (!$selectedprogram_session && $selectedprogram) $g_sessionManager->stackVar("selectedprogram",$selectedprogram);
+  if (!$selectedprogram && $selectedprogram_session) $selectedprogram = $selectedprogram_session;
 
   /* output html */
-  $menu = "<div align='".atkconfig("menu_align", "center")."'>"; 
+//  $menu = "<div align='".atkconfig("menu_align", "center")."'>"; 
   
   /* build menu */
   
@@ -49,22 +50,22 @@
   if (is_array($g_menu[$atkmenutop]))
   {
     usort($g_menu[$atkmenutop],"menu_cmp");   
-    $menuitems = array();
+  
     for ($i = 0; $i < count($g_menu[$atkmenutop]); $i++)
     {
+    	$name = $g_menu[$atkmenutop][$i]["name"];
+      $url = $g_menu[$atkmenutop][$i]["url"];
+      $enable = $g_menu[$atkmenutop][$i]["enable"];
+      
       if ($i==count($g_menu[$atkmenutop])-1)
       {
         $delimiter = "";
       }
       else
       {
-        $delimiter = atkconfig("menu_delimiter");
+      	$delimiter = sprintf(atkconfig("menu_delimiter"),session_url($url, SESSION_NEW), 'main');
       }
-      $name = $g_menu[$atkmenutop][$i]["name"];
-      $menuitems[$i]["name"]=$name;
-      $url = $g_menu[$atkmenutop][$i]["url"];
-      $enable = $g_menu[$atkmenutop][$i]["enable"];
-
+      
       if (is_array($enable))
       {
         $enabled = false;
@@ -74,46 +75,41 @@
         }
         $enable = $enabled;
       }
-
-      $menuitems[$i]["enable"]=$enable;
   
       /* delimiter ? */
-      if ($name == "-") $menu .= "<br>";
+      if ($g_menu[$atkmenutop][$i]["name"] == "-") $menu .= "</td></tr><tr><td><hr />".$delimiter;
       
       /* submenu ? */
-      else if (empty($url) && $enable)
-      {
-        $url = 'menu.php?atkmenutop='.$name;
-        $menu .= href($url,text("menu_$name"),SESSION_DEFAULT).$delimiter;
-      }
+      else if (empty($url) && $enable) $menu .= sprintf(atkconfig("menu_delimiter"), session_url("menu.php?atkmenutop=$name&selectedprogram=$selectedprogram", SESSION_NEW), 
+'menu')."<b>".text("menu_$name")."</b>".$delimiter;
       else if (empty($url) && !$enable)
       {
-        //$menu .=text("menu_$name").$config_menu_delimiter;
+        $menu .=$delimiter.text("menu_$name");
       }
+        
       /* normal menu item */
-      else if ($enable) $menu .= href($url,text("menu_$name"),SESSION_NEW,false,'target="main"').$delimiter;
+      else if ($enable) $menu .= $delimiter."<b>".text("menu_$name")."</b>";
       else 
       {
-        //$menu .= text("menu_$name").$config_menu_delimiter;    
+        $menu .= $delimiter.text("menu_$name");
       }
-      $menuitems[$i]["url"]=session_url($url);
     }
   }
   /* previous */  
   if ($atkmenutop != "main")
   {
     $parent = $g_menu_parent[$atkmenutop];
-    $menu .= atkconfig("menu_delimiter");
-    $menu .= href('menu.php?atkmenutop='.$parent,text("back_to").' '.text("menu_$parent"),SESSION_DEFAULT).'<br>';  
+    $menu .= sprintf(atkconfig("menu_delimiter"), session_url("menu.php?atkmenutop=$parent&selectedprogram=$selectedprogram",SESSION_NEW),'menu');
+    $menu .= "<b>".text("back_to").' '.text("menu_$parent")."</b>";
   }      
   
   $page->register_style($theme->stylePath("style.css"));
-  $box = $ui->renderBox(array("title"=>text("menu_".$atkmenutop),
-                                         "content"=>$menu,
-                                         "menuitems"=>$menuitems),"menu");
+  $page->register_style($theme->stylePath("menu.css"));
+  //$box = $ui->renderBox(array("title"=>text("menu_".$atkmenutop),"content"=>$menu));
+  $box = $ui->render("menu.tpl",array("title"=>text("menu_".$atkmenutop),"content"=>$menu));
  
   $page->addContent($box);
-			
+      
   $string = $page->render("Menu", true);
   $output = &atkOutput::getInstance();
   $output->output($string);

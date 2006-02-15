@@ -257,12 +257,18 @@
         }
       }
       else 
-      {         
-        $query = "SELECT ".$this->fieldName();
-        $query.= ($this->m_cachefield?",{$this->m_cachefield}":"");
-        $query.=" FROM ".$this->m_ownerInstance->m_table." WHERE ".$this->m_ownerInstance->m_table.".".$this->m_ownerInstance->primaryKeyField()."='".$record[$this->m_ownerInstance->primaryKeyField()]."'";
-        $result = $g_db->getrows($query);
-
+      {
+        if (!$record[$this->fieldName()] || (!$record[$this->m_cachefield] && $this->m_cachefield))
+        {
+          $query = "SELECT ".$this->fieldName();
+          $query.= ($this->m_cachefield?",{$this->m_cachefield}":"");
+          $query.=" FROM ".$this->m_ownerInstance->m_table." WHERE ".$this->m_ownerInstance->m_table.".".$this->m_ownerInstance->primaryKeyField()."='".$record[$this->m_ownerInstance->primaryKeyField()]."'";
+          $result = $g_db->getrows($query);
+        }
+        else
+        {
+          $result[0] = $record;
+        }
         $cryptedlink = $this->decrypt($result[0],$this->fieldName());
         $records[0][$this->fieldName()] = $cryptedlink;
 
@@ -289,7 +295,7 @@
     }
     
     function decrypt($record, $field)
-    {      
+    { 
       global $g_db, $g_encryption;
       
       if (!$this->m_linkpass) $this->getLinkPassword($this->m_linktable, $this->m_linkfield, $g_encryption);
@@ -299,19 +305,22 @@
         $cryptedlink = $this->m_crypt->decrypt($record[$field],$this->m_linkpass);
         if ($this->m_ownerInstance)
         {
-        if ($this->m_cachefield && is_numeric($cryptedlink) && $cryptedlink && $record[$this->m_ownerInstance->primaryKeyField()])
-        {
-          $g_db->query("UPDATE {$this->m_ownerInstance->m_table}
+          if ($this->m_cachefield && is_numeric($cryptedlink) && $cryptedlink && $record[$this->m_ownerInstance->primaryKeyField()] && $this->createDestination())
+          {
+            if ($this->m_ownerInstance->m_attribList[$field]) $cachetable = $this->m_ownerInstance->m_table;
+            else if ($this->m_destInstance->m_attribList[$field]) $cachetable = $this->m_destInstance->m_table;
+            
+            $g_db->query("UPDATE $cachetable
                               SET {$this->m_cachefield}='$cryptedlink'
                               WHERE ".$this->m_ownerInstance->primaryKeyField()." = '".
-                                      $record[$this->m_ownerInstance->primaryKeyField()]."'");
+            $record[$this->m_ownerInstance->primaryKeyField()]."'");
+          }
+          else if (!$cryptedlink || !is_numeric($cryptedlink))
+          {
+            return atk_var_dump($record,"<h1>decrypt($record, $field) failed! and yielded: $cryptedlink</h1>");
+          }
         }
-        else if (!$cryptedlink || !is_numeric($cryptedlink))
-        {
-          return atk_var_dump($record,"<h1>decrypt($record, $field) failed! and yielded: $cryptedlink</h1>");
-        }
-        }
-        else 
+        else
         {
           halt("Geen ownerinstantie gevonden voor securerelation");
         }
@@ -443,8 +452,10 @@
       }
       
       if ($query->m_joinaliases[$this->m_ownerInstance->m_table."*".$this->m_ownerInstance->primaryKeyField()]) $table = $query->m_joinaliases[$this->m_ownerInstance->m_table."*".$this->m_ownerInstance->primaryKeyField()];
-      else $table = $this->m_ownerInstance->m_table;
-      if (!empty($destresults))
+      else if (in_array($this->m_ownerInstance->m_table, $query->m_tables)) $table = $this->m_ownerInstance->m_table;
+      else $table=null;
+      
+      if (!empty($destresults) && $table)
         return $table.".".$this->m_ownerInstance->primaryKeyField()." IN (".implode(",",$destresults).")";
     }
     

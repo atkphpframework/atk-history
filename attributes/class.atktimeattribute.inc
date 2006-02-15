@@ -165,7 +165,6 @@
 
     function value2db($rec)
     {
-
      $hours = $rec[$this->fieldName()]["hours"];
      $minutes = $rec[$this->fieldName()]["minutes"];
      $seconds = $rec[$this->fieldName()]["seconds"];

@@ -11,8 +11,6 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
-   * $Id$
    */
 
   /**
@@ -29,9 +27,7 @@
    * behaviour!
    *
    * @author Peter Verhage <peter@ibuildings.nl>
-   * @version $Revision$
    *
-   * $Id$
    *   
    */
   
@@ -66,14 +62,6 @@ function getDays(date)
 }
 
 /**
- * Wrapper function for ReadAdjustDate, since it's crashing in some IE 6.0 browsers
- */
-function AdjustDate(el, arr, format, str_min, str_max, emptyfield)
-{
-  setTimeout(function() { RealAdjustDate(el, arr, format, str_min, str_max, emptyfield) }, 1);
-}
-
-/**
  * Checks/changes the date input boxes for a certain date field on the form.
  * @param el pointer to the form element which initiated the call to this method
  * @param arr name of the input boxes (without [day] etc.)
@@ -82,7 +70,7 @@ function AdjustDate(el, arr, format, str_min, str_max, emptyfield)
  * @param str_max the maximum valid date
  * @param obligatory is the date field obligatory
  */
-function RealAdjustDate(el, arr, format, str_min, str_max, emptyfield)
+function AdjustDate(el, arr, format, str_min, str_max, emptyfield)
 {
   var format_month, format_day, array_months;
   var frm = el.form;
@@ -276,6 +264,19 @@ function RealAdjustDate(el, arr, format, str_min, str_max, emptyfield)
     }
   }
   else input["y"].value = current["y"];
+  
+  // harriehack to avoid the javascript from crashing
+  // on elements that don't have an onChange function
+	try {
+		eval(arr+'_onChange(el)'); 
+	}
+	catch (error) {
+		// when there is no onChange method the script whould
+		// normally display an error - however, when the onChange
+		// function isn't there we whould rather like to just
+		// not call it, instead do nothing:
+		void(null);
+	}
 }
 
 function dateAttribute_getValue(id)

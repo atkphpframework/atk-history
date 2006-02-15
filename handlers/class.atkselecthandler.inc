@@ -99,9 +99,6 @@
         return $ui->renderBox(array("title"=>$node->actionTitle('select'),
                                     "content"=>$output));         
       }
-
     }
-
   }
-
 ?>

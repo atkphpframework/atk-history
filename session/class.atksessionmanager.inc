@@ -191,7 +191,7 @@
         global $g_sessionData;
 
         $currentitem = &$g_sessionData[$this->m_namespace]["stack"][atkStackID()][atkLevel()];
-
+//atk_var_dump($currentitem,"<h1>currentitem</h1>");
         if (is_array($currentitem))
         {
           if ($value=="")

@@ -84,7 +84,7 @@
   $config_logfile = "/tmp/atk-security.log";
 
   $config_debug = 0;
-  $config_debuglog = "";
+  $config_debuglog = "/home/boy/fundingtest.log";
   $config_smart_debug = array();
   $config_display_errors = true;
   $config_halt_on_error = "critical";

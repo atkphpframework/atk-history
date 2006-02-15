@@ -11,27 +11,27 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *  
-   * @version $Revision$
-   * $Id$
    */
 ?>
- 
 function showTab(tab)
 {  
-	// First, get the class names of all elements
-	var tags = document.getElementsByTagName("tr");
-	var tabidobj = get_object("atknodetype");
+  // First, get the class names of all elements
+  var tags = document.getElementsByTagName("tr");
+  var tabidobj = get_object("atknodetype");
 	
-	// IE works with .value, while the Gecko engine uses .innerHTML
-	if (tabidobj.value) 
-	{ 
-	   var tabid = tabidobj.value;
+  //HACK FOR FUNDING THE OBJECT IS SOMETIMES NULL
+  if (tabidobj!=null) 
+  {
+	  // IE works with .value, while the Gecko engine uses .innerHTML
+	  if (tabidobj.value) 
+	  { 
+	     var tabid = tabidobj.value;
+	  }
+	  else if (tabidobj.innerHTML)
+	  {
+	    var tabid = tabidobj.innerHTML;
+	  }
 	}
-	else if (tabidobj.innerHTML)
-	{
-	  var tabid = tabidobj.innerHTML;
-	}
-	
 	// Next, check wether the parent tab array has been set
 	if (!parent.document.tab)
 	{

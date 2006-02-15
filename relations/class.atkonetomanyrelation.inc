@@ -835,17 +835,16 @@
               // if the selector is on the destination, we pass it back
               if ($key ==  $destinationkey || $key == $this->m_refKey[$refkeycount])
               {
-                $ret = $selector;
+                return $selector;
               }
             }
             // otherwise we set it on the destination
-            $ret = $destinationkey.$sqloperators[$counter].$value;
+            return $destinationkey.$sqloperators[$counter].$value;
           }
         }
-        // We never found a value, something is wrong with the filter
-        $ret = "";
       }
-      return $ret;
+      // We never found a value, something is wrong with the filter
+      return "";
     }
     
    /**

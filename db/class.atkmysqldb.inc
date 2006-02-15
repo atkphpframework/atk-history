@@ -32,14 +32,34 @@
    */ 
   class atkMysqlDb extends atkDb
   {    
-  
-    /* sequence table */
+    /**
+     * Sequence table 
+     * @var String
+     */
     var $m_seq_table = "db_sequence";  
-    // the field in the seq_table that contains the counter..
+    
+    /**
+     * The field in the seq_table that contains the counter..
+     * @var String
+     */
     var $m_seq_field = "nextid";
-    // the field in the seq_table that countains the name of the sequence..
+    
+    /**
+     * The field in the seq_table that countains the name of the sequence..
+     * @var String
+     */
     var $m_seq_namefield = "seq_name";
     
+    /**
+     * Number of times we try to reconnect
+     * @var int
+     */
+    var $m_reconnect_tries = 3;
+    
+    /**
+     * The database type
+     * @var String
+     */
     var $m_type = "mysql";
     
      
@@ -71,8 +91,10 @@
       /* select database */
       if (!@mysql_select_db($this->m_database, $this->m_link_id))
       {
-        $this->halt($this->getErrorMsg());
-        return $this->_translateError();
+        $errormessage = $this->getErrorMsg();
+        $translated = $this->_translateError();
+        if ($translated) $this->halt($errormessage);
+        return $translated;
       }
         
       /* return link identifier */
@@ -89,8 +111,15 @@
         case 1044: return DB_ACCESSDENIED;  // todofixme: deze komt bij mysql pas na de eerste query. 
         case 1045: return DB_ACCESSDENIED_USER;
         case 1049: return DB_UNKNOWNDATABASE;
+        case 2003: header('https://esf.funding.nl/down.html');exit;
         case 2004: 
         case 2005: return DB_UNKNOWNHOST;
+        case 2013: if ($this->m_reconnect_tries>0)
+        {
+          unset($this->m_link_id);
+          $this->m_reconnect_tries--;
+          return $this->connect();
+        }
         default: 
                    return DB_UNKNOWNERROR;   
       }
@@ -112,10 +141,6 @@
      */
     function query($query, $offset=-1, $limit=-1)
     {
-//      if(strpos($query, "content_page"))
-//      {
-//        atk_var_dump(debug_backtrace(), "<B>Backtrace of wrong query!</B>");
-//      }
       /* limit? */
       if ($offset >= 0 && $limit > 0)
         $query .= " LIMIT $offset, $limit";  

@@ -313,41 +313,7 @@
           // TODO: Fill a dropdown box with recent records..
           $selname = $fieldprefix.$this->fieldName()."_newsel";        
 
-          $id = $fieldprefix.$this->fieldName();
-          $newlyadded = $this->m_ownerInstance->m_postvars[$id."_ret"];
-          
-          if ($ATK_VARS[$selname]!="") 
-          // new record selected
-          {          
-            // $ATK_VARS[$selname] contains full primary key of selected record.
-            $recset = $this->m_destInstance->selectDb($ATK_VARS[$selname],"","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
-            $destrecord = $recset[0];          
-            $record[$this->fieldName()] = $destrecord; // put destrecord inside original record.
-          }
-          elseif ($newlyadded!="")
-          {
-            $recset = $this->m_destInstance->selectDb($newlyadded,"","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
-            $destrecord = $recset[0];          
-            $record[$this->fieldName()] = $destrecord; // put destrecord inside original record.
-		      }
-          elseif (is_array($record[$this->fieldName()]) && count($record[$this->fieldName()]) == count($this->m_destInstance->m_primaryKey)) 
-          // old record present, but probably only primary key fields are loaded (this happens after pressing 'save' on a record)                                                                
-          {
-            $currentPk = $this->m_destInstance->primaryKey($record[$this->fieldName()]);
-            $recset = $this->m_destInstance->selectDb($currentPk,"","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
-            $destrecord = $recset[0];          
-            $record[$this->fieldName()] = $destrecord; // put destrecord inside original record.
-          }
-          elseif (is_array($record[$this->fieldName()]) && !$this->isEmpty($record)) 
-          // complete old record present
-          {        
-            $destrecord = $record[$this->fieldName()];        
-          }
-          else 
-          // no record yet, empty value.
-          { 
-            $destrecord = array();          
-          }
+          $destrecord = $this->_getDestRecord($selname, $newlyadded, $record, $editflag);
         
           if (count($destrecord))
           {          
@@ -380,6 +346,47 @@
         return $result;
       }
       return atkerror("Could not create destination for $this->m_destination!");
+    }
+    
+    function _getDestRecord($selname, $newlyadded, &$record, &$editflag)
+    {
+      global $ATK_VARS;
+      $id = $fieldprefix.$this->fieldName();
+      $newlyadded = $this->m_ownerInstance->m_postvars[$id."_ret"];
+
+      if ($ATK_VARS[$selname]!="")
+      // new record selected
+      {
+        // $ATK_VARS[$selname] contains full primary key of selected record.
+        $recset = $this->m_destInstance->selectDb($ATK_VARS[$selname],"","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
+        $destrecord = $recset[0];
+        $record[$this->fieldName()] = $destrecord; // put destrecord inside original record.
+      }
+      elseif ($newlyadded!="")
+      {
+        $recset = $this->m_destInstance->selectDb($newlyadded,"","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
+        $destrecord = $recset[0];
+        $record[$this->fieldName()] = $destrecord; // put destrecord inside original record.
+      }
+      elseif (is_array($record[$this->fieldName()]) && count($record[$this->fieldName()]) == count($this->m_destInstance->m_primaryKey))
+      // old record present, but probably only primary key fields are loaded (this happens after pressing 'save' on a record)
+      {
+        $currentPk = $this->m_destInstance->primaryKey($record[$this->fieldName()]);
+        $recset = $this->m_destInstance->selectDb($currentPk,"","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
+        $destrecord = $recset[0];
+        $record[$this->fieldName()] = $destrecord; // put destrecord inside original record.
+      }
+      elseif (is_array($record[$this->fieldName()]) && !$this->isEmpty($record))
+      // complete old record present
+      {
+        $destrecord = $record[$this->fieldName()];
+      }
+      else
+      // no record yet, empty value.
+      {
+        $destrecord = array();
+      }
+      return $destrecord;
     }
 
     /**
@@ -638,8 +645,9 @@
       if ($this->createDestination())
       {
         if ($mode != "update" && $mode != "add")
-        {              
+        {
           $alias = $fieldaliasprefix . $this->fieldName(); 
+          if (in_array($alias,$query->m_joinaliases)) $alias = $alias.$alias;
           $query->addJoin($this->m_destInstance->m_table, 
                           $alias,
                           $this->getJoinCondition($query, $tablename, $alias),

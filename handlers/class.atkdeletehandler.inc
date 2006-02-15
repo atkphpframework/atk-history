@@ -126,6 +126,7 @@
       	// If allowed !=== true, then it returned an error message
       	if ($allowed!==true)
       	{ 
+      	  atkdebug("node: ".$this->m_node->m_type);
       		$this->m_node->m_db->rollback(); 
           $location = $this->m_node->feedbackUrl("delete",ACTION_FAILED,null,sprintf(atktext("attrib_delete_not_allowed"),$this->m_node->m_attribIndexList[$counter]["name"],$allowed));
           $this->m_node->redirect($location);
