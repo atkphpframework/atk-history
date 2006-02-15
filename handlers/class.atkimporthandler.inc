@@ -184,6 +184,7 @@
       $content.='</div>';
 
       $page = &$this->getPage();
+      atkimport("atk.ui.atktheme");
       $theme = &atkTheme::getInstance();
       $page->register_style($theme->stylePath("recordlist.css"));
       $page->addContent($this->m_node->genericPage(atktext("import", "atk"), $content));
@@ -724,7 +725,7 @@
      * @param String $name    name of the attribute
      * @return object         instance of the attribute
      */
-    function getUsableAttribute($name)
+    function &getUsableAttribute($name)
     {
       if(array_key_exists($name,$this->m_node->m_attribList))
         return $this->m_node->getAttribute($name);
@@ -734,7 +735,7 @@
         $relattr = $this->m_node->getAttribute($attr);
         $relattr->createDestination();
         if(array_key_exists($name,$relattr->m_destInstance->m_attribList))
-          return $relattr->m_destInstance->getAttribute($name);
+;5B          return $relattr->m_destInstance->getAttribute($name);
       }
       return null;
     }
@@ -747,14 +748,16 @@
      */
     function addToRecord(&$record,$attrname,$value)
     {
-      $attr = $this->getUsableAttribute($attrname);
+      if ($this->m_postvars['doupdate']) $mode = "edit";
+      else $mode = "add";
+      $attr = &$this->getUsableAttribute($attrname);
 
       if(!is_object($attr)) return;
 
       foreach($this->getIntegratedAttributes() as $intattr)
       {
         if(!isset($record[$intattr]))
-          $record[$intattr] = array('mode'=>"add",'atkaction'=>"save");
+          $record[$intattr] = array('mode'=>$mode,'atkaction'=>"save");
       }
 
       if(!$this->isRelationAttribute($attrname))
@@ -909,7 +912,7 @@
 
       if ($allField!="")
       {
-        $attr = $this->getUsableAttribute($allField);
+        $attr = &$this->getUsableAttribute($allField);
         if($attr)
         {
           $col_map[] = $allField;
@@ -976,14 +979,12 @@
           {
             if($i != $_i-1 || $col_map[$i] != $allField)// column is mapped
             {
-              $value = $data[$i];
-              $value = $this->_getAttributeValue($col_map[$i], $allField, $value, $importerrors,$counter,$rec);
+              $value = $this->_getAttributeValue($col_map[$i], $allField, $data[$i], $importerrors,$counter,$rec);
             }
             else //this is the allField
             {
               $value = $allFieldValue;
             }
-
             $this->addToRecord($rec,$col_map[$i],$value);
           }
         }
@@ -1001,14 +1002,15 @@
      * @param Array  &$importerrors  Any import errors which may occur or may have occured
      * @return mixed The ATK value of the field
      */
-    function _getAttributeValue($attributename, $allField, $value, &$importerrors, $counter, $rec)
+    function _getAttributeValue($attributename, $allField, $value, &$importerrors, $counter, &$rec)
     {
       $updatekey1 =     $this->m_postvars['updatekey1'];
-      $attr = $this->getUsableAttribute($attributename);
+      $attr = &$this->getUsableAttribute($attributename);
 
       if (method_exists($attr, "createDestination") && $attr->createDestination() && $attributename!==$allField)
       {
         $relationselect = $attr->m_destInstance->selectDb($attr->m_destInstance->m_table.".".$attr->m_destInstance->primaryKeyField().' = \''.$value."'");
+       
         if (count($relationselect)==0 || count($relationselect)>1)
         {
           $searchresults = $attr->m_destInstance->searchDb($value);
@@ -1030,16 +1032,7 @@
       }
       else if (is_object($attr) && method_exists($attr,"fetchValue") && $attributename!=="birthdate")
       {
-//        $relation = $this->isRelationAttribute($attributename);
-//        if ($relation)
-//        {
-//          $value = $attr->fetchValue(array($attributename=>$value));
-//        }
-//        else
-//        {
-//          atkdebug("<h1>$value = {$attributename}->fetchValue($value);</h1>");
-          $value = $attr->fetchValue(array($attributename=>$value));
-//        }
+        $value = $attr->fetchValue(array($attributename=>$value));
       }
       else
       {
@@ -1102,7 +1095,7 @@
           $this->$action($validrec);
         }
       }
-
+      if (method_exists($this,'clearCache')) $this->clearCache();
       if ($this->showErrors($importerrors, array("msg"=>atktext("import_importedreminder")))) return;
 
       //return;
@@ -1145,9 +1138,9 @@
      */
     function update(&$record)
     {
-      $this->m_node->preUpdate($record);
-
-      if(isset($record['atkerror']))
+      $res = $this->m_node->preUpdate($record);
+      
+      if(isset($record['atkerror']) || !$res)
       {
         return false;
       }
@@ -1252,7 +1245,7 @@
      */
     function checkAllField($field, &$value)
     {
-      $attr = $this->getUsableAttribute($field);
+      $attr = &$this->getUsableAttribute($field);
       if(!$attr)
         return;
 
@@ -1314,12 +1307,15 @@
           }
         }
       }
-      atkdebug("<h1>writing to file</h1>");
-    $fp = &fopen('/home/funding/www/atktmp/importerrors.txt','w+');
-    fwrite($fp, var_export($importerrors,1));
-    fclose($fp);
+      
+      if (file_exists('/home/funding/www/atktmp/importerrors.txt'))
+      {
+        $fp = &fopen('/home/funding/www/atktmp/importerrors.txt','w+');
+        fwrite($fp, var_export($importerrors,1));
+        fclose($fp);
+      }
 
-      if ($doupdate) $prepareres = $this->prepareUpdateRecord($rec);
+      if ($doupdate) $prepareres = $this->prepareUpdateRecord($rec, $counter, $importerrors);
 
       if (empty($importerrors[$counter][0]))
       {
@@ -1327,15 +1323,9 @@
         {
           $validatedrecs["update"][] = $rec;
         }
-        else if (!$prepareres || $onfalseidentifier)
+        else if (!$doupdate || (!$prepareres && $onfalseidentifier))
         {
           $validatedrecs["add"][] = $rec;
-        }
-        else
-        {
-          $importerrors[] = array("msg"=>atktext("error_formdataerror"),
-                                  "spec"=>sprintf(atktext("import_nonunique_identifier"),
-                                                  $this->getValueFromRecord($rec, $updatekey1)));
         }
       }
     }
@@ -1346,7 +1336,7 @@
      * @param Array &$record The record to prepare
      * @return bool If the record wasn't prepared we return false, otherwise true
      */
-    function prepareUpdateRecord(&$record)
+    function prepareUpdateRecord(&$record, $row, &$importerrors)
     {
       global $g_sessionManager;
       // The keys to update the record on
@@ -1354,18 +1344,27 @@
       $updatekey1val =  $this->getValueFromRecord($record, $updatekey1);
       $allField =       $g_sessionManager->pageVar("allField");
       $allFieldValue =  $this->m_postvars[$allField];
+      $onfalseid     =  $this->m_postvars['onfalseid'];
 
       $this->m_node->m_postvars["atksearchmode"] = "exact";
-      if (!in_array($allFieldValue)) $this->m_node->m_fuzzyFilters[] = $allFieldValue;
+      if (!in_array($allFieldValue,$this->m_node->m_fuzzyFilters)) $this->m_node->m_fuzzyFilters[] = $allFieldValue;
 
       $dbrec = $this->m_node->searchDb(array($updatekey1=>$updatekey1val));
 
-      if (count($dbrec)==1)
+      $count = count($dbrec);
+      if ($count==1)
       {
         $record[$this->m_node->primaryKeyField()] = $dbrec[0][$this->m_node->primaryKeyField()];
         $record['atkprimkey'] = $dbrec[0]['atkprimkey'];
         return true;
       }
+      else if ($count>1 && !$onfalseid)
+        $importerrors[$row][] = array("msg"=>atktext("error_formdataerror"),
+                                            "spec"=>sprintf(atktext("import_multiple_identifiers"),$updatekey1val));
+      else if (!$onfalseid)
+        $importerrors[$row][] = array("msg"=>atktext("error_formdataerror"),
+                                            "spec"=>sprintf(atktext("import_identifier_not_found"),$updatekey1val));
+      
       return false;
     }
 
@@ -1377,7 +1376,7 @@
      */
     function getValueFromRecord($record, $fieldname)
     {
-      $attr = $this->getUsableAttribute($fieldname);
+      $attr = &$this->getUsableAttribute($fieldname);
       if(!$this->isRelationAttribute($fieldname))
       {
         if(!$this->hasRelationAttribute($fieldname))

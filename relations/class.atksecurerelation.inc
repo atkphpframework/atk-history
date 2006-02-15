@@ -257,18 +257,18 @@
         }
       }
       else 
-      {
+      { 
         if (!$record[$this->fieldName()] || (!$record[$this->m_cachefield] && $this->m_cachefield))
-        {
-          $query = "SELECT ".$this->fieldName();
-          $query.= ($this->m_cachefield?",{$this->m_cachefield}":"");
-          $query.=" FROM ".$this->m_ownerInstance->m_table." WHERE ".$this->m_ownerInstance->m_table.".".$this->m_ownerInstance->primaryKeyField()."='".$record[$this->m_ownerInstance->primaryKeyField()]."'";
-          $result = $g_db->getrows($query);
+  	{        
+        $query = "SELECT ".$this->fieldName();
+        $query.= ($this->m_cachefield?",{$this->m_cachefield}":"");
+        $query.=" FROM ".$this->m_ownerInstance->m_table." WHERE ".$this->m_ownerInstance->m_table.".".$this->m_ownerInstance->primaryKeyField()."='".$record[$this->m_ownerInstance->primaryKeyField()]."'";
+        $result = $g_db->getrows($query);
         }
-        else
-        {
-          $result[0] = $record;
-        }
+  	else
+  	{
+  	  $result[0] = $record;
+  	}
         $cryptedlink = $this->decrypt($result[0],$this->fieldName());
         $records[0][$this->fieldName()] = $cryptedlink;
 

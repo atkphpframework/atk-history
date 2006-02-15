@@ -922,7 +922,6 @@
         $primKey.=$this->m_table.".".$this->m_primaryKey[$i]."='".$p_attrib->value2db($rec)."'";
         if ($i<($nrOfElements-1)) $primKey.=" AND ";
       }
-
       return $primKey;
     }
 
@@ -2263,11 +2262,12 @@
       $query = &$this->m_db->createQuery();
 
       $query->addTable($this->m_table);
-
+      
       // The record that must be updated is indicated by 'atkorgkey'
       // (not by atkselector, since the primary key might have
       // changed, so we use the atkorgkey, which is the value before
       // any update happened.)
+      if ($record['atkprimkey']=="") $record['atkprimkey'] = $this->primaryKey($record);
       if ($record['atkprimkey']!="")
       {
         $pk = $record['atkprimkey'];
