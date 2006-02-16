@@ -2,7 +2,7 @@
   /**
    * This file is part of the Achievo ATK distribution.
    * Detailed copyright and licensing information can be found
-   * in the doc/COPYRIGHT and doc/LICENSE files which should be 
+   * in the doc/COPYRIGHT and doc/LICENSE files which should be
    * included in the distribution.
    *
    * @package atk
@@ -14,21 +14,21 @@
    * @version $Revision$
    * $Id$
    */
-  
+
   /** @internal include baseclass. */
   userelation("atkmanytomanyrelation");
-   
+
   /**
    * Many-to-many relation.
    *
    * The relation shows a list of available records, and a set of checkboxes
    * to link the records with the current record on the source side.
-   *   
+   *
    * @author Ivo Jansch <ivo@achievo.org>
    * @package atk
    * @subpackage relations
    *
-   */  
+   */
   class atkManyBoolRelation extends atkManyToManyRelation
   {
     var $m_cols=3;
@@ -85,7 +85,7 @@
 
       $page = &atkPage::getInstance();
       $page->register_script(atkconfig("atkroot")."atk/javascript/class.atkprofileattribute.js.php");
-	  
+
       $result ='<div align="left"><font size="-2">
                 [<a href="javascript:profile_checkAll(\''.$this->fieldName().'\')">'.
                      text("check_all").
@@ -93,7 +93,7 @@
                      text("check_none").
                 '</a> <a href="javascript:profile_checkInvert(\''.$this->fieldName().'\')">'.
                      text("invert_selection").'</a>]</font></div>';
-       	
+
       $result.= '<table border="0"><tr>';
       for ($i=0;$i<count($recordset);$i++)
       {
@@ -142,7 +142,7 @@
     function store($notused, $record, $mode)
     {
       //atkerror(arrayToString($record));
-    
+
       $this->createLink();
       $this->createDestination();
       $rel = &$this->m_linkInstance;
@@ -157,8 +157,8 @@
           $checked[] = $record[$this->fieldName()][$i][$this->getRemoteKey()];
 
       }
-      
-      if(count($checked) > 0)
+      atk_var_dump($checked,"<h1>checked</h1>");
+      if(count($checked) > 0 && atk_value_in_array($checked))
         $filter = "NOT IN (".implode(",",$checked).",0)";
 
       if (is_object($rel) && $rel->deleteDb($this->getLocalKey()."='".$record[$this->m_ownerInstance->primaryKeyField()]."' AND ".$this->getRemoteKey()." $filter"))
@@ -166,36 +166,36 @@
         for ($i=0;$i<count($record[$this->fieldName()]);$i++)
         {
           // magical stuff..
-          $newrecord = $this->m_destInstance->initial_values(); 
+          $newrecord = $this->m_destInstance->initial_values();
           $newrecord[$this->getRemoteKey()][$this->m_destInstance->primaryKeyField()] = $record[$this->fieldName()][$i][$this->getRemoteKey()];
-  
+
           $newrecord[$this->getLocalKey()][$this->m_ownerInstance->primaryKeyField()] = $record[$this->m_ownerInstance->primaryKeyField()];
-					
+
           // First check if the record does not exist yet.
           /* @var $rel atkNode */
           $existing = $rel->selectDb($rel->primaryKey($newrecord), "", "", "", $rel->m_primaryKey);
           if (!count($existing))
           {
             if (!$rel->addDb($newrecord, true, $mode))
-            {            
+            {
               return false;
             }
-          }        
-        }        
+          }
+        }
         return true;
       }
       return false;
     }
-    
+
     /**
      * Check if the attribute is empty
      * @return true if it's empty
      */
     function isEmpty($postvars)
-    {      
+    {
       return (!is_array($postvars[$this->fieldName()]) || count($postvars[$this->fieldName()])==0);
     }
-    
+
     /**
      * Returns a piece of html code for hiding this attribute in an HTML form,
      * while still posting its value. (<input type="hidden">)
@@ -263,7 +263,7 @@
      */
     function searchCondition(&$query, $table, $value, $searchmode)
     {
-      // We only support 'exact' matches. 
+      // We only support 'exact' matches.
       // But you can select more than one value, which we search using the IN() statement,
       // which should work in any ansi compatible database.
       if (is_array($value) && count($value)>0 && $value[0]!="") // This last condition is for when the user selected the 'search all' option, in which case, we don't add conditions at all.
