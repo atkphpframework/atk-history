@@ -3,7 +3,7 @@
   /**
    * This file is part of the Achievo ATK distribution.
    * Detailed copyright and licensing information can be found
-   * in the doc/COPYRIGHT and doc/LICENSE files which should be 
+   * in the doc/COPYRIGHT and doc/LICENSE files which should be
    * included in the distribution.
    *
    * @package atk
@@ -16,10 +16,10 @@
    * @version $Revision$
    * $Id$
    */
-   
+
   /**
    * Abstract baseclass for SQL query builder drivers.
-   * 
+   *
    * All db drivers should derive a class from this baseclass and implement
    * the necessary methods.
    *
@@ -81,12 +81,12 @@
      * Array with order by statements
      */
     var $m_orderbys;
-    
+
     /**
      * Do we need to perform a DISTINCT query?
      */
-    var $m_distinct=false;    
-    
+    var $m_distinct=false;
+
     /**
       * Do we need to fetch only a specific set of records?
       */
@@ -135,8 +135,6 @@
     */
     function addField($name, $value="", $table="", $fieldaliasprefix="", $quote=true)
     {
-      if ($name==='name' && !$table) halt("addField($name, $value, $table, $fieldaliasprefix, $quote=true)");
-      //$this->m_fields[] = strtr($name,"_",".");
       if ($table!="") $fieldname = $table.".".$name;
       else $fieldname = $name;
       $this->m_fields[] = $fieldname;
@@ -177,7 +175,7 @@
       {
         $jointype="LEFT JOIN ";
         $join = " ".$jointype.$table." ".$alias." ON ".$condition." ";
-        
+
         if (!in_array($join, $this->m_joins)) $this->m_joins[]= $join;
       }
       else
@@ -211,7 +209,7 @@
     {
       if ($condition!="") $this->m_conditions[] = $condition;
     }
-        
+
 
    /**
     * Add search condition to search condition Array
@@ -221,7 +219,7 @@
     {
       if ($condition!="") $this->m_searchconditions[] = $condition;
     }
-    
+
     /**
      * Set the 'distinct' mode for the query.
      * If set to true, a 'SELECT DISTINCT' will be performed. If set to false,
@@ -231,7 +229,7 @@
     {
       $this->m_distinct = $distinct;
     }
-    
+
     function setLimit($offset, $limit)
     {
       $this->m_offset = $offset;
@@ -293,16 +291,16 @@
       if (count($this->m_orderbys)>0)
       {
         $this->_addOrderBy($result);
-      }          
-      
+      }
+
       if ($this->m_limit>0)
       {
         $this->_addLimiter($result);
       }
-      
+
       return $result;
     }
-    
+
     /**
      * Wrapper function to execute a select query.
      * @param boolean $distinct Set to true to perform a distinct select,
@@ -312,11 +310,11 @@
     function executeSelect($distinct = FALSE)
     {
       global $g_db;
-       
+
       $query = $this->buildSelect($distinct);
-      return $g_db->getrows($query);      
+      return $g_db->getrows($query);
     }
-    
+
     /**
       * Add limiting clauses to the query.
       * Default implementation: no limit supported. Derived classes should implement this.
@@ -325,7 +323,7 @@
     {
       // not supported..
     }
-    
+
     function _addOrderBy(&$query)
     {
       if (count($this->m_orderbys)>0)
@@ -333,7 +331,7 @@
         $query.= " ORDER BY ".implode(", ",$this->m_orderbys);
       }
     }
-    
+
 
     /**
      * Builds the SQL Select COUNT(*) query. This is different from select,
@@ -410,25 +408,25 @@
     }
 
     /**
-     * Wrapper function to execute an update query 
+     * Wrapper function to execute an update query
      */
     function executeUpdate()
     {
       global $g_db;
-      
+
       $query = $this->buildUpdate();
-      return $g_db->query($query);      
+      return $g_db->query($query);
     }
 
-    /**  
-     * Wrapper function to execute an insert query 
+    /**
+     * Wrapper function to execute an insert query
      */
     function executeInsert()
     {
       global $g_db;
-      
+
       $query = $this->buildInsert(true);
-      return $g_db->query($query);      
+      return $g_db->query($query);
     }
 
     /**
@@ -473,21 +471,21 @@
 
       return $result;
     }
-    
+
     /**
-     * Wrapper function to execute a delete query 
+     * Wrapper function to execute a delete query
      */
     function executeDelete()
     {
       global $g_db;
-       
+
       $query = $this->buildDelete();
-      return $g_db->query($query);      
+      return $g_db->query($query);
     }
 
     /**
      * Search Alias in alias array
-     * @param array $record Array with fields     
+     * @param array $record Array with fields
      */
     function deAlias(&$record)
     {
@@ -605,14 +603,14 @@
         return $field." <= '".$value."'";
       }
     }
-    
+
     function betweenCondition($field, $value1, $value2)
     {
       return $field." BETWEEN '".$value1."' AND '".$value2."'";
     }
-    
+
     /**
-     * Static factory method. This method returns a new instance of a query 
+     * Static factory method. This method returns a new instance of a query
      * object for the current database.
      */
     function &create()

@@ -535,7 +535,7 @@
     {
       $result = array();
       $fp = fopen($file, "r");
-      for ($i=0; $i<5; $i++)
+      for ($i=0; $i<10; $i++)
       {
         $line = fgets($fp);
         if ($line!==false)
@@ -1173,8 +1173,9 @@
      */
     function update(&$record)
     {
-      atk_var_dump($record,"<h1>record</h1>");
       $res = $this->m_node->preUpdate($record);
+
+      atk_var_dump($record,"<h1>record with preUpdate returning: ".($res?"true":"false")."</h1>");
 
       if(isset($record['atkerror']) || !$res)
       {
