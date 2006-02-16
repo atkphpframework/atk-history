@@ -124,7 +124,7 @@
   "import_field" => "Veld",
   "import_ignorecolumn" => "Negeer deze kolom",
   "import_import" => "Importeer",
-  "import_nonunique_identifier" => "Niet unieke identifier gevonden in record waar de identifier '%s' is",
+  "import_nonunique_identifier" => "Niet unieke identifier gevonden in record waar voor veld '%s' met waarde '%s'.",
   "import_onfalseidentifier" => "Voeg toe en ga verder indien er een onjuiste identifier is (meer of minder dan 1 rij voor dezelfde key)",
   "import_relation_value_failed" => "Van het veld '%s' is op regel %s de waarde '%s' ingevoerd, maar dit is geen unieke waarde voor deze relatie",
   "import_sample" => "Voorbeeld uit de csv-file",
@@ -233,9 +233,9 @@
   "wysiwyg_split_cell" => "Cellen splitsen",
   "yes" => "Ja",
   "select_a"=>"Selecteer een",
-  "tab_default"=>"Algemeen", 
-  
-  "import_multiple_identifiers"=>"Meerdere rijen gevonden voor identifier met waarde: '%s'",
+  "tab_default"=>"Algemeen",
+
+  "import_multiple_identifiers"=>"Meerdere rijen gevonden voor identifiers met waardes: '%s'",
   "import_identifier_not_found"=>"Geen rij gevonden voor identifier met waarde: '%s'",
   'import_novalidatefirst'=>'Rijen niet eerst valideren maar gelijk toevoegen/bijwerken',
   "feedback_import_failed"=>"Het bestand kan niet geimporteerd worden",
