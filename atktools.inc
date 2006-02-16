@@ -576,6 +576,28 @@
   }
 
   /**
+   * atk_array_merge_recursive2()
+   *
+   * Similar to array_merge_recursive but keyed-valued are always overwritten.
+   * Priority goes to the 2nd array.
+   *
+   * @static yes
+   * @public yes
+   * @param $paArray1 array
+   * @param $paArray2 array
+   * @return array
+   */
+  function atk_array_merge_recursive($array1, $array2)
+  {
+    if (!is_array($array1) or !is_array($array2)) { return $array2; }
+    foreach ($array2 AS $key2 => $value2)
+    {
+      $array1[$key2] = atk_array_merge_recursive(@$array1[$key2], $value2);
+    }
+    return $array1;
+  }
+
+  /**
    * Since php triggers an error if you perform an in_array on an
    * uninitialised array, we provide a small wrapper that performs
    * an is_array on the haystack first, just to make sure the user
