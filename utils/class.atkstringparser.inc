@@ -51,7 +51,7 @@
         $databin = $data;
         for($j=0;$j<count($elements);$j++)
         {
-          if (array_key_exists($elements[$j],$databin))
+          if (is_array($databin) && array_key_exists($elements[$j],$databin))
           {
             $value = $databin[$elements[$j]];
             $databin = $databin[$elements[$j]];
