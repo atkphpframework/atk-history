@@ -147,18 +147,18 @@
   {
     global $g_debug_msg;
     $level = atkconfig("debug");
-    if ($level>0)
-    {
+//    if ($level>0)
+//    {
       atkWriteLog($txt);
       $line = atkGetTimingInfo().$txt;
 
       $g_debug_msg[]=$line;
-    }
-    else if ($level>-1) // at 0 we still collect the info so we
-                        // have it in error reports. At -1, we don't collect
-    {
-      $g_debug_msg[]=$txt;
-    }
+//    }
+//    else if ($level>-1) // at 0 we still collect the info so we
+//                        // have it in error reports. At -1, we don't collect
+//    {
+//      $g_debug_msg[]=$txt;
+//    }
   }
 
   function atkGetTimingInfo()
