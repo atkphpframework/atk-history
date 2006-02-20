@@ -17,7 +17,7 @@
    */
 
   /** flag(s) specific for atkDateAttribute */
-  define("AF_DATE_STRING",              AF_SPECIFIC_1); // date must be entered as an english date string (strtotime)
+  define("AF_DATE_STRING",              AF_SPECIFIC_1); // date must be entered as an english date string (strtotime), also checks edit format
   define("AF_DATE_EMPTYFIELD",          AF_SPECIFIC_2); // Fields have one empty option
   define("AF_DATE_NO_CALENDAR",         AF_SPECIFIC_3); // Do not append the popup calendar.
   define("AF_DATE_DISPLAY_DAY",         AF_SPECIFIC_4); // Show the day of the week in the display
@@ -192,8 +192,9 @@
         $max = 0;
       }
 
-      /* edit date format */
-      if     (!empty($format_edit)) $this->m_date_format_edit = $format_edit;
+      /* edit date format */      
+      if (hasFlag($flags, AF_DATE_STRING) && empty($format_edit)) $this->m_date_format_edit = "Y-m-d";
+      elseif (!empty($format_edit)) $this->m_date_format_edit = $format_edit;
       elseif (!empty($txt_date_format_edit)) $this->m_date_format_edit = $txt_date_format_edit;
       else   $this->m_date_format_edit = "F j Y";
 
@@ -244,15 +245,16 @@
       {
         $value = &$record[$this->fieldName()];
 
-        if (is_array($value)) $value = adodb_date("Y-m-d", adodb_mktime(0, 0, 0, $value["month"], $value["day"], $value["year"]));
-        elseif ($obligatory) $value = adodb_date("Y-m-d");
+        if (is_array($value)) $value = adodb_date($this->m_date_format_edit, adodb_mktime(0, 0, 0, $value["month"], $value["day"], $value["year"]));
+        elseif ($obligatory) $value = adodb_date($this->m_date_format_edit);
         else $value = "";
         $this->registerKeyListener($fieldname, KB_CTRLCURSOR|KB_UPDOWN);
         $result = '<input type="text" id="'.$fieldname.'" class="atkdateattribute" name="'.$fieldname.'" value="'.$value.'" size="10">';
 
         if (!$this->hasFlag(AF_DATE_NO_CALENDAR) && $mode != 'list')
         {
-          $result.=' <input class="button" class="atkdateattribute" type="reset" value="..." onclick="return showCalendar(\''.$fieldname.'\', \''.$fieldname.'\', \'y-mm-dd\', false);">';
+          $format = str_replace(array("y", "Y", "m", "n", "j", "d"), array("yy", "y", "mm", "m", "d", "dd"), $this->m_date_format_edit);
+          $result.=' <input class="button" class="atkdateattribute" type="button" value="..." onclick="return showCalendar(\''.$fieldname.'\', \''.$fieldname.'\', \''.$format.'\', false);">';
         }
         return $result;
       }
@@ -707,7 +709,17 @@
       {
         if (is_array($postvars[$this->formName()])) return $postvars[$this->formName()];
         elseif (empty($postvars[$this->formName()])) return "";
-        else return $this->dateArray(adodb_date("Ymd", strtotime($postvars[$this->formName()])));
+        else 
+        {
+          // we should use strptime in PHP >= 5.1 
+          $formats = array();
+          $formats[] = str_replace(array("y", "Y", "m", "n", "j", "d"), array("yy", "yyyy", "mm", "m", "d", "dd"), $this->m_date_format_edit);
+          $formats[] = str_replace(array("y", "Y", "m", "n", "j", "d"), array("yy", "yyyy", "mm", "mm", "dd", "dd"), $this->m_date_format_edit);
+          $arr = $this->parseDate($postvars[$this->formName()], $formats);
+          if ($arr['day'] == 0 || $arr['month'] == 0 || $arr['year'] == 0)
+            return $this->dateArray(adodb_date("Ymd", strtotime($postvars[$this->formName()])));
+          else return $arr;
+        }
       }
       return NULL;
     }

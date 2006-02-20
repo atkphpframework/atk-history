@@ -88,6 +88,14 @@
      * @var Array
      */
     var $m_listColumns = array();
+    
+    /**
+     * Label to use for the 'none' option.
+     *
+     * @access private
+     * @var String
+     */
+    var $m_noneLabel = NULL;
 
     var $m_onchangehandler_init = "newvalue = el.options[el.selectedIndex].value;\n";
 
@@ -232,7 +240,27 @@
         }
       }
     }
-
+    
+    /**
+     * Set none label.
+     */
+    function setNoneLabel($label)
+    {
+      $this->m_noneLabel = $label;
+    }
+    
+    /**
+     * Get none label.
+     */
+    function getNoneLabel()
+    {
+      if ($this->m_noneLabel !== NULL)
+        return $this->m_noneLabel;
+      $nodename = $this->m_destInstance->m_type;
+      $modulename = $this->m_destInstance->m_module;;
+      return atktext('select_none', $modulename, $nodename);
+    }
+    
     /**
      * Returns a displayable string for this value.
      * @param $record Record
@@ -342,12 +370,8 @@
             $result.= '<select id="'.$id.'" name="'.$id.'" class="atkmanytoonerelation" '.$onchange.'>';
             if ((!$this->hasFlag(AF_OBLIGATORY) && !$this->hasFlag(AF_RELATION_NO_NULL_ITEM)) || (atkconfig("list_obligatory_null_item")&&!is_array($value)))
             {
-              //get the select_none string
-              $nodename = $this->m_destInstance->m_type;
-              $modulename = $this->m_destInstance->m_module;;
-              $nonetext = atktext('select_none', $modulename, $nodename);
               // Relation may be empty, so we must provide an empty selectable..
-              $result.= '<option value="">'.$nonetext;
+              $result.= '<option value="">'.$this->getNoneLabel();
             }
             // Newly added check
             $newlyadded = "";

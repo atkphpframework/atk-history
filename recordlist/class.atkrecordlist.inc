@@ -244,7 +244,7 @@
           // TODO: REPLACE HARD CODED AJAX URL!
           $url = session_url(dispatch_url($node->atkNodeType(), 'admin', $params = array('atkpartial' => 'recordlist')), SESSION_DEFAULT);
           $onClick = "new Ajax.Updater('{$listName}_container', '$url', {method: 'post', parameters: Form.serialize(this.form), evalScripts: true, asynchronous: true })";
-          $button = '<input type="button" class="btn_search" value="'.atktext("search").'" onclick="'.$onClick.'">';
+          $button = '<input type="submit" class="btn_search" value="'.atktext("search").'" onclick="'.$onClick.'">';
           if (!hasFlag($flags, RL_NO_EXTENDED_SEARCH)&&!$this->m_node->hasFlag(NF_NO_EXTENDED_SEARCH))
           {
             $button .= '<br>'.href($_SERVER["PHP_SELF"]."?atknodetype=".$this->m_node->atkNodeType()."&atkaction=search&atksearchmode=".
@@ -358,7 +358,7 @@
             for ($j = $this->m_node->m_priority_min; $j <= $this->m_node->m_priority_max; $j++)
               $select .= '<option value="'.$j.'">'.$j.'</option>';
             $select .= '</select>';
-            $record["cols"][] = array("content" => $select);
+            $record["cols"][] = array("content" => $select, "type" => "mrpa");
           }
 
           /* multi-record-actions -> checkbox / radiobutton */
@@ -383,9 +383,9 @@
                   $inputHTML = '<input type="checkbox" name="'.$listName.'_atkselector[]" value="'.$list["rows"][$i]["selector"].'" onclick="if (this.disabled) this.checked = false">';                
               }              
               
-              $record["cols"][] = array("content"=>$inputHTML.'<script language="javascript"  type="text/javascript">'.$listName.'["'.$list["rows"][$i]["selector"].'"] = new Array("'.implode($list["rows"][$i]["mra"], '","').'");</script>');
+              $record["cols"][] = array("content"=>$inputHTML.'<script language="javascript"  type="text/javascript">'.$listName.'["'.$list["rows"][$i]["selector"].'"] = new Array("'.implode($list["rows"][$i]["mra"], '","').'");</script>', "type" => "mra");
             }
-            else $record["cols"][] = array("content"=>"");
+            else $record["cols"][] = array("content"=>"", "type" => "mra");
           }
 
           /* locked? */
@@ -394,9 +394,9 @@
             if (is_array($list["rows"][$i]["lock"]))
             {
               $alt = $list["rows"][$i]["lock"]["user_id"]." / ".$list["rows"][$i]["lock"]["user_ip"];
-              $record["cols"][] = array("content"=>'<img src="'.atkconfig("atkroot").'atk/images/lock.gif" alt="'.$alt.'" border="0">');
+              $record["cols"][] = array("content"=>'<img src="'.atkconfig("atkroot").'atk/images/lock.gif" alt="'.$alt.'" border="0">', "type" => "lock");
             }
-            else $record["cols"][] = array("content"=>"");
+            else $record["cols"][] = array("content"=>"", "type" => "lock");
           }
 
           $str_actions = "<span class=\"actions\">";
@@ -431,21 +431,21 @@
           {
             if (!empty($str_actions))
             {
-              $record["cols"][] = array("content"=>$str_actions);
+              $record["cols"][] = array("content"=>$str_actions, "type" => "actions");
             }
-            else  $record["cols"][] = array("content"=>"");
+            else  $record["cols"][] = array("content"=>"", "type" => "actions");
 
           }
 
           /* columns */
           foreach ($list["rows"][$i]["data"] as $html)
-            $record["cols"][] = array("content"=>$html);
+            $record["cols"][] = array("content"=>$html, "type" => "data");
 
           /* actions (right) */
           if ($orientation=="right"||$orientation=="both")
           {
-            if (!empty($str_actions)) $record["cols"][] = array("content"=>$str_actions);
-            else $record["cols"][] = array("content"=>"");
+            if (!empty($str_actions)) $record["cols"][] = array("content"=>$str_actions, "type" => "actions");
+            else $record["cols"][] = array("content"=>"", "type" => "actions");
           }
 
           $records[] = $record;

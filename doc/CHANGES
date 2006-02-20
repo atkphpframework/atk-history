@@ -39,6 +39,13 @@ Changes in tomorrow branch
 * Fixed handling of record in embeded one-to-many relation. [Peter]
 * Fixed handling of NULL values of atkNumberAttribute (and
   other attributes which specify AF_NO_QUOTES). [Peter]
+* Now using the edit format for date attributes if 
+  AF_DATE_STRING flag is set. [Peter]
+* Added column type to recordlist columns and search button
+  is now of type submit instead of button. [Peter]
+* Added setNoneLabel method to atkManyToOneRelation for specifying
+  the label to use for the empty selection (for cases where you
+  can't use the default translation). [Peter]
 
 Changes in ATK 5.4.1
 --------------------
