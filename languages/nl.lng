@@ -90,6 +90,7 @@
   "export" => "Exporteren",
   "february" => "februari",
   "feedback" => "Bevestiging",
+  'feedback_edit_failed'=>'Het item kan niet bewerkt worden.',
   "feedback_delete_cancelled" => "Het item is niet verwijderd.",
   "feedback_delete_failed" => "Het item kon niet verwijderd worden.",
   "feedback_delete_success" => "Het item is verwijderd.",
