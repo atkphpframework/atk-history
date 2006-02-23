@@ -524,6 +524,23 @@
         }
       }
     }
+    
+    /**
+     * Generate a searchcondition that checks if the field is null.
+     */
+    function nullCondition($field)
+    {
+      return "$field IS NULL";
+    }
+    
+    
+    /**
+     * Generate a searchcondition that checks if the field is not null.
+     */
+    function notNullCondition($field)
+    {
+      return "$field IS NOT NULL";
+    }    
 
     /**
      * Generate a searchcondition that checks whether $value matches $field exactly.

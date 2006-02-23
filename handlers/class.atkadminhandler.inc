@@ -145,7 +145,7 @@
         /* @var $container atkRecordListContainer */
         $container = &atknew("atk.recordlist.atkrecordlistcontainer");
         $container->setNode($this->m_node);
-        $container->setAction('admin');
+        $container->setAction($this->m_node->m_action);
         $container->setRecords($recordset);
         $container->setHeader($this->invoke("adminHeader").$this->getHeaderLinks());
         $container->setFooter($this->invoke("adminFooter"));

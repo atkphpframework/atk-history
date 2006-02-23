@@ -35,6 +35,35 @@
   {
     var $m_time = "";
     var $m_date = "";
+    
+
+    /**
+     * Converts a date array to a timestamp
+     * year, month, day are obligatory !!
+     *
+     * @param array $dateArray Date Array
+     * @return int Timestamp
+     */
+    function arrayToDateTime($dateArray)
+    {
+      $hour = 0;
+      $min = 0;
+      $sec = 0;
+      $dateValid = true;
+
+      if(!empty($dateArray["hours"])) $hour = $dateArray["hours"];
+      if(!empty($dateArray["minutes"])) $min = $dateArray["minutes"];
+      if(!empty($dateArray["seconds"])) $sec = $dateArray["seconds"];
+      if(!empty($dateArray["day"])) $day = $dateArray["day"];
+      else $dateValid = false;
+      if(!empty($dateArray["month"])) $month = $dateArray["month"];
+      else $dateValid = false;
+      if(!empty($dateArray["year"])) $year = $dateArray["year"];
+      else $dateValid = false;
+
+      if($dateValid) return adodb_mktime($hour,$min,$sec,$month,$day,$year);
+      else return adodb_mktime(0,0,0);
+    }    
 
     /**
      * Constructor
@@ -173,7 +202,7 @@
      */
     function db2value($rec)
     {
-      if(isset($rec[$this->fieldName()]))
+      if(isset($rec[$this->fieldName()]) && $rec[$this->fieldName()] != NULL)
       {
         $datetime = split(" ",$rec[$this->fieldname()]);
 
@@ -188,6 +217,7 @@
 
         return array_merge($result_date,$result_time);
       }
+      else return NULL;
     }
 
     /**

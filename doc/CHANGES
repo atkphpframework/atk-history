@@ -23,6 +23,8 @@ Changes in tomorrow branch
 + Added text function to atkNode and atkAttribute, to simply
   the usage of atktext (fills module and node type). [Peter]
 + Added new CSS dropdown menu. [Boy]
++ Added none option to search field of non-obligatory atkManyToOneRelation. [Peter]
++ Added static dateArrayToDateTime method to atkDateTimeAttribute. [Peter]
 * function decomposition in list- and multiselectattribute. [Martin]
 * renamed getclassname to getfullclassname in the securitymanager. [Martin]
 * functional decomposition of the auth_db class. [Martin]
@@ -46,6 +48,10 @@ Changes in tomorrow branch
 * Added setNoneLabel method to atkManyToOneRelation for specifying
   the label to use for the empty selection (for cases where you
   can't use the default translation). [Peter]
+* Admin handler now uses action of node (instead of simply 
+  assuming action 'admin'). [Peter]
+* Fixed handling of null values in db2value method of 
+  atkDateTimeAttribute [Peter]
 
 Changes in ATK 5.4.1
 --------------------

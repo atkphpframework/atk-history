@@ -204,6 +204,7 @@
   "saveandclose" => "Save and close",
   "search" => "Search",
   "search_all" => "Search all",
+  "search_none" => "Nothing selected",
   "search_and" => "Match all criteria",
   "search_between" => "Search between two values",
   "search_exact" => "Search for an exact match",

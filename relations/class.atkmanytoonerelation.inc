@@ -574,6 +574,8 @@
           $pkfield = $this->m_destInstance->primaryKeyField();
 
           $result.= '<option value="">'.atktext('search_all');
+          if (!$this->hasFlag(AF_OBLIGATORY))
+            $result.= '<option value="__NONE__"'.(isset($record[$this->fieldName()]) && atk_in_array('__NONE__', $record[$this->fieldName()]) ? ' selected="selected"' : '').'>'.atktext('search_none');
 
           for ($i=0;$i<count($recordset);$i++)
           {
@@ -643,7 +645,11 @@
 
     			if (count($value)==1) // exactly one value
     			{
-    			  if ($value[0]!="")
+    			  if ($value[0] == "__NONE__")
+    			  {
+    			    return $query->nullCondition($table.".".$this->fieldName());
+    			  }
+    			  elseif ($value[0] != "")
     			  {
     			    return $query->exactCondition($table.".".$this->fieldName(),escapeSQL($value[0]));
     			  }

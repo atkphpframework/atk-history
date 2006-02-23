@@ -202,6 +202,7 @@
   "saveandnext" => "Opslaan en volgende",
   "search" => "Zoeken",
   "search_all" => "Alles zoeken",
+  "search_none" => "Geen selectie",
   "search_and" => "Alle criteria voldoen",
   "search_between" => "Zoek tussen 2 waarden",
   "search_exact" => "Zoek naar een exact resultaat",
