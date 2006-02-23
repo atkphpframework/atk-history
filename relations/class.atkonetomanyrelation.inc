@@ -102,7 +102,7 @@
       $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");
       $page->register_script(atkconfig("atkroot")."atk/javascript/class.atkonetomanyrelation.js");
 
-      $this->atkRelation($name, $destination, $flags|AF_HIDE_ADD|AF_NO_SORT);
+      $this->atkRelation($name, $destination, $flags|AF_HIDE_ADD|AF_NO_SORT|AF_ONETOMANY_NO_EMBED);
       // 1toM Relations are NEVER edited when adding a rec. And for now, we
       // cannot search or sort them.
 
