@@ -1230,9 +1230,12 @@
     {
       $errors = array();
       //get the unused obligatory fields
-      $unused = array_values(array_diff($this->getObligatoryAttributes(),$col_map));
+      if (!$this->m_postvars['doupdate'])
+      {
+        $unused = array_values(array_diff($this->getObligatoryAttributes(),$col_map));
 
-      $this->_returnErrors(array_values(array_diff($unused,array_keys($initial_values))),"import_error_fieldisobligatory","import_error_fieldsareobligatory",$errors);
+        $this->_returnErrors(array_values(array_diff($unused,array_keys($initial_values))),"import_error_fieldisobligatory","import_error_fieldsareobligatory",$errors);
+      }
       $this->_returnErrors($this->_getDuplicateColumns($col_map),"import_error_fieldusedtwice","import_error_fieldsusedtwice",$errors);
 
       return $errors;
