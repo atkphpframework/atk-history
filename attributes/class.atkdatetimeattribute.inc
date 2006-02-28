@@ -186,10 +186,10 @@
      * @param $record Array with fields
      * @return piece of html code with a checkbox
      */
-    function search($record="")
-    {      
-     return "";
-    }
+//    function search($record="")
+//    {      
+//     return "";
+//    }
     
     function hide($record="", $fieldprefix="")
     {
