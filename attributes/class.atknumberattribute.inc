@@ -220,6 +220,7 @@
     
     function getSearchCondition(&$query, $table, $value, $searchmode)
     {
+      if ($this->m_searchmode) $searchmode = $this->m_searchmode;
     	if (!is_array($value))
       {        
         $slash = strpos($value, "/"); // Support for 'from/to' searches.
