@@ -1063,13 +1063,12 @@
           }
         }
       }
-      else if (is_object($attr) && method_exists($attr,"fetchValue") && $attributename!=="birthdate")
+      else if (is_object($attr) && method_exists($attr,"fetchValue") && !strstr(strtolower(get_class($attr)),'atkdate'))
       {
         $value = $attr->fetchValue(array($attributename=>$value));
       }
       else
       {
-        atkdebug("<h1>$value = trim($value);</h1>");
         $value = trim($value);
       }
       return $value;
@@ -1175,7 +1174,7 @@
     {
       $res = $this->m_node->preUpdate($record);
 
-      atk_var_dump($record,"<h1>record with preUpdate returning: ".($res?"true":"false")."</h1>");
+      atk_var_dump($record,"record with preUpdate returning: ".($res?"true":"false"));
 
       if(isset($record['atkerror']) || !$res)
       {
