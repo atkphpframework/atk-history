@@ -25,6 +25,7 @@ Changes in tomorrow branch
 + Added new CSS dropdown menu. [Boy]
 + Added none option to search field of non-obligatory atkManyToOneRelation. [Peter]
 + Added static dateArrayToDateTime method to atkDateTimeAttribute. [Peter]
++ Added overlib javascript library. [Peter]
 * function decomposition in list- and multiselectattribute. [Martin]
 * renamed getclassname to getfullclassname in the securitymanager. [Martin]
 * functional decomposition of the auth_db class. [Martin]
