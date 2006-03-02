@@ -3017,6 +3017,7 @@
     function preAdd(&$record)
     {
       // Do nothing
+      return true;
     }
 
     /**
