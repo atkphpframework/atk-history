@@ -547,13 +547,19 @@
       $stack = $g_sessionData[$this->m_namespace]["stack"][atkStackID()];
       $res = array();
       
+      $prev = NULL;
       $stackcount = count($stack);
       for ($i=0;$i<$stackcount;$i++)
       {
         if (isset($stack[$i]["descriptor"]) || $i == ($stackcount-1))
         {
           $node = explode(".",$stack[$i]["atknodetype"]);
-          $res[] = atktext($node[1],$node[0]).(isset($stack[$i]["descriptor"])?" [ {$stack[$i]['descriptor']} ] ":"");
+          $value = atktext($node[1],$node[0]).(isset($stack[$i]["descriptor"])?" [ {$stack[$i]['descriptor']} ] ":"");
+          if ($value != $prev)
+          {
+            $res[] = $value;
+            $prev = $value;
+          }
         }
       }
       return $res;

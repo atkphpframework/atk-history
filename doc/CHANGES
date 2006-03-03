@@ -53,6 +53,7 @@ Changes in tomorrow branch
   assuming action 'admin'). [Peter]
 * Fixed handling of null values in db2value method of 
   atkDateTimeAttribute [Peter]
+* Don't display duplicate descriptors in title session backtrace. [Peter]
 
 Changes in ATK 5.4.1
 --------------------
