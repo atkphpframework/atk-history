@@ -26,6 +26,7 @@ Changes in tomorrow branch
 + Added none option to search field of non-obligatory atkManyToOneRelation. [Peter]
 + Added static dateArrayToDateTime method to atkDateTimeAttribute. [Peter]
 + Added overlib javascript library. [Peter]
++ Added support for setting a security map in the meta node. [Peter]
 * function decomposition in list- and multiselectattribute. [Martin]
 * renamed getclassname to getfullclassname in the securitymanager. [Martin]
 * functional decomposition of the auth_db class. [Martin]
@@ -54,6 +55,7 @@ Changes in tomorrow branch
 * Fixed handling of null values in db2value method of 
   atkDateTimeAttribute [Peter]
 * Don't display duplicate descriptors in title session backtrace. [Peter]
+* Drop-down menu now checks all rights of underlying menuitems. [Peter]
 
 Changes in ATK 5.4.1
 --------------------

@@ -55,6 +55,7 @@ class atkMetaNode extends atkNode
    * - descriptor     descriptor template for this node
    * - order          (default) order to sort fields
    * - securityAlias  security alias for this node
+   * - securityMap    security map for this node (will be added to the existing security map!)
    * 
    * All of these variables can also be specified by creating a class variable with
    * the same name. If you do so for flags, and have to use multiple flags, use
@@ -142,6 +143,11 @@ class atkMetaNode extends atkNode
       $this->setSecurityAlias($this->securityAlias);
     else if (array_key_exists("securityAlias", $args))
       $this->setSecurityAlias($args["securityAlias"]);      
+      
+    if (isset($this->securityMap))
+      $this->m_securityMap = array_merge($this->m_securityMap, $this->securityMap);
+    else if (array_key_exists("securityMap", $args))
+      $this->m_securityMap = array_merge($this->m_securityMap, $args["securityMap"]);          
 
     $this->applyMetaPolicy($this->m_metaPolicy);
   }
