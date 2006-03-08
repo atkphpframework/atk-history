@@ -265,10 +265,16 @@
      * @param $record Array with fields
      * @return piece of html code with a checkbox
      */
-    function search($record="")
+    function search($record="", $extended=false, $fieldprefix="")
     {
-     return "";
+     return $this->m_date->search($record, $extended, $fieldprefix);
     }
+    
+    function searchCondition(&$query, $table, $value, $searchmode)
+    {
+      $this->m_date->searchCondition($query, $table, $value, $searchmode);
+    }    
+    
 
     function hide($record="", $fieldprefix="")
     {
@@ -280,13 +286,7 @@
 
     function getSearchModes()
     {
-      // exact match and substring search should be supported by any database.
-      // (the LIKE function is ANSI standard SQL, and both substring and wildcard
-      // searches can be implemented using LIKE)
-      // Possible values
-      //"regexp","exact","substring", "wildcard","greaterthan","greaterthanequal","lessthan","lessthanequal"
-      //return array("exact","greaterthan","greaterthanequal","lessthan","lessthanequal");
-      return array();
+      return $this->m_date->getSearchModes();
     }
 
     function dbFieldType()

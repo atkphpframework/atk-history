@@ -406,7 +406,7 @@
       // for now, we don't support extended search in embedded one2many recordlists.
       atkimport("atk.recordlist.atkrecordlist");
       $flags  = atkRecordList::convertFlags($this->m_destInstance->getFlags());
-      $flags |= RL_EMBED|RL_NO_EXTENDED_SEARCH;
+      $flags |= RL_EMBED|RL_NO_EXTENDED_SEARCH|RL_NO_SEARCH; // TODO/FIXME: Ajax search is disabled
       return $flags;
     }
 

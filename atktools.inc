@@ -1456,6 +1456,36 @@
       case ACTION_SUCCESS: return "success";
     }
   }
+  
+  /**
+   * Build query string based on an array of parameters.
+   * 
+   * @param array $params array of parameters
+   */
+  function buildQueryString($params, $parent="")
+  {
+    $query = "";
+    
+    foreach ($params as $key => $value)
+    {
+      if (!empty($query))
+        $query .= '&';
+
+      if (!empty($parent))
+        $key = "{$parent}[{$key}]";
+         
+      if (!is_array($value))
+      {
+        $query .= "$key=".rawurlencode($value);
+      }
+      else 
+      {
+        $query .= buildQueryString($value, $key);
+      }
+    }
+    
+    return $query;
+  }
 
   /**
    * Generate a dispatch menu URL for use with nodes
@@ -1468,19 +1498,28 @@
    */
   function dispatch_url($node, $action, $params="",$phpfile='dispatch.php')
   {
-    /* create url */
     $url = $phpfile."?atknodetype=".$node."&atkaction=".$action;
-    if ($params!=""&&is_array($params))
-    {
-      foreach ($params as $key => $value)
-      {
-        $url .= "&$key=".rawurlencode($value);
-      }
-    }
-
-    /* return url */
+    if ($params != "" && is_array($params) && count($params) > 0)
+      $url .= '&'.buildQueryString($params);
     return $url;
   }
+  
+  /**
+   * Generate a partial url.
+   *
+   * @param string $node the (module.)node name
+   * @param string $action the atkaction
+   * @param string $partial the partial name
+   * @param array $params a key/value array with extra params
+   * @return string url for the partial action
+   */
+  function partial_url($node, $action, $partial, $params=array())
+  {
+    if (!is_array($params))
+      $params = array();
+    $params['atkpartial'] = $partial;
+    return session_url(dispatch_url($node, $action, $params), SESSION_DEFAULT);
+  }   
 
   /**
    * Writes trace file to system tmp directory

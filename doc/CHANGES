@@ -27,11 +27,9 @@ Changes in tomorrow branch
 + Added static dateArrayToDateTime method to atkDateTimeAttribute. [Peter]
 + Added overlib javascript library. [Peter]
 + Added support for setting a security map in the meta node. [Peter]
-* function decomposition in list- and multiselectattribute. [Martin]
-* renamed getclassname to getfullclassname in the securitymanager. [Martin]
-* functional decomposition of the auth_db class. [Martin]
-* atkLanguage doesn't bother translating an empty string anymore. [Boy]
-* PHP5 compat bugfix in atknew returning a ref. [Martin]
++ Added partial_url method for creating partial dispatch URL's. [Peter]
++ Added preliminary support for partials to atkAttribute, 
+  atkManyToOneRelation and atkEditHandler. Not fully implemented yet! [Peter]
 * Improvements to error reporting of importing and added ability 
   to add multiple fields for the entire import ('allfields'). [Boy]
 * Added id to field td. [Boy]
@@ -56,6 +54,12 @@ Changes in tomorrow branch
   atkDateTimeAttribute [Peter]
 * Don't display duplicate descriptors in title session backtrace. [Peter]
 * Drop-down menu now checks all rights of underlying menuitems. [Peter]
+* dispatch_url now also supports multi-level arrays as parameters. [Peter]
+* Fixed / improved searching for atkDateAttribute. [Peter]
+* Added search support to atkDateTimeAttribute (only atkDateAttribute 
+  based at this time). [Peter]
+* Show large textarea on editing of an in-list textattribute. [Peter]
+* Fixed title retrieval for node UI. [Peter]
 
 Changes in ATK 5.4.1
 --------------------

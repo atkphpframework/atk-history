@@ -20,8 +20,9 @@
   /**
    * flag(s) specific for atkManyToOneRelation
    */
-  define("AF_RELATION_AUTOLINK", AF_SPECIFIC_1); // create edit/view links for the items in a manytoonerelation dropdown.
-  define("AF_RELATION_NO_NULL_ITEM", AF_SPECIFIC_2);// Do not add null option ever
+  define("AF_RELATION_AUTOLINK", AF_SPECIFIC_1);     // create edit/view links for the items in a manytoonerelation dropdown.
+  define("AF_RELATION_NO_NULL_ITEM", AF_SPECIFIC_2); // do not add null option ever
+  define("AF_RELATION_AUTOCOMPLETE", AF_SPECIFIC_3); // use auto-completition instead of drop-down / selection page
 
   /**
    * @internal include base class
@@ -322,6 +323,55 @@
       // and one with a dropdownbox that contains the last 10 used records,
       // with a link to a selector with all records. This second one is for
       // relations with large tables, so is only used when AF_LARGE is set.
+      if ($this->hasFlag(AF_RELATION_AUTOCOMPLETE))
+      {
+        $this->createDestination();
+        
+        $page = &$this->m_ownerInstance->getPage();        
+        
+        $id = $fieldprefix.$this->fieldName();
+        $url = partial_url($this->m_ownerInstance->atkNodeType(), 'edit', 'attribute.'.$this->fieldName().'.auto_complete');
+        $value = $record[$this->fieldName()] == NULL ? '' : $this->m_destInstance->primaryKey($record[$this->fieldName()]);
+        $code = "new Ajax.AdvancedAutocompleter('${id}_search', '{$id}_result', '{$id}_selection', '$id', '$url', { paramName: 'value', minChars: 2, frequency: 0.5 });";    
+        
+        $page->register_script(atkconfig("atkroot").'atk/javascript/prototype/prototype.js');
+        $page->register_script(atkconfig("atkroot").'atk/javascript/scriptaculous/scriptaculous.js');
+        $page->register_loadscript($code);         
+        
+        $style = "
+          div.{$id}_result {
+            position: absolute;
+            width: 250px;
+            background-color: white;
+            border: 1px solid #888;
+            margin: 0px;
+            padding: 0px;
+          }
+          
+          div.{$id}_result ul  {
+            list-style-type: none;
+            margin:0px;
+            padding:0px;
+          }
+          
+          div.{$id}_result li.selected { background-color: #ffb; }
+          div.{$id}_result li {
+            list-style-type: none;
+            display: block;
+            margin: 0;
+            padding: 2px;
+            height: 32px;
+          }          
+        ";
+        
+        $page->register_stylecode($style);       
+        
+        return 
+          '<input type="text" id="'.$id.'_search" class="'.$id.'_search" size="40" />
+           <div id="'.$id.'_result" class="'.$id.'_result"></div>      
+           <input type="hidden" name="'.$id.'" value="'.$value.'"/><br />
+           <span id="'.$id.'_selection" class"'.$id.'_selection">'.$this->display($record).'</span>';            
+      }      
 
       if ($this->createDestination())
       {
@@ -1075,6 +1125,11 @@
             $p_attrib->addToSearchformFields($fields,$node,$record[$this->fieldName()], "{$prefix}_AE_".$this->fieldName());
         }
       }
+    }
+    
+    function partial()
+    {
+      return "<ul><li>todo implement</li></ul>";
     }
   }
 ?>

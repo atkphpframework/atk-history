@@ -342,7 +342,8 @@ Object.extend(Object.extend(Ajax.AdvancedAutocompleter.prototype, Ajax.Autocompl
     Ajax.Autocompleter.prototype.initialize.apply(this, new Array(element, update, url, options));
     this.selection = $(selection);
     this.value = $(value);
-    this.options.callback = function(el, entry) { return Form.serialize(el.form) + '&' + entry; }
+    if (this.options.serializeForm)
+      this.options.callback = function(el, entry) { return Form.serialize(el.form) + '&' + entry; }
   },
   
   findFirstNodeByClass: function(element, className) {

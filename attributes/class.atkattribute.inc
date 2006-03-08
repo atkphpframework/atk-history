@@ -1837,5 +1837,13 @@
     {
       return $this->m_ownerInstance->text($string);
     }
+    
+    /**
+     * Handle partial.
+     */
+    function partial($mode, $options=array())
+    {
+      return '&nbsp;'; // not implemented yet
+    }
   }
 ?>

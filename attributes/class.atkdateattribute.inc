@@ -520,12 +520,14 @@
     {
       if (!$extended)
       {
-        // plain text search
+        // plain text search, check if we didn't come from extended search (then current value is an array)
+        if (isset($record[$this->fieldName()]) && is_array($record[$this->fieldName()]))
+          $record[$this->fieldName()] = NULL;
         return parent::search($record, $extended, $fieldprefix);
       }
 
       // Set default values to null.
-      $record[$this->fieldName()]=array("year"=>0, "month"=>0, "day"=>0);
+      $record[$this->fieldName()]=NULL;
 
       // FIXME, we need a way to set the date to 'nothing' (i.e., unselected)
       $res = $this->draw($record, "atksearch_AE_".$fieldprefix, "_AE_from");
@@ -541,50 +543,67 @@
     function getSearchCondition(&$query, $table, $value, $searchmode)
     {
     	$db = &atkGetDb();
-      // We only support searchmode 'between' for now.
-
-      $fromval = $this->value2db(array($this->fieldName()=>$value["from"]));
-      $toval   = $this->value2db(array($this->fieldName()=>$value["to"]));
-
-      $field = $db->func_datetochar($table.".".$this->fieldName());
-
-      if ($fromval!="NULL" && $toval!="NULL")
+    	
+    	// exact mode
+    	if ($searchmode == 'exact')
+    	{
+        $field = $db->func_datetochar($table.".".$this->fieldName());    	  
+    	  $value = $this->fetchValue(array($this->fieldName() => $value));
+    	  $value = $this->value2db(array($this->fieldName() => $value));
+    	  if ($value != NULL)
+          $searchcondition = $query->exactCondition($field, $value);
+    	}
+    	
+      elseif ($searchmode == 'between')
       {
-        if ($fromval>$toval)
+        $valueFrom = $this->fetchValue(array($this->fieldName() => $value["from"]));
+        $valueTo = $this->fetchValue(array($this->fieldName() => $value["to"]));
+        
+        $fromval = $this->value2db(array($this->fieldName()=>$valueFrom));
+        $toval   = $this->value2db(array($this->fieldName()=>$valueTo));
+  
+        $field = $db->func_datetochar($table.".".$this->fieldName());
+  
+        if ($fromval==NULL && $toval==NULL); // do nothing
+        else if ($fromval!=NULL && $toval!=NULL)
         {
-          // User entered dates in wrong order. Let's put them in the right order.
-          $tmp=$fromval; $fromval=$toval; $toval=$tmp;
+          if ($fromval>$toval)
+          {
+            // User entered dates in wrong order. Let's put them in the right order.
+            $tmp=$fromval; $fromval=$toval; $toval=$tmp;
+          }
+          $searchcondition =
+                     $query->betweenCondition(
+                        $field,
+                        $fromval,
+                        $toval);
         }
-        $searchcondition =
-                   $query->betweenCondition(
-                      $field,
-                      $fromval,
-                      $toval);
+        else if ($fromval!=NULL && $toval==NULL)
+        {
+          $searchcondition =
+                     $query->greaterthanequalCondition(
+                        $field,
+                        $fromval);
+        }
+        else if ($fromval==NULL && $toval!=NULL)
+        {
+          $searchcondition =
+                     $query->lessthanequalCondition(
+                        $field,
+                        $toval);
+        }
+        else if ((is_array($value["from"])) or (is_array($value["to"])))
+        {
+          $searchcondition = $this->_getDateArraySearchCondition($query,$table,$value);
+        }
+        else
+        {
+          // plain text search condition
+          $value = $this->_autoCompleteDateString($value);
+          $searchcondition = $query->exactCondition($field, $value);
+        }
       }
-      else if ($fromval!="NULL" && $toval=="NULL")
-      {
-        $searchcondition =
-                   $query->greaterthanequalCondition(
-                      $field,
-                      $fromval);
-      }
-      else if ($fromval=="NULL" && $toval!="NULL")
-      {
-        $searchcondition =
-                   $query->lessthanequalCondition(
-                      $field,
-                      $toval);
-      }
-      else if ((is_array($value["from"])) or (is_array($value["to"])))
-      {
-        $searchcondition = $this->_getDateArraySearchCondition($query,$table,$value);
-      }
-      else
-      {
-        // plain text search condition
-        $value = $this->_autoCompleteDateString($value);
-        $searchcondition = $query->exactCondition($field, $value);
-      }
+      
       return $searchcondition;
     }
 
@@ -678,8 +697,8 @@
       $month = $rec[$this->fieldName()]["month"];
       $day = $rec[$this->fieldName()]["day"];
 
-      if (empty($year) || empty($month) || empty($day)) return "NULL";
-      if ($year=='' || $month==0 || $day==0) return "NULL"; //one of the fields is left empty
+      if (empty($year) || empty($month) || empty($day)) return NULL;
+      if ($year=='' || $month==0 || $day==0) return NULL; //one of the fields is left empty
 
       $result = $year."-".sprintf("%02d",$month)."-".sprintf("%02d",$day);
       return $result;
@@ -835,7 +854,7 @@
     {
       if ($mode == "add" || $mode == "update")
       {
-        if($this->value2db($rec) == 'NULL')
+        if($this->value2db($rec) == NULL)
         {
           $query->addField($this->fieldName(),'NULL','','',false);
         }
