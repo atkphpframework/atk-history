@@ -730,10 +730,17 @@
         elseif (empty($postvars[$this->formName()])) return "";
         else 
         {
-          // we should use strptime in PHP >= 5.1 
+          // maybe we should use strptime in PHP >= 5.1 
           $formats = array();
-          $formats[] = str_replace(array("y", "Y", "m", "n", "j", "d"), array("yy", "yyyy", "mm", "m", "d", "dd"), $this->m_date_format_edit);
-          $formats[] = str_replace(array("y", "Y", "m", "n", "j", "d"), array("yy", "yyyy", "mm", "mm", "dd", "dd"), $this->m_date_format_edit);
+          $formats[] = str_replace(array("y", "Y", "m", "n", "j", "d"), array("yyyy", "yyyy", "mm", "mm", "dd", "dd"), $this->m_date_format_edit);
+          $formats[] = str_replace(array("y", "Y", "m", "n", "j", "d"), array("yyyy", "yyyy", "m",  "m",  "dd", "dd"), $this->m_date_format_edit);
+          $formats[] = str_replace(array("y", "Y", "m", "n", "j", "d"), array("yyyy", "yyyy", "mm", "mm", "d",  "d"),  $this->m_date_format_edit);          
+          $formats[] = str_replace(array("y", "Y", "m", "n", "j", "d"), array("yyyy", "yyyy", "m",  "m",  "d",  "d"),  $this->m_date_format_edit);          
+          $formats[] = str_replace(array("y", "Y", "m", "n", "j", "d"), array("yy",   "yy",   "mm", "mm", "dd", "dd"), $this->m_date_format_edit);
+          $formats[] = str_replace(array("y", "Y", "m", "n", "j", "d"), array("yy",   "yy",   "m",  "m",  "dd", "dd"), $this->m_date_format_edit);
+          $formats[] = str_replace(array("y", "Y", "m", "n", "j", "d"), array("yy",   "yy",   "mm", "mm", "d",  "d"),  $this->m_date_format_edit);          
+          $formats[] = str_replace(array("y", "Y", "m", "n", "j", "d"), array("yy",   "yy",   "m",  "m",  "d",  "d"),  $this->m_date_format_edit);          
+          
           $arr = $this->parseDate($postvars[$this->formName()], $formats);
           if ($arr['day'] == 0 || $arr['month'] == 0 || $arr['year'] == 0)
             return $this->dateArray(adodb_date("Ymd", strtotime($postvars[$this->formName()])));
