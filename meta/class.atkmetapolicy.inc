@@ -544,7 +544,6 @@ class atkMetaPolicy
    */
   function hasMany($accessor, $templateOrOptions=array(), $options=array(), $flags=0)
   {
-  	atkdebug("hasMany($accessor, $templateOrOptions=array(), $options=array(), $flags=0)");
     $template = NULL;
     if (is_array($templateOrOptions))
       $options = $templateOrOptions;
