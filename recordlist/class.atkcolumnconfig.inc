@@ -49,6 +49,11 @@
     {
       $this->m_node = $node;
     }
+    
+    function &getNode()
+    {
+      return $this->m_node;
+    }
 
     function &getConfig(&$node)
     {
@@ -147,7 +152,7 @@
       }
     }
 
-    function addOrderByField($field, $direction)
+    function addOrderByField($field, $direction, $extra="")
     {
       if ($this->getMinSort()<=1)
       {
@@ -162,6 +167,7 @@
       }
       $this->m_colcfg[$field]["sortorder"] = 1;
       $this->m_colcfg[$field]["direction"] = $direction;
+      $this->m_colcfg[$field]["extra"] = $extra;
 
     }
 
@@ -204,7 +210,7 @@
         if ($config["sortorder"]>0 && is_object($this->m_node->m_attribList[$field]))
         {
           $direction = ($config["direction"]=="desc"?" DESC":"");
-          $res = $this->m_node->m_attribList[$field]->getOrderByStatement().$direction;
+          $res = $this->m_node->m_attribList[$field]->getOrderByStatement($config['extra']).$direction;
           if ($res) $result[] = $res;
         }
       }
@@ -277,11 +283,18 @@
         $lastattr="";
         foreach ($elems as $elem)
         {
+          list($part1, $part2) = explode(".", $elem, 2);
           if (is_object($this->m_node->m_attribList[$elem]))
           {
             // attribute reference
             $lastattr=$elem;
             $this->addOrderByField($elem, "asc");
+          }
+          else if (is_object($this->m_node->m_attribList[$part1]))
+          {
+            // attribute reference
+            $lastattr=$elem;
+            $this->addOrderByField($part1, "asc", $part2);
           }
           else if (strtolower($elem)=="asc"||strtolower($elem)=="desc")
           {

@@ -1822,7 +1822,10 @@
 
       //if ($columnConfig->getDirection($order) != "asc") $order .= " ASC";
 
-      return session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->m_ownerInstance->atkNodeType().'&atkaction='.$this->m_ownerInstance->m_action.'&atkorderby='.rawurlencode($order));
+      $node = &$columnConfig->getNode();
+      if ($node == NULL)
+        $node = &$this->m_ownerInstance;
+      return session_url($_SERVER["PHP_SELF"].'?atknodetype='.$node->atkNodeType().'&atkaction='.$node->m_action.'&atkorderby='.rawurlencode($order));
     }
 
     function getOrderByStatement()

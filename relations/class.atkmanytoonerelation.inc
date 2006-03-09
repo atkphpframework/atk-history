@@ -987,10 +987,15 @@
       return parent::addToEditArray($mode, $arr, $defaults, $error, $fieldprefix);
     }
 
-    function getOrderByStatement()
+    function getOrderByStatement($extra)
     {
       if ($this->createDestination())
       {
+        if (!empty($extra) && in_array($extra, $this->m_listColumns))
+        {
+          return $this->fieldName().".".$extra;
+        }
+        
         $order = $this->m_destInstance->getOrder();
         if ($order == "")
         {
@@ -1028,7 +1033,7 @@
      */
     function addToListArrayHeader($action, &$arr, $fieldprefix, $flags, $atksearch, $atkorderby)
     {
-      $prefix = $fieldprefix . "_AE_" .$this->fieldName();
+      $prefix = $fieldprefix.$this->fieldName()."_AE_";
 
       // regular behaviour.
       parent::addToListArrayHeader($action, $arr, $prefix, $flags, $atksearch[$this->fieldName()], $atkorderby);
@@ -1042,7 +1047,14 @@
         $p_attrib->m_flags |= AF_HIDE_LIST;
         $p_attrib->m_flags ^= AF_HIDE_LIST;
         $p_attrib->addToListArrayHeader($action, $arr, $prefix, $flags, $atksearch[$this->fieldName()], $atkorderby);
-
+        
+        $url = $arr['heading'][$prefix.$attribname]['url'];
+        if (!empty($url))
+        {
+          $url = str_replace('atkorderby=', 'atkorderby='.$this->fieldName().'.', $url);
+          $arr['heading'][$prefix.$attribname]['url'] = $url;
+        }
+        
         $fieldPointer = &$arr["search"][$prefix.$p_attrib->fieldName()];
         $fieldPointer =
           str_replace(
@@ -1067,10 +1079,10 @@
      */
     function addToListArrayRow($action, &$arr, $nr, $fieldprefix, $flags)
     {
-      $prefix = $fieldprefix . "_AE_" .$this->fieldName();
-
+      $prefix = $fieldprefix.$this->fieldName()."_AE_";
+      
       parent::addToListArrayRow($action, $arr, $nr, $prefix, $flags);
-
+      
       // only add extra columns when needed
       if ($this->hasFlag(AF_HIDE_LIST) || !$this->createDestination() || count($this->m_listColumns) == 0) return;
 
@@ -1100,7 +1112,7 @@
      */
     function addToSearchformFields(&$fields, &$node, &$record, $fieldprefix = "")
     {
-      $prefix = $fieldprefix . "_AE_" .$this->fieldName();
+      $prefix = $fieldprefix.$this->fieldName()."_AE_";
 
       parent::addToSearchformFields($fields,$node,$record, $prefix);
 
