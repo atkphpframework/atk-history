@@ -359,6 +359,36 @@ class atkMetaPolicy
       if (array_key_exists($attr, $this->m_attrs))
         $this->m_attrs[$attr]["flags"] = ($this->m_attrs[$attr]["flags"] | $flags) ^ $flags;
   }  
+  
+  /**
+   * Enable force update for the given attribute or list of attributes.
+   *
+   * @param unknown_type $attrs
+   */
+  function addForceUpdate($attrs) 
+  { 
+    if (!is_array($attrs))
+      $attrs = func_get_args();
+
+    foreach ($attrs as $attr)
+      if (array_key_exists($attr, $this->m_attrs))
+        $this->m_attrs[$attr]["forceUpdate"] = true;
+  }  
+  
+  /**
+   * Disable force update for the given attribute or list of attributes.
+   *
+   * @param unknown_type $attrs
+   */
+  function removeForceUpdate($attrs) 
+  { 
+    if (!is_array($attrs))
+      $attrs = func_get_args();
+
+    foreach ($attrs as $attr)
+      if (array_key_exists($attr, $this->m_attrs))
+        $this->m_attrs[$attr]["forceUpdate"] = false;
+  }   
 
   /**
    * Set the tab(s) for the given attribute or list of attributes.
@@ -656,7 +686,7 @@ class atkMetaPolicy
     
     $flags = $this->_getFlags($name, $meta);
 
-    $this->m_attrs[$name] = $typeAndParams + array("flags" => $flags, "tabs" => NULL, "order" => ($meta['num'] + 1) * 100);
+    $this->m_attrs[$name] = $typeAndParams + array("flags" => $flags, "tabs" => NULL, "order" => ($meta['num'] + 1) * 100, "forceUpdate" => false);
   }
 
   /**
@@ -702,7 +732,7 @@ class atkMetaPolicy
   /**
    * Apply attribute.
    */
-  function &_applyAttribute($name, $type, $params, $flags, $tabs, $order)
+  function &_applyAttribute($name, $type, $params, $flags, $tabs, $order, $forceUpdate)
   {
     if (!$this->_isAttributeIncluded($name)) return;
   
@@ -721,7 +751,9 @@ class atkMetaPolicy
     $call .= ", \$flags);";  
     eval($call);
     
-    return $this->m_node->add($attr, $tabs, $order);
+    $attr = &$this->m_node->add($attr, $tabs, $order);
+    $attr->setForceUpdate($forceUpdate);
+    return $attr;
   }  
   
   /**
@@ -730,7 +762,7 @@ class atkMetaPolicy
   function apply()
   {
     foreach ($this->m_attrs as $name => $data)
-      $this->_applyAttribute($name, $data["type"], $data["params"], $data["flags"], $data["tabs"], $data["order"]);
+      $this->_applyAttribute($name, $data["type"], $data["params"], $data["flags"], $data["tabs"], $data["order"], $data["forceUpdate"]);
   }
 }
 ?>

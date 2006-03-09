@@ -30,6 +30,7 @@ Changes in tomorrow branch
 + Added partial_url method for creating partial dispatch URL's. [Peter]
 + Added preliminary support for partials to atkAttribute, 
   atkManyToOneRelation and atkEditHandler. Not fully implemented yet! [Peter]
++ Added force update support to atkMetaPolicy. [Peter]
 * Improvements to error reporting of importing and added ability 
   to add multiple fields for the entire import ('allfields'). [Boy]
 * Added id to field td. [Boy]
