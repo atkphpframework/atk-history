@@ -152,9 +152,7 @@
      * @return bool                 if true then it will go on, if not it will not look up the string
      */
     function preTextChecks(&$string, &$module, &$node, &$lng, $firstfallback, $nodefaulttext)
-    {
-      global $ATK_VARS;
-      
+    {      
       if ($module)
       {
         $this->m_originalmodule = $module;
@@ -167,13 +165,20 @@
       }
             
       $module = "langoverrides";
-      
-      if (!$lng && $ATK_VARS["lng"]) { $lng = $ATK_VARS["lng"]; } // we first check for a lng variable
-      if (!$lng) { $lng = atkconfig("language", atkconfig("lang")); } // language is nicer, lang is backwardscompatible with iep2.
-      $lng = strtolower($lng); // language files should always be lowercase
+     
+      $lng = $this->getCurrentLanguage($lng);
       
       if(is_numeric($string)) return false;
       return true;
+    }
+    
+    function getCurrentLanguage($lng='')
+    {
+      global $ATK_VARS; 
+      if (!$lng && $ATK_VARS["lng"]) { $lng = $ATK_VARS["lng"]; } // we first check for a lng variable
+      if (!$lng) { $lng = atkconfig("language", atkconfig("lang")); } // language is nicer, lang is backwardscompatible with iep2.
+      $lng = strtolower($lng); // language files should always be lowercase
+      return $lng;
     }
     
     /**
