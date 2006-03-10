@@ -596,6 +596,12 @@
      */
     function search($record=array(), $extended=false, $fieldprefix="")
     {
+      // ugly workaround in addToListArrayHeader we define the prefix with 
+      // _AE_ at the end, this is correct, unfortuanately the search field needs
+      // it at the beginning to work properly, so we reverse it here
+      if (substr($fieldprefix, -4) == "_AE_")
+        $fieldprefix = "_AE_".substr($fieldprefix, 0, -4);
+      
       if (!$this->hasFlag(AF_LARGE))
       {
         if ($this->createDestination())
@@ -1112,7 +1118,7 @@
      */
     function addToSearchformFields(&$fields, &$node, &$record, $fieldprefix = "")
     {
-      $prefix = $fieldprefix.$this->fieldName()."_AE_";
+      $prefix = "_AE_".$fieldprefix.$this->fieldName();
 
       parent::addToSearchformFields($fields,$node,$record, $prefix);
 
@@ -1132,9 +1138,9 @@
           //       (which completely breaks) in searching a onetoone something like a 'searchname' should
           //       be implemented and used.
           if (method_exists($p_attrib, "atkDateAttribute"))
-            $p_attrib->addToSearchformFields($fields,$node,$record[$this->fieldName()], "{$prefix}_AE_".$this->fieldName()."_AE_");
+            $p_attrib->addToSearchformFields($fields,$node,$record[$this->fieldName()], "{$prefix}_AE_");
           else
-            $p_attrib->addToSearchformFields($fields,$node,$record[$this->fieldName()], "{$prefix}_AE_".$this->fieldName());
+            $p_attrib->addToSearchformFields($fields,$node,$record[$this->fieldName()], $prefix);
         }
       }
     }
