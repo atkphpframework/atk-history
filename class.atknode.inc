@@ -1514,10 +1514,13 @@
         $result["hide"][] = '<input type="hidden" name="'.$fieldprefix.'atkaction" value="save">';
 
         /* nodes can define initial values, if they don't already have values. */
-        $overrides = $this->initial_values();
-        foreach ($overrides as $varname=>$value)
+        if (!isset($defaults['atkerror'])) // only load initial values the first time (not after an error occured)
         {
-          if (!isset($defaults[$varname]) || $defaults[$varname]=="") $defaults[$varname]=$value;
+          $overrides = $this->initial_values();
+          foreach ($overrides as $varname=>$value)
+          {
+            if (!isset($defaults[$varname]) || $defaults[$varname]=="") $defaults[$varname]=$value;
+          }
         }
       }
 

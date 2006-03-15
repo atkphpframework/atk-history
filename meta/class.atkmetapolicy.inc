@@ -579,14 +579,14 @@ class atkMetaPolicy
       $options = $templateOrOptions;
     else $template = $templateOrOptions;
     
-    $this->m_attrs[getNodeType($accessor)] =
-      array(
-        "type" => "atk.meta.relations.atkmetaonetomanyrelation",
-        "params" => array($accessor, $template, $options),
-        "flags" => AF_HIDE_LIST|$flags,
-        "tabs" => NULL,
-        "order" => $this->_getMaxOrder() + 100
-      );
+    $name   = getNodeType($accessor);
+    $type   = "atk.meta.relations.atkmetaonetomanyrelation";
+    $params = array($accessor, $template, $options);
+    $flags  = AF_HIDE_LIST|$flags;
+    $tabs   = NULL;
+    $order  = $this->_getMaxOrder() + 100 ;
+    
+    $this->add($name, $type, $params, $flags, $tabs, $order);      
   }
   
   /**
@@ -657,14 +657,36 @@ class atkMetaPolicy
       }
     }
 
-    $this->m_attrs[$attr != NULL ? $attr : $node] =
+    $name   = $attr != NULL ? $attr : $node;
+    $type   = "atk.meta.relations.atkmeta".($attr != NULL ? 'many' : 'one')."toonerelation";
+    $params = array($accessor, $template, $options);
+    $flags  = ($attr != NULL ? $this->m_attrs[$attr]["flags"] : 0) | (array_key_exists("large", $options) && $options["large"] ? AF_LARGE : 0);
+    $tabs   = $attr != NULL ? $this->m_attrs[$attr]["tabs"] : NULL;
+    $order  = $attr != NULL ? $this->m_attrs[$attr]["order"] : $this->_getMaxOrder() + 100;
+
+    $this->add($name, $type, $params, $flags, $tabs, $order);
+  }
+  
+  /**
+   * Add / replace (custom) attribute.
+   * 
+   * @param $name    attribute name
+   * @param $type    attribute type
+   * @param $params  attribute parameters, excluding flags (optional)
+   * @param $flags   attribute flags (optional)
+   * @param $tabs    tabs to display the attribute on
+   * @param $order   order of the attribute
+   */
+  function add($name, $type, $params=array(), $flags=0, $tabs=NULL, $order=NULL)
+  {
+    $this->m_attrs[$name] =
       array(
-        "type" => "atk.meta.relations.atkmeta".($attr != NULL ? 'many' : 'one')."toonerelation",
-        "params" => array($accessor, $template, $options),
-        "flags" => ($attr != NULL ? $this->m_attrs[$attr]["flags"] : 0) | (array_key_exists("large", $options) && $options["large"] ? AF_LARGE : 0),
-        "tabs" => $attr != NULL ? $this->m_attrs[$attr]["tabs"] : NULL,
-        "order" => $attr != NULL ? $this->m_attrs[$attr]["order"] : $this->_getMaxOrder() + 100        
-      );
+        "type" => $type,
+        "params" => $params,
+        "flags" => $flags,
+        "tabs" => $tabs,
+        "order" => $order !== NULL ? $order : $this->_getMaxOrder() + 100        
+      );    
   }
 
   /**

@@ -31,6 +31,7 @@ Changes in tomorrow branch
 + Added preliminary support for partials to atkAttribute, 
   atkManyToOneRelation and atkEditHandler. Not fully implemented yet! [Peter]
 + Added force update support to atkMetaPolicy. [Peter]
++ Added support for adding any attribute using the meta policy. [Peter]
 * Improvements to error reporting of importing and added ability 
   to add multiple fields for the entire import ('allfields'). [Boy]
 * Added id to field td. [Boy]
@@ -61,6 +62,9 @@ Changes in tomorrow branch
   based at this time). [Peter]
 * Show large textarea on editing of an in-list textattribute. [Peter]
 * Fixed title retrieval for node UI. [Peter]
+* Fixed Internet Explorer support in drop-down menu. [Peter]
+* Fixed handling of initial_values (where applied a second time
+  if an error occured in the addition form). [Peter]
 
 Changes in ATK 5.4.1
 --------------------
