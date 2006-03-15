@@ -17,10 +17,11 @@
    */
 
   /** flag(s) specific for atkDateAttribute */
-  define("AF_DATE_STRING",              AF_SPECIFIC_1); // date must be entered as an english date string (strtotime)
+  define("AF_DATE_STRING",              AF_SPECIFIC_1); // date must be entered as an english date string (strtotime), also checks edit format
   define("AF_DATE_EMPTYFIELD",          AF_SPECIFIC_2); // Fields have one empty option
   define("AF_DATE_NO_CALENDAR",         AF_SPECIFIC_3); // Do not append the popup calendar.
   define("AF_DATE_DISPLAY_DAY",         AF_SPECIFIC_4); // Show the day of the week in the display
+  define("AF_DATE_EDIT_NO_DAY",         AF_SPECIFIC_5); // Don't display the day of the week in edit mode
 
   // Include adodb workarounds for <1970 dates on windows.
   $config_atkroot = atkconfig("atkroot");
@@ -191,8 +192,9 @@
         $max = 0;
       }
 
-      /* edit date format */
-      if     (!empty($format_edit)) $this->m_date_format_edit = $format_edit;
+      /* edit date format */      
+      if (hasFlag($flags, AF_DATE_STRING) && empty($format_edit)) $this->m_date_format_edit = "Y-m-d";
+      elseif (!empty($format_edit)) $this->m_date_format_edit = $format_edit;
       elseif (!empty($txt_date_format_edit)) $this->m_date_format_edit = $txt_date_format_edit;
       else   $this->m_date_format_edit = "F j Y";
 
@@ -238,19 +240,21 @@
       $fieldname = $fieldprefix.$this->fieldName().$postfix;
 
       /* text mode? */
-      if ($this->hasFlag(AF_DATE_STRING))
+      atkdebug("MODE $mode");
+      if ($this->hasFlag(AF_DATE_STRING) || $mode == 'list')
       {
         $value = &$record[$this->fieldName()];
 
-        if (is_array($value)) $value = adodb_date("Y-m-d", adodb_mktime(0, 0, 0, $value["month"], $value["day"], $value["year"]));
-        elseif ($obligatory) $value = adodb_date("Y-m-d");
+        if (is_array($value)) $value = adodb_date($this->m_date_format_edit, adodb_mktime(0, 0, 0, $value["month"], $value["day"], $value["year"]));
+        elseif ($obligatory) $value = adodb_date($this->m_date_format_edit);
         else $value = "";
         $this->registerKeyListener($fieldname, KB_CTRLCURSOR|KB_UPDOWN);
         $result = '<input type="text" id="'.$fieldname.'" class="atkdateattribute" name="'.$fieldname.'" value="'.$value.'" size="10">';
 
-        if (!$this->hasFlag(AF_DATE_NO_CALENDAR))
+        if (!$this->hasFlag(AF_DATE_NO_CALENDAR) && $mode != 'list')
         {
-          $result.=' <input class="button" class="atkdateattribute" type="reset" value="..." onclick="return showCalendar(\''.$fieldname.'\', \''.$fieldname.'\', \'y-mm-dd\', false);">';
+          $format = str_replace(array("y", "Y", "m", "n", "j", "d"), array("yy", "y", "mm", "m", "d", "dd"), $this->m_date_format_edit);
+          $result.=' <input class="button" class="atkdateattribute" type="button" value="..." onclick="return showCalendar(\''.$fieldname.'\', \''.$fieldname.'\', \''.$format.'\', false);">';
         }
         return $result;
       }
@@ -325,7 +329,7 @@
         for ($i = $str_min; $i <= $str_max; $i++)
         {
           $tmp_date = adodb_getdate(adodb_mktime(0, 0, 0, substr($i, 4, 2), substr($i, 6, 2), substr($i, 0, 4)));
-          $result .= '<option value="'.$i.'"'.($current !== NULL && $tmp_date[0] == $current[0] ? ' selected' : '').'>'.$this->formatDate($tmp_date, $str_format).'</option>';
+          $result .= '<option value="'.$i.'"'.($current !== NULL && $tmp_date[0] == $current[0] ? ' selected' : '').'>'.$this->formatDate($tmp_date, $str_format, !$this->hasFlag(AF_DATE_EDIT_NO_DAY)).'</option>';
         }
         $result .= '</select>';
         return $result;
@@ -342,7 +346,7 @@
         else $emptyfield=false;
 
         /* javascript method */
-        if (!$pda) $str_script = "AdjustDate(this, '".$fieldname."', '$str_format', $str_min, $str_max, ".($emptyfield==true ? "true" : "false").");";
+        if (!$pda) $str_script = "AdjustDate(this, '".$fieldname."', '$str_format', $str_min, $str_max, ".($emptyfield==true ? "true" : "false").", ".($this->hasFlag(AF_DATE_EDIT_NO_DAY) ? "false" : "true").");";
 
         if (count($this->m_onchangecode))
         {
@@ -394,7 +398,7 @@
               $tmp_date = adodb_getdate(adodb_mktime(0,0,0, $current["mon"], $j, $current["year"]));
               if (($current['year']!="") && ($current['mon']!=""))
               {
-                $str_day = $this->formatDate($tmp_date, $str_format[$i]);
+                $str_day = $this->formatDate($tmp_date, $str_format[$i], !$this->hasFlag(AF_DATE_EDIT_NO_DAY));
               }
               else
               {
@@ -410,7 +414,7 @@
               $tmp_date = adodb_getdate(adodb_mktime(0,0,0, $current["mon"], $j, $current["year"]));
               if (($current['year']!="") && ($current['mon']!=""))
               {
-                $str_day = $this->formatDate($tmp_date, $str_format[$i]);
+                $str_day = $this->formatDate($tmp_date, $str_format[$i], !$this->hasFlag(AF_DATE_EDIT_NO_DAY));
               }
               else
               {
@@ -454,7 +458,7 @@
         else $result .= $str_format[$i];
       }
 
-      if (!$this->hasFlag(AF_DATE_NO_CALENDAR) && !$yeardropdown && !$pda)
+      if (!$this->hasFlag(AF_DATE_NO_CALENDAR) && !$yeardropdown && !$pda && $mode != 'list')
       {
         $result.=' <input class="button" type="reset" value="..." onclick="return showCalendar(\''.$fieldname.'\', \''.$fieldname.'[year]\', \'y-mm-dd\', true);">';
       }
@@ -471,7 +475,8 @@
       $page = &atkPage::getInstance();
 
       /* register javascript */
-      $page->register_script(session_url("include.php?file=atk/javascript/class.atkdateattribute.js.inc", SESSION_NEW));
+      atkimport("atk.atklanguage");
+      $page->register_script(session_url("include.php?file=atk/javascript/class.atkdateattribute.js.inc&atklng=".atkLanguage::getLanguage(), SESSION_NEW));
 
       if (!$this->hasFlag(AF_DATE_NO_CALENDAR))
       {
@@ -490,7 +495,7 @@
      * @param $record Array with values
      * @return Piece of htmlcode
      */
-    function hide($record="", $fieldprefix)
+    function hide($record="", $fieldprefix="")
     {
       $result="";
       $field = $record[$this->fieldName()];
@@ -515,12 +520,14 @@
     {
       if (!$extended)
       {
-        // plain text search
+        // plain text search, check if we didn't come from extended search (then current value is an array)
+        if (isset($record[$this->fieldName()]) && is_array($record[$this->fieldName()]))
+          $record[$this->fieldName()] = NULL;
         return parent::search($record, $extended, $fieldprefix);
       }
 
       // Set default values to null.
-      $record[$this->fieldName()]=array("year"=>0, "month"=>0, "day"=>0);
+      $record[$this->fieldName()]=NULL;
 
       // FIXME, we need a way to set the date to 'nothing' (i.e., unselected)
       $res = $this->draw($record, "atksearch_AE_".$fieldprefix, "_AE_from");
@@ -536,50 +543,67 @@
     function getSearchCondition(&$query, $table, $value, $searchmode)
     {
     	$db = &atkGetDb();
-      // We only support searchmode 'between' for now.
-
-      $fromval = $this->value2db(array($this->fieldName()=>$value["from"]));
-      $toval   = $this->value2db(array($this->fieldName()=>$value["to"]));
-
-      $field = $db->func_datetochar($table.".".$this->fieldName());
-
-      if ($fromval!="NULL" && $toval!="NULL")
+    	
+    	// exact mode
+    	if ($searchmode == 'exact')
+    	{
+        $field = $db->func_datetochar($table.".".$this->fieldName());    	  
+    	  $value = $this->fetchValue(array($this->fieldName() => $value));
+    	  $value = $this->value2db(array($this->fieldName() => $value));
+    	  if ($value != NULL)
+          $searchcondition = $query->exactCondition($field, $value);
+    	}
+    	
+      elseif ($searchmode == 'between')
       {
-        if ($fromval>$toval)
+        $valueFrom = $this->fetchValue(array($this->fieldName() => $value["from"]));
+        $valueTo = $this->fetchValue(array($this->fieldName() => $value["to"]));
+        
+        $fromval = $this->value2db(array($this->fieldName()=>$valueFrom));
+        $toval   = $this->value2db(array($this->fieldName()=>$valueTo));
+  
+        $field = $db->func_datetochar($table.".".$this->fieldName());
+  
+        if ($fromval==NULL && $toval==NULL); // do nothing
+        else if ($fromval!=NULL && $toval!=NULL)
         {
-          // User entered dates in wrong order. Let's put them in the right order.
-          $tmp=$fromval; $fromval=$toval; $toval=$tmp;
+          if ($fromval>$toval)
+          {
+            // User entered dates in wrong order. Let's put them in the right order.
+            $tmp=$fromval; $fromval=$toval; $toval=$tmp;
+          }
+          $searchcondition =
+                     $query->betweenCondition(
+                        $field,
+                        $fromval,
+                        $toval);
         }
-        $searchcondition =
-                   $query->betweenCondition(
-                      $field,
-                      $fromval,
-                      $toval);
+        else if ($fromval!=NULL && $toval==NULL)
+        {
+          $searchcondition =
+                     $query->greaterthanequalCondition(
+                        $field,
+                        $fromval);
+        }
+        else if ($fromval==NULL && $toval!=NULL)
+        {
+          $searchcondition =
+                     $query->lessthanequalCondition(
+                        $field,
+                        $toval);
+        }
+        else if ((is_array($value["from"])) or (is_array($value["to"])))
+        {
+          $searchcondition = $this->_getDateArraySearchCondition($query,$table,$value);
+        }
+        else
+        {
+          // plain text search condition
+          $value = $this->_autoCompleteDateString($value);
+          $searchcondition = $query->exactCondition($field, $value);
+        }
       }
-      else if ($fromval!="NULL" && $toval=="NULL")
-      {
-        $searchcondition =
-                   $query->greaterthanequalCondition(
-                      $field,
-                      $fromval);
-      }
-      else if ($fromval=="NULL" && $toval!="NULL")
-      {
-        $searchcondition =
-                   $query->lessthanequalCondition(
-                      $field,
-                      $toval);
-      }
-      else if ((is_array($value["from"])) or (is_array($value["to"])))
-      {
-        $searchcondition = $this->_getDateArraySearchCondition($query,$table,$value);
-      }
-      else
-      {
-        // plain text search condition
-        $value = $this->_autoCompleteDateString($value);
-        $searchcondition = $query->exactCondition($field, $value);
-      }
+      
       return $searchcondition;
     }
 
@@ -673,8 +697,8 @@
       $month = $rec[$this->fieldName()]["month"];
       $day = $rec[$this->fieldName()]["day"];
 
-      if (empty($year) || empty($month) || empty($day)) return "NULL";
-      if ($year=='' || $month==0 || $day==0) return "NULL"; //one of the fields is left empty
+      if (empty($year) || empty($month) || empty($day)) return NULL;
+      if ($year=='' || $month==0 || $day==0) return NULL; //one of the fields is left empty
 
       $result = $year."-".sprintf("%02d",$month)."-".sprintf("%02d",$day);
       return $result;
@@ -704,7 +728,24 @@
       {
         if (is_array($postvars[$this->formName()])) return $postvars[$this->formName()];
         elseif (empty($postvars[$this->formName()])) return "";
-        else return $this->dateArray(adodb_date("Ymd", strtotime($postvars[$this->formName()])));
+        else 
+        {
+          // maybe we should use strptime in PHP >= 5.1 
+          $formats = array();
+          $formats[] = str_replace(array("y", "Y", "m", "n", "j", "d"), array("yyyy", "yyyy", "mm", "mm", "dd", "dd"), $this->m_date_format_edit);
+          $formats[] = str_replace(array("y", "Y", "m", "n", "j", "d"), array("yyyy", "yyyy", "m",  "m",  "dd", "dd"), $this->m_date_format_edit);
+          $formats[] = str_replace(array("y", "Y", "m", "n", "j", "d"), array("yyyy", "yyyy", "mm", "mm", "d",  "d"),  $this->m_date_format_edit);          
+          $formats[] = str_replace(array("y", "Y", "m", "n", "j", "d"), array("yyyy", "yyyy", "m",  "m",  "d",  "d"),  $this->m_date_format_edit);          
+          $formats[] = str_replace(array("y", "Y", "m", "n", "j", "d"), array("yy",   "yy",   "mm", "mm", "dd", "dd"), $this->m_date_format_edit);
+          $formats[] = str_replace(array("y", "Y", "m", "n", "j", "d"), array("yy",   "yy",   "m",  "m",  "dd", "dd"), $this->m_date_format_edit);
+          $formats[] = str_replace(array("y", "Y", "m", "n", "j", "d"), array("yy",   "yy",   "mm", "mm", "d",  "d"),  $this->m_date_format_edit);          
+          $formats[] = str_replace(array("y", "Y", "m", "n", "j", "d"), array("yy",   "yy",   "m",  "m",  "d",  "d"),  $this->m_date_format_edit);          
+          
+          $arr = $this->parseDate($postvars[$this->formName()], $formats);
+          if ($arr['day'] == 0 || $arr['month'] == 0 || $arr['year'] == 0)
+            return $this->dateArray(adodb_date("Ymd", strtotime($postvars[$this->formName()])));
+          else return $arr;
+        }
       }
       return NULL;
     }
@@ -820,7 +861,7 @@
     {
       if ($mode == "add" || $mode == "update")
       {
-        if($this->value2db($rec) == 'NULL')
+        if($this->value2db($rec) == NULL)
         {
           $query->addField($this->fieldName(),'NULL','','',false);
         }

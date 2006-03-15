@@ -24,6 +24,7 @@
   define("HTML_DOCTYPE",4);                     // Add doctype to page
   define("HTML_ALL",HTML_BODY|HTML_HEADER);     // Shortcut
   define("HTML_STRICT",HTML_ALL|HTML_DOCTYPE);  // Shortcut
+  define("HTML_PARTIAL", 8);                    // Partial (only content, this flag can't be ANDed!)
 
 
   /**
@@ -208,7 +209,7 @@
      * @param String $title Title of the html page.
      * @return String The HTML pageheader, including <head> and </head> tags.
      */
-    function head($title)
+    function head($title, $extra_header="")
     {
       $res = "<head>\n  <title>$title</title>\n";
 
@@ -216,7 +217,10 @@
       $version = atkversion();
       if ("\$Name$"!="\$"."Name:  $") $version.=" ($Name$)";
       $res.= '  <META NAME="atkversion" CONTENT="'.$version.'">'."\n";
+
       $res.= '  <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset='.atktext("charset","atk").'">'."\n";
+      if ($extra_header != "") $res.= $extra_header."\n";
+
       $this->addScripts($res);
 
       for ($i = 0; $i < count($this->m_stylesheets); $i++)
@@ -240,36 +244,44 @@
      * Adds javascripts from the member variables to HTML output
      * @param String $res The HTML output
      */
-    function addScripts(&$res)
+    function addScripts(&$res, $partial=false)
     {
       for ($i = 0; $i < count($this->m_scriptfiles); $i++)
+        $res .= '<script type="text/javascript" language="JavaScript" src="'.$this->m_scriptfiles[$i].'"></script>'."\n";
+
+      $res .= '<script type="text/javascript">';      
+      
+      if (!$partial)
       {
-        $res.='  <script type="text/javascript" language="JavaScript" src="'.$this->m_scriptfiles[$i].'"></script>'."\n";
-      }
-
-      $res.="  <script type=\"text/javascript\">
-  function globalSubmit(form)
-  {
-     var retval = true;\n";
-
-      for ($i=0, $_i = count($this->m_submitscripts); $i<$_i; $i++)
-      {
-        $res.="    retval = ".$this->m_submitscripts[$i]."\n";
-        $res.="    if (retval!=true) return false;\n";
-      }
-
-      $res.="    return retval;
-   }\n";
-
-      if (count($this->m_loadscripts))
-      {
-        $res.="  function globalLoad()
-  {\n";
-        for ($i=0, $_i=count($this->m_loadscripts); $i<$_i; $i++)
+        $res .= "
+          function globalSubmit(form)
+          {
+            var retval = true;\n";
+  
+        for ($i=0, $_i = count($this->m_submitscripts); $i<$_i; $i++)
         {
-          $res.= $this->m_loadscripts[$i]."\n";
+          $res .= " retval = ".$this->m_submitscripts[$i]."\n";
+          $res .= " if (retval!=true) return false;\n";
         }
-        $res.="  }\n";
+  
+        $res .= " 
+            return retval;
+          }\n";
+  
+        if (count($this->m_loadscripts))
+        {
+          $res .= "  
+            function globalLoad()
+            {\n";
+          
+          for ($i=0, $_i=count($this->m_loadscripts); $i<$_i; $i++)
+          {
+            $res .= $this->m_loadscripts[$i]."\n";
+          }
+          
+          $res.= "
+            }\n";
+        }
       }
 
       // javascript code.
@@ -277,10 +289,17 @@
       {
         $res.= $this->m_scriptcode[$i]."\n";
       }
+      
+      if ($partial)
+      {
+        for ($i=0, $_i=count($this->m_loadscripts); $i<$_i; $i++)
+        {
+          $res .= $this->m_loadscripts[$i]."\n";
+        }        
+      }
 
-      $res.= "  </script>\n\n";
+      $res .= "</script>\n\n";
     }
-
 
     /**
      * Add content to the page.
@@ -303,9 +322,7 @@
       $res = '<body ';
       if (count($this->m_loadscripts))
       {
-        $res.='onLoad="globalLoad(); if ( window.showTab ) {showTab(\'';
-        if (isset($ATK_VARS['atktab'])) $res.=$ATK_VARS['atktab'];
-        $res.='\');}" ';
+        $res.='onLoad="globalLoad();" ';
       }
       $res.= $extraprops.">\n";
       return $res;
@@ -323,7 +340,7 @@
      * @param string $extrabodyprops  Extra attributes to add to the <body> tag.
      * @return String The HTML page, including <html> and </html> tags.
      */
-    function render($title, $flags=7,$extrabodyprops="")
+    function render($title, $flags=HTML_STRICT,$extrabodyprops="", $extra_header="")
     {
       if(is_bool($flags) && $flags==true)
       {
@@ -333,10 +350,15 @@
       {
         $flags=HTML_HEADER|HTML_DOCTYPE;
       }
+      elseif (hasFlag($flags, HTML_PARTIAL))
+      {
+        return $this->renderPartial();
+      }
+      
       $page = '';
       if(hasFlag($flags,HTML_DOCTYPE)) $page.=atkconfig("doctype");
       $page.= "\n<html>\n";
-      if(hasFlag($flags,HTML_HEADER)) $page.= $this->head($title);
+      if(hasFlag($flags,HTML_HEADER)) $page.= $this->head($title, $extra_header);
       if (hasFlag($flags,HTML_BODY)) $page.= $this->body($extrabodyprops);
       $page.= $this->m_content."\n";
       $page.= $this->renderHiddenVars();
@@ -344,6 +366,16 @@
       $page.= "</html>\n";
 
       return $page;
+    }
+    
+    /**
+     * Render partial.
+     */
+    function renderPartial()
+    {
+      $result = $this->m_content;
+      $this->addScripts($result, true);
+      return $result;
     }
 
     /**
@@ -374,6 +406,9 @@
     {
       // Load default app-level stylesheet.
       $this->register_style((file_exists(atkconfig("atkroot")."./style.css") ? "." : atkconfig("atkroot")."atk").'/style.css');
+
+      // Load default tab show script. TODO: move this to the places where the tabscript is registered.
+      $this->register_loadscript('if ( window.showTab ) {showTab(\'' . (isset($_REQUEST['atktab']) ? $res.=$_REQUEST['atktab'] : '') . '\');}');
     }
 
   }

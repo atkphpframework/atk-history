@@ -8,8 +8,8 @@
    * @package atk
    * @subpackage attributes
    *
-   * @copyright (c)2000-2004 Ivo Jansch
-   * @copyright (c)2000-2004 Ibuildings.nl BV
+   * @copyright (c)2000-2006 Ivo Jansch
+   * @copyright (c)2000-2006 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
    * @version $Revision$
@@ -443,6 +443,13 @@
      * @var String
      */
     var $m_searchmode = "";
+    
+    /**
+     * Wether to force an update of the attribute
+     * @access private
+     * @var bool
+     */
+    var $m_forceupdate=false;
 
     /**
      * Array for onchange code
@@ -664,9 +671,13 @@
         $this->_renderChangeHandler($fieldprefix);
       }
 
+      $size = $this->m_size;
+      if ($mode == 'list' && $size > 20) 
+        $size = 20;
+      
       $result = '<input type="text" id="'.$id.'" name="'.$id.'" class="atkattribute"'.
                 '" value="'.(isset($record[$this->fieldName()])?htmlspecialchars($record[$this->fieldName()]):"").'"'.
-                ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').
+                ($size > 0 ? ' size="'.$size.'"' : '').
                 ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').' '.$onchange.' />';
 
       return $result;
@@ -938,7 +949,12 @@
       {
         /* an <attributename>_display function may be provided in a derived class to display an attribute */
         $function = $this->m_name."_display";
-        if (method_exists($this->m_ownerInstance, $function))
+        if (in_array($this->fieldName(), $this->m_ownerInstance->m_editableListAttributes))
+        {
+          $arr["rows"][$nr]["data"][$fieldprefix.$this->fieldName()] = 
+            $this->getEdit('list', $arr["rows"][$nr]["record"], 'atkrecordlistdata_AE_'.$arr['name'].'_AE_'.$nr.'_AE_');
+        }
+        elseif (method_exists($this->m_ownerInstance, $function))
           $arr["rows"][$nr]["data"][$fieldprefix.$this->fieldName()] = $this->m_ownerInstance->$function($arr["rows"][$nr]["record"], "list");
         else $arr["rows"][$nr]["data"][$fieldprefix.$this->fieldName()] = $this->display($arr["rows"][$nr]["record"], "list");
 
@@ -1183,9 +1199,9 @@
      */
     function sum($rec1, $rec2, $fieldprefix="")
     {
-      $value1 = (isset($rec1[$fieldprefix.$this->fieldName()])?$rec1[$fieldprefix.$this->fieldName()]:0);
-      $value2 = (isset($rec2[$fieldprefix.$this->fieldName()])?$rec2[$fieldprefix.$this->fieldName()]:0);
-      return array($fieldprefix.$this->fieldName() => ($value1+$value2));
+      $value1 = (isset($rec1[$this->fieldName()])?$rec1[$this->fieldName()]:0);
+      $value2 = (isset($rec2[$this->fieldName()])?$rec2[$this->fieldName()]:0);
+      return array($this->fieldName() => ($value1+$value2));
     }
 
     /**
@@ -1263,7 +1279,25 @@
      */
     function needsUpdate($record)
     {
-      return (!$this->hasFlag(AF_READONLY_EDIT) && !$this->hasFlag(AF_HIDE_EDIT));
+      return ((!$this->hasFlag(AF_READONLY_EDIT) && !$this->hasFlag(AF_HIDE_EDIT)) || $this->m_forceupdate);
+    }
+    
+    /**
+     * Used to force an attribute to update with every updateDb() call
+     * @param bool $force Wether or not to force the attribute to update
+     */
+    function setForceUpdate($force)
+    {
+      $this->m_forceupdate = $force;
+    }
+    
+    /**
+     * Getter for wether or not an attribute is forced to update
+     * @return bool Wether or not an attribute is forced to update
+     */
+    function getForceUpdate()
+    {
+      return $this->m_forceupdate;
     }
 
     /**
@@ -1788,12 +1822,31 @@
 
       //if ($columnConfig->getDirection($order) != "asc") $order .= " ASC";
 
-      return session_url($_SERVER["PHP_SELF"].'?atknodetype='.$ATK_VARS["atknodetype"].'&atkaction='.$ATK_VARS["atkaction"].'&atkorderby='.rawurlencode($order));
+      $node = &$columnConfig->getNode();
+      if ($node == NULL)
+        $node = &$this->m_ownerInstance;
+      return session_url($_SERVER["PHP_SELF"].'?atknodetype='.$node->atkNodeType().'&atkaction='.$node->m_action.'&atkorderby='.rawurlencode($order));
     }
 
     function getOrderByStatement()
     {
       return $this->m_ownerInstance->m_table.".".$this->fieldName();
+    }
+    
+    /**
+     * Translate using the owner instance's module and type.
+     */
+    function text($string)
+    {
+      return $this->m_ownerInstance->text($string);
+    }
+    
+    /**
+     * Handle partial.
+     */
+    function partial($mode, $options=array())
+    {
+      return '&nbsp;'; // not implemented yet
     }
   }
 ?>

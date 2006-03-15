@@ -1,4 +1,5 @@
 <?php
+
   /**
    * This file is part of the Achievo ATK distribution.
    * Detailed copyright and licensing information can be found
@@ -25,6 +26,6 @@
   atksecure();
   
   $suite = &atknew("atk.test.atktestsuite");  
-  $suite->run(); 
+  $suite->run("html", $_REQUEST["atkmodule"]); 
 
 ?>

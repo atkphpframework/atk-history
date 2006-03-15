@@ -24,7 +24,7 @@
    * flag(s) specific for atkManyToOneRelation
    */
   define("AF_RESTRICTED_DELETE", AF_SPECIFIC_1); // Only allow deletion of master item when there are no child records
-  define("AF_ONETOMANY_EMBED", AF_SPECIFIC_2);
+  define("AF_ONETOMANY_NO_EMBED", AF_SPECIFIC_2);
 
   /**
    * Implementation of one-to-many relationships.
@@ -102,7 +102,7 @@
       $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");
       $page->register_script(atkconfig("atkroot")."atk/javascript/class.atkonetomanyrelation.js");
 
-      $this->atkRelation($name, $destination, $flags|AF_HIDE_ADD|AF_NO_SORT);
+      $this->atkRelation($name, $destination, $flags|AF_HIDE_ADD|AF_NO_SORT|AF_ONETOMANY_NO_EMBED);
       // 1toM Relations are NEVER edited when adding a rec. And for now, we
       // cannot search or sort them.
 
@@ -227,35 +227,22 @@
     function _checkIntegratedSave()
     {
       $error = "";
-      if ($this->hasFlag(AF_ONETOMANY_EMBED))
+      if (!$this->hasFlag(AF_ONETOMANY_NO_EMBED))
       {
         if ($this->m_ownerInstance->m_postvars[$this->fieldName()."_save"])
         {
-          foreach (array_keys($this->m_ownerInstance->m_postvars[$this->fieldName()]) as $fieldname)
-          {
-            if (!in_array($fieldname,array("atkaction","atknodetype","atkprimkey")))
-            {
-              $attribute = &$this->m_destInstance->getAttribute($fieldname);
-              if (is_object($attribute))
-              {
-                $this->m_ownerInstance->m_postvars[$this->fieldName()][$fieldname] = $attribute->fetchValue($this->m_ownerInstance->m_postvars[$this->fieldName()]);
-              }
-              else
-              {
-                $this->m_ownerInstance->m_postvars[$this->fieldName()][$fieldname] = $this->m_ownerInstance->m_postvars[$this->fieldName()];
-                atkerror("$fieldname is no attribute for integrated save, is this correct?");
-              }
-            }
-          }
+          $destCopy = $this->m_destInstance;
+          $destCopy->m_postvars = $this->m_ownerInstance->m_postvars[$this->fieldName()];
+          $record = $destCopy->updateRecord();
 
-          $this->m_destInstance->validate($this->m_ownerInstance->m_postvars[$this->fieldName()],"add");
-          if (!$this->m_ownerInstance->m_postvars[$this->fieldName()]['atkerror'])
+          $this->m_destInstance->validate($record,"add");
+          if (!$record['atkerror'])
           {
-            $this->m_destInstance->addDb($this->m_ownerInstance->m_postvars[$this->fieldName()]);
+            $this->m_destInstance->addDb($record);
           }
           else
           {
-            $error = "<span class='error'>".$this->m_ownerInstance->m_postvars[$this->fieldName()]['atkerror'][0]['attrib_name'].': '.$this->m_ownerInstance->m_postvars[$this->fieldName()]['atkerror'][0]['msg']."</span><br />";
+            $error = "<span class='error'>".$record['atkerror'][0]['attrib_name'].': '.$record['atkerror'][0]['msg']."</span><br />";
           }
         }
       }
@@ -273,14 +260,14 @@
     {
       if (atkconfig("onetomany_addlink_position","bottom")=="top")
       {
-        if ($this->hasFlag(AF_ONETOMANY_EMBED))
+        if (!$this->hasFlag(AF_ONETOMANY_NO_EMBED))
           $output=$this->_getEmbededOutput()."<br />".$output;
         else
           $output=$this->_addAddLink($myrecords, $record)."<br />".$output;
       }
       else if (atkconfig("onetomany_addlink_position","bottom")=="bottom")
       {
-        if ($this->hasFlag(AF_ONETOMANY_EMBED))
+        if (!$this->hasFlag(AF_ONETOMANY_NO_EMBED))
           $output.=$this->_getEmbededOutput();
         else
           $output.=$this->_addAddLink($myrecords, $record)."<br />";
@@ -303,13 +290,14 @@
 
         $destInstanceCopy = $this->m_destInstance;
         $editrecord=array();
-        foreach ($destInstanceCopy->m_attribList as $key=> $attribute)
+        foreach (array_keys($destInstanceCopy->m_attribList) as $key)
         {
-          if (strtolower($attribute->m_destination)==strtolower($this->m_ownerInstance->atknodetype()))
+          // When we're in a OTM we need to hide MTOs back to the current owner
+          $p_attrib = &$destInstanceCopy->m_attribList[$key];          
+          if (strtolower($p_attrib->m_destInstance->m_table)==strtolower($this->m_ownerInstance->m_table))
           {
             $selector = array_values(decodeKeyValuePair($this->m_ownerInstance->m_postvars["atkselector"]));
-            $editrecord[$attribute->fieldname()] = array($this->m_ownerInstance->primaryKeyField()=>$selector[0]);
-            $p_attrib = &$destInstanceCopy->m_attribList[$key];
+            $editrecord[$p_attrib->fieldname()] = array($this->m_ownerInstance->primaryKeyField()=>$selector[0]);
             $p_attrib->addFlag(AF_HIDE);
           }
         }
@@ -418,7 +406,7 @@
       // for now, we don't support extended search in embedded one2many recordlists.
       atkimport("atk.recordlist.atkrecordlist");
       $flags  = atkRecordList::convertFlags($this->m_destInstance->getFlags());
-      $flags |= RL_EMBED|RL_NO_EXTENDED_SEARCH;
+      $flags |= RL_EMBED|RL_NO_EXTENDED_SEARCH|RL_NO_SEARCH; // TODO/FIXME: Ajax search is disabled
       return $flags;
     }
 
@@ -468,6 +456,10 @@
         {
           $onchange = 'onChange="'.$this->fieldName().'_onChange(this);"';
           $this->_renderChangeHandler($fieldprefix);
+        }
+        else
+        {
+          $onchange = '';
         }
         $url = href($add_url,$label,SESSION_NESTED,$saveform,$onchange.' class="atkonetomanyrelation"');
       }
@@ -532,6 +524,33 @@
     }
 
     /**
+     * Create the where clause for the referential key that is used to
+     * retrieve the destination records.
+     * @access private
+     *
+     * @param array $record The master record
+     * @return String SQL where clause
+     */
+    function _getLoadWhereClause($record)
+    {
+      $whereelems = array();
+ 
+      if (count($this->m_refKey)==0||$this->m_refKey[0]=="") $this->m_refKey[0]=$this->m_owner;
+
+      for ($i=0, $_i = count($this->m_refKey); $i<$_i; $i++)
+      {
+        $primkeyattr = &$this->m_ownerInstance->m_attribList[$this->m_ownerInstance->m_primaryKey[$i]];
+
+        if (!$primkeyattr->isEmpty($record))
+        {
+          $whereelems[] = $this->m_destInstance->m_table.".".$this->m_refKey[$i]."='".$primkeyattr->value2db($record)."'";
+        }
+      }
+
+      return implode(" AND ", $whereelems);
+    }
+
+    /**
      * Retrieve detail records from the database.
      *
      * Called by the framework to load the detail records.
@@ -560,27 +579,16 @@
       {
         if ($this->createDestination())
         {
-          if (count($this->m_refKey)==0||$this->m_refKey[0]=="") $this->m_refKey[0]=$this->m_owner;
+          $where = $this->_getLoadWhereClause($record);
 
-          for ($i=0, $_i = count($this->m_refKey); $i<$_i; $i++)
+          if ($where!="")
           {
-            $primkeyattr = &$this->m_ownerInstance->m_attribList[$this->m_ownerInstance->m_primaryKey[$i]];
-
-            if (!$primkeyattr->isEmpty($record))
-            {
-              $whereelems[] = $this->m_destInstance->m_table.".".$this->m_refKey[$i]."='".$primkeyattr->value2db($record)."'";
-            }
-          }
-
-          if (count($whereelems)>0)
-          {
-            $where = implode(" AND ", $whereelems);
 
             if ($this->m_destinationFilter!="")
             {
-		          atkimport("atk.utils.atkstringparser");
-		          $parser = new atkStringParser($this->m_destinationFilter);
-		          $filter = $parser->parse($record);
+              atkimport("atk.utils.atkstringparser");
+              $parser = new atkStringParser($this->m_destinationFilter);
+              $filter = $parser->parse($record);
               $this->m_destInstance->addFilter($filter);
             }
 
@@ -603,9 +611,9 @@
               $this->m_destInstance->m_postvars['atksearchmode'] = $this->m_ownerInstance->m_postvars['atksearchmode'];
             }
             ($paging==true)?$limitarray=$this->fetchLimitArray():$limitarray="";
-            $recordset = $this->m_destInstance->selectDb($where,@$this->m_ownerInstance->m_postvars['atkorderby'],
-                                                         $limitarray,$excludes,"",$mode);
-
+            $atkorderby = isset($this->m_ownerInstance->m_postvars['atkorderby']) ? $this->m_ownerInstance->m_postvars['atkorderby'] : "";
+            $recordset = $this->m_destInstance->selectDb($where,$atkorderby,
+            $limitarray,$excludes,"",$mode);
             $this->m_loadFilter = $where;
             return $recordset;
           }

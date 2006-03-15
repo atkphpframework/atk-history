@@ -120,6 +120,13 @@
   // user is forced to make a selection.
   $config_list_obligatory_null_item = false;
 
+  // Wether or not to use the keyboardhandler for attributes and the recordlist
+  // When set to true, arrow keys can be used to navigate through fields and
+  // records, as well as shortcuts 'e' for edit, 'd' for delete, and left/right
+  // cursor for paging. Note however, that using cursor keys to navigate
+  // through fields is not standard web application behaviour.
+  $config_use_keyboard_handler = false;
+
   //----------------- SECURITY CONFIGURATION --------------------
 
   // The type of authentication (user/password verification) to use.
@@ -131,6 +138,7 @@
   // "pop3"   - users / passwords are stored in the POP3 server
   // "ldap"   - users / passwords are stored in an LDAP server
   // "server" - authentication is done by the webserver (.htaccess)
+  // custom type with a fullclassname like 'module.mymodule.myauth' (syntax similar as atknew or atkimport)
   // if you need to use multiple authentication types list them delimited by comma
   $config_authentication = "none";
 
@@ -190,7 +198,7 @@
   $config_auth_usertable   = "user";
   $config_auth_userfield   = "userid";
   $config_auth_passwordfield = "password";
-
+  
   // If you work with groups/levels  you need these parameters
   $config_auth_leveltable  = "users";
   $config_auth_levelfield  = "entity";
@@ -221,6 +229,15 @@
   // if you use "ldap" as authentication, these parameters are nessesary
   // $config_auth_ldap_host = "";
   // $config_auth_ldap_context = "";
+
+  //filter prefix default: "uid"
+  //$config_auth_ldap_search_filter = "uid";
+
+  // Sometimes we can't bind anomynous, so we have
+  // to use an  account to bind within the tree
+  //$config_auth_ldap_bind_tree = false;   // default off
+  //$config_auth_ldap_bind_dn = "";
+  //$config_auth_ldap_bind_pw = "";
 
   // The application root
   // if you're using urlrewrites within your httpd or htaccess configuration i think this should be '/'
@@ -262,7 +279,7 @@
   // "doctemplates/modulename/nodename/".
   $config_doctemplatedir = "doctemplates/";
 
-  // --------- DATE INTERNATIONALISATION CONFIGURATION ---------
+  // --------- DATA INTERNATIONALISATION CONFIGURATION ---------
 
   $config_supported_languages = array("EN","NL","DE");
   $config_defaultlanguage="EN";

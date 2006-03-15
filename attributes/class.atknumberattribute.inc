@@ -131,7 +131,7 @@
     function value2db($rec)
     {
       if($rec[$this->fieldName()]==""&&!$this->hasFlag(AF_OBLIGATORY))
-        return "NULL";
+        return NULL;
 
       if($this->m_decimals>0)
         return round((float) $rec[$this->fieldName()], $this->m_decimals);
@@ -168,7 +168,7 @@
      * @return Piece of htmlcode
      */
     function edit($record="", $fieldprefix="")
-    {      
+    { 
       $maxsize = $this->m_maxsize;
       if ($this->m_decimals>0)
       {

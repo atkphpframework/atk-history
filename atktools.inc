@@ -169,7 +169,7 @@
       atkWriteLog($txt);
       $line = atkGetTimingInfo().$txt;
 
-      if ($level>1)
+      if ($level>2)
       {
         atkimport("atk.utils.atkdebugger");
         if (!atkDebugger::addStatement($line))
@@ -579,7 +579,9 @@
 
 
   /**
-   * Same as array_merge from php, but without duplicates..
+   * Same as array_merge from php, but without duplicates.. 
+   * Supports unlimited number of arrays as arguments.
+   * 
    * @param Array $array1 the first array
    * @param Array $array2 the second array
    * @return Array The result of the merge between $array1 and $array2
@@ -587,20 +589,19 @@
   function atk_array_merge($array1, $array2)
   {
     $res = Array();
-    for ($i=0;$i<count($array1);$i++)
+    
+    $arrays = func_get_args();
+    for ($i = 0, $_i = count($arrays); $i < $_i; $i++)
     {
-      if (!in_array($array1[$i],$res))
+      for ($j = 0, $_j = count($arrays[$i]); $j < $_j; $j++)
       {
-        $res[]=$array1[$i];
+        if (!in_array($arrays[$i][$j], $res))
+        {
+          $res[] = $arrays[$i][$j];
+        }
       }
     }
-    for ($i=0;$i<count($array2);$i++)
-    {
-      if (!in_array($array2[$i],$res))
-      {
-        $res[]=$array2[$i];
-      }
-    }
+    
     return $res;
   }
 
@@ -932,6 +933,7 @@
 
       $body.= "\nDEBUGMESSAGES\n".str_repeat("-",70)."\n";
 
+      $lines = array();
       for($i=0, $_=count($g_debug_msg);$i<$_;$i++)
       {
         $lines[] = _wordwrap(html_entity_decode(preg_replace('(\[<a.*</a>\])','',$g_debug_msg[$i])));
@@ -1073,10 +1075,10 @@
    * @param String $conn The name of the connection to retrieve
    * @return atkDb Database connection instance
    */
-  function &atkGetDb($conn="default")
+  function &atkGetDb($conn="default", $reset=false)
   {
     atkimport("atk.db.atkdb");
-    $db = &atkDb::getInstance($conn);
+    $db = &atkDb::getInstance($conn, $reset);
     return $db;
   }
 
@@ -1332,9 +1334,9 @@
     if (count($a) == 2)
       $include = moduleDir(strtolower($a[0])).$type."s/class.".strtolower($a[1]).".inc";
     else $include = $config_atkroot."atk/".$type."s/class.".strtolower($name).".inc";
-    return $include;
+    return $include;    
   }
-
+  
   /**
    * Check if an atk class exists (attribute, relation or filter)
    * @param string $type the type of the class (attribute|relation|filter)
@@ -1343,8 +1345,8 @@
   function atkexists($type, $name)
   {
     return file_exists(atkgetinclude($type, $name));
-  }
-
+  }  
+  
   /**
    * Use an atk class (attribute, relation or filter)
    * @param string $type the type of the class (attribute|relation|filter)
@@ -1454,6 +1456,36 @@
       case ACTION_SUCCESS: return "success";
     }
   }
+  
+  /**
+   * Build query string based on an array of parameters.
+   * 
+   * @param array $params array of parameters
+   */
+  function buildQueryString($params, $parent="")
+  {
+    $query = "";
+    
+    foreach ($params as $key => $value)
+    {
+      if (!empty($query))
+        $query .= '&';
+
+      if (!empty($parent))
+        $key = "{$parent}[{$key}]";
+         
+      if (!is_array($value))
+      {
+        $query .= "$key=".rawurlencode($value);
+      }
+      else 
+      {
+        $query .= buildQueryString($value, $key);
+      }
+    }
+    
+    return $query;
+  }
 
   /**
    * Generate a dispatch menu URL for use with nodes
@@ -1466,19 +1498,28 @@
    */
   function dispatch_url($node, $action, $params="",$phpfile='dispatch.php')
   {
-    /* create url */
     $url = $phpfile."?atknodetype=".$node."&atkaction=".$action;
-    if ($params!=""&&is_array($params))
-    {
-      foreach ($params as $key => $value)
-      {
-        $url .= "&$key=".rawurlencode($value);
-      }
-    }
-
-    /* return url */
+    if ($params != "" && is_array($params) && count($params) > 0)
+      $url .= '&'.buildQueryString($params);
     return $url;
   }
+  
+  /**
+   * Generate a partial url.
+   *
+   * @param string $node the (module.)node name
+   * @param string $action the atkaction
+   * @param string $partial the partial name
+   * @param array $params a key/value array with extra params
+   * @return string url for the partial action
+   */
+  function partial_url($node, $action, $partial, $params=array())
+  {
+    if (!is_array($params))
+      $params = array();
+    $params['atkpartial'] = $partial;
+    return session_url(dispatch_url($node, $action, $params), SESSION_DEFAULT);
+  }   
 
   /**
    * Writes trace file to system tmp directory
@@ -1647,7 +1688,8 @@
 
     if (class_exists($classname))
     {
-      return new $classname;
+      $obj = &new $classname();
+      return $obj;
     }
     else
     {

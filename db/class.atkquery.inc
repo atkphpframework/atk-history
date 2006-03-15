@@ -9,8 +9,8 @@
    * @package atk
    * @subpackage db
    *
-   * @copyright (c)2000-2004 Ibuildings.nl BV
-   * @copyright (c)2000-2004 Ivo Jansch
+   * @copyright (c)2000-2006 Ibuildings.nl BV
+   * @copyright (c)2000-2006 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
    * @version $Revision$
@@ -115,6 +115,15 @@
     var $m_quotedfields=array();
 
     /**
+     * Quote to put around fields
+     * @var String
+     * @access private
+     */
+    var $m_fieldquote;
+
+    var $m_quotedfields=array();
+
+    /**
     * Initialize all variables
     */
     function atkquery()
@@ -140,14 +149,14 @@
 
     /**
     * Add's a field to the query
-    * @param $name Field name
-    * @param $value Field value
-    * @param $table Table name
-    * @param $fieldaliasprefix Field alias prefix
-    * @param $quote If this parameter is true, stuff is inserted into the db
+    * @param $name String Field name
+    * @param $value String Field value
+    * @param $table String Table name
+    * @param $fieldaliasprefix String Field alias prefix
+    * @param $quote bool If this parameter is true, stuff is inserted into the db
     *               using quotes, e.g. SET name = 'piet'. If it is false, it's
     *               done without quotes, e.d. SET number = 4.
-    * @param $quotefield 
+    * @param $quotefield bool Wether or not to quote the fieldname
     */
     function addField($name, $value="", $table="", $fieldaliasprefix="", $quote=true, $quotefield=false)
     {
@@ -156,7 +165,8 @@
       $this->m_fields[] = $fieldname;
       if ($quotefield) $this->m_quotedfields[] = $fieldname;
 
-      if ($quote||$value=="") $value = "'".$value."'";
+      if ($quote) $value = "'".$value."'";
+      elseif ($value === NULL || $value === '') $value = 'NULL';
 
       $this->m_values[$fieldname] = $value;
 
@@ -514,6 +524,23 @@
         }
       }
     }
+    
+    /**
+     * Generate a searchcondition that checks if the field is null.
+     */
+    function nullCondition($field)
+    {
+      return "$field IS NULL";
+    }
+    
+    
+    /**
+     * Generate a searchcondition that checks if the field is not null.
+     */
+    function notNullCondition($field)
+    {
+      return "$field IS NOT NULL";
+    }    
 
     /**
      * Generate a searchcondition that checks whether $value matches $field exactly.

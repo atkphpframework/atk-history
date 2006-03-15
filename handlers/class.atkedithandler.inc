@@ -36,6 +36,21 @@
     {
       $page = &$this->getPage();
 
+      list($type, $attribute, $partial) = explode('.', $this->m_partial);
+      if ($type == 'attribute')
+      {
+        $attr =& $this->m_node->getAttribute($attribute);
+        if ($attr == NULL)
+        {
+          atkerror("Unknown / invalid attribute '$attribute' for node '".$this->m_node->atkNodeType()."'");
+          return;
+        }
+        
+        $result = $attr->partial('edit', array('partial' => $partial));
+        $page->addContent($result);
+        return;
+      }      
+
       $recordset = $this->m_node->selectDb($this->m_postvars['atkselector'],"","","","","edit");
       if ($this->m_node->hasFlag(NF_LOCK))
       {
@@ -279,6 +294,8 @@
             $tplfield["tooltip"] = $tooltip;
             $editsrc.=$tooltip."&nbsp;";
           }
+          
+          $tplfield['id']=str_replace('.','_',$node->atknodetype().'_'.$field["name"]);
 
           $tplfield["full"] = $editsrc;
         }

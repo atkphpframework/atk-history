@@ -174,7 +174,7 @@
       if (strpos($tplname, "/")===false)
       {
         // lookup template in theme.
-        $tplname = $this->m_theme->tplPath($tplname);
+        $tplname = $this->m_theme->tplPath($tplname);        
       }
 
       // Smarty fetches templates relative from the template_dir setting.
@@ -225,14 +225,14 @@
       $key = 'title_'.$module.'_'.$nodetype.'_'.$action;
       if (atktext($key,$module,"","","",true))
       {
-        return atktext($key,$module);
+        return atktext($key,$module)."1";
       }
       else
       {
         $key = $nodetype;
         if (atktext($key,$module,"","","","",true))
         {
-          if ($nomodule) return atktext($action, "",$nodetype);
+          if ($nomodule) return atktext($action, $module, $nodetype);
           else return atktext($key,$module)." - ".atktext($action, $module, $nodetype, "", "atk");
         }
         else
@@ -246,7 +246,7 @@
           {
             // if no specific text available for this node,
             // generate a generic title
-            return atktext($nodetype, $module)." - ".atktext($action, $nodetype);
+            return atktext($nodetype, $module)." - ".atktext($action, $module, $nodetype);
           }
         }
       }
