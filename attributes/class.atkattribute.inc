@@ -465,6 +465,13 @@
      * @var String
      */
     var $m_onchangehandler_init = "";
+    
+    /**
+     * Variable to store depended attributes.
+     * @access private
+     * @var Array
+     */
+    var $m_dependees = array();    
 
     /**
      * Constructor
@@ -665,6 +672,8 @@
       $id = $this->getHtmlId($fieldprefix);
       $this->registerKeyListener($id, KB_CTRLCURSOR|KB_UPDOWN);
 
+      $this->_registerDependees($fieldprefix, $mode);
+      
       if (count($this->m_onchangecode))
       {
         $onchange = 'onChange="'.$id.'_onChange(this);"';
@@ -1842,7 +1851,9 @@
      */
     function partial($mode, $options=array())
     {
-      return '&nbsp;'; // not implemented yet
+      $record = $this->m_ownerInstance->updateRecord();
+      $fieldprefix = $this->m_ownerInstance->m_postvars['atkfieldprefix'];      
+      return $this->edit($record, $fieldprefix, $mode);
     }
 
     /**
@@ -1851,6 +1862,53 @@
     function text($string)
     {
       return $this->m_ownerInstance->text($string, $this->getModule());
+    }
+    
+    /**
+     * Add dependee.
+     */
+    function addDependee($attribName)
+    {
+      $this->m_dependees[] = $attribName;
+    }
+    
+    /**
+     * Register change handlers for dependees.
+     */
+    function _registerDependees($fieldprefix="", $mode="")
+    {
+      $id = $fieldprefix.$this->fieldName();
+      
+      foreach ($this->m_dependees as $attribName)
+      {
+        $attrField = str_replace('.', '_', $this->m_ownerInstance->atkNodeType())."_$attribName";  
+        $url = addslashes(partial_url($this->m_ownerInstance->atkNodeType(), $mode == "add" ? "add" : "edit", "attribute.$attribName", array("atkfieldprefix" => $fieldprefix)));
+        
+        $code = "
+          var replace = '$attrField';
+          var url = '$url';
+          
+          var elements = Form.getElements(\$('$id').form);
+          var queryComponents = new Array();
+
+          for (var i = 0; i < elements.length; i++) {
+            if (elements[i].name && elements[i].name.substring(0, 3) != 'atk') {
+              var queryComponent = Form.Element.serialize(elements[i]);
+              if (queryComponent)
+                queryComponents.push(queryComponent);
+            }
+          }
+
+          var params = queryComponents.join('&');          
+
+          new Ajax.Updater(replace, url, {method: 'post', parameters: params, evalScripts: true, asynchronous: true });    
+        ";
+        
+        $this->addOnChangeHandler($code);
+        
+        $page = &$this->m_ownerInstance->getPage();
+        $page->register_loadscript($code);
+      }
     }
   }
 ?>

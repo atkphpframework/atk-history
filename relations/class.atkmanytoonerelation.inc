@@ -317,7 +317,7 @@
      * @param String $fieldprefix  Prefix for the fieldname
      * @return Piece of html code that can  be used in a form to edit this
      */
-    function edit(&$record, $fieldprefix="")
+    function edit(&$record, $fieldprefix="", $mode="")
     {
       // Two variances.. one with a dropdownbox containing all records,
       // and one with a dropdownbox that contains the last 10 used records,
@@ -395,7 +395,7 @@
             $value = $record[$this->fieldName()];
           $currentPk = $this->m_destInstance->primaryKey($value);
           $this->m_destInstance->addFilter($filter);
-          $recordset = $this->getSelectableRecords();
+          $recordset = $this->getSelectableRecords($record, $mode);
           if(count($recordset)==0) $editflag = false;
 
           // autoselect if there is only one record (if obligatory is not set,
@@ -409,6 +409,8 @@
           }
           else
           {
+            $this->_registerDependees($fieldprefix, $mode);
+            
             $onchange='';
             if (count($this->m_onchangecode))
             {
@@ -898,8 +900,12 @@
       return 0;
     }
 
-    function getSelectableRecords()
+    function getSelectableRecords($record=array(), $mode="")
     {
+      $method = $this->fieldName()."_selection";
+      if (method_exists($this->m_ownerInstance, $method))
+        return $this->m_ownerInstance->$method($record, $mode);
+      
       if (!count($this->m_selectableRecords))
       {
         if ($this->createDestination())
@@ -986,7 +992,7 @@
         // only check if hidewhenempty is set to true
         if ($this->m_hidewhenempty)
         {
-          $recs = $this->getSelectableRecords();
+          $recs = $this->getSelectableRecords($defaults, $mode);
           if (count($recs)==0) return $this->hide($defaults, $fieldprefix);
         }
       }
@@ -1143,11 +1149,6 @@
             $p_attrib->addToSearchformFields($fields,$node,$record[$this->fieldName()], $prefix);
         }
       }
-    }
-    
-    function partial()
-    {
-      return "<ul><li>todo implement</li></ul>";
     }
   }
 ?>
