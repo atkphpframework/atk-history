@@ -225,7 +225,6 @@
    */
   define("ACTION_SUCCESS", 4);
 
-  
   /**
    * Multi-record-actions selection modes. These
    * modes are mutually exclusive.
@@ -245,6 +244,15 @@
    * No selection possible (e.g. action is always for all (visible) records!).
    */
   define("MRA_NO_SELECT", 3);
+
+  /**
+   * Trigger flags
+   */
+  define("TRIGGER_NONE", 0);
+  define("TRIGGER_AUTO", 1);
+  define("TRIGGER_PRE",  2);
+  define("TRIGGER_POST", 4);
+  define("TRIGGER_ALL", TRIGGER_PRE|TRIGGER_POST);
 
   /**
    * The atkNode class represents a piece of information that is part of an
@@ -669,11 +677,12 @@
      * <br>
      * <b>Example:</b>
      * <code>$this->atkNode('test',NF_NO_EDIT);</code>
-     * @param String $type The nodetype (usually equal to the classname)
+     * @param String $type The nodetype (by default equal to the classname)
      * @param int $flags Bitmask of node flags (NF_*).
      */
-    function atkNode($type, $flags=0)
+    function atkNode($type="", $flags=0)
     {
+      if ($type=="") $type = get_class($this);
       atkdebug("Creating a new atkNode for $type");
       $this->m_type = $type;
       $this->m_flags = $flags;
@@ -855,17 +864,17 @@
         $listindex = $this->m_attribList[$attribname]->m_index;
 
         unset($this->m_attribList[$attribname]);
-        for ($i=0, $_i=count($this->m_listExcludes); $i<$_i; $i++)
+        foreach($this->m_listExcludes as $i => $name)
         {
-          if ($this->m_listExcludes[$i] == $attribname) unset($this->m_listExcludes[$i]);
+          if ($name == $attribname) unset($this->m_listExcludes[$i]);
         }
-        for ($i=0, $_i=count($this->m_viewExcludes); $i<$_i; $i++)
+        foreach($this->m_viewExcludes as $i => $name)
         {
-          if ($this->m_viewExcludes[$i] == $attribname) unset($this->m_viewExcludes[$i]);
+          if ($name == $attribname) unset($this->m_viewExcludes[$i]);
         }
-        for ($i=0, $_i=count($this->m_cascadingAttribs); $i<$_i; $i++)
+        foreach($this->m_cascadingAttribs as $i => $name)
         {
-          if ($this->m_cascadingAttribs[$i] == $attribname) unset($this->m_cascadingAttribs[$i]);
+          if ($name == $attribname) unset($this->m_cascadingAttribs[$i]);
         }
 
         unset($this->m_attribIndexList[$listindex]);
@@ -1141,9 +1150,9 @@
         // Only display the attribute if the attribute
         // resides on at least on visible tab
         $hideme = true;
-        for($i=0;$i <= sizeof($p_attrib->m_tabList);$i++)
+        for($i=0, $_i=sizeof($p_attrib->m_tabs); $i<$_i; $i++)
         {
-          if (in_array($p_attrib->m_tabs[$i],$list))
+          if (is_array($list) && in_array($p_attrib->m_tabs[$i],$list))
           {
             $hideme = false;
             break;
@@ -1159,7 +1168,7 @@
           // Keep track of the tabs that containg attribs
           // so we only display none-empty tabs
           $tabCode = $this->m_attributeTabs[$attribname][0];
-          if (!isset($this->m_filled[$tabCode]))
+          if (!isset($this->m_filledTabs[$tabCode]))
           {
             $this->m_filledTabs[$tabCode] = true;
           }
@@ -1208,7 +1217,7 @@
             unset($tablist[$i]);
           }
         }
-        else atkdebug("TAB " . $tablist[$i] . " does not need authorisation");
+        else atkdebug("TAB " . $tablist[$i] . " does not need authorisation",DEBUG_WARNING);
       }
 
       if (is_array($tablist))
@@ -1407,7 +1416,7 @@
         $descrtrace = "";
         foreach ($descriptortrace as $desc)
         {
-          $descrtrace.= $desc." - ";
+          $descrtrace.= htmlentities($desc, ENT_COMPAT,atktext('charset'))." - ";
         }
         $res= $descrtrace . $res;
       }
@@ -2039,7 +2048,7 @@
         {
           if (is_object($listener))
           {
-            $this->addListener($listenerinst);
+            $this->addListener($listener);
           }
           else
           {
@@ -2127,10 +2136,12 @@
       $ui = &$this->getUi();
       $page = &$this->getPage();
       
-      $screen = $page->render(atktext('app_shorttitle')." - ".$ui->title($this->m_module, $this->m_type,$this->m_postvars['atkaction']), $flags);
-
-      $output = &atkOutput::getInstance();
-      $output->output($screen);
+      if (!$page->isEmpty()) // Only output an html output if there is anything to output.
+      {
+        $screen = $page->render(atktext('app_shorttitle')." - ".$ui->title($this->m_module, $this->m_type,$this->m_postvars['atkaction']), $flags);
+        $output = &atkOutput::getInstance();
+        $output->output($screen);
+      }
 
       // This is the end of all things for this page..
       // so we clean up some resources..
@@ -2524,9 +2535,10 @@
      * The record should already exist in the database, or this method will
      * fail.
      * @param array $record The record to update in the database.
+     * @param bool wether to execute the pre/post update triggers
      * @return boolean True if succesful, false if not.
      */
-    function updateDb(&$record)
+    function updateDb(&$record,$exectrigger=true)
     {
       $db = &$this->getDb();
       $query = &$db->createQuery();
@@ -2576,6 +2588,8 @@
           $p_attrib->addToQuery($query,$this->m_table,"",$record,1,"update"); // start at level 1
         }
 
+        if($exectrigger) $this->executeTrigger("preUpdate",$record);
+
         if (count($query->m_fields) && !$query->executeUpdate()) return false;
 
         if($this->hasFlag(NF_ML)&&$record["atkmlsplit"]=="")
@@ -2590,13 +2604,10 @@
 
         // Now we call a postUpdate function, that can be used to do some processing after the record
         // has been saved.
-        $return =  $this->postUpdate($record);
-        if(!isSet($return))
-        {
-          atkdebug("Undefined return:".$this->atkNodeType().".postUpdate doesn't return anything, it should return a boolean!", DEBUG_WARNING);
-          $return = true;
-        }
-        return $return;
+        if($exectrigger)
+          return $this->executeTrigger("postUpdate",$record);
+        else
+          return true;
       }
       else
       {
@@ -3138,6 +3149,9 @@
      */
     function addDb(&$record, $exectrigger=true, $mode="add", $excludelist=array())
     {
+      if ($exectrigger)
+       if(!$this->executeTrigger("preAdd",$record,$mode)) return atkerror("preAdd() failed!");
+
       $db = &$this->getDb();
       $query = &$db->createQuery();
 
@@ -3195,24 +3209,40 @@
 
       // Now we call a postAdd function, that can be used to do some processing after the record
       // has been saved.
-      if ($exectrigger)
+      if ($exectrigger && !$this->executeTrigger("postAdd",$record,$mode)) return false;
+
+      return true;
+    }
+
+    /**
+     * Executes a trigger on a add,update or delete action
+     *
+     * To prevent triggers from executing twice, the method stores an
+     * indication in the record when a trigger is executed.
+     * ('__executed<triggername>')
+     *
+     * @param string $trigger function, such as 'postUpdate'
+     * @param array $record record on which action is performed
+     * @param string $mode mode like add or update
+     * @return bool true on case of success or when the trigger isn't returning anything (assumes success)
+     */
+    function executeTrigger($trigger,&$record,$mode=null)
+    {
+      if (!isset($record["__executed".$trigger]))
       {
-        $return = $this->postAdd($record, $mode);
-        if(!isSet($return))
+        $return = $this->$trigger($record, $mode);
+
+        $record["__executed".$trigger]=true;
+
+        if(!isset($return))
         {
-          atkdebug("Undefined return:".$this->atkNodeType().".postAdd doesn't return anything, it should return a boolean!", DEBUG_WARNING);
+          atkdebug("Undefined return:".$this->atkNodeType().".$trigger doesn't return anything, it should return a boolean!", DEBUG_WARNING);
           $return = true;
         }
-        if (!$return)
-        {
-          atkdebug("postAdd failed..");
-        }
+        if(!$return) atkdebug("$trigger failed!");
         return $return;
-
       }
-
-      atkdebug($db->m_error);
-      return false;
+      return true;
     }
 
     /**
@@ -3227,16 +3257,15 @@
      *       of a selector.
      * @param String $selector SQL expression used as where-clause that
      *                         indicates which records to delete.
+     * @param bool $exectrigger wether to execute the pre/post triggers
      * @returns boolean True if successful, false if not.
      */
-    function deleteDb($selector)
+    function deleteDb($selector,$exectrigger=true)
     {
       $recordset = $this->selectDb($selector,"","","","","delete");
 
-      if (method_exists($this,'preDelete'))
-      {
-        if (!$this->preDelete($recordset)) return atkerror('preDelete failed!');
-      }
+      if($exectrigger)
+        if (!$this->executeTrigger("preDelete",$recordset)) return atkerror('preDelete failed!');
 
       if (count($this->m_cascadingAttribs)>0)
       {
@@ -3260,20 +3289,13 @@
       $db = &$this->getDb();
       if ($db->query("DELETE FROM ".$this->m_table." WHERE ".$selector))
       {
-        for ($i = 0, $_i = count($recordset); $i < $_i; $i++)
+        if($exectrigger)
         {
-          $return = ($this->postDel($recordset[$i]) && $this->postDelete($recordset[$i]));
-          if(!isSet($return))
+          for ($i = 0, $_i = count($recordset); $i < $_i; $i++)
           {
-            atkdebug("Undefined return:".$this->atkNodeType().".postDel and postDelete don't return anything, they should return a boolean!", DEBUG_WARNING);
-            $return = true;
+            $return = ($this->executeTrigger("postDel",$recordset[$i]) && $this->executeTrigger("postDelete",$recordset[$i]));
+            if (!$return) return false;
           }
-
-          if (!$return)
-          {
-            // error.
-            return false;
-          };
         }
         return true;
       }
@@ -3315,6 +3337,7 @@
     function preAdd(&$record)
     {
       // Do nothing
+      return true;
     }
 
     /**
@@ -3353,6 +3376,7 @@
     function preUpdate(&$record)
     {
       // Do nothing
+      return true;
     }
 
     /**
@@ -3658,7 +3682,7 @@
      */
     function callHandler($action)
     {
-      $handler = getNodeHandler($this->m_type, $action);
+      $handler = &getNodeHandler($this->m_type, $action);
 
       // handler function
       if ($handler != NULL && function_exists($handler))
@@ -3809,7 +3833,7 @@
       if ($field != "")
       {
         // check if the filter table is the same as the nodes table
-        if (strtolower(trim($relation)) !== strtolower($this->m_table)) return "";
+        if (strtolower(trim($relation)) !== strtolower($this->m_table) && !in_array($relation, array_keys($this->m_attribList))) return "";
 
         // go on to check the field
         $relation = $field;
@@ -3950,9 +3974,10 @@
     /**
      * Translate using this node's module and type.
      */
-    function text($string)
+    function text($string, $module=NULL, $lng="", $firstfallback="", $nodefaulttext=false)
     {
-      return atktext($string, $this->m_module, $this->m_type);
+      if ($module==NULL) $module = $this->m_module;
+      return atktext($string, $module, $this->m_type, $lng, $firstfallback, $nodefaulttext);
     }
   }
 ?>

@@ -265,8 +265,6 @@
             atkdebug("Setting current item");
             $currentitem[$var] = $_REQUEST[$var];
           }
-          else
-            $currentitem[$var] = "";
         }
         else
         {
@@ -277,7 +275,11 @@
           $currentitem["defined_pagevars"][] = $var;
         }
         // We always return the current value..
-        return $currentitem[$var];
+        if (isset($currentitem[$var]))
+        {
+          return $currentitem[$var];
+        }
+        return "";
       }
     }
 
@@ -548,6 +550,7 @@
       $res = array();
       
       $prev = NULL;
+
       $stackcount = count($stack);
       for ($i=0;$i<$stackcount;$i++)
       {
@@ -826,7 +829,7 @@
     }
     return true;
   }
-  
+
   /**
    * Returns the sessionmanager.
    * @return atkSessionManager  session manager

@@ -407,8 +407,21 @@
       // Load default app-level stylesheet.
       $this->register_style((file_exists(atkconfig("atkroot")."./style.css") ? "." : atkconfig("atkroot")."atk").'/style.css');
 
-      // Load default tab show script. TODO: move this to the places where the tabscript is registered.
-      $this->register_loadscript('if ( window.showTab ) {showTab(\'' . (isset($_REQUEST['atktab']) ? $res.=$_REQUEST['atktab'] : '') . '\');}');
+      /** @todo: Move this to the places where the tabscript is registered. */
+      // Load default tab show script.
+      $this->register_loadscript('if ( window.showTab ) {showTab(\'' . (isset($ATK_VARS['atktab']) ? $res.=$ATK_VARS['atktab'] : '') . '\');}');
+    }
+
+    /**
+     * Check if the page is empty (no content).
+     *
+     * This is useful to check at the rendering stage of scripts whether there is something to render.
+     *
+     * @return boolean true if there is no content in the page, false if there is
+     */
+    function isEmpty()
+    {
+      return ($this->m_content=="");
     }
 
   }

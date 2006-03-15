@@ -51,12 +51,13 @@
 
     /**
      * Constructor
-     * @param $name Name of the attribute
-     * @param $flags Flags for this attribute
-     * @param $optionArray Array with options
-     * @param $valueArray Array with values. If you don't use this parameter,
+     *
+     * @param String $name Name of the attribute
+     * @param array $optionArray Array with options
+     * @param array $valueArray Array with values. If you don't use this parameter,
      *                    values are assumed to be the same as the options.
-     * @param $size database field size ($size[1] can be used for the amount of cols / rows to display, for example: 3c or 5r or just 4)
+     * @param int $flags Flags for this attribute
+     * @param int $size database field size ($size[1] can be used for the amount of cols / rows to display, for example: 3c or 5r or just 4)
      *
      */
     function atkRadioAttribute($name, $optionArray, $valueArray="", $flags=0, $size=0)
@@ -64,7 +65,6 @@
       if (is_array($size) and count($size)>1)
       {
         $lastchar = strtolower(substr($size[1],-1,1));
-        atkdebug("Last: $lastchar");
         if($lastchar=="c")
         {
           $this->m_cols=true;
@@ -88,8 +88,8 @@
     /**
      * Returns a piece of html code that can be used in a form to edit this
      * attribute's value.
-     * @param $record Array with fields
-     * @return piece of html code with radioboxes
+     * @param array $record Array with fields
+     * @return String piece of html code with radioboxes
      */
     function edit($record="", $fieldprefix="")
     {

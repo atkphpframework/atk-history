@@ -47,23 +47,47 @@
    */
   function atkErrorHandler($errtype, $errstr, $errfile, $errline)
   {
-    // Don't handle notices, and don't do anything if @ was used
-    if ($errtype==E_NOTICE || (version_compare(phpversion(), "5.0.0")>=0 && $errtype==E_STRICT) ||
-        error_reporting()==0)
+    // Compose an array of possible error types
+    $errortype = array (
+      E_ERROR           => "Error",
+      E_WARNING         => "Warning",
+      E_PARSE           => "Parsing Error",
+      E_NOTICE          => "Notice",
+      E_CORE_ERROR      => "Core Error",
+      E_CORE_WARNING    => "Core Warning",
+      E_COMPILE_ERROR   => "Compile Error",
+      E_COMPILE_WARNING => "Compile Warning",
+      E_USER_ERROR      => "User Error",
+      E_USER_WARNING    => "User Warning",
+      E_USER_NOTICE     => "User Notice",
+    );
+    if (version_compare(phpversion(), "5.0.0")>=0) $errortype[E_STRICT] = "Strict Notice";
+
+    // Translate the given errortype into a string
+    $errortypestring = $errortype[$errtype];
+
+    if ((version_compare(phpversion(), "5.0.0")>=0 && $errtype==E_STRICT))
     {
+      // Ignore strict notices for now
+      return;
+    }
+    if ($errtype==E_NOTICE || error_reporting()==0)
+    {
+      // Just show notices in the debug log, but don't influence the program flow
+      atkdebug("[$errortypestring] $errstr in $errfile (line $errline)");
       return;
     }
     else if (($errtype & (E_WARNING|E_USER_WARNING)) > 0)
     {
       // This is something we should pay attention to, but we don't need to die.
-      atkerror("[$errtype] $errstr in $errfile (line $errline)");
+      atkerror("[$errortypestring] $errstr in $errfile (line $errline)");
       return;
     }
     else
     {
-      atkerror("[$errtype] $errstr in $errfile (line $errline)");
+      atkerror("[$errortypestring] $errstr in $errfile (line $errline)");
 
-      // we must die. we can't even output anything anymore.. :(
+      // we must die. we can't even output anything anymore..
       // we can mail though.
       mailreport();
       die;
@@ -215,102 +239,111 @@
   }
 
   /**
-   * Returns a trace-route from all functions where-through the code
-   * has been executed
-   * @param string format (html|plaintext)
-   * @return string content(html | plaintext)
+   * Returns a trace-route from all functions where-through the code has been executed
+   *
+   * @param string $format (html|plaintext)
+   * @return string Backtrace in html or plaintext format
    */
   function atk_get_trace($format="html")
   {
+    // Return if the debug_backtrace function doesn't exist
     if(!function_exists("debug_backtrace"))
       return "Incorrect php-version for atk_get_trace()";
 
+    // Get the debug backtrace
     $traceArr = debug_backtrace();
 
-    // remove call of atk_get_trace
+    // Remove the call of atk_get_trace
     array_shift($traceArr);
 
-    if($format=="html")
+    // Start with an empty result;
+    $ret = "";
+
+    $theSpacer = "";
+
+    // Loop through all items found in the backtrace
+    for($i=0, $_i = count($traceArr); $i < $_i; $i++)
+    //for($i=count($traceArr)-1; $i >= 0; $i--)
     {
-      $ret = "<pre>";
-      $spacer = "&nbsp;";
-      $break = "\n";
-      $classCall = "-&gt;";
-    }
-    else
-    {
-      $spacer = " ";
-      $break = "\n";
-      $classCall = "->";
+      // Skip this item in the backtrace if empty
+      if (empty($traceArr[$i]))
+        continue;
 
-    }
-    for($i=0; $i < count($traceArr); $i++)
-    {
-      if (empty($traceArr[$i])) continue;
-      if ($traceArr[$i]["function"]=="atkerror") continue; // don't display error itself.
-      $theSpacer = str_repeat($spacer, ($i*2)+3)."";
+      // Don't display an atkerror statement itself.
+      if ($traceArr[$i]["function"]=="atkerror")
+        continue;
 
-      $file = $traceArr[$i]["file"];
-      $line = $traceArr[$i]["line"];
+      // Read the source location
+      if (isset($traceArr[$i]["file"]))
+        $location = $traceArr[$i]["file"] . (isset($traceArr[$i]["line"]) ? sprintf(", line %d", $traceArr[$i]["line"]) : "[Unknown line]");
+      else
+        $location = "[PHP KERNEL]";
 
+      // Read the statement
+      if (isset($traceArr[$i]["class"]))
+      {
+        $statement = $traceArr[$i]["class"];
+        if (isset($traceArr[$i]["type"]))
+          $statement .= $traceArr[$i]["type"];
+      }
+      else
+      {
+        $statement = "";
+      }
+      $statement .= $traceArr[$i]["function"];
 
-      $function = $traceArr[$i]["function"];
-      $class = $traceArr[$i]["class"];
-      if($class)
-        $class.=$classCall;
-
-      if(!is_array($traceArr[$i]["args"]))
-        $traceArr[$i]["args"] = array();
-
+      // Initialize the functionParamArr array
       $functionParamArr = array();
 
-      foreach($traceArr[$i]["args"] as $val)
+      // Parse any arguments into the array
+      if(isset($traceArr[$i]["args"]))
       {
-        if(is_array($val) && count($val))
+        foreach($traceArr[$i]["args"] as $val)
         {
-          $valArr = array();
-          foreach($val as $name=>$value)
+          if(is_array($val))
           {
-            if(is_numeric($name))
-              $valArr[] = $name;
-            else
+            $valArr = array();
+            foreach($val as $name=>$value)
             {
-              $valArr[] = $name."=".$value;
+              if(is_numeric($name))
+                $valArr[] = $name;
+              else
+              {
+                $valArr[] = $name."=".$value;
+              }
             }
-
+            $stringval = "array(".implode(", ", $valArr).")";
           }
-          $val = "array(".implode(", ", $valArr).")";
-        }
-
-        if(strlen($val))
-        {
-          if (is_array($val)) $val = str_replace("\n", "", var_export($val, true));
+          else if (is_null($val)) $stringval = 'null';
+          else if (is_object($val)) $stringval = sprintf("Object(%s)", get_class($val));
+          else if (is_bool($val)) $stringval = $val ? 'true' : 'false';
           else
           {
-            if(strlen($val) > 120)
-            $val = substr($val, 0, 117)."...";
-            $val = '"'.$val.'"';
+            if(strlen($val.$theSpacer) > 103)
+              $stringval = '"'.substr($val, 0, 100-strlen($theSpacer)).'"...';
+            else
+              $stringval = '"'.$val.'"';
           }
-          $functionParamArr[] = $theSpacer.$spacer.$spacer.$val;
+          $functionParamArr[] = $theSpacer."  ".$stringval;
         }
-      }// end foreach(function-arg arr)
+      }
+      $functionParams = implode(",\n", $functionParamArr);
 
-      $functionParams = implode(",".$break, $functionParamArr);
+      $ret .= $theSpacer."@".$location."\n";
+      $ret .= $theSpacer.$statement;
+      $ret .= (strlen($functionParams)?"\n".$theSpacer."(\n".$functionParams."\n".$theSpacer.")":"()")."\n";
 
-      if(strlen($functionParams))
-        $functionParams= $break.$functionParams.$break.$theSpacer;
+      // Add indentation
+      $theSpacer .= "  ";
+    }
 
-      $ret .= str_repeat("&nbsp;", ($i*2))." @".$file.", line ".$line.$break.
-                                $theSpacer.$class.$function.
-           (strlen($functionParams)?"\n".$theSpacer."(".
-                                $functionParams.")":"()").$break;
-    }  // end foreach (tracepoint)
+    // If html format should be used, replace the html special chars with html entities and put the backtrace within preformat tags.
+    if ($format=="html")
+      $ret = "<pre>" . htmlspecialchars($ret) . "</pre>";
 
-    if($format=="html")
-      $ret .="</pre>";
-
+    // Return the generated trace
     return $ret;
-  } // end function atk_get_trace
+  }
 
   /**
    * Writes info to the optional debug logfile. Please notice
@@ -351,7 +384,7 @@
    */
   function text($string, $node="", $module="", $lng="", $firstfallback="", $nodefaulttext=false)
   {
-    atkdebug("Call to deprecated text() function", DEBUG_WARNING);
+    atkdebug("Call to deprecated text() function",DEBUG_WARNING);
     atkimport("atk.atklanguage");
     return atkLanguage::text($string, $module, $node, $lng, $firstfallback, $nodefaulttext);
   }
@@ -1109,8 +1142,7 @@
    */
   function triggerError(&$rec, $attrib, $err, $msg="", $tab="")
   {
-    global $lng;
-    if($msg=="")  $msg = atktext($err,"atk","",$lng);
+    if($msg=="")  $msg = atktext($err,"atk","",atkLanguage::getLanguage());
 
     $rec['atkerror'][] = array( "attrib_name"=> $attrib, "err" => $err, "msg" => $msg, "tab"=>$tab);
   }
@@ -1334,9 +1366,9 @@
     if (count($a) == 2)
       $include = moduleDir(strtolower($a[0])).$type."s/class.".strtolower($a[1]).".inc";
     else $include = $config_atkroot."atk/".$type."s/class.".strtolower($name).".inc";
-    return $include;    
+    return $include;
   }
-  
+
   /**
    * Check if an atk class exists (attribute, relation or filter)
    * @param string $type the type of the class (attribute|relation|filter)
@@ -1345,8 +1377,8 @@
   function atkexists($type, $name)
   {
     return file_exists(atkgetinclude($type, $name));
-  }  
-  
+  }
+
   /**
    * Use an atk class (attribute, relation or filter)
    * @param string $type the type of the class (attribute|relation|filter)
@@ -1817,6 +1849,7 @@
    */
   function escapeForRegex($pattern)
   {
+    $escaped='';
     $escapechars = array("/","?",'"', "(", ")", "'","*",".","[","]");
     for ($counter = 0; $counter<strlen($pattern);$counter++)
     {

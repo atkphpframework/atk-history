@@ -173,14 +173,14 @@
         }
       }
       // do we need to login?
-      else if (@$session["login"]!=1)
+      else if (!array_key_exists("login", $session) || $session["login"]!=1)
       {
         // authenticated?
         $authenticated = false;
 
         // sometimes we manually have to set the PHP_AUTH vars
         // old style http_authorization
-        if (empty($auth_user) && empty($auth_pw) && ereg("^Basic ", @$_SERVER["HTTP_AUTHORIZATION"]))
+        if (empty($auth_user) && empty($auth_pw) && array_key_exists("HTTP_AUTHORIZATION", $_SERVER) && ereg("^Basic ", $_SERVER["HTTP_AUTHORIZATION"]))
         {
           list($auth_user, $auth_pw) = explode(":", base64_decode(substr($_SERVER["HTTP_AUTHORIZATION"], 6)));
         }
@@ -349,7 +349,7 @@
         }
         else
         {
-          header('WWW-Authenticate: Basic realm="'.atktext("app_title").' - '.strftime("%c",time()).'"');
+          header('WWW-Authenticate: Basic realm="'.atktext("app_title").(atkconfig("auth_changerealm", true)?' - '.strftime("%c",time()):"").'"');
           if (ereg("Microsoft", $_SERVER['SERVER_SOFTWARE'])) header("Status: 401 Unauthorized");
           else header("HTTP/1.0 401 Unauthorized");
           return false;

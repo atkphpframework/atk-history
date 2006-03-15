@@ -92,7 +92,7 @@
     }
 
     /**
-     * Add a module that serves as an override for language strings.     
+     * Add a module that serves as an override for language strings.
      *
      * @param String $module Name of the module to add.
      */
@@ -169,15 +169,16 @@
         return $atklanguage->_getString($string, $module, $lng, $node, $nodefaulttext, $firstfallback, $modulefallback);
 
       // If multiple strings given, iterate through all strings and return the translation if found
-      for ($i = 0, $_i = count($string)-1; $i <= $_i; $i++)
+      for ($i = 0, $_i = count($string); $i < $_i; $i++)
       {
         // Try to get the translation
-        $translation = $atklanguage->_getString($string[$i], $module, $lng, $node, $nodefaulttext || ($i < $_i), $firstfallback, $modulefallback);
+        $translation = $atklanguage->_getString($string[$i], $module, $lng, $node, $nodefaulttext || ($i < ($_i-1)), $firstfallback, $modulefallback);
 
         // Return the translation if found
         if ($translation != "")
           return $translation;
       }
+      return "";
     }
 
     /**
@@ -262,7 +263,7 @@
 
       if (!$nodefaulttext)
       {
-        atkdebug("atkLanguage: translation for '$key' with module: '$module' and node: '$node' not found, returning default text", DEBUG_WARNING);
+        atkdebug("atkLanguage: translation for '$key' with module: '$module' and node: '$node' not found, returning default text");
         // Still nothing found. return default string
         return $this->defaultText($key);
       }

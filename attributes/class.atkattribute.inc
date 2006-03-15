@@ -443,7 +443,7 @@
      * @var String
      */
     var $m_searchmode = "";
-    
+
     /**
      * Wether to force an update of the attribute
      * @access private
@@ -669,6 +669,10 @@
       {
         $onchange = 'onChange="'.$id.'_onChange(this);"';
         $this->_renderChangeHandler($fieldprefix);
+      }
+      else
+      {
+        $onchange = '';
       }
 
       $size = $this->m_size;
@@ -962,7 +966,7 @@
         if ($this->hasFlag(AF_TOTAL))
         {
           $sum = $this->sum($arr["totalraw"], $arr["rows"][$nr]["record"], $fieldprefix);
-          $arr["totalraw"][$fieldprefix.$this->fieldName()] = $sum[$fieldprefix.$this->fieldName()];
+          $arr["totalraw"][$this->fieldName()] = $sum[$this->fieldName()];
           if (method_exists($this->m_ownerInstance, $function))
             $arr["total"][$fieldprefix.$this->fieldName()] = $this->m_ownerInstance->$function($sum, "list");
           else $arr["total"][$fieldprefix.$this->fieldName()] = $this->display($sum, "list");
@@ -1281,7 +1285,7 @@
     {
       return ((!$this->hasFlag(AF_READONLY_EDIT) && !$this->hasFlag(AF_HIDE_EDIT)) || $this->m_forceupdate);
     }
-    
+
     /**
      * Used to force an attribute to update with every updateDb() call
      * @param bool $force Wether or not to force the attribute to update
@@ -1290,7 +1294,7 @@
     {
       $this->m_forceupdate = $force;
     }
-    
+
     /**
      * Getter for wether or not an attribute is forced to update
      * @return bool Wether or not an attribute is forced to update
@@ -1465,7 +1469,7 @@
      */
     function label($record = array())
     {
-      return atktext($this->fieldName(),$this->getModule(), $this->m_ownerInstance->m_type);
+      return $this->text($this->fieldName());
     }
 
     /**
@@ -1834,19 +1838,19 @@
     }
     
     /**
-     * Translate using the owner instance's module and type.
-     */
-    function text($string)
-    {
-      return $this->m_ownerInstance->text($string);
-    }
-    
-    /**
      * Handle partial.
      */
     function partial($mode, $options=array())
     {
       return '&nbsp;'; // not implemented yet
+    }
+
+    /**
+     * Translate using the owner instance's module and type.
+     */
+    function text($string)
+    {
+      return $this->m_ownerInstance->text($string, $this->getModule());
     }
   }
 ?>

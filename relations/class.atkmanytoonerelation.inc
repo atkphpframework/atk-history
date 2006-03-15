@@ -480,8 +480,8 @@
           }
         }
 
-        if($editflag) $result.=$autolink['edit'];
-        $result.= $autolink['add'];
+        if($editflag) $result.= isset($autolink['edit']) ? $autolink['edit'] : "";
+        $result.= isset($autolink['add']) ? $autolink['add'] : "";
         return $result;
       }
 

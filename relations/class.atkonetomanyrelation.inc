@@ -134,7 +134,7 @@
 
       if (!is_array($myrecords))
       {
-        $myrecords = $this->load(atkGetDb(), $record, "admin");
+        $myrecords = $this->load(atkGetDb(), $record, "admin",true);
       }
 
       $result = atktext("none"); // default result
@@ -534,7 +534,7 @@
     function _getLoadWhereClause($record)
     {
       $whereelems = array();
- 
+
       if (count($this->m_refKey)==0||$this->m_refKey[0]=="") $this->m_refKey[0]=$this->m_owner;
 
       for ($i=0, $_i = count($this->m_refKey); $i<$_i; $i++)
@@ -583,7 +583,6 @@
 
           if ($where!="")
           {
-
             if ($this->m_destinationFilter!="")
             {
               atkimport("atk.utils.atkstringparser");
@@ -820,14 +819,14 @@
      */
      function searchCondition(&$query, $table, $value, $searchmode)
      {
-       if ($this->createDestination() && $this->m_ownerInstance->m_postvars["atkselector"])
-       {
+       if ($this->createDestination()) {
          $searchcondition = $this->getSearchCondition($query, $table, $value, $searchmode);
-         if(isset($searchcondition) && !empty($searchcondition))
-         {
-           $query->addTable($this->m_destInstance->m_table);
-           $query->addCondition($this->translateSelector($this->m_ownerInstance->m_postvars['atkselector']));
-           $query->addSearchCondition($searchcondition);
+         if(isset($searchcondition) && !empty($searchcondition)) {
+           if ($this->m_ownerInstance->m_postvars["atkselector"]) {
+             $query->addTable($this->m_destInstance->m_table);
+             $query->addCondition($this->translateSelector($this->m_ownerInstance->m_postvars['atkselector']));
+             $query->addSearchCondition($searchcondition);
+           }
          }
        }
      }

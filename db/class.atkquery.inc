@@ -103,19 +103,9 @@
      * The database that this query does it's thing on
      */
     var $m_db;
-    
-    /**
-     * Quote to put around fields
-     * @example `
-     * @var String
-     * @access private
-     */
-    var $m_fieldquote;
-    
-    var $m_quotedfields=array();
 
     /**
-     * Quote to put around fields
+     * The quote char to put around fields, for example `
      * @var String
      * @access private
      */
@@ -662,7 +652,7 @@
       $name = "atk" . $dbconfig["default"]["driver"] . "query";
       return new $name();
     }
-    
+
     /**
      * If we set a m_fieldquote you can pass a field to this function and it will
      * quote all the identifiers (db, table, column, etc...) in the field.
@@ -671,12 +661,12 @@
      * @return The quoted field, if we have a fieldquote
      */
     function quoteField($field)
-    {      
+    {
       if ((in_array($field,$this->m_quotedfields) || in_array($field, $this->m_tables)) && preg_match('/(^[\w\.]+)/',$field)."'")
       {
         $exploded = explode('.',$field);
         foreach ($exploded as $identifier)
-        {          
+        {
           $quoted[] = $this->m_fieldquote.$identifier.$this->m_fieldquote;
         }
         $field = implode('.',$quoted);

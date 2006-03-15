@@ -31,12 +31,13 @@
    */
   $config_identifier = "atkapp";
 
+
   //----------------- DATABASE CONFIGURATION --------------------
 
   // Currently supported drivers are:
   // "mysql"   - All MySQL versions since 3.23
   // "mysql41" - MySQL 4.1+. On top of the "mysql" driver, this one
-  //             has transaction support.
+  //             has transaction support. (requires PHP5, mysqli extension)
   // "oci805"  - Oracle 8.0.5
   // "oci8"    - All Oracle 8i versions
   // "oci9"    - Oracle9i+ (also works for 10G)
@@ -65,7 +66,7 @@
   // 0 - No debug information
   // 1 - Print some debug information at the bottom of each screen
   // 2 - Print debug information, and pause before redirects
-  $config_debug = 1;
+  $config_debug = 0;
 
   // Smart debug parameters. Is used to dynamically enable debugging for
   // certain IP addresses or if for example the special atkdebug[key] request
@@ -76,6 +77,7 @@
   // $config_smart_debug[] = array("type" => "request", "key" => "test");
   // $config_smart_debug[] = array("type" => "ip", "list" => array("10.0.0.4"));
   $config_smart_debug = array();
+
 
   //----------------- LAYOUT CONFIGURATION --------------------
 
@@ -126,6 +128,14 @@
   // cursor for paging. Note however, that using cursor keys to navigate
   // through fields is not standard web application behaviour.
   $config_use_keyboard_handler = false;
+
+
+  /*********************************** OUTPUT ********************************/
+
+  // Set to true, to output pages gzip compressed to the browser if the
+  // browser supports it.
+  $config_output_gzip = false;
+
 
   //----------------- SECURITY CONFIGURATION --------------------
 
@@ -198,7 +208,7 @@
   $config_auth_usertable   = "user";
   $config_auth_userfield   = "userid";
   $config_auth_passwordfield = "password";
-  
+
   // If you work with groups/levels  you need these parameters
   $config_auth_leveltable  = "users";
   $config_auth_levelfield  = "entity";
@@ -207,6 +217,13 @@
   // popup.
   $config_auth_loginform = true;
   $config_max_loginattempts = 5;
+
+  // When changerealm is true, the authentication realm is changed on every login.
+  // Advantage: the user is able to logout using the logout link.
+  // Disadvantage: browser's 'remember password' feature won't work.
+  // This setting only affects the http login box, so it is only relevant if
+  // $config_auth_loginform is set to false.
+  $config_auth_changerealm = false;
 
   // if you use "pop3" or "imap" as authentication, you have to fill in
   // these parameters:
