@@ -33,7 +33,6 @@
      */
     function action_add()
     {
-      atkdebug("Action add");
       $page = &$this->getPage();
       $page->addContent($this->m_node->renderActionPage("add", $this->invoke("addPage")));
     }
@@ -65,6 +64,9 @@
       /* if we are on an admin page we would like to stay on the admin page after adding a new record */
       if ($node->m_action == "admin") $formstart.=session_form(SESSION_NESTED);
       else $formstart.=session_form();
+            
+      $controller = &$node->getController();
+      $formstart .= $controller->getHiddenVarsString();
 
       if (isset($node->m_postvars['atkfilter']))
       {

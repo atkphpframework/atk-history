@@ -582,13 +582,6 @@
     var $m_lock = NULL;
 
     /**
-     * List of actions that should give success/failure feedback
-     * @access private
-     * @var array
-     */
-    var $m_feedback = array();
-
-    /**
      * Default language used by Multilanguage Nodes.
      * @access protected
      * @var String
@@ -624,7 +617,14 @@
      * @var String
      */
     var $m_modifier = "";
-
+    
+    /**
+     * Object containing instance of atkController class
+     * @access private
+     * @var Object
+     */
+    var $m_controller = NULL;
+    
     /**
      * Constructor.
      *
@@ -1070,8 +1070,8 @@
             break;
           }
         }
-        if ($hideme)
-          $p_attrib->m_flags |= AF_HIDE_LIST;
+        //if ($hideme)
+        //  $p_attrib->m_flags |= AF_HIDE_LIST;
 
         if(is_object($p_attrib))
         {
@@ -2023,23 +2023,8 @@
      */
     function dispatch($postvars, $fullpage=true)
     {
-      $this->loadDispatchPage($postvars);
-
-      $ui = &$this->getUi();
-      $page = &$this->getPage();
-      if (!$page->isEmpty()) // Only output an html output if there is anything to output.
-      {
-        $screen = $page->render(atktext('app_shorttitle')." - ".$ui->title($this->m_module, $this->m_type,$this->m_postvars['atkaction']), $fullpage);
-
-        $output = &atkOutput::getInstance();
-        $output->output($screen);
-      }
-
-      // This is the end of all things for this page..
-      // so we clean up some resources..
-      $db = &$this->getDb();
-      if (is_object($db)) $db->disconnect();
-      atkdebug("disconnected from the database");
+      $controller = &$this->getController();
+      return $controller->dispatch($postvars, $fullpage);
     }
 
     /**
@@ -2049,33 +2034,8 @@
      */
     function loadDispatchPage($postvars)
     {
-      $this->m_postvars = $postvars;
-
-      $this->m_action = $postvars['atkaction'];
-
-      /** DIRTY HACK
-          if action is something else than edit, we clear the atkformdata sessionstuff **/
-      if ($this->m_action!="edit"&&$this->m_action!="add"&&$this->m_action!="admin")
-      {
-        atkdebug("Clearing stored formdata");
-        $this->m_postvars["atkformdata"]="";
-      }
-
-      $page = &$this->getPage();
-
-      if ($this->allowed($this->m_action))
-      {
-        $secMgr = &atkGetSecurityManager();
-        $secMgr->logAction($this->m_type, $this->m_action);
-        $this->callHandler($this->m_action);
-
-        list($selector,$id) = explode("=", $this->m_postvars["atkselector"]);
-        $page->register_hiddenvars(array("atknodetype"=>$this->m_module.".".$this->m_type, "atkselector"=>str_replace("'", "", $id)));
-      }
-      else
-      {
-        $page->addContent($this->genericPage(atktext('access_denied'), "<br><br>".atktext("error_node_action_access_denied", "", $this->m_type)."<br><br><br>"));
-      }
+      $controller = &$this->getController();
+      $controller->loadDispatchPage($postvars);
     }
 
     /**
@@ -2087,15 +2047,13 @@
      */
     function genericPage($title, $content)
     {
-       $ui = &$this->getUi();
-       $this->addStyle("style.css");
-       return $this->renderActionPage($title, $ui->renderBox(array("title"=>$title,
-                                                                   "content"=>$content)));
+      $controller = &$this->getController();
+      return $controller->genericPage($title, $content);
     }
 
     /**
      * Render a generic action.
-     *
+     *  
      * Renders actionpage.tpl for the desired action. This doesn't include a
      * box. The output can be rendered in a box with atkUi's renderBox method
      * if desired.
@@ -2109,16 +2067,8 @@
      */
     function renderActionPage($action, $blocks=array())
     {
-      if(!is_array($blocks))
-      {
-        $blocks = ($blocks==""?array():array($blocks));
-      }
-
-      $ui = &$this->getUi();
-
-      // todo: overridable action templates
-      return $ui->render("actionpage.tpl", array("blocks"=>$blocks,
-                                                 "title"=>$ui->title($this->m_module, $this->m_type, $action)));
+      $controller = &$this->getController();
+      return $controller->renderActionPage($action, $blocks);
     }
 
     /**
@@ -2138,17 +2088,8 @@
      */
     function setFeedback($action, $statusmask)
     {
-      if (is_array($action))
-      {
-        for ($i=0, $_i=count($action); $i<$_i; $i++)
-        {
-          $this->m_feedback[$action[$i]] = $statusmask;
-        }
-      }
-      else
-      {
-        $this->m_feedback[$action] = $statusmask;
-      }
+      $controller = &$this->getController();
+      return $controller->setFeedback($action, $statusmask);
     }
 
     /**
@@ -3132,6 +3073,10 @@
           $return = true;
         }
         if(!$return) atkdebug("$trigger failed!");
+      
+        //Notify listeners
+        $this->notify($trigger, $record);
+        
         return $return;
       }
       return true;
@@ -3574,6 +3519,7 @@
      */
     function callHandler($action)
     {
+      //todo: should the module be taken into account
       $handler = &getNodeHandler($this->m_type, $action);
 
       // handler function
@@ -3581,6 +3527,13 @@
       {
         atkdebug("Calling external handler function for '".$action."'");
         $handler($this, $action);
+      }
+      
+      // handler object
+      elseif ($handler != NULL && is_subclass_of($handler, "atkActionHandler"))
+      {
+        atkdebug("Using override atkActionHandler class for '".$action."'");
+        $handler->handle($this, $action, $this->m_postvars);
       }
 
       // no (valid) handler
@@ -3699,8 +3652,8 @@
      */
     function feedbackUrl($action, $status, $record="", $message="")
     {
-      return ((isset($this->m_feedback[$action])&&hasFlag($this->m_feedback[$action], $status))
-                      ||$status==ACTION_FAILED?session_url(dispatch_url($this->atkNodeType(),"feedback", array("atkfbaction"=>$action, "atkactionstatus"=>$status,"atkfbmessage"=>$message)),SESSION_REPLACE):"");
+      $controller = &$this->getController();
+      return $controller->feedbackUrl($action, $status, $record, $message);
     }
 
     /**
@@ -3872,5 +3825,17 @@
       return atktext($string, $module, $this->m_type, $lng, $firstfallback, $nodefaulttext);
     }
 
+    function &getController()
+    {
+      atkdebug("Load controller");
+      
+      if(!is_object($this->m_controller))
+      {
+        atkdebug("Create new controller");  
+        atkimport("atk.atkcontroller");
+        $this->m_controller = new atkController($this);
+      }
+      return $this->m_controller;      
+    }
   }
 ?>

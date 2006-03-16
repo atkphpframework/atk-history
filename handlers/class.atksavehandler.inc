@@ -47,7 +47,6 @@
 
         $this->m_node->validate($record, "add");
 
-
         if(!isset($record['atkerror']))
           $record['atkerror'] = array();
 
@@ -60,11 +59,7 @@
 
         if ($error)
         {
-          $this->m_action="add";
-          $this->m_node->m_action = "add";
-          $page = &$this->getPage();
-          $addhandler = &$this->m_node->getHandler("add");
-          $page->addContent($this->m_node->renderActionPage("add", $addhandler->invoke("addPage", $record)));
+          $this->renderAddPage($record);
         }
         else
         {
@@ -75,11 +70,7 @@
             if($db->getErrorType()=="user")
             {
               triggerError($record, 'Error', $db->getErrorMsg(), '', '');
-              $this->m_action="add";
-              $this->m_node->m_action = "add";
-              $page = &$this->getPage();
-              $addhandler = &$this->m_node->getHandler("add");
-              $page->addContent($addhandler->invoke("addPage", $record));
+              $this->renderAddPage($record);
             }
             else
             {
@@ -92,22 +83,9 @@
             $db->commit();
             $this->notify("save", $record);
             $this->clearCache();
-
-            $location="";
-            if ($this->m_node->hasFlag(NF_EDITAFTERADD))
-            {
-              $location = session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->m_node->atknodetype().'&atkaction=edit&atkselector='.rawurlencode($this->m_node->primaryKey($record)), SESSION_REPLACE);
-            }
-            else if ($this->m_node->hasFlag(NF_ADDAFTERADD) && isset($this->m_postvars['atksaveandnext']))
-            {
-              $filter = isset($this->m_node->m_postvars['atkfilter']) ? "&atkfilter=".rawurlencode($this->m_node->m_postvars['atkfilter']) : "";
-              $location = session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->m_node->atknodetype().'&atkaction=add'.$filter, SESSION_REPLACE);
-            }
-            else
-            {
-              $location = $this->m_node->feedbackUrl("save", ACTION_SUCCESS, $record);
-            }
-            $this->m_node->redirect($location, $record);
+          
+            $location = $this->createRedirectLocation($record);
+            $this->m_node->redirect($location);
           }
         }
       }
@@ -118,6 +96,38 @@
         $this->m_node->redirect($location);
       }
     }
+    
+    function renderAddPage($record)
+    {
+      $this->m_action="add";
+      $this->m_node->m_action = "add";
+      $page = &$this->getPage();
+      $addhandler = &$this->m_node->getHandler("add");
+      $page->addContent($this->m_node->renderActionPage("add", $addhandler->invoke("addPage", $record)));
+    }
+
+    
+    function createRedirectLocation($record)
+    {      
+      atkdebug("atkSaveHandler::createRedirectLocation()");
+      $location="";
+      if ($this->m_node->hasFlag(NF_EDITAFTERADD))
+      {
+        $location = session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->m_node->atknodetype().'&atkaction=edit&atkselector='.rawurlencode($this->m_node->primaryKey($record)), SESSION_REPLACE);
+      }
+      else if ($this->m_node->hasFlag(NF_ADDAFTERADD) && isset($this->m_postvars['atksaveandnext']))
+      {
+        $filter = isset($this->m_node->m_postvars['atkfilter']) ? "&atkfilter=".rawurlencode($this->m_node->m_postvars['atkfilter']) : "";
+        $location = session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->m_node->atknodetype().'&atkaction=add'.$filter, SESSION_REPLACE);              
+      }
+      else
+      {
+        $location = $this->m_node->feedbackUrl("save", ACTION_SUCCESS, $record);
+      }
+      return $location;      
+    }
+    
+
   }
 
 ?>

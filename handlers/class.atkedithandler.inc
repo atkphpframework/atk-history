@@ -35,7 +35,6 @@
     function action_edit()
     {
       $page = &$this->getPage();
-
       $recordset = $this->m_node->selectDb($this->m_postvars['atkselector'],"","","","","edit");
       if ($this->m_node->hasFlag(NF_LOCK))
       {
@@ -75,10 +74,15 @@
 
       $params = $node->getDefaultActionParams($locked);
 
-      $params["formstart"] = '<form name="entryform" enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?'.SID.'"'.
+      $formstart = '<form name="entryform" enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?'.SID.'"'.
                                    ' method="post" onsubmit="return globalSubmit(this)">'.
                                    session_form();
 
+      $controller = $node->getController();
+      $formstart .= $controller->getHiddenVarsString();
+                   
+      $params["formstart"] = $formstart;
+                      
       $ui = &$node->getUi();
 
       if (is_object($ui))

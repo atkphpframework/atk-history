@@ -173,7 +173,7 @@
     $module = getNodeModule($node);
     $type = getNodeType($node);
     $file = "class.$type.inc";
-
+    
     /* filename */
     if (empty($module))
     {
@@ -211,7 +211,7 @@
     }
     else
     {
-      $module_inst = &getModule(getNodeModule($node));
+      $module_inst = &getModule($module);
     }
     if (is_object($module_inst) && method_exists($module_inst,'newNode'))
     {
@@ -294,7 +294,7 @@
    * Registers a new node action handler.
    * @param $node the name of the node (* matches all)
    * @param $action the node action
-   * @param $handler handler functionname
+   * @param $handler handler functionname or object (is_subclass_of atkActionHandler)
    * @return true if there is no known handler
    */
   function registerNodeHandler($node, $action, $handler)

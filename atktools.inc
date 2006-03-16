@@ -1597,6 +1597,7 @@
       $filename = getClassPath($fullclassname);
     else
       $filename = $fullclassname;
+    
     if (file_exists($filename))
     {
       if ($failsafe)
@@ -1844,5 +1845,23 @@
       return strtr($str, $trans_table);
     }
   }
+  
+  /*
+   * Returns the postvars
+   * Returns a value or an array with all values
+   */
+  function getPostVar($key="")
+  {
+    if(empty($key) || $key=="")
+    {
+      return $_REQUEST;
+    }
+    else
+    {
+      if (array_key_exists($key,$_REQUEST) && $_REQUEST[$key]!="") return $_REQUEST[$key];
+      return "";
+    }
+  }
+
 
 ?>

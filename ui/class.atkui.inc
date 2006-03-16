@@ -223,8 +223,9 @@
     {
       $keys = array('title_'.$module.'_'.$nodetype.'_'.$action,
                     'title_'.$nodetype.'_'.$action);
-
       $node = &atkGetNode($module.'.'.$nodetype);
+
+      if(!is_object($node)) return "";
 
       $label = $node->text($keys, NULL, "", "", true);
       if ($label=="")

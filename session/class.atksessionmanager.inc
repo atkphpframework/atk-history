@@ -517,17 +517,27 @@
 
       for ($i=0;$i<count($stack);$i++)
       {
-        $mod = getNodeModule($stack[$i]["atknodetype"]);
-        $node = getNodeType($stack[$i]["atknodetype"]);
-        $title = $ui->title($mod, $node, $stack[$i]["atkaction"]);
-        if ($i<count($stack)-1)
+        if(isset($stack[$i]["atknodetype"]))
         {
-          $res[]=array("url"=>session_url('dispatch.php?atklevel='.$i),
-                       "title"=>$title);
+          $mod = getNodeModule($stack[$i]["atknodetype"]);
+          $node = getNodeType($stack[$i]["atknodetype"]);
+          $title = $ui->title($mod, $node, $stack[$i]["atkaction"]);
+          if ($i<count($stack)-1)
+          {
+            $res[]=array("url"=>session_url('dispatch.php?atklevel='.$i),
+                         "title"=>$title);
+          }
+          else
+          {
+            $res[]=array("url"=>"", "title"=>$title);
+          }
         }
-        else
+        else 
         {
-          $res[]=array("url"=>"", "title"=>$title);
+          if ($i<count($stack)-1)
+          {
+            $res[]=array("url"=>session_url('dispatch.php?atklevel='.$i));
+          }
         }
       }
       return $res;
@@ -554,7 +564,8 @@
       {
         if (isset($stack[$i]["descriptor"]) || $i == ($stackcount-1))
         {
-          $node = &getNode($stack[$i]["atknodetype"]);
+          if(isset($stack[$i]["atknodetype"]))
+            $node = &getNode($stack[$i]["atknodetype"]);
           list($module, $nodename) = explode(".",$stack[$i]["atknodetype"]);
           if (is_object($node))
           {

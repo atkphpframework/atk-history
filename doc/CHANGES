@@ -8,6 +8,25 @@ Changed in ATK 5.5.1
 --------------------
 * Introduced atkeditlng which can be passed along to force ML attributes to
   display a specific language. [Boy]
++ Added wizard functionality. A wizard can be constructed containing atkNode
+  classes. Class atkWizard supports all atkActions but it is mainly tested
+  for add, edit and admin actions. [Maurice]
++ Added class atkController which controls which page to load and the sending
+  of post and get vars. Several functions from atkNode have been moved to this
+  class. Most importantly functions for dispatching, page rendering and url
+  creating are moved. [Maurice]
++ Added getPostVar function which simply returns the _REQUEST params array
+  or a specific param when a key is given as parameter. [Maurice]
+* Some functional decomposition of atkSaveHandler [Maurice]
+* Added the ability to override an actionHandler class in function 
+  atkNode::callHandler. [Maurice]
+* Added notification for trigger events (eg preAdd, postAdd). [Maurice]
+* Added some checks in atkSessionManager if the stack really contains 
+  an atknodetype param. [Maurice]
+* Added check in atkUi::title to see if de node was really created. [Maurice]
+* Removed unneeded function call from newNode function. [Maurice]
+* Removed unneeded global vars from atkModule::newNode and 
+  atkModule::nodeOverloaders. [Maurice]
 
 Changes in ATK 5.5
 ------------------
