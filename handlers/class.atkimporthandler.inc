@@ -1172,6 +1172,15 @@
      */
     function update(&$record)
     {
+      // We don't support updating for atkmanyboolrelations
+      foreach (array_keys($this->m_node->m_attribList) as $key)
+      {
+        if (method_exists($this->m_node->m_attribList[$key],'atkManyBoolRelation'))
+        {
+          atkdebug("Removing attribute '$key' before executing update");
+          $this->m_node->remove($key);
+        }
+      }
       $res = $this->m_node->preUpdate($record);
 
       atk_var_dump($record,"record with preUpdate returning: ".($res?"true":"false"));
