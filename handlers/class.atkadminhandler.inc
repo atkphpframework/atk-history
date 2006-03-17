@@ -38,8 +38,14 @@
     {
       $page = &$this->getPage();
 
+      if ($this->m_partial != NULL)
+      {
+        $page->addContent($this->invoke("adminPage"));
+        return;
+      }
+      
       $res = array();
-      if ($this->m_partial == NULL && $this->m_node->hasFlag(NF_NO_ADD)==false&&$this->m_node->allowed("add"))
+      if ($this->m_node->hasFlag(NF_NO_ADD)==false&&$this->m_node->allowed("add"))
       {
         if (!$this->m_node->hasFlag(NF_ADD_LINK)) // otherwise, in adminPage, an add link will be added.
         {

@@ -244,7 +244,7 @@
           // TODO: REPLACE HARD CODED AJAX URL!
           $url = session_url(dispatch_url($node->atkNodeType(), 'admin', $params = array('atkpartial' => 'recordlist')), SESSION_DEFAULT);
           $onClick = "new Ajax.Updater('{$listName}_container', '$url', {method: 'post', parameters: Form.serialize(this.form), evalScripts: true, asynchronous: true })";
-          $button = '<input type="submit" class="btn_search" value="'.atktext("search").'" onclick="'.$onClick.'">';
+          $button = '<input type="submit" class="btn_search" value="'.atktext("search").'" onclick="'.$onClick.'; return false">';
           if (!hasFlag($flags, RL_NO_EXTENDED_SEARCH)&&!$this->m_node->hasFlag(NF_NO_EXTENDED_SEARCH))
           {
             $button .= '<br>'.href($_SERVER["PHP_SELF"]."?atknodetype=".$this->m_node->atkNodeType()."&atkaction=search&atksearchmode=".

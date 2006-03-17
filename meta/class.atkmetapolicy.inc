@@ -676,7 +676,7 @@ class atkMetaPolicy
         "params" => $params,
         "flags" => $flags,
         "tabs" => $tabs,
-        "order" => $order !== NULL ? $order : $this->_getMaxOrder() + 100        
+        "order" => $order !== NULL ? $order : isset($this->m_attrs[$name]) ? $this->m_attrs[$name]['order'] : $this->_getMaxOrder() + 100        
       );    
   }
 

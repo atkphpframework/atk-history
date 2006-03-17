@@ -160,7 +160,6 @@
         {
           if ($config["sortorder"]>0)
           {
-            //var_dump($this->m_colcfg[$fld]["sortorder"]);
             $this->m_colcfg[$fld]["sortorder"] = (int)($this->m_colcfg[$fld]["sortorder"])+1;
           }
         }
@@ -293,7 +292,7 @@
           else if (is_object($this->m_node->m_attribList[$part1]))
           {
             // attribute reference
-            $lastattr=$elem;
+            $lastattr=$part1;
             $this->addOrderByField($part1, "asc", $part2);
           }
           else if (strtolower($elem)=="asc"||strtolower($elem)=="desc")

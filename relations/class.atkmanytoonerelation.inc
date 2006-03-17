@@ -623,6 +623,11 @@
           {
             $result.='multiple size="'.min(5,count($recordset)+1).'"';
           }
+          if (!$extended && !empty($this->m_searchsize))
+          {
+            $width = $this->m_searchsize * 11;
+            $result .= ' style="width: '.$width.'px"';
+          }          
 
           if (strstr($fieldprefix,"]["))
             $result.='name="atksearch['. $fieldprefix.$this->fieldName().'][]">';
@@ -672,7 +677,6 @@
       $searchcondition = $this->getSearchCondition($query, $table, $value, $searchmode);
       if (!empty($searchcondition))
         $query->addSearchCondition($searchcondition);
-
     }
 
     function getSearchCondition(&$query, $table, $value, $searchmode)
@@ -684,22 +688,20 @@
     		// which should work in any ansi compatible database.
     		if (is_array($value)) // This last condition is for when the user selected the 'search all' option, in which case, we don't add conditions at all.
     		{
-    		  if (!array_key_exists(0, $value) && count($this->m_listColumns) > 0)
-    		  {
-    		    foreach ($this->m_listColumns as $attr)
-    		    {
-    		      $attrValue = $value[$attr];
-    		      if (!empty($attrValue))
-    		      {
-    		        $p_attrib = &$this->m_destInstance->m_attribList[$attr];
-    		        if (!$p_attrib == NULL)
-    		          $p_attrib->searchCondition($query, $this->fieldName(), $attrValue, $searchmode);
-    		      }
-    		    }
+  		    foreach ($this->m_listColumns as $attr)
+  		    {
+  		      $attrValue = $value[$attr];
+  		      if (!empty($attrValue))
+  		      {
+  		        $p_attrib = &$this->m_destInstance->m_attribList[$attr];
+  		        if (!$p_attrib == NULL)
+  		          $p_attrib->searchCondition($query, $this->fieldName(), $attrValue, $searchmode);
+  		      }
+  		    }
 
-    		    $value = $value[$this->fieldName()];
-    		    if (!is_array($value)) return '';
-    		  }
+  		    $value = isset($value[0]) ? $value : $value[$this->fieldName()];
+  		    
+  		    if (!is_array($value)) return '';
 
     			if (count($value)==1) // exactly one value
     			{
@@ -1060,20 +1062,48 @@
         $p_attrib->m_flags ^= AF_HIDE_LIST;
         $p_attrib->addToListArrayHeader($action, $arr, $prefix, $flags, $atksearch[$this->fieldName()], $atkorderby);
         
-        $url = $arr['heading'][$prefix.$attribname]['url'];
-        if (!empty($url))
+        $needle = $prefix.$attribname;
+        foreach (array_keys($arr['heading']) as $key)
         {
-          $url = str_replace('atkorderby=', 'atkorderby='.$this->fieldName().'.', $url);
-          $arr['heading'][$prefix.$attribname]['url'] = $url;
+          // fix order by clause
+          if (strpos($key, $needle) === 0)
+          {
+            $url = $arr['heading'][$key]['url'];            
+            if (!empty($url))
+            {
+              $start = 'atkorderby=';
+              $startPos = strpos($url, $start) + strlen($start);
+              
+              if ($startPos !== FALSE)
+              {
+                $endPos = strpos($url, '&', $startPos);
+                $end = $endPos !== FALSE ? substr($url, $endPos) : '';
+                
+                $orderBy = $this->fieldName().'.'.($endPos !== FALSE ? substr($url, $startPos, $endPos - $startPos) : substr($url, $startPos));
+                
+                if (is_object($atkorderby) && 
+                    isset($atkorderby->m_colcfg[$this->fieldName()]) && 
+                    $atkorderby->m_colcfg[$this->fieldName()]['extra'] == $attribname)
+                {
+                  $direction = $atkorderby->getDirection($this->fieldName());
+                  if ($direction=="asc") $orderBy.=" desc";
+                }                
+                
+                $url = substr($url, 0, $startPos).$orderBy.$end;
+                $arr['heading'][$key]['url'] = $url;
+              }
+            }
+          }
+          
+          // fix search box
+          $fieldPointer = &$arr["search"][$key];
+          $fieldPointer =
+            str_replace(
+              "atksearch[".$p_attrib->fieldName()."]",
+              "atksearch_".$prefix."[" . $p_attrib->fieldName()."]",
+              $fieldPointer
+            );
         }
-        
-        $fieldPointer = &$arr["search"][$prefix.$p_attrib->fieldName()];
-        $fieldPointer =
-          str_replace(
-            "atksearch[".$p_attrib->fieldName()."]",
-            "atksearch_".$prefix."[" . $p_attrib->fieldName()."]",
-            $fieldPointer
-          );
       }
     }
 
@@ -1150,5 +1180,22 @@
         }
       }
     }
+
+    function listHeaderSortUrl(&$columnConfig)
+    {
+      $order = $this->fieldName();
+
+      // only add desc if not one of the listColumns is used for the sorting
+      if (isset($columnConfig->m_colcfg[$order]) && empty($columnConfig->m_colcfg[$order]['extra']))
+      {
+        $direction = $columnConfig->getDirection($order);
+        if ($direction=="asc") $order.=" desc";
+      }
+      
+      $node = &$columnConfig->getNode();
+      if ($node == NULL)
+        $node = &$this->m_ownerInstance;
+      return session_url($_SERVER["PHP_SELF"].'?atknodetype='.$node->atkNodeType().'&atkaction='.$node->m_action.'&atkorderby='.rawurlencode($order));
+    }    
   }
 ?>

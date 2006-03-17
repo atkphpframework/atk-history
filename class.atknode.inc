@@ -2739,6 +2739,11 @@
           {
             if (array_key_exists($key, $this->m_attribList))
             {
+              if (is_array($value) && isset($value[$key]) && count($value) == 1)
+              {
+                $value = $value[$key];
+              }              
+              
               $p_attrib = &$this->m_attribList[$key];              
               if(is_array($searchmode))
               {
