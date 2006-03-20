@@ -43,9 +43,12 @@
         $links[] = '<a href="#" onclick="new Ajax.Updater(\''.$recordlistName.'_container\', \''.session_url($nav["url"], SESSION_DEFAULT, $embedded).'\', {evalScripts: true})">'.$nav["title"].'</a>';
       }
       
-      return 
-        implode("&nbsp;|&nbsp;", $links).
-        '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'.$node->text('show').':&nbsp;'.$this->buildLimit($node, $mode, $embedded, $recordlistName);
+      $limit = "";
+      if (count($links) > 0)
+       $limit = '&nbsp;&nbsp;&nbsp;'.$node->text('show').':&nbsp;'.$this->buildLimit($node, $mode, $embedded, $recordlistName);        
+      
+      return implode("&nbsp;|&nbsp;", $links).$limit;
+        
     }
     
     function buildLimit(&$node, $mode, $embedded=false, $recordlistName="")
