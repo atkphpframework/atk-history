@@ -184,6 +184,7 @@ Changes in ATK 5.5
 * Updated Norwegian translation. [Olav]
 * Updated Italian translation. [Fabio]
 * Updated Dutch translation. [Ivo]
+* Added fieldprefix for javascript in atkmanyboolrelation. [Lineke]
 
 Changes in ATK 5.4
 ------------------

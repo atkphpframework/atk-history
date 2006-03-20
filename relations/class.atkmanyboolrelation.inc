@@ -93,11 +93,11 @@
       $page->register_script(atkconfig("atkroot")."atk/javascript/class.atkprofileattribute.js.php");
 
       $result ='<div align="left"><font size="-2">
-                [<a href="javascript:profile_checkAll(\''.$this->fieldName().'\')">'.
+                [<a href="javascript:profile_checkAll(\''.$fieldprefix.$this->fieldName().'\')">'.
                      atktext("check_all", "atk").
-                '</a> <a href="javascript:profile_checkNone(\''.$this->fieldName().'\')">'.
+                '</a> <a href="javascript:profile_checkNone(\''.$fieldprefix.$this->fieldName().'\')">'.
                      atktext("check_none", "atk").
-                '</a> <a href="javascript:profile_checkInvert(\''.$this->fieldName().'\')">'.
+                '</a> <a href="javascript:profile_checkInvert(\''.$fieldprefix.$this->fieldName().'\')">'.
                      atktext("invert_selection", "atk").'</a>]</font></div>';
        	
       $result.= '<table border="0"><tr>';
@@ -151,6 +151,7 @@
      */
     function store($notused, $record, $mode)
     {
+      atk_var_dump($record, "RECORD IN STORE");
       $this->createLink();
       $this->createDestination();
       $rel = &$this->m_linkInstance;
