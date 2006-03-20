@@ -517,6 +517,8 @@
 
       for ($i=0;$i<count($stack);$i++)
       {
+        if (!isset($stack[$i]["atknodetype"])) continue;
+        
         $mod = getNodeModule($stack[$i]["atknodetype"]);
         $node = getNodeType($stack[$i]["atknodetype"]);
         $title = $ui->title($mod, $node, $stack[$i]["atkaction"]);
