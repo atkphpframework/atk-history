@@ -670,14 +670,19 @@ class atkMetaPolicy
    */
   function add($name, $type, $params=array(), $flags=0, $tabs=NULL, $order=NULL)
   {
+    if ($order === NULL && isset($this->m_attrs[$name]))
+      $order = $this->m_attrs[$name]['order']; 
+    else if ($order === NULL) 
+      $order = $this->_getMaxOrder() + 100;
+
     $this->m_attrs[$name] =
       array(
         "type" => $type,
         "params" => $params,
         "flags" => $flags,
         "tabs" => $tabs,
-        "order" => $order !== NULL ? $order : isset($this->m_attrs[$name]) ? $this->m_attrs[$name]['order'] : $this->_getMaxOrder() + 100        
-      );    
+        "order" => $order
+      );   
   }
 
   /**
