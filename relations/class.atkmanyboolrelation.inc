@@ -127,8 +127,8 @@
         }
         $result.= '<td class="table"><input type="checkbox" name="'.
                        $fieldprefix.$this->fieldName().
-                       '_AMDAE_'.$this->getRemoteKey().
-                       '[]" value="'.
+                       '[]['.$this->getRemoteKey().
+                       ']" value="'.
                        $recordset[$i][$this->m_destInstance->primaryKeyField()].
                        '" '.$sel.'></td><td class="table">'.
                        $this->m_destInstance->descriptor($recordset[$i]).

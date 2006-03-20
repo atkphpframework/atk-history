@@ -797,19 +797,6 @@
           $vars[strtolower($dimension1)][strtolower($dimension2)] = $value;
         }
       }
-
-/*    elseif (strpos(strtoupper($varname),'_BMDAE_')>0) // Now I *know* that strpos could return 0 if _AMDAE_ *is* found
-                                    // at the beginning of the string.. but since that's not a valid
-                                    // encoded var, we do nothing with it.
-      {
-        // This string is encoded.
-        list($dimension1,$dimension2) = split("_BMDAE_",strtoupper($varname));
-        // Multidimensional thing
-        while (list($key,$val) = each($value))
-        {
-          $vars[strtolower($dimension1)][strtolower($dimension2)][$key] = $val;
-        }
-      }*/
     }
   }
 

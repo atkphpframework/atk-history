@@ -27,6 +27,10 @@ Changed in ATK 5.5.1
 * Removed unneeded function call from newNode function. [Maurice]
 * Removed unneeded global vars from atkModule::newNode and 
   atkModule::nodeOverloaders. [Maurice]
+* Added fieldprefix for javascript in atkmanyboolrelation. [Lineke]
+* Removed unused code in atkDataDecode function. [Lineke]
+* Atkmanyboolrelation does not use AMDAE anymore, php now supports multi-
+dimensional arrays (might break in older php versions). [Lineke]
 
 Changes in ATK 5.5
 ------------------
@@ -184,7 +188,6 @@ Changes in ATK 5.5
 * Updated Norwegian translation. [Olav]
 * Updated Italian translation. [Fabio]
 * Updated Dutch translation. [Ivo]
-* Added fieldprefix for javascript in atkmanyboolrelation. [Lineke]
 
 Changes in ATK 5.4
 ------------------
