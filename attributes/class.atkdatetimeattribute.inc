@@ -160,10 +160,11 @@
 
     function fetchValue($postvars)
     {
-      $result=NULL;
-      if(isset($postvars[$this->formName()]))
-        $result = $postvars[$this->formName()];
-      return $result;
+      $date = $this->m_date->fetchValue($postvars);
+      $time = $this->m_time->fetchValue($postvars);
+      if ($date == NULL || $time == NULL)
+        return NULL;
+      else return array_merge($date, $time);
     }
 
     /**

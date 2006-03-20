@@ -59,3 +59,7 @@ and made available under the terms of an MIT-style license.
 ATK uses the overLIB Javascript Library (http://www.bosrup.com/web/overlib/)
 for tooltips. overLIB is Copyright (c) 1998-2004 Erik Bosrup and made 
 available under the terms of an Artistic license.
+
+ATK uses PHPMailer (http://phpmailer.sourceforge.net/) for sending e-mail.
+PHPMailer is Copyright (c) 2001-2003 Brent R. Matzelle and made 
+available under the GNU Lesser General Public License (LGPL).

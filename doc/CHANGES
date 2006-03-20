@@ -36,6 +36,7 @@ Changes in tomorrow branch
   create a function named <attribname>_selection($record, $mode) in
   your node and return the selectable records. [Peter]
 + Added (Ajax based) dependency mechanism between attributes. [Peter]
++ Added atkMailer class (extends phpmailer class). [Peter]
 * Improvements to error reporting of importing and added ability 
   to add multiple fields for the entire import ('allfields'). [Boy]
 * Added id to field td. [Boy]
@@ -69,6 +70,8 @@ Changes in tomorrow branch
 * Fixed Internet Explorer support in drop-down menu. [Peter]
 * Fixed handling of initial_values (where applied a second time
   if an error occured in the addition form). [Peter]
+* Fixed fetchValue method of atkDateTimeAttribute. [Peter]
+* Deprecated atkMail class (atk/utils). [Peter]
 
 Changed in ATK 5.5.1
 --------------------
