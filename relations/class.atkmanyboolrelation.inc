@@ -151,7 +151,6 @@
      */
     function store($notused, $record, $mode)
     {
-      atk_var_dump($record, "RECORD IN STORE");
       $this->createLink();
       $this->createDestination();
       $rel = &$this->m_linkInstance;
