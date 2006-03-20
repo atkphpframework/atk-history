@@ -37,6 +37,7 @@ Changes in tomorrow branch
   your node and return the selectable records. [Peter]
 + Added (Ajax based) dependency mechanism between attributes. [Peter]
 + Added atkMailer class (extends phpmailer class). [Peter]
++ Added show ... results drop-down to recordlist navigation. [Peter]
 * Improvements to error reporting of importing and added ability 
   to add multiple fields for the entire import ('allfields'). [Boy]
 * Added id to field td. [Boy]

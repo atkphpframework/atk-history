@@ -329,7 +329,7 @@
 
       // pagevars are valid on a page. if you go a session level higher, the pagevars are no longer
       // visible until you return.
-      $pageVars = array("atksearch","atksearchmode","atkorderby","atkstartat","atktarget","atkformdata","atktree","atksuppress","atktab");
+      $pageVars = array("atksearch","atksearchmode","atkorderby","atkstartat","atklimit","atktarget","atkformdata","atktree","atksuppress","atktab");
 
       // Mental note: We have an atkLevel() function for retrieving the atklevel,
       // but we use the global var itself here, because it gets modified in

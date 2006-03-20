@@ -42,7 +42,46 @@
       {
         $links[] = '<a href="#" onclick="new Ajax.Updater(\''.$recordlistName.'_container\', \''.session_url($nav["url"], SESSION_DEFAULT, $embedded).'\', {evalScripts: true})">'.$nav["title"].'</a>';
       }
-      return implode("&nbsp;|&nbsp;", $links);
+      
+      return 
+        implode("&nbsp;|&nbsp;", $links).
+        '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'.$node->text('show').':&nbsp;'.$this->buildLimit($node, $mode, $embedded, $recordlistName);
+    }
+    
+    function buildLimit(&$node, $mode, $embedded=false, $recordlistName="")
+    {
+      $current = (int)$node->m_postvars['atklimit'];
+      $default = atkconfig("recordsperpage");
+      if (empty($current)) 
+        $current = $default;
+      
+      $options = array(5, 10, 15, 20, 25, 30, 40, 50, 100, $default, $current);
+      $options = array_unique($options);
+      sort($options);
+      
+      $url = $_SERVER["PHP_SELF"].
+             "?atknodetype=".$node->atkNodeType().
+             "&atkaction=".$node->m_action.
+             "&atkrecordlist=".$recordlistName.                                      
+             "&atkpartial=recordlist".                                      
+             "&atklimit=[LIMIT]".
+             (isset($ATK_VARS["atktarget"])?"&atktarget=".rawurlencode($ATK_VARS["atktarget"]):"");
+      
+      $url = session_url($url, SESSION_DEFAULT, $embedded);
+             
+      $onChange = "new Ajax.Updater('{$recordlistName}_container', '$url'.replace('[LIMIT]', Form.Element.getValue(this)), {evalScripts: true})";
+      
+      $result = 
+        '<select onChange="'.$onChange.'">'.
+          '<option value="0">'.$node->text('all').'</option>';
+          
+      foreach ($options as $value)
+        $result .= '<option value="'.$value.'"'.($value == $current ? ' selected' : '').'>'.$value.'</option>';
+        
+      $result .= 
+        '</select>';
+        
+      return $result;
     }
 
     /**
@@ -62,7 +101,8 @@
       $res = array();
       $limit = (int)$node->m_postvars['atklimit'];
 
-      if (!$filter && isset($node->m_postvars["atkfilter"])) $filter = $node->validateFilter($node->m_postvars["atkfilter"]);
+      if (!$filter && isset($node->m_postvars["atkfilter"])) 
+        $filter = $node->validateFilter($node->m_postvars["atkfilter"]);
 
       $count = (int)$node->countDb($filter, $node->m_listExcludes, "", $mode);
 
@@ -132,6 +172,7 @@
                                       "&atkstartat".(isset($node->m_postvars["limitPostfix"])?$node->m_postvars["limitPostfix"]:"")."=".$newstart.
                                       (isset($ATK_VARS["atktarget"])?"&atktarget=".rawurlencode($ATK_VARS["atktarget"]):""));
       }
+      
       return $res;
     }
 
