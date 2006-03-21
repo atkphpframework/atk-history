@@ -395,7 +395,7 @@
             $value = $record[$this->fieldName()];
           $currentPk = $this->m_destInstance->primaryKey($value);
           $this->m_destInstance->addFilter($filter);
-          $recordset = $this->getSelectableRecords($record, $mode);
+          $recordset = $this->_getSelectableRecords($record, $mode);
           if(count($recordset)==0) $editflag = false;
 
           // autoselect if there is only one record (if obligatory is not set,
@@ -616,7 +616,7 @@
             $this->m_destInstance->addFilter($filter);
           }
 
-          $recordset = $this->m_destInstance->selectDb("","","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
+          $recordset = $this->_getSelectableRecords($record, 'search');
 
           $result = '<select class="'.get_class($this).'" ';
           if ($extended)
@@ -901,21 +901,31 @@
       }
       return 0;
     }
-
-    function getSelectableRecords($record=array(), $mode="")
+    
+    function _getSelectableRecords($record=array(), $mode="")
     {
       $method = $this->fieldName()."_selection";
       if (method_exists($this->m_ownerInstance, $method))
         return $this->m_ownerInstance->$method($record, $mode);
-      
-      if (!count($this->m_selectableRecords))
+      else return $this->getSelectableRecords($record, $mode);
+    }
+
+    function getSelectableRecords($record=array(), $mode="",$force=false)
+    {
+      if ($this->createDestination())
       {
-        if ($this->createDestination())
+        if ($this->m_destinationFilter!="")
         {
-          $this->m_selectableRecords = $this->m_destInstance->selectDb("","","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
-        }
+          atkimport("atk.utils.atkstringparser");
+          $parser = new atkStringParser($this->m_destinationFilter);
+          $filter = $parser->parse($record);
+          $this->m_destInstance->addFilter($filter);
+        }          
+        
+        return $this->m_destInstance->selectDb("","","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
       }
-      return $this->m_selectableRecords;
+      
+      return array();
     }
 
     /**
@@ -994,7 +1004,7 @@
         // only check if hidewhenempty is set to true
         if ($this->m_hidewhenempty)
         {
-          $recs = $this->getSelectableRecords($defaults, $mode);
+          $recs = $this->_getSelectableRecords($defaults, $mode);
           if (count($recs)==0) return $this->hide($defaults, $fieldprefix);
         }
       }
@@ -1023,7 +1033,9 @@
         }
         else
         {
-          $order = $this->fieldName().".".$order;
+          if (strpos($order, $this->m_destInstance->m_table.'.') !== FALSE)
+            $order = str_replace($this->m_destInstance->m_table.'.', $this->fieldName().'.', $order);
+          else $order = $this->fieldName().".".$order;
         }
 
         return $order;

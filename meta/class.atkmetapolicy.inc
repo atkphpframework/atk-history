@@ -223,7 +223,7 @@ class atkMetaPolicy
     $cols = $db->tableMeta($this->getTable());
 
     foreach ($cols as $name => $meta)
-      if (strlen($meta['sequence']) > 0)
+      if (isset($meta['sequence']) && strlen($meta['sequence']) > 0)
         $sequence = $meta['sequence'];
 
     if ($sequence == NULL)

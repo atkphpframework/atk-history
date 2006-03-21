@@ -73,6 +73,11 @@ Changes in tomorrow branch
   if an error occured in the addition form). [Peter]
 * Fixed fetchValue method of atkDateTimeAttribute. [Peter]
 * Deprecated atkMail class (atk/utils). [Peter]
+* The preDelete trigger will now be called separately for each
+  (to be) deleted record (instead of being called only once with the 
+  complete recordset). THIS CHANGE IS NOT BACKWARDS COMPATIBLE! [Peter]
+* Added proper ordering support to atkManyToOneRelation (depending
+  on the order of the destination node). [Peter]
 
 Changed in ATK 5.5.1
 --------------------
