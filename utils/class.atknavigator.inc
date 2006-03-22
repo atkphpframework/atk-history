@@ -40,7 +40,9 @@
       $links=array();
       foreach ($navurls as $key=>$nav)
       {
-        $links[] = '<a href="#" onclick="new Ajax.Updater(\''.$recordlistName.'_container\', \''.session_url($nav["url"], SESSION_DEFAULT, $embedded).'\', {evalScripts: true})">'.$nav["title"].'</a>';
+        if (empty($nav["url"]))
+          $links[] = $nav["title"];
+        else $links[] = '<a href="#" onclick="new Ajax.Updater(\''.$recordlistName.'_container\', \''.session_url($nav["url"], SESSION_DEFAULT, $embedded).'\', {evalScripts: true})">'.$nav["title"].'</a>';
       }
       
       $limit = "";

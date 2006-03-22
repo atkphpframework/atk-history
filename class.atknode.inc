@@ -2652,7 +2652,8 @@
     function isAllowedQueryList($attribname,$excludeList="",$includeList="")
     {
       return (
-              ((is_array($includeList) && in_array($attribname,$includeList))
+                 in_array($attribname, $this->m_primaryKey)
+              || ((is_array($includeList) && in_array($attribname,$includeList))
               || (is_array($excludeList) && !in_array($attribname,$excludeList)))
               || (!is_array($excludeList) && !is_array($includeList))
               || ($this->m_attribList[$attribname]->hasFlag(AF_FORCE_LOAD))

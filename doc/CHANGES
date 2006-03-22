@@ -38,6 +38,9 @@ Changes in tomorrow branch
 + Added (Ajax based) dependency mechanism between attributes. [Peter]
 + Added atkMailer class (extends phpmailer class). [Peter]
 + Added show ... results drop-down to recordlist navigation. [Peter]
++ Added populate function to atkManyToOneRelation to populate the record 
+  with the descriptor field values or all data if only the primary key 
+  is available. [Peter]
 * Improvements to error reporting of importing and added ability 
   to add multiple fields for the entire import ('allfields'). [Boy]
 * Added id to field td. [Boy]
@@ -78,6 +81,11 @@ Changes in tomorrow branch
   complete recordset). THIS CHANGE IS NOT BACKWARDS COMPATIBLE! [Peter]
 * Added proper ordering support to atkManyToOneRelation (depending
   on the order of the destination node). [Peter]
+* Fixed that selectDb always loads the primary key fields even if they are 
+  not part of the includes list (or are part of the excludes list). [Peter]
+* Fixed that actionhandler always takes the postvars and the partial values 
+  of the node (in the setNode) call, because most of the times handlers 
+  are called using their action_... function instead of handle. [Peter]
 
 Changed in ATK 5.5.1
 --------------------

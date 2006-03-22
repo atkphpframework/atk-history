@@ -214,6 +214,7 @@
           }
           $result[$field] = $value;
         }
+        
         return $result;
       }
       return NULL;
@@ -263,6 +264,27 @@
     }
     
     /**
+     * Populate the record with the destination record data.
+     * 
+     * @param $record  record
+     * @param $full    load all data or only the descriptor fields?
+     */
+    function populate(&$record, $full=false)
+    {
+      if ($record[$this->fieldName()] == "") return;
+      
+      atkdebug("Delayed loading of ".($full ? "" : "descriptor ")."fields for ".$this->m_name);
+      $this->createDestination();
+      
+      $includes = "";
+      if (!$full)
+        $includes = $this->m_destInstance->descriptorFields();
+        
+      list($record[$this->fieldName()]) = 
+        $this->m_destInstance->selectDb($this->m_destInstance->primaryKey($record[$this->fieldName()]), "", "", "", $includes);
+    }
+    
+    /**
      * Returns a displayable string for this value.
      * @param $record Record
      * @return a displayable string
@@ -272,24 +294,15 @@
       if ($this->createDestination())
       {
         if (count($record[$this->fieldName()])==1)
+          $this->populate($record);
+
+        if(!$this->isEmpty($record))
         {
-          // The record consist of only one field, which is the primary key.
-          // This means we have to load the rest of the data, in order to
-          // load a descriptor.
-          atkdebug("Delayed loading of descriptor fields for ".$this->m_name);
-          $recs = $this->m_destInstance->selectDb($this->m_destInstance->primaryKey($record[$this->fieldName()]), "", "", "", $this->m_destInstance->descriptorFields());
-          $title = $this->m_destInstance->descriptor($recs[0]);
+          $title = $this->m_destInstance->descriptor($record[$this->fieldName()]);
         }
         else
         {
-          if(!$this->isEmpty($record))
-          {
-            $title = $this->m_destInstance->descriptor($record[$this->fieldName()]);
-          }
-          else
-          {
-            $title = ""; // no record
-          }
+          $title = ""; // no record
         }
 
         $result = $title; // default result is just the title.

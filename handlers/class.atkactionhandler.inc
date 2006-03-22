@@ -85,6 +85,8 @@
     function setNode(&$node)
     {
       $this->m_node = &$node;
+      $this->m_partial = $node->m_partial;  
+      $this->m_postvars = &$node->m_postvars;    
     }
     
     /**
