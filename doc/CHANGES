@@ -6,8 +6,18 @@ Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 
 Changed in ATK 5.5.1
 --------------------
++ Added atkMessageQueue for user notification messages, which can be shown
+  via the atkmessages plugin. [Patrick]  
++ Added atkCalculatorAttribute for adding columns with calculated values. [Ivo]
 * Introduced atkeditlng which can be passed along to force ML attributes to
   display a specific language. [Boy]
+* Fixed a bug in the 'remove current file' feature of atkFileAttribute when
+  AF_FILE_PHYSICAL_DELETE was set. [Ivo]
+* atkNode's validateFilter method can now cope with sql 'IN' operator. [Yury]
+* Also collect memory and timing info at debuglevel 0 for mailreports.[Boy]
+* Fixed php warning in atkMlNumberAttribute. [Ivo]
+* Fixed error in triggerError method when atkLanguage was not imported. [Ivo]
+* Fixed table definition of lesson 7 of the demo application. [Ivo]
 + Added wizard functionality. A wizard can be constructed containing atkNode
   classes. Class atkWizard supports all atkActions but it is mainly tested
   for add, edit and admin actions. [Maurice]

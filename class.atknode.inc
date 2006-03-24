@@ -3649,7 +3649,7 @@
       }
 
       // All standard SQL operators
-      $sqloperators = array('=','<>','>','<','>=','<=','BETWEEN','LIKE','IN');
+      $sqloperators = array('=','<>','>','<','>=','<=','BETWEEN','LIKE','IN', 'IS');
 
       // Check the filter for every operator
       foreach ($sqloperators as $sqloperator)

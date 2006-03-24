@@ -74,7 +74,8 @@
     if ($errtype==E_NOTICE || error_reporting()==0)
     {
       // Just show notices in the debug log, but don't influence the program flow
-      atkdebug("[$errortypestring] $errstr in $errfile (line $errline)");
+//      atkdebug("[$errortypestring] $errstr in $errfile (line $errline)");
+      //echo "[$errortypestring] $errstr in $errfile (line $errline)";
       return;
     }
     else if (($errtype & (E_WARNING|E_USER_WARNING)) > 0)
@@ -183,7 +184,7 @@
   {
     global $g_debug_msg;
     $level = atkconfig("debug");
-    if ($level>0)
+    if ($level>=0)
     {
       if (hasFlag($flags, DEBUG_HTML))
         $txt = htmlentities($txt);
@@ -1131,7 +1132,7 @@
    */
   function triggerError(&$rec, $attrib, $err, $msg="", $tab="")
   {
-    if($msg=="")  $msg = atktext($err,"atk","",atkLanguage::getLanguage());
+    if($msg=="")  $msg = atktext($err, "atk");
 
     $rec['atkerror'][] = array( "attrib_name"=> $attrib, "err" => $err, "msg" => $msg, "tab"=>$tab);
   }
@@ -1671,12 +1672,14 @@
 
     if (class_exists($classname))
     {
-      return new $classname;
+      $tmp = new $classname;
+      return $tmp;
     }
     else
     {
       atkerror("Class $fullclassname not found.");
-      return NULL;
+      $tmp = NULL;
+      return $tmp;
     }
   }
 
