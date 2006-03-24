@@ -1225,43 +1225,8 @@
      */
     function getFormButtons($mode, $record)
     {
-      $result = array();
-
-      // edit mode
-      if ($mode == "edit")
-      {
-        // if atklevel is 0 or less, we are at the bottom of the session stack,
-        // which means that 'saveandclose' doesn't close anyway, so we leave out
-        // the 'saveandclose' button. Unless, a feedback screen is configured.
-        if (atkLevel() >0 || hasFlag($this->m_feedback["update"], ACTION_SUCCESS))
-        {
-          $result[] = '<input type="submit" class="btn_saveandclose" name="atksaveandclose" value="'.atktext('saveandclose', "atk").'">';
-        }
-        $result[] = '<input type="submit" class="btn_save" name="atknoclose" value="'.atktext("save", "atk").'">';
-        $result[] = '<input type="submit" class="btn_cancel" name="atkcancel" value="'.atktext("cancel", "atk").'">';
-      }
-      elseif ($mode == "add")
-      {
-        $result[] = '<input type="submit" class="btn_save" value="'.atktext("save", "atk").'">';
-        // if action is admin, we don't show the cancelbutton or the add next button
-        if ($this->hasFlag(NF_ADDAFTERADD) && !$this->hasFlag(NF_EDITAFTERADD))
-          $result[] = '<input type="submit" class="btn_saveandnext" name="atksaveandnext" value="'.atktext("saveandnext", "atk").'">';
-        $result[] = '<input type="submit" class="btn_cancel" name="atkcancel" value="'.atktext("cancel", "atk").'">';
-      }
-      elseif ($mode == "view")
-      {
-        if(atkLevel() > 0)
-          $result[] = '<input type="submit" class="btn_cancel" name="atkback" value="&lt;&lt; '.atktext('back').'">';
-        // if appropriate, display an edit button.
-        if (!$this->hasFlag(NF_NO_EDIT)&&$this->allowed("edit", $record))
-        {
-          $result[] = '<input type="hidden" name="atkaction" value="edit">'.
-                      '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">'.
-                      '&nbsp;<input type="submit" class="btn_save" value="'.atktext('edit').'">&nbsp;';
-        }
-      }
-
-      return $result;
+      $controller = &$this->getController();
+      return $controller->getFormButtons($mode, $record);
     }
 
     /**
@@ -3033,7 +2998,6 @@
         $mltool->updateMlRecords($this, $record,"add");
       }
 
-
       if (!$this->_storeAttributes($storelist["post"], $record, $mode))
       {
         atkdebug("_storeAttributes failed..");
@@ -3825,15 +3789,42 @@
       return atktext($string, $module, $this->m_type, $lng, $firstfallback, $nodefaulttext);
     }
 
+    /**
+     * Return the controller for this node
+     * 
+     * The controller can be overriden. Use registerNodeController
+     * to do so. When node controller is registered the default
+     * atkController is created.
+     *
+     * @return object atkController
+     */
     function &getController()
     {
       atkdebug("Load controller");
       
       if(!is_object($this->m_controller))
       {
-        atkdebug("Create new controller");  
-        atkimport("atk.atkcontroller");
-        $this->m_controller = new atkController($this);
+        atkdebug("Create new controller for type: ".$this->m_type);  
+        $controller = getNodeController($this->m_type);
+        if($controller == NULL)
+        {          
+          atkimport("atk.atkcontroller");
+          $this->m_controller = new atkController($this);
+        }
+        else
+        {
+          if(is_object($controller))
+          {
+            atkdebug("Using override controller ");  
+            $this->m_controller = $controller;
+          }
+          else
+          {
+            atkdebug("Create override controller " . $controller);  
+            atkimport($controller);
+            $this->m_controller = atknew($controller);
+          }
+        }
       }
       return $this->m_controller;      
     }

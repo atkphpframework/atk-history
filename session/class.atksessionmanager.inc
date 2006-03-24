@@ -183,6 +183,28 @@
     }
 
     /**
+     * Retrieve the value of a session variable from stack.
+     *
+     * @param String $var The name of the variable to retrieve.
+     * @param int $atklevel The atklevel from which the value te retrieve from.
+     * @param String $namespace The namespace from which to retrieve the
+     *                          variable
+     * @return mixed The retrieved value.
+     */
+    function getStackValue($var, $atklevel="", $namespace="")
+    {
+      global $g_sessionData;
+      
+      $level = ($atklevel != "" ? $atklevel : atklevel());
+      if ($namespace!="") return $g_sessionData[$namespace]["stack"][atkStackID()][$level][$var];
+      if (isset($g_sessionData[$this->m_namespace]["stack"][atkStackID()][$level][$var]))
+      {
+        return $g_sessionData[$this->m_namespace]["stack"][atkStackID()][$level][$var];
+      }
+      return NULL;
+    }
+    
+    /**
      * Store a variable in the session stack. The variable is available in the
      * current page (even after reload), and any screen that is deeper on the
      * session stack.

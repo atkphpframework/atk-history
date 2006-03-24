@@ -12,8 +12,8 @@ Changed in ATK 5.5.1
   classes. Class atkWizard supports all atkActions but it is mainly tested
   for add, edit and admin actions. [Maurice]
 + Added class atkController which controls which page to load and the sending
-  of post and get vars. Several functions from atkNode have been moved to this
-  class. Most importantly functions for dispatching, page rendering and url
+  of post and get vars. Several methods from atkNode have been moved to this
+  class. Most importantly, methods for dispatching, page rendering and url
   creating are moved. [Maurice]
 + Added getPostVar function which simply returns the _REQUEST params array
   or a specific param when a key is given as parameter. [Maurice]
@@ -21,7 +21,7 @@ Changed in ATK 5.5.1
 * Added the ability to override an actionHandler class in function 
   atkNode::callHandler. [Maurice]
 * Added notification for trigger events (eg preAdd, postAdd). [Maurice]
-* Added some checks in atkSessionManager if the stack really contains 
+* Added some checks in atkSessionManager to see if the stack really contains 
   an atknodetype param. [Maurice]
 * Added check in atkUi::title to see if de node was really created. [Maurice]
 * Removed unneeded function call from newNode function. [Maurice]
@@ -30,7 +30,29 @@ Changed in ATK 5.5.1
 * Added fieldprefix for javascript in atkmanyboolrelation. [Lineke]
 * Removed unused code in atkDataDecode function. [Lineke]
 * Atkmanyboolrelation does not use AMDAE anymore, php now supports multi-
-dimensional arrays (might break in older php versions). [Lineke]
+  dimensional arrays (might break in older php versions). [Lineke]
+* Renamed atkWizard method start() to excecute(). [Maurice]
+* Moved getFormButtons from atkNode to atkController. [Maurice]
++ Added atkWizardController class which is responsable for typical
+  control actions for nodes being used with atkWizard. [Maurice]
++ Added atkWizardActionLoader which convertes a atkwizardaction key array
+  to string value. [Maurice]
++ Added to possibility to override a atkController class in atkNode. [Maurice]
+* Added dipatchUrl method to atkController. This function should be used by
+  other classes get the url to redirect to or when creating links. [Maurice]
+* When running into errors on admin and add pages, the error was shown on an
+  add page. We now detirmine if we should show an add or admin page. [Maurice]
++ Added method getStackValue method to aktSessionManager which makes it 
+  possible to retrieve values from other stack levels as the current one. 
+  [Maurice]
++ Added finish functionality to atkWizard and renamed start() method to 
+  execute(). [Maurice]
++ Added possiblity to add actionHandlers dynamicaly to atkWizardPanels. 
+  [Maurice]
+* On an error atkSaveHandler now detirmines if it was in admin or add mode. 
+  [Maurice]
+* Function dispatch_url now checks if parameter $atkaction contains a value. 
+  [Maurice]
 
 Changes in ATK 5.5
 ------------------

@@ -24,7 +24,7 @@
     
     var $m_node = NULL;
     
-    var $m_post_file = "dispatch.php";
+    var $m_php_file = "";
     
     var $m_return_output = false;
 
@@ -228,23 +228,122 @@
      */
     function feedbackUrl($action, $status, $record="", $message="")
     {
-      $vars = array("atkfbaction"=>$action, "atkactionstatus"=>$status,"atkfbmessage"=>$message);
-      $vars = array_merge($vars, $this->m_hidden_vars);
-      $dispatch_url = dispatch_url($this->m_node->atkNodeType(),"feedback", $vars);
-      return ((isset($this->m_feedback[$action])&&hasFlag($this->m_feedback[$action], $status))
-                      ||$status==ACTION_FAILED?session_url($dispatch_url,SESSION_REPLACE):"");
+      if((isset($this->m_feedback[$action]) && hasFlag($this->m_feedback[$action], $status)) || $status==ACTION_FAILED)
+        $vars = array("atkaction"=>"feedback", "atkfbaction"=>$action, "atkactionstatus"=>$status,"atkfbmessage"=>$message);
+      atk_var_dump($vars, "atkController::feedbackUrl()");
+      
+      $dispatch_url = $this->dispatchUrl($vars);
+      atkdebug("dispatch_url " . $dispatch_url);
+      
+      return (session_url($dispatch_url,SESSION_REPLACE));
     }
-            
+    
+    
+    
+    /**
+     * Generate a dispatch menu URL for use with nodes
+     * and their specific actions.
+     * @param string $node the (module.)node name
+     * @param string $action the atk action the link will perform
+     * @param string $params: A key/value array with extra options for the url
+     * @param string $phpfile The php file to use for dispatching, defaults to dispatch.php
+     * @return string url for the node with the action
+     */
+    function dispatchUrl($params=array(), $atknodetype="", $file="")
+    {
+      
+      $vars = array_merge($params, $this->m_hidden_vars);
+      atk_var_dump($vars, "atkController::dispatchUrl()");
+      
+      if($file!="") $phpfile = $file;
+      elseif($this->m_php_file!="") $phpfile = $this->m_php_file;
+      else $phpfile = $_SERVER["PHP_SELF"];
+      
+      $dispatch_url = dispatch_url(($atknodetype=="" ? $this->m_node->atkNodeType() : $atknodetype), $vars["atkaction"], $vars, $phpfile);
+      atkdebug("dispatch_url " . $dispatch_url);
+      
+      return (session_url($dispatch_url,SESSION_REPLACE));
+      
+    }        
+
+    /**
+     * Returns the form buttons for a certain page.
+     *
+     * Can be overridden by derived classes to define custom buttons.
+     * @param String $mode The action for which the buttons are retrieved.
+     * @param array $record The record currently displayed/edited in the form.
+     *                      This param can be used to define record specific
+     *                      buttons.
+     */
+    function getFormButtons($mode, $record)
+    {
+      atkdebug("atkController::getFormButtons()");
+      $result = array();
+
+      // edit mode
+      if ($mode == "edit")
+      {
+        // if atklevel is 0 or less, we are at the bottom of the session stack,
+        // which means that 'saveandclose' doesn't close anyway, so we leave out
+        // the 'saveandclose' button. Unless, a feedback screen is configured.
+        if (atkLevel() >0 || hasFlag($this->m_feedback["update"], ACTION_SUCCESS))
+        {
+          $result[] = '<input type="submit" class="btn_saveandclose" name="atksaveandclose" value="'.atktext('saveandclose', "atk").'">';
+        }
+        $result[] = '<input type="submit" class="btn_save" name="atknoclose" value="'.atktext("save", "atk").'">';
+        $result[] = '<input type="submit" class="btn_cancel" name="atkcancel" value="'.atktext("cancel", "atk").'">';
+      }
+      elseif ($mode == "add")
+      {
+        $result[] = '<input type="submit" class="btn_save" value="'.atktext("save", "atk").'">';
+        // if action is admin, we don't show the cancelbutton or the add next button
+        if ($this->m_node->hasFlag(NF_ADDAFTERADD) && !$this->m_node->hasFlag(NF_EDITAFTERADD))
+          $result[] = '<input type="submit" class="btn_saveandnext" name="atksaveandnext" value="'.atktext("saveandnext", "atk").'">';
+        $result[] = '<input type="submit" class="btn_cancel" name="atkcancel" value="'.atktext("cancel", "atk").'">';
+      }
+      elseif ($mode == "view")
+      {
+        if(atkLevel() > 0)
+          $result[] = '<input type="submit" class="btn_cancel" name="atkback" value="&lt;&lt; '.atktext('back').'">';
+        // if appropriate, display an edit button.
+        if (!$this->m_node->hasFlag(NF_NO_EDIT)&&$this->m_node->allowed("edit", $record))
+        {
+          $result[] = '<input type="hidden" name="atkaction" value="edit">'.
+                      '<input type="hidden" name="atknodetype" value="'.$this->m_node->atkNodeType().'">'.
+                      '&nbsp;<input type="submit" class="btn_save" value="'.atktext('edit').'">&nbsp;';
+        }
+      }
+
+      return $result;
+    }
+
+    /**
+     * Set Key/value pair in m_hidden_vars array. Saved pairs are
+     * send as post or get vars in the next page load
+     *
+     * @param string $name the reference key 
+     * @param string $value the actual value
+     */     
     function setHiddenVar($name, $value)
     {
       $this->m_hidden_vars[$name] = $value;
     }
     
+    /**
+     * Return m_hidden_vars array.
+     *
+     * @return array
+     */
     function getHiddenVars()
     {
       return $this->m_hidden_vars;
     }
-    
+
+    /**
+     * Return m_hidden_vars as html input types.
+     *
+     * @return string
+     */
     function getHiddenVarsString()
     {
       atk_var_dump($this->m_hidden_vars, "m_hidden_vars");
@@ -260,7 +359,6 @@
     {
       $this->m_return_output = $returnOutput;
     }
-    
     
     /**
      * Generic method invoker (copied from class.atkactionhandler.inc).

@@ -15,7 +15,8 @@
  * @version $Revision$
  * $Id$
  */
- 
+  
+ atkimport("atk.wizard.atkwizardactionloader");
  
 /**
  * atkWizard class which is capable of using atknodes
@@ -89,7 +90,7 @@
      */    
     function atkWizard($returnOutput=false)
     {
-      $this->m_currentPanelIndex = getPostVar("atkwizardpanelindex");      
+      $this->m_currentPanelIndex = atkGetPostVar("atkwizardpanelindex");      
       $this->m_returnOutput = $returnOutput;
       $this->m_self = &$this;
     }
@@ -108,19 +109,25 @@
       $this->m_panelIndex[$atkWizardPanel->getPanelName()] = count($this->m_panelList)-1;
     }
     
-    function start()
+    function excecute()    
     {
-      atk_var_dump(getPostVar(), "Postvars");
-      if(getPostVar("atkaction") == 'save' || getPostVar("atkaction") == "update")
+      atk_var_dump(atkGetPostVar(), "Postvars");
+      
+      $atkwizardaction = AtkWizardActionLoader::getWizardAction(atkGetPostVar("atkwizardaction"));           
+      if(atkGetPostVar("atkaction") == 'save' || atkGetPostVar("atkaction") == "update")
       {
         //save form
-        return $this->save();               
+        return $this->save($atkwizardaction);               
+      }
+      elseif($atkwizardaction == 'finish')
+      {
+        return $this->finish();
       }
       else 
       {
-        return $this->dispatch(getPostVar("atkwizardaction"));
+        return $this->dispatch($atkwizardaction);
       }  
-    }    
+    }        
     
     function dispatch($atkWizardaction)
     {
@@ -128,6 +135,12 @@
       {        
         $wizardPanel = $this->m_panelList[$this->m_currentPanelIndex+1];        
         $this->setHiddenParam("atkwizardpanelindex", $this->m_currentPanelIndex+1); 
+      }
+      elseif($atkWizardaction == 'save_addnew')
+      {        
+        //We saved the panel but we want to show the same panel again.
+        $wizardPanel = $this->m_panelList[$this->m_currentPanelIndex];        
+        $this->setHiddenParam("atkwizardpanelindex", $this->m_currentPanelIndex); 
       }
       else 
       {
@@ -137,22 +150,33 @@
       }
       return $wizardPanel->dispatchForm($this->m_hiddenParams, $this->m_returnOutput);
     }
-        
-    function save()
+    
+    //Rename to more generic name
+    function save($atkwizardaction)
     {
       // We use a reference to ourselfs because we pass data to the wizardpanel
       // which has a reference to its wizard parent.
       $this->m_self->setRedirectParam("atkwizardpanelindex", $this->m_currentPanelIndex);
+      $this->m_self->setRedirectParam("atkwizardaction", $atkwizardaction);
       
-      $currentWizardPanel = $this->m_panelList[$this->m_currentPanelIndex];      
-      if(!is_object($currentWizardPanel)) 
-      {
-        atkerror("Panel could not be crated. Non existing panel index: " . $this->m_currentPanelIndex);
-        return;
-      }
+      $currentWizardPanel = $this->getCurrentPanel();
       atkdebug("atkWizard::save panel: " . $currentWizardPanel->getPanelName());
       return $currentWizardPanel->save();
     }
+    
+    /**
+     * Finish the wizard
+     * 
+     * This function can be overriden in the your extended wizard class. 
+     * 
+     * TODO/FIXME It would be even more cool if wizardpanels could listen to
+     * the finish action and be notified of this action/event.
+     *
+     */
+    function finish()
+    {
+      return "The wizard has finished.";
+    }    
     
     function setHiddenParam($key, $value)
     {
@@ -168,6 +192,18 @@
     function setRedirectParam($key, $value)
     {
       $this->m_redirectParams[$key] = $value;
+    }
+    
+    function getCurrentPanel()
+    {
+      
+      $currentWizardPanel = $this->m_panelList[$this->m_currentPanelIndex];      
+      if(!is_object($currentWizardPanel)) 
+      {
+        atkerror("Panel could not be crated. Non existing panel index: " . $this->m_currentPanelIndex);
+        return NULL;
+      }
+      return $currentWizardPanel;
     }
     
   }

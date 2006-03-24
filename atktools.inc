@@ -1490,7 +1490,7 @@
   function dispatch_url($node, $action, $params="",$phpfile='dispatch.php')
   {
     /* create url */
-    $url = $phpfile."?atknodetype=".$node."&atkaction=".$action;
+    $url = $phpfile."?atknodetype=".$node.($action!="" ? "&atkaction=".$action : "");
     if ($params!=""&&is_array($params))
     {
       foreach ($params as $key => $value)
@@ -1837,7 +1837,7 @@
    * Returns the postvars
    * Returns a value or an array with all values
    */
-  function getPostVar($key="")
+  function atkGetPostVar($key="")
   {
     if(empty($key) || $key=="")
     {

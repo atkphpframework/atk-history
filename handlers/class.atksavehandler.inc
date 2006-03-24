@@ -41,7 +41,6 @@
 
       if (!isset($this->m_postvars['atkcancel']))
       {
-
         // just before we validate the record we call the preAdd() to check if the record needs to be modified
         $this->m_node->executeTrigger("preAdd", $record, "add");
 
@@ -97,6 +96,7 @@
       }
     }
     
+    /*
     function renderAddPage($record)
     {
       $this->m_action="add";
@@ -104,21 +104,53 @@
       $page = &$this->getPage();
       $addhandler = &$this->m_node->getHandler("add");
       $page->addContent($this->m_node->renderActionPage("add", $addhandler->invoke("addPage", $record)));
+    }*/
+
+    /**
+     * Render add or admin page again
+     *
+     * @param array $record
+     */
+    function renderAddPage($record)
+    {
+      atk_var_dump(atkGetPostVar(), "postvars");
+      
+      $sessionMgr = atkGetSessionManager();
+      $atkaction = $sessionMgr->getStackValue("atkaction", atkGetPostVar("atkpreviouslevel"));
+      
+      $this->m_action=$atkaction;
+      $this->m_node->m_action = $atkaction;
+
+      $page = &$this->getPage();
+      $handler = &$this->m_node->getHandler($this->m_node->m_action);
+      atkdebug("atkSaveHandler::renderAddPage() " . $this->m_node->m_action);
+      $invoke = ($this->m_node->m_action=='admin' ? "adminPage" : "addPage");
+      $page->addContent($this->m_node->renderActionPage($this->m_node->m_action, $handler->invoke($invoke, $record)));
     }
 
-    
+    /**
+     * Create url needed for redirect
+     *
+     * @param array $record
+     * @return string containing the url
+     */    
     function createRedirectLocation($record)
     {      
       atkdebug("atkSaveHandler::createRedirectLocation()");
       $location="";
+      $controller = &$this->m_node->getController();
       if ($this->m_node->hasFlag(NF_EDITAFTERADD))
       {
-        $location = session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->m_node->atknodetype().'&atkaction=edit&atkselector='.rawurlencode($this->m_node->primaryKey($record)), SESSION_REPLACE);
+        $vars = array('atknodetype'=>$this->m_node->atknodetype(), 'atkaction'=>'edit', 'atkselector' => rawurlencode($this->m_node->primaryKey($record)));
+        $location = session_url($controller->dispatchUrl($vars), SESSION_REPLACE);
       }
       else if ($this->m_node->hasFlag(NF_ADDAFTERADD) && isset($this->m_postvars['atksaveandnext']))
       {
-        $filter = isset($this->m_node->m_postvars['atkfilter']) ? "&atkfilter=".rawurlencode($this->m_node->m_postvars['atkfilter']) : "";
-        $location = session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->m_node->atknodetype().'&atkaction=add'.$filter, SESSION_REPLACE);              
+        $vars = array('atknodetype' => $this->m_node->atknodetype(), 'atkaction' => 'add');      
+        if(isset($this->m_node->m_postvars['atkfilter']))
+          $vars['atkfilter'] = rawurlencode($this->m_node->m_postvars['atkfilter']);
+          
+        $location = session_url($controller->dispatchUrl($vars), SESSION_REPLACE);              
       }
       else
       {

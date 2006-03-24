@@ -19,6 +19,7 @@
 atkimport("atk.handlers.atkactionhandler");
 atkimport("atk.handlers.atkaddhandler");
 atkimport("atk.handlers.atksavehandler");
+atkimport("atk.wizard.atkwizardcontroller");
  
 /**
  * Wizardpanel which binds to a atknodes
@@ -32,17 +33,63 @@ atkimport("atk.handlers.atksavehandler");
 
   class atkWizardPanel
   {
+    /**
+     * Reference to the parent wizard
+     *
+     * @var object reference
+     */
     var $m_wizard;
+    
+    /**
+     * Panel name
+     *
+     * @var string
+     */
     var $m_panelName;    
     
+    /**
+     * Name representation of the atkNode
+     *
+     * @var string
+     */
     var $m_nodeName;
+    
+    /**
+     * Reference to the atkNode
+     *
+     * @var object reference
+     */
     var $m_node;
     
+    /**
+     * Array of Actionlisteners which listen
+     * to the atkNode
+     *
+     * @var array
+     */
     var $m_listeners;
     
-    var $m_redirectParams = array();
-    
+    /**
+     * Array of ActionHandlers which are binded
+     * to the atkNode
+     *
+     * @var array
+     */
+    var $m_actionHandlers = array();
+       
+    /**
+     * The default atkNode action for this wizardpanel
+     *
+     * @var unknown_type
+     */
     var $m_defaultAction;
+    
+    /**
+     * 
+     *
+     * @var unknown_type
+     */    
+    var $m_finishPanel = false;
     
     /**
      * atkWizardPanel constructor
@@ -56,12 +103,13 @@ atkimport("atk.handlers.atksavehandler");
      * @param unknown_type $nodeName
      * @return atkWizardPanel
      */    
-    function atkWizardPanel(&$wizard, $panelName, $nodeName, $defaultAction="")
+    function atkWizardPanel(&$wizard, $panelName, $nodeName, $defaultAction="", $finishPanel=false)
     {
       $this->m_wizard = &$wizard;
       $this->m_panelName = $panelName;
       $this->m_nodeName = $nodeName;           
       $this->m_defaultAction = $defaultAction;
+      $this->m_finishPanel = $finishPanel;
     }
     
     function getPanelNode()
@@ -80,10 +128,26 @@ atkimport("atk.handlers.atksavehandler");
         {
           $this->m_node->addListener($this->m_listeners[$i]);
         }
+
+        //Add actionhandlers to node
+        for($i=0, $_i=count($this->m_actionHandlers); $i<$_i; $i++)
+        {          
+          $handlerName = $this->m_actionHandlers[$i]['name'];
+          $handlerAction = $this->m_actionHandlers[$i]['action'];
+          
+          atkdebug("atkWizardPanel::getPanelNode() registerNodeHandler for. Node: " . getNodeType($this->m_nodeName). " name: ".$handlerName. " action ". $handlerAction);
+          
+          $handler = new $handlerName();
+          registerNodeHandler($this->m_node->m_type, $handlerAction, $handler);
+        }
+        
+        //Set wizard specific controller
+        atkdebug("atkWizardPanel::getPanelNode() Register controller for. Node: " . getNodeType($this->m_nodeName));
+        registerNodeController(getNodeType($this->m_nodeName), new atkWizardController($this->m_node, $this));
         
         //todo: not sure if this needed
         //Add postvars to node manually 
-        $this->m_node->m_postvars = getPostVar();
+        $this->m_node->m_postvars = atkGetPostVar();
         
         //All nodes should return the output and not try to fill the screen themselves
         $controller = &$this->m_node->getController();
@@ -112,6 +176,19 @@ atkimport("atk.handlers.atksavehandler");
       $this->m_listeners[] = $listener;
     }
 
+    
+    /**
+     * Add an atkActionHandler to the atkWizardPanel.
+     * 
+     * Handlers are created and added to the atkNode when the
+     * node is created.
+     *
+     * @param atkActionHandler $listener
+     */
+    function addActionHandler($handlerName, $handlerAction)
+    {
+      $this->m_actionHandlers[] = array("name" => $handlerName, "action" => $handlerAction);
+    }
    
     function dispatchForm($params, $returnOutput)
     {    	
@@ -147,10 +224,11 @@ atkimport("atk.handlers.atksavehandler");
       return $output;
     }    
     
+    //Rename to more generic name
     function save()
     {
       atkdebug("atkWizardPanel::save node: " . $this->m_nodeName);
-      $node = $this->getPanelNode();         
+      $node = &$this->getPanelNode();         
       if(!is_object($node)) return;
       
       $controller = &$node->getController();
@@ -164,41 +242,17 @@ atkimport("atk.handlers.atksavehandler");
           $controller->setHiddenVar($hiddenVarName, $hiddenVarValue);
         }
       }
-
-      if(getPostVar("atkaction") == "save")
-      {
-        $saveHandler = new atkWizardSavehandler();
-        registerNodeHandler($node->m_type, "save",  $saveHandler);
-      }
       
       //Save, on succes dispatch() will redirect
       //else it will return an 'add form' with error messages
-      return $controller->dispatch(getPostVar(), false);
+      return $controller->dispatch(atkGetPostVar(), false);
+    }
+    
+    function isFinishPanel()
+    {
+      return $this->m_finishPanel;
     }
 
-  }
-    
-
-  class atkWizardSavehandler extends atkSaveHandler
-  {  
-    function createRedirectLocation($record)
-    {
-      atkdebug("atkWizardSaveHandler::createRedirectLocation " . $this->m_next_action);
-      //return session_url(dispatch_url($this->m_next_node, $this->m_next_action, $this->m_params, $this->m_redirect_file),SESSION_REPLACE);
-      $url = $_SERVER["PHP_SELF"].'?atkwizardaction=next';      
-      $controller = &$this->m_node->getController();
-      atk_var_dump($controller->getHiddenVars(), "this->m_node->getHiddenVars()");
-      if ($controller->getHiddenVars()!=""&&is_array($controller->getHiddenVars()))
-      {
-        foreach ($controller->getHiddenVars() as $key => $value)
-        {
-          $url .= "&$key=".rawurlencode($value);
-        }
-      }      
-      return session_url($url, SESSION_DEFAULT);
-      
-      //return parent::createRedirectLocation($record);
-    }  
-  }
+  }   
   
 ?>
