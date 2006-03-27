@@ -672,8 +672,6 @@
       $id = $this->getHtmlId($fieldprefix);
       $this->registerKeyListener($id, KB_CTRLCURSOR|KB_UPDOWN);
 
-      $this->_registerDependees($fieldprefix, $mode);
-      
       if (count($this->m_onchangecode))
       {
         $onchange = 'onChange="'.$id.'_onChange(this);"';
@@ -789,6 +787,8 @@
      */
     function addToEditArray($mode, &$arr, &$defaults, &$error, $fieldprefix)
     {
+      $this->_registerDependees($mode, $fieldprefix);
+      
       /* hide */
       if (($mode=="edit" && $this->hasFlag(AF_HIDE_EDIT)) || ($mode=="add" && $this->hasFlag(AF_HIDE_ADD)))
       {
@@ -962,7 +962,7 @@
       {
         /* an <attributename>_display function may be provided in a derived class to display an attribute */
         $function = $this->m_name."_display";
-        if (in_array($this->fieldName(), $this->m_ownerInstance->m_editableListAttributes))
+        if (in_array($this->fieldName(), $this->m_ownerInstance->m_editableListAttributes) && $this->m_ownerInstance->allowed('edit', $arr["rows"][$nr]["record"]))
         {
           $arr["rows"][$nr]["data"][$fieldprefix.$this->fieldName()] = 
             $this->getEdit('list', $arr["rows"][$nr]["record"], 'atkrecordlistdata_AE_'.$arr['name'].'_AE_'.$nr.'_AE_');
@@ -1875,38 +1875,21 @@
     /**
      * Register change handlers for dependees.
      */
-    function _registerDependees($fieldprefix="", $mode="")
+    function _registerDependees($mode="", $fieldprefix="")
     {
       $id = $fieldprefix.$this->fieldName();
+
+      $page = &$this->m_ownerInstance->getPage();
+      $page->register_script(atkconfig('atkroot').'atk/javascript/class.atkattribute.js');
       
       foreach ($this->m_dependees as $attribName)
       {
         $attrField = str_replace('.', '_', $this->m_ownerInstance->atkNodeType())."_$attribName";  
         $url = addslashes(partial_url($this->m_ownerInstance->atkNodeType(), $mode == "add" ? "add" : "edit", "attribute.$attribName", array("atkfieldprefix" => $fieldprefix)));
         
-        $code = "
-          var replace = '$attrField';
-          var url = '$url';
-          
-          var elements = Form.getElements(\$('$id').form);
-          var queryComponents = new Array();
-
-          for (var i = 0; i < elements.length; i++) {
-            if (elements[i].name && elements[i].name.substring(0, 3) != 'atk') {
-              var queryComponent = Form.Element.serialize(elements[i]);
-              if (queryComponent)
-                queryComponents.push(queryComponent);
-            }
-          }
-
-          var params = queryComponents.join('&');          
-
-          new Ajax.Updater(replace, url, {method: 'post', parameters: params, evalScripts: true, asynchronous: true });    
-        ";
+        $code = "ATK.Attribute.refresh('$attrField', '$url')";
         
         $this->addOnChangeHandler($code);
-        
-        $page = &$this->m_ownerInstance->getPage();
         $page->register_loadscript($code);
       }
     }

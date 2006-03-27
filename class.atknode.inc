@@ -637,6 +637,13 @@
      * @var String
      */
     var $m_descTemplate = NULL;
+    
+    /**
+     * Descriptor handler.
+     * @access protected
+     * @var Object
+     */
+    var $m_descHandler = NULL;    
 
     /**
      * List of action listeners
@@ -2376,7 +2383,25 @@
         $record[$p_attrib->fieldName()]=$p_attrib->fetchValue($vars);
       }
     }
-
+    
+    /**
+     * Get descriptor handler.
+     * @return Object descriptor handler
+     */
+    function &getDescriptorHandler()
+    {
+      return $this->m_descHandler;
+    }
+    
+    /**
+     * Set descriptor handler.
+     * @param Object $handler The descriptor handler.
+     */
+    function setDescriptorHandler(&$handler)
+    {
+      $this->m_descHandler = &$handler;
+    }
+    
     /**
      * Returns the descriptor template for this node.
      * @return String The descriptor Template
@@ -2464,6 +2489,10 @@
      */
     function descriptor($rec="")
     {
+      // Descriptor handler is set?
+      if ($this->m_descHandler != NULL)
+        return $this->m_descHandler->descriptor($rec, $this);
+      
       // Descriptor template is set?
       if ($this->m_descTemplate != NULL)
       {

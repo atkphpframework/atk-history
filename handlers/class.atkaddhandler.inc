@@ -75,7 +75,7 @@
 
       $params = $node->getDefaultActionParams();
 
-      $formstart ='<form name="entryform" enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?'.SID.'"'.
+      $formstart ='<form id="entryform" name="entryform" enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?'.SID.'"'.
                      ' method="post" onsubmit="return globalSubmit(this)">';
 
       /* if we are on an admin page we would like to stay on the admin page after adding a new record */

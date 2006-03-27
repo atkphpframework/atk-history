@@ -134,6 +134,18 @@
       }
     }
 
+   /**
+     * Converts a date array to a timestamp
+     * year, month, day are obligatory !!
+     *
+     * @param array $dateArray Date Array
+     * @return int Timestamp
+     */
+    function arrayToTime($dateArray)
+    {
+      return atkDateAttribute::_arrayToTime($dateArray);
+    }
+    
     /**
      * Converts a date array to a timestamp
      * year, month, day are obligatory !!

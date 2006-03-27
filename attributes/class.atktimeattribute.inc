@@ -71,9 +71,9 @@
     function display($record)
     {
 	  	$value = $record[$this->fieldName()];
-      if (empty($value["hours"]) ) return "";
-      $tmp_time = $value["hours"].":".$value["minutes"];
-      if ($value["seconds"]) $tmp_time.=":".$value["seconds"];
+      if ($value["hours"] === "") return "";
+      $tmp_time = sprintf("%02d:%02d", $value["hours"], $value["minutes"]);
+      if ($value["seconds"]) $tmp_time.=sprintf(":%02d", $value["seconds"]);
       return $tmp_time;
     }
 

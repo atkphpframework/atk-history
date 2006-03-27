@@ -41,6 +41,7 @@ Changes in tomorrow branch
 + Added populate function to atkManyToOneRelation to populate the record 
   with the descriptor field values or all data if only the primary key 
   is available. [Peter]
++ Added descriptor handler support to atkNode and atkRelation. [Peter]
 * Improvements to error reporting of importing and added ability 
   to add multiple fields for the entire import ('allfields'). [Boy]
 * Added id to field td. [Boy]
@@ -86,6 +87,10 @@ Changes in tomorrow branch
 * Fixed that actionhandler always takes the postvars and the partial values 
   of the node (in the setNode) call, because most of the times handlers 
   are called using their action_... function instead of handle. [Peter]
+* Fixed db2value method of atkManyToOneRelation (now calls db2value on
+  destination attributes). Warning: this change might give you
+  problems if you depend on the old (incorrect) behaviour! [Peter]
+* Check if a certain multi-record-action is allowed on a record. [Peter]
 
 Changed in ATK 5.5.1
 --------------------

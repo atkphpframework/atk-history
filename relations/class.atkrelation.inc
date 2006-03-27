@@ -46,6 +46,12 @@
      * @var String
      */
     var $m_descTemplate = NULL;
+    
+    /**
+     * Descriptor handler.
+     * @var Object
+     */
+    var $m_descHandler = NULL;
 
     /**
      * Constructor
@@ -77,6 +83,24 @@
     {
       $this->m_destinationFilter = $filter;
     }
+    
+    /**
+     * Get descriptor handler.
+     * @return Object descriptor handler
+     */
+    function &getDescriptorHandler()
+    {
+      return $this->m_descHandler;
+    }
+    
+    /**
+     * Set descriptor handler.
+     * @param Object $handler The descriptor handler.
+     */
+    function setDescriptorHandler(&$handler)
+    {
+      $this->m_descHandler = &$handler;
+    }
 
     /**
      * Returns the descriptor template for the destination node.
@@ -94,6 +118,18 @@
     function setDescriptorTemplate($template)
     {
       $this->m_descTemplate = $template;
+    }
+    
+    /**
+     * Descriptor handler. Forwards description handler calls
+     * to the real description handler.
+     */
+    function descriptor($record, &$node)
+    {
+      $method = $this->m_name."_descriptor";
+      if (method_exists($this->m_descHandler, $method))
+        return $this->m_descHandler->$method($record, $node);
+      else return $this->m_descHandler->descriptor($record, $node);
     }
 
     /**
@@ -125,6 +161,9 @@
           if (is_subclass_of($attribute, "atkrelation") && is_object($this->m_ownerInstance) && $attribute->m_destination == $this->m_ownerInstance->atkNodeType())
             $attribute->m_destInstance = &$this->m_ownerInstance;
         }
+        
+        if (!empty($this->m_descHandler))
+          $this->m_destInstance->setDescriptorHandler($this);
 
         if (!empty($this->m_descTemplate))
           $this->m_destInstance->setDescriptorTemplate($this->m_descTemplate);

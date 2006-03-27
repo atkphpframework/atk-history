@@ -91,7 +91,7 @@
 
       $params = $node->getDefaultActionParams($locked);
 
-      $params["formstart"] = '<form name="entryform" enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?'.SID.'"'.
+      $params["formstart"] = '<form id="entryform" name="entryform" enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?'.SID.'"'.
                                    ' method="post" onsubmit="return globalSubmit(this)">'.
                                    session_form();
 

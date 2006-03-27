@@ -91,6 +91,13 @@
     var $m_listColumns = array();
     
     /**
+     * Always show list columns?
+     * @access private
+     * @var boolean
+     */
+    var $m_alwaysShowListColumns = false;
+    
+    /**
      * Label to use for the 'none' option.
      *
      * @access private
@@ -152,6 +159,18 @@
       $attrs = func_get_args();
       foreach ($attrs as $attr)
         $this->m_listColumns[] = $attr;
+    }
+    
+
+    /**
+     * Always show list columns in list view, 
+     * even if the attribute itself is hidden?
+     * 
+     * @param $value always show list columns?
+     */
+    function setAlwaysShowListColumns($value)
+    {    
+      $this->m_alwaysShowListColumns = $value;
     }
 
     /**
@@ -231,8 +250,20 @@
       if (isset($rec[$this->fieldName()]))
       {
         $myrec = $rec[$this->fieldName()];
+        if (is_array($myrec)) 
+        {
+          $result = array();
+          if ($this->createDestination())
+          {
+            foreach (array_keys($this->m_destInstance->m_attribList) as $attrName)
+            {
+              $attr = &$this->m_destInstance->m_attribList[$attrName];
+              $result[$attrName] = $attr->db2value($myrec);
+            }
+          }
 
-        if (is_array($myrec)) return $myrec;
+          return $result;
+        }
         else
         {
           // if the record is not an array, probably only the value of the primary key was loaded.
@@ -407,7 +438,6 @@
           if(isset($record[$this->fieldName()]))
             $value = $record[$this->fieldName()];
           $currentPk = $this->m_destInstance->primaryKey($value);
-          $this->m_destInstance->addFilter($filter);
           $recordset = $this->_getSelectableRecords($record, $mode);
           if(count($recordset)==0) $editflag = false;
 
@@ -422,8 +452,6 @@
           }
           else
           {
-            $this->_registerDependees($fieldprefix, $mode);
-            
             $onchange='';
             if (count($this->m_onchangecode))
             {
@@ -933,7 +961,7 @@
           $parser = new atkStringParser($this->m_destinationFilter);
           $filter = $parser->parse($record);
           $this->m_destInstance->addFilter($filter);
-        }          
+        }         
         
         return $this->m_destInstance->selectDb("","","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
       }
@@ -1078,7 +1106,8 @@
       parent::addToListArrayHeader($action, $arr, $prefix, $flags, $atksearch[$this->fieldName()], $atkorderby);
 
       // only add extra columns when needed
-      if ($this->hasFlag(AF_HIDE_LIST) || !$this->createDestination() || count($this->m_listColumns) == 0) return;
+      if ($this->hasFlag(AF_HIDE_LIST) && !$this->m_alwaysShowListColumns) return; 
+      if (!$this->createDestination() || count($this->m_listColumns) == 0) return;
 
       foreach ($this->m_listColumns as $attribname)
       {
@@ -1151,7 +1180,8 @@
       parent::addToListArrayRow($action, $arr, $nr, $prefix, $flags);
       
       // only add extra columns when needed
-      if ($this->hasFlag(AF_HIDE_LIST) || !$this->createDestination() || count($this->m_listColumns) == 0) return;
+      if ($this->hasFlag(AF_HIDE_LIST) && !$this->m_alwaysShowListColumns) return;       
+      if (!$this->createDestination() || count($this->m_listColumns) == 0) return;
 
       // small trick, the destination record is in a subarray. The destination
       // addToListArrayRow will not expect this though, so we have to modify the
@@ -1184,7 +1214,8 @@
       parent::addToSearchformFields($fields,$node,$record, $prefix);
 
       // only add extra columns when needed
-      if ($this->hasFlag(AF_HIDE_LIST) || !$this->createDestination() || count($this->m_listColumns) == 0) return;
+      if ($this->hasFlag(AF_HIDE_LIST) && !$this->m_alwaysShowListColumns) return; 
+      if (!$this->createDestination() || count($this->m_listColumns) == 0) return;
 
       foreach ($this->m_listColumns as $attribname)
       {

@@ -39,14 +39,6 @@
   class atkUpdateStampAttribute extends atkDateTimeAttribute
   {
     /**
-     * Var is need for save without close. In this case the record is not
-     * updated therefor we have to save the value.
-     * @access private
-     * @var String
-     */
-    var $m_stamp = "";
-
-    /**
      * Constructor
      *
      * @param String $name Name of the attribute (unique within a node, and
@@ -58,41 +50,13 @@
     {    
       $this->atkDateTimeAttribute($name, date("Y-m-d"), date("H:i:s"), $flags|AF_READONLY|AF_HIDE_ADD);
     }
-
+    
     /**
-     * Converts the internal attribute value to one that is understood by the
-     * database.
-     *
-     * In the case of atkUpdateStampAttribute, this method is used to
-     * calculate the timestamp of last modification.
-     * 
-     * @param array $rec The record that is being stored.
-     * @return String The last-modified timestamp in sql-compatible format.
+     * Fetch value.
      */
-    function value2db($rec)
+    function fetchValue()
     {
-      $stamp = date("Y-m-d H:i:s");
-      $this->m_stamp = $stamp;
-      return $stamp;
-    }
-
-    /**
-     * Returns a displayable string for this value, to be used in HTML pages.
-     *
-     * In this case, the timestamp is returned in human readable format.
-     *
-     * @param array $record The record that holds the value for this attribute
-     * @param String $mode The display mode ("view" for viewpages, or "list" 
-     *                     for displaying in recordlists). The regular
-     *                     atkAttribute does not use this parameter, but
-     *                     derived attributes may use it to distinguish
-     *                     between the two display modes.
-     * @return String HTML String 
-     */
-    function display($rec, $mode="")
-    {
-      $stamp = ($this->m_stamp != "" ? $this->m_stamp : parent::value2db($rec));
-      return $stamp;
+      return atkDateTimeAttribute::datetimeArray();
     }
 
     /**

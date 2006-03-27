@@ -654,7 +654,6 @@
 
         /* actions / mra */
         $this->m_node->recordActions($row["record"], $row["actions"], $row["mra"]);
-        $result["mra"] = array_merge($result["mra"], $row["mra"]);
         foreach($row["actions"] as $name => $url)
         {
           if (!empty($url) && $this->m_node->allowed($name, $row["record"]))
@@ -679,6 +678,16 @@
             unset($row["actions"][$name]);
           }
         }
+        
+        $tmpMRA = array();
+        foreach($row["mra"] as $name)
+        {
+          if ($this->m_node->allowed($name, $row["record"]))
+            $tmpMRA[] = $name;
+        }
+        $row["mra"] = $tmpMRA;
+        
+        $result["mra"] = array_merge($result["mra"], $row["mra"]);        
 
         /* columns */
         foreach (array_keys($this->m_node->m_attribIndexList) as $r)
