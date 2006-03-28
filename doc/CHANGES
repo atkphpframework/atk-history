@@ -91,6 +91,8 @@ Changes in tomorrow branch
   destination attributes). Warning: this change might give you
   problems if you depend on the old (incorrect) behaviour! [Peter]
 * Check if a certain multi-record-action is allowed on a record. [Peter]
+* Added excludes/includes option to atkNode::updateRecord function. [Peter]
+* atkFileAttribute now uses more complete record for filename mangling. [Peter]
 
 Changed in ATK 5.5.1
 --------------------

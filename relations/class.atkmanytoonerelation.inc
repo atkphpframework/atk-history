@@ -664,11 +664,6 @@
           {
             $result.='multiple size="'.min(5,count($recordset)+1).'"';
           }
-          if (!$extended && !empty($this->m_searchsize))
-          {
-            $width = $this->m_searchsize * 11;
-            $result .= ' style="width: '.$width.'px"';
-          }          
 
           if (strstr($fieldprefix,"]["))
             $result.='name="atksearch['. $fieldprefix.$this->fieldName().'][]">';

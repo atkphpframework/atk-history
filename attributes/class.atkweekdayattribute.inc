@@ -59,7 +59,7 @@
       elseif (is_array($extraOrFlags))
         $this->m_extra = $extraOrFlags;
         
-      $this->atkNumberAttribute($name, $flags);
+      $this->atkNumberAttribute($name, ($flags|AF_HIDE_SEARCH)^AF_SEARCHABLE);
     }
     
     /**

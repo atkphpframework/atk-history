@@ -90,6 +90,8 @@ function atkSubmitMRA(name, form, target)
   var index  = form.elements[name + '_atkaction'].selectedIndex;
   if (typeof(index) == 'undefined') var atkaction = form.elements[name + '_atkaction'].value;
   else var atkaction = form.elements[name + '_atkaction'][index].value;
+  
+  if (atkaction == '') return;
 
   /* get selectors */
   var list = form.elements[name + '_atkselector[]'];

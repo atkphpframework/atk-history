@@ -400,6 +400,14 @@
     }
 
     /**
+     * Set filename template.
+     */
+    function setFilenameTemplate($template)
+    {
+      $this->m_filenameTpl = $template;
+    }
+    
+    /**
      * Determine the real filename of a file (based on m_filenameTpl).
      */
     function _filenameMangle($rec, $default)
@@ -410,8 +418,10 @@
       }
       else
       {
+        $record = $this->m_ownerInstance->updateRecord($rec, NULL, array($this->fieldName()));
+        $record[$this->fieldName()] = substr($default, 0, strrpos($default,'.'));
         $ext = strtolower(substr($default, strrpos($default,'.')+1));
-        $filename = stringparse($this->m_filenameTpl, $rec).".".$ext;
+        $filename = stringparse($this->m_filenameTpl, $record).".".$ext;
       }
       return str_replace(' ','_',$filename);
     }

@@ -102,6 +102,7 @@
     function display($record)
     {
        $values = $record[$this->fieldName()];
+       atk_var_dump($values, "<h1>VALUES</h1>");
        $res=array();
        for ($i=0;$i<count($values);$i++)
        {
