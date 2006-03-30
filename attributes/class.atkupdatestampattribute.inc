@@ -49,6 +49,19 @@
     function atkUpdateStampAttribute($name, $flags=0)
     {    
       $this->atkDateTimeAttribute($name, date("Y-m-d"), date("H:i:s"), $flags|AF_READONLY|AF_HIDE_ADD);
+      $this->setForceInsert(true);
+      $this->setForceUpdate(true);
+    }
+    
+    /**
+     * Value to DB.
+     */
+    function value2db($record)
+    {
+      // if record not created using a form this situation can occur, so set the value here
+      if (!is_array($record[$this->fieldName()]))
+        $record[$this->fieldName()] = $this->fetchValue();
+      return parent::value2db($record);
     }
     
     /**
@@ -58,39 +71,6 @@
     {
       return atkDateTimeAttribute::datetimeArray();
     }
-
-    /**
-     * This function is called by the framework to determine if the attribute
-     * needs to be saved to the database in an updateDb call.
-     *
-     * In this case, true is returned in all cases, since we always want to
-     * store the last-modification stamp.
-     *
-     * @param array $record The record that is going to be saved.
-     * @return boolean true
-     */
-    function needsUpdate($rec)
-    {
-      // no matter what, we always save a new value.
-      return true;
-    }
-
-    /**
-     * This function is called by the framework to determine if the attribute
-     * needs to be saved to the database in an addDb call.
-     *
-     * In this case, true is returned in all cases, since we always want to
-     * store the last-modification stamp.
-     *
-     * @param array $record The record that is going to be saved.
-     * @return boolean true
-     */
-    function needsInsert($rec)
-    {
-      // no matter what, we always save a new value.
-      return true;
-    }
-
 
     /**
      * Returns a piece of html code for hiding this attribute in an HTML form,

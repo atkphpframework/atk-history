@@ -167,17 +167,16 @@
       }
 
       if(count($checked) > 0)
-        $filter = "NOT IN ('".implode("','",$checked)."')";
+        $filter = " AND ".$this->m_linkInstance->m_table.'.'.$this->getRemoteKey()." $filter NOT IN ('".implode("','",$checked)."')";
 
-      if (is_object($rel) && $rel->deleteDb($this->m_linkInstance->m_table.'.'.$this->getLocalKey()."='".$record[$this->m_ownerInstance->primaryKeyField()]."' AND ".$this->m_linkInstance->m_table.'.'.$this->getRemoteKey()." $filter"))
+      if (is_object($rel) && $rel->deleteDb($this->m_linkInstance->m_table.'.'.$this->getLocalKey()."='".$record[$this->m_ownerInstance->primaryKeyField()]."'".$filter))
       {
         for ($i=0;$i<count($record[$this->fieldName()]);$i++)
         {
           // magical stuff..
           $newrecord = $this->m_destInstance->initial_values();
-          $newrecord[$this->getRemoteKey()][$this->m_destInstance->primaryKeyField()] = $record[$this->fieldName()][$i][$this->getRemoteKey()];
-
-          $newrecord[$this->getLocalKey()][$this->m_ownerInstance->primaryKeyField()] = $record[$this->m_ownerInstance->primaryKeyField()];
+          $newrecord[$this->getRemoteKey()] = $record[$this->fieldName()][$i][$this->getRemoteKey()];
+          $newrecord[$this->getLocalKey()] = $record[$this->m_ownerInstance->primaryKeyField()];
 
           // First check if the record does not exist yet.
           /* @var $rel atkNode */

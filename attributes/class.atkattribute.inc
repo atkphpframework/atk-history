@@ -445,6 +445,13 @@
     var $m_searchmode = "";
 
     /**
+     * Wether to force an insert of the attribute
+     * @access private
+     * @var bool
+     */
+    var $m_forceinsert=false;
+    
+    /**
      * Wether to force an update of the attribute
      * @access private
      * @var bool
@@ -1294,6 +1301,24 @@
     {
       return ((!$this->hasFlag(AF_READONLY_EDIT) && !$this->hasFlag(AF_HIDE_EDIT)) || $this->m_forceupdate);
     }
+    
+    /**
+     * Used to force an attribute to update with every addDb() call
+     * @param bool $force Wether or not to force the attribute to insert
+     */
+    function setForceInsert($force)
+    {
+      $this->m_forceinsert = $force;
+    }
+
+    /**
+     * Getter for wether or not an attribute is forced to insert
+     * @return bool Wether or not an attribute is forced to insert
+     */
+    function getForceInsert()
+    {
+      return $this->m_forceinsert;
+    }    
 
     /**
      * Used to force an attribute to update with every updateDb() call
@@ -1330,7 +1355,8 @@
     {
       return (!$this->hasFlag(AF_HIDE_ADD) ||
               $this->hasFlag(AF_AUTO_INCREMENT) ||
-              !$this->isEmpty($record));
+              !$this->isEmpty($record) ||
+              $this->m_forceinsert);
 
       // If we are set to hide_add, we will only insert into the
       // db if a value has been set (for example by an initial_values

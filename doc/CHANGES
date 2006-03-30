@@ -42,6 +42,8 @@ Changes in tomorrow branch
   with the descriptor field values or all data if only the primary key 
   is available. [Peter]
 + Added descriptor handler support to atkNode and atkRelation. [Peter]
++ Added setForceInsert method to atkAttribute (works just the same as  
+  setForceUpdate, only then for inserts). [Peter]
 * Improvements to error reporting of importing and added ability 
   to add multiple fields for the entire import ('allfields'). [Boy]
 * Added id to field td. [Boy]
@@ -93,6 +95,8 @@ Changes in tomorrow branch
 * Check if a certain multi-record-action is allowed on a record. [Peter]
 * Added excludes/includes option to atkNode::updateRecord function. [Peter]
 * atkFileAttribute now uses more complete record for filename mangling. [Peter]
+* atkManyBoolRelation does not require atkManyToOneRelations in the 
+  intermediate node anymore. [Peter]
 
 Changed in ATK 5.5.1
 --------------------
