@@ -35,6 +35,9 @@ Changes in tomorrow branch
 + Added selectable records override to atkManyToOneRelation. Usage:
   create a function named <attribname>_selection($record, $mode) in
   your node and return the selectable records. [Peter]
++ Added selectable records override to atkManyBoolRelation. Usage:
+  create a function named <attribname>_selection($record, $mode) in
+  your node and return the selectable records. [Peter]
 + Added (Ajax based) dependency mechanism between attributes. [Peter]
 + Added atkMailer class (extends phpmailer class). [Peter]
 + Added show ... results drop-down to recordlist navigation. [Peter]
