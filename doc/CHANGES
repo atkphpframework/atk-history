@@ -65,6 +65,9 @@ Changed in ATK 5.5.1
   [Maurice]
 * ManyToManyRelation now adds tablename before remoteKey when deleting.
   [Lineke]
++ Added selectable records override to atkManyBoolRelation. Usage:
+  create a function named <attribname>_selection($record, $mode) in
+  your node and return the selectable records. [Peter]
 
 Changes in ATK 5.5
 ------------------
