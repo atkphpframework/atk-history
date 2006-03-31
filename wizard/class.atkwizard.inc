@@ -131,10 +131,10 @@
     
     function dispatch($atkWizardaction)
     {
-      if($atkWizardaction == 'next')
+      if($atkWizardaction == 'next' || $atkWizardaction == 'save_next')
       {        
         $wizardPanel = $this->m_panelList[$this->m_currentPanelIndex+1];        
-        $this->setHiddenParam("atkwizardpanelindex", $this->m_currentPanelIndex+1); 
+        $this->setHiddenParam("atkwizardpanelindex", $this->m_currentPanelIndex+1);         
       }
       elseif($atkWizardaction == 'save_addnew')
       {        
@@ -148,6 +148,7 @@
         $wizardPanel = $this->m_panelList[0];        
         $this->setHiddenParam("atkwizardpanelindex", 0);                 
       }
+      atkdebug("atkWizard::dispatch() Calling ".$wizardPanel->getPanelName()."->dispatchForm");
       return $wizardPanel->dispatchForm($this->m_hiddenParams, $this->m_returnOutput);
     }
     

@@ -59,16 +59,18 @@ Changed in ATK 5.5.1
   execute(). [Maurice]
 + Added possiblity to add actionHandlers dynamicaly to atkWizardPanels. 
   [Maurice]
-* On an error atkSaveHandler now detirmines if it was in admin or add mode. 
-  [Maurice]
-* Function dispatch_url now checks if parameter $atkaction contains a value. 
-  [Maurice]
 * ManyToManyRelation now adds tablename before remoteKey when deleting.
   [Lineke]
 + Added selectable records override to atkManyBoolRelation. Usage:
   create a function named <attribname>_selection($record, $mode) in
   your node and return the selectable records. [Peter]
+* On an error atkSaveHandler now determines if it was in admin or add mode. A
+  new hidden var 'atkprevaction' is posted in add and edit pages to find out. 
+  [Maurice]
+* Function dispatch_url now checks if parameter $atkaction contains a value. 
+  [Maurice]
 
+  
 Changes in ATK 5.5
 ------------------
 + Added class atkMail for sending e-mails just like the normal mail function

@@ -427,7 +427,7 @@
   function session_level($sessionstatus=SESSION_DEFAULT, $levelskip=1)
   {
     $currentlevel = atkLevel();
-
+    
     $newlevel = -1;
 
     switch ($sessionstatus)

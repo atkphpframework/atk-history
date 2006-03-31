@@ -52,7 +52,7 @@ atkimport("atk.atkcontroller");
      */
     function getFormButtons($mode, $record)
     {
-      global $ATK_VARS;
+      //global $ATK_VARS;
       
       atkdebug("atkWizardController::getFormButtons()");
       $result = array();
@@ -63,7 +63,7 @@ atkimport("atk.atkcontroller");
         // we have to convert the atkwizardaction value in atkWizard::start().        
         if(!$this->m_wizardPanel->isFinishPanel())
         {
-          if($ATK_VARS["atkaction"] != 'admin')
+          if($this->m_node->m_action != 'admin')
           {
             $result[] = '<input type="submit" class="btn_next" name="atkwizardaction[next]" value="'.atktext("next", "atk").'">';
           }
@@ -75,7 +75,7 @@ atkimport("atk.atkcontroller");
         }
         else         
         {          
-          if($ATK_VARS["atkaction"] == 'admin')
+          if($this->m_node->m_action == 'admin')
           {          
             $result[] = '<input type="submit" class="btn_next" name="atkwizardaction[save_addnew]" value="'.atktext("save_addnew", "atk").'">';
           }            

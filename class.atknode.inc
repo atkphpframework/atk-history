@@ -1385,6 +1385,7 @@
       if ($mode == "edit")
       {
         $result["hide"][] = '<input type="hidden" name="'.$fieldprefix.'atkaction" value="update">';
+        $result["hide"][] = '<input type="hidden" name="'.$fieldprefix.'atkprevaction" value="'.$this->m_action.'">';
 
         /* nodes can define edit_values */
         $overrides = $this->edit_values($defaults);
@@ -1398,6 +1399,7 @@
       else
       {
         $result["hide"][] = '<input type="hidden" name="'.$fieldprefix.'atkaction" value="save">';
+        $result["hide"][] = '<input type="hidden" name="'.$fieldprefix.'atkprevaction" value="'.$this->m_action.'">';
 
         /* nodes can define initial values, if they don't already have values. */
         $overrides = $this->initial_values();

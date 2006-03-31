@@ -226,7 +226,7 @@
       $node = &atkGetNode($module.'.'.$nodetype);
 
       if(!is_object($node)) return "";
-
+      
       $label = $node->text($keys, NULL, "", "", true);
       if ($label=="")
       {

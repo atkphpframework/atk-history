@@ -54,6 +54,7 @@
 
       $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");
       $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
+
       $node->addStyle("style.css");
 
       $params = $node->getDefaultActionParams();
@@ -62,7 +63,7 @@
                      ' method="post" onsubmit="return globalSubmit(this)">';
 
       /* if we are on an admin page we would like to stay on the admin page after adding a new record */
-      if ($node->m_action == "admin") $formstart.=session_form(SESSION_NESTED);
+      if ($node->m_action == "admin" && count($record['atkerror']) == 0) $formstart.=session_form(SESSION_NESTED);
       else $formstart.=session_form();
             
       $controller = &$node->getController();

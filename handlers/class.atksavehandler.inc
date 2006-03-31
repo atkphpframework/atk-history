@@ -113,18 +113,17 @@
      */
     function renderAddPage($record)
     {
-      atk_var_dump(atkGetPostVar(), "postvars");
-      
-      $sessionMgr = atkGetSessionManager();
-      $atkaction = $sessionMgr->getStackValue("atkaction", atkGetPostVar("atkpreviouslevel"));
+      $atkaction = atkGetPostVar("atkprevaction");
+      if(!isset($atkaction)) $atkaction='add';
       
       $this->m_action=$atkaction;
       $this->m_node->m_action = $atkaction;
 
       $page = &$this->getPage();
       $handler = &$this->m_node->getHandler($this->m_node->m_action);
+      //$handler->m_action = $this->m_node->m_action;
       atkdebug("atkSaveHandler::renderAddPage() " . $this->m_node->m_action);
-      $invoke = ($this->m_node->m_action=='admin' ? "adminPage" : "addPage");
+      $invoke = ($this->m_node->m_action=='admin' ? "action_admin" : "addPage");
       $page->addContent($this->m_node->renderActionPage($this->m_node->m_action, $handler->invoke($invoke, $record)));
     }
 
