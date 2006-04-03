@@ -57,7 +57,12 @@
       {
         $menu .= $this->getMenuItem($menuitem, "    ");
       }
-      $menu.="    <li><a href='app.php?atklogout=1'>".atktext('logout')."</a></li>\n";
+      
+      if (atkconfig("menu_logout_link"))
+      {
+        $menu.="    <li><a href='app.php?atklogout=1'>".atktext('logout')."</a></li>\n";
+      }
+      
       $menu.="  </ul>\n";
 
       $menu.=$this->getFooter($atkmenutop);

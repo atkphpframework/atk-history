@@ -100,6 +100,7 @@ Changes in tomorrow branch
 * atkFileAttribute now uses more complete record for filename mangling. [Peter]
 * atkManyBoolRelation does not require atkManyToOneRelations in the 
   intermediate node anymore. [Peter]
+* Logout link in menu is now configurable. [Peter]
 
 Changed in ATK 5.5.1
 --------------------

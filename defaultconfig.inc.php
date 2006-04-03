@@ -447,6 +447,13 @@
    * @var String
    */
   $config_menu_align = "center";
+  
+  /**
+   * Auto-include logout link in menu?
+   * 
+   * @var Boolean
+   */
+  $config_menu_logout_link = true;
 
   /**
    * 0 = no   - 1 = yes
