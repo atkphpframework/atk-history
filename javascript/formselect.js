@@ -98,32 +98,58 @@ function atkSubmitMRA(name, form, target)
 
   /* no selectors?! impossible situation, bail out! */
   if (typeof(list) == 'undefined') return;
+  if (typeof(list.length) == 'undefined') return;
 
-  /* add separator for possible additional action parameters */
-  if (form.action.indexOf('&') > 0 || form.action.indexOf('?') > 0)
-    form.action += '&';
-  else form.action += '?';
-  
   /* count selectors */
   var selectorLength = 0;
-  if (typeof(list.length) == 'undefined') list = new Array(list);
+  
+  if (typeof(list.length) == 'undefined') 
+  {
+    list = new Array(list);
+  }
+  
   for (var i = 0; i < list.length; i++)
+  {
     if (list[i].type == 'hidden' || (!list[i].disabled && list[i].checked))
     {
-      form.action += 'atkselector[' + i + ']=' + list[i].value + '&';
+      var input = document.createElement('input');
+      input.setAttribute('type', 'hidden');
+      input.setAttribute('name', 'atkselector[' + i + ']');
+      input.setAttribute('value', list[i].value);
+      form.appendChild(input);    
+
       selectorLength++;
     }
+  }
 
   /* change atkaction and atkrecordlist values and submit form */
   if (selectorLength > 0)
   {
     if (form.atkaction == null)
-      form.action += 'atkaction=' + atkaction + '&';
-    else form.atkaction.value = atkaction;
+    {
+      var input = document.createElement('input');
+      input.setAttribute('type', 'hidden');
+      input.setAttribute('name', 'atkaction');      
+      input.setAttribute('value', atkaction);
+      form.appendChild(input);    
+    }
+    else 
+    {
+      form.atkaction.value = atkaction;
+    }
 
     if (form.atkrecordlist == null)
-      form.action += 'atkrecordlist=' + name + '&';
-    else form.atkrecordlist.value = name;
+    {
+      var input = document.createElement('input');
+      input.setAttribute('type', 'hidden');
+      input.setAttribute('name', 'atkrecordlist');      
+      input.setAttribute('value', name);
+      form.appendChild(input);    
+    }
+    else 
+    {
+      form.atkrecordlist.value = name;
+    }
     
     globalSubmit(form);
     form.submit();
