@@ -39,6 +39,31 @@
   {
     var $m_cols=3;
 
+    function _getSelectableRecords($record=array(), $mode="") 	 
+    { 	 
+      $method = $this->fieldName()."_selection"; 	 
+      if (method_exists($this->m_ownerInstance, $method)) 	 
+       return $this->m_ownerInstance->$method($record, $mode); 	 
+      else return $this->getSelectableRecords($record, $mode); 	 
+    } 	 
+    
+    function getSelectableRecords($record=array(), $mode="",$force=false) 	 
+    { 	 
+      if ($this->createDestination()) 	 
+      { 	 
+        if ($this->m_destinationFilter!="") 	 
+        { 	 
+         atkimport("atk.utils.atkstringparser"); 	 
+         $parser = new atkStringParser($this->m_destinationFilter); 	 
+         $filter = $parser->parse($record); 	 
+         $this->m_destInstance->addFilter($filter); 	 
+        } 	 
+        
+        return $this->m_destInstance->selectDb("","","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey)); 	 
+      } 	     
+      return array(); 	 
+    }
+    
     /**
      * Return a piece of html code to edit the attribute
      * @param $record Current record
@@ -65,15 +90,8 @@
         $selectedPk[] = $newselected;
        }
 
-      $filter = "";
-      if ($this->m_destinationFilter!="")
-      {
-        $parser = new atkStringParser($this->m_destinationFilter);
-        $filter = $parser->parse($record);
-      }
-      // now select all records
-      $recordset = $this->m_destInstance->selectDb($filter);
-
+      $recordset = $this->_getSelectableRecords($record, $mode);
+      
       $page = &atkPage::getInstance();
       $page->register_script(atkconfig("atkroot")."atk/javascript/class.atkprofileattribute.js.php");
 
