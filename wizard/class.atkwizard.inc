@@ -73,6 +73,9 @@
      */
     var $m_returnOutput;
     
+    
+    var $m_page_flags = HTML_ALL;
+    
     /**
      * We use a reference to ourselfs because we pass data to the wizardpanel
      * which has a reference to its wizard parent.

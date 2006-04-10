@@ -75,7 +75,7 @@
 
       $ui = &$this->m_node->getUi();
       $page = &$this->m_node->getPage();
-      $screen = $page->render(atktext('app_shorttitle')." - ".$ui->title($this->m_node->m_module, $this->m_node->m_type,$this->m_node->m_postvars['atkaction']), $fullpage);
+      $screen = $page->render(atktext('app_shorttitle')." - ".$ui->title($this->m_node->m_module, $this->m_node->m_type, $this->m_node->m_postvars['atkaction']), $fullpage);
 
       if(!$this->m_return_output)
       {
@@ -94,7 +94,6 @@
         atkdebug("atkController::dispatch Return output ");
         return $screen;
       }
-
     }
 
     /**

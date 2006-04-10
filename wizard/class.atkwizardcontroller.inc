@@ -32,6 +32,8 @@ atkimport("atk.atkcontroller");
   {
     var $m_wizardPanel = null;
     
+    var $m_page_flags = HTML_ALL;
+    
     function atkWizardController(&$node, &$wizardPanel)
     {
       atkdebug("atkWizardController::constructor() PanelName: " .$wizardPanel->getPanelName()) ;
@@ -41,6 +43,54 @@ atkimport("atk.atkcontroller");
       $this->m_wizardPanel = &$wizardPanel;      
     }
 
+        /**
+     * This is the wrapper method for all http requests on a node.
+     *
+     * The method looks at the atkaction from the postvars and determines what
+     * should be done. If possible, it instantiates actionHandlers for
+     * handling the actual action.
+     *
+     * @param array $postvars The request variables for the node.
+     * @param boolean $fullpage If true (default), the dispatch function
+     *                          renders a complete html page, including
+     *                          <html><head><body> etc. If you set this to
+     *                          false, plain output is generated. Warning: If
+     *                          you set this to false, you are responsible for
+     *                          loading all the required scripts, stylesheets
+     *                          etc. (When $fullpage is true, these are
+     *                          automatically included in the page header.
+     */
+    function dispatch($postvars, $fullpage=true)
+    {
+      // Use invoke to be backwards compatible with overrides 
+      // of loadDispatchPage in atknode.
+      $this->invoke("loadDispatchPage", $postvars);
+      //$this->loadDispatchPage($postvars);
+
+      $ui = &$this->m_node->getUi();
+      $page = &$this->m_node->getPage();
+      atkdebug("atkWizardController::dispatch() flags" . $this->m_page_flags);
+      $screen = $page->render(atktext('app_shorttitle')." - ".$ui->title($this->m_node->m_module, $this->m_node->m_type, $this->m_node->m_postvars['atkaction']), $this->m_page_flags);
+
+      if(!$this->m_return_output)
+      {
+        $output = &atkOutput::getInstance();
+        $output->output($screen);
+      }
+
+      // This is the end of all things for this page..
+      // so we clean up some resources..
+      $db = &$this->m_node->getDb();
+      if (is_object($db)) $db->disconnect();
+      atkdebug("disconnected from the database");
+      
+      if($this->m_return_output)
+      {
+        atkdebug("atkController::dispatch Return output ");
+        return $screen;
+      }
+    }
+    
     /**
      * Returns the form buttons for a certain page.
      *
@@ -93,6 +143,13 @@ atkimport("atk.atkcontroller");
       return $result;
     }    
     
+    function setPageFlags($flag)
+    {
+      $this->m_page_flags = $flag;
+    }
+    
   }
+  
+  
 
 ?>

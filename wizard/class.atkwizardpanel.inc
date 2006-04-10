@@ -149,10 +149,15 @@ atkimport("atk.wizard.atkwizardcontroller");
         //Add postvars to node manually 
         $this->m_node->m_postvars = atkGetPostVar();
         
+        
         //All nodes should return the output and not try to fill the screen themselves
         $controller = &$this->m_node->getController();
         $controller->setReturnOutput(true);
         atkdebug("atkController m_return_output: " . ($controller->m_return_output ? "TRUE" : "False"));
+        
+        //We set how we want the atk page to be returned
+        atkdebug("getPanelNode flags" . $this->m_wizard->m_page_flags);
+        $controller->setPageFlags($this->m_wizard->m_page_flags);
 
       }
       return $this->m_node;  
