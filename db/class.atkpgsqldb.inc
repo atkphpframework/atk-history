@@ -116,6 +116,7 @@
         }
 
         /* query database */
+        $error=false;
         $this->m_query_id = @pg_exec($this->m_link_id, $query) or $error = true;
 
         $this->m_row = 0;
@@ -139,7 +140,7 @@
     function next_record()
     {
       /* goto next record */
-      $this->m_record = @pg_fetch_array($this->m_query_id, $this->m_row);
+      $this->m_record = @pg_fetch_array($this->m_query_id, $this->m_row, PGSQL_ASSOC|atkconfig("pgsqlfetchmode"));
       $this->m_row++;
 
       /* are we there? */
@@ -269,11 +270,12 @@
         if (empty($id))
         {
           /* create sequence */
-          $query = "CREATE SEQUENCE '".$sequencename."'";
+          $query = "CREATE SEQUENCE ".$sequencename;
           $id = @pg_exec($this->m_link_id, $query);
 
           /* try again */
           $query = "SELECT nextval('".$sequencename."') AS nextid";
+
           $id = @pg_exec($this->m_link_id, $query) or $this->halt("cannot get nextval() of sequence '$sequencename'");
 
           /* empty? */

@@ -2,7 +2,7 @@
   /**
    * This file is part of the Achievo ATK distribution.
    * Detailed copyright and licensing information can be found
-   * in the doc/COPYRIGHT and doc/LICENSE files which should be 
+   * in the doc/COPYRIGHT and doc/LICENSE files which should be
    * included in the distribution.
    *
    * @package atk
@@ -15,7 +15,9 @@
    * @version $Revision$
    * $Id$
    */
-   atkimport("atk.relations.atkrelation");   
+
+   /** @internal base include */
+   atkimport("atk.relations.atkrelation");
 
   /**
    * Many to many relation. Should not be used directly.
@@ -30,7 +32,7 @@
    * @package atk
    * @subpackage relations
    *
-   */ 
+   */
   class atkManyToManyRelation extends atkRelation
   {
     var $m_localKey = "";
@@ -45,7 +47,7 @@
      *                     intermediairy node. The intermediairy node is
      *                     assumed to have 2 attributes that are named
      *                     after the nodes at both ends of the relation.
-     *                     For example, if node 'project' has a M2M relation 
+     *                     For example, if node 'project' has a M2M relation
      *                     with 'activity', then the intermediairy node
      *                     'project_activity' is assumed to have an attribute
      *                     named 'project' and one that is named 'activity'.
@@ -59,10 +61,7 @@
     {
       $this->m_link = $link;
       $this->atkRelation($name, $destination, $flags|AF_CASCADE_DELETE);
-
-      $this->m_localKey = substr (strrchr ($this->m_owner, '.'), 1 );
-      $this->m_remoteKey = substr (strrchr ($this->m_destination, '.'), 1 );
-    }        
+    }
 
     /**
      * Create instance of the intermediairy link node.
@@ -96,10 +95,13 @@
      */
     function getLocalKey()
     {
-      if ($this->m_localKey=="") return $this->m_owner;
+      if ($this->m_localKey=="")
+      {
+        $this->m_localKey = $this->determineKeyName($this->m_owner);
+      }
       return $this->m_localKey;
     }
-    
+
     /**
      * Change the name of the attribute of the intermediairy node that points
      * to the master node.
@@ -117,10 +119,42 @@
      */
     function getRemoteKey()
     {
-      if ($this->m_remoteKey=="") return $this->m_destination;
+      if ($this->m_remoteKey=="")
+      {
+        list($module, $nodename) = explode(".", $this->m_destination);
+        $this->m_remoteKey = $this->determineKeyName($nodename);
+      }
       return $this->m_remoteKey;
     }
-    
+
+    /**
+     * Determine the name of the foreign key based on the name of the
+     *  relation.
+     *
+     * @param String $name the name of the relation
+     * @return the probable name of the foreign key
+     */
+    function determineKeyName($name)
+    {
+      if ($this->createLink())
+      {
+        if (isset($this->m_linkInstance->m_attribList[$name]))
+        {
+          // there's an attribute with the same name as the role.
+          return $name;
+        }
+        else
+        {
+          // find out if there's a field with the same name with _id appended to it
+          if (isset($this->m_linkInstance->m_attribList[$name."_id"]))
+          {
+            return $name."_id";
+          }
+        }
+      }
+      return $name;
+    }
+
     /**
      * Change the name of the attribute of the intermediairy node that points
      * to the node on the other side of the relation.
@@ -202,6 +236,158 @@
         return $rel->deleteDb($this->m_linkInstance->m_table.".".$this->getLocalKey()."=".$record[$this->m_ownerInstance->primaryKeyField()]);
       }
       return false;
+    }
+
+    /**
+     * Stores the values in the database
+     * @param $notused Not used
+     * @param $record Current record
+     */
+    function store($notused, $record, $mode)
+    {
+      $this->createLink();
+      $this->createDestination();
+      $rel = &$this->m_linkInstance;
+
+      // Find items that are checked.
+      $checked = array();
+      for ($i=0;$i<count($record[$this->fieldName()]);$i++)
+      {
+        if(is_array($record[$this->fieldName()][$i][$this->getRemoteKey()]))
+          $checked[] = $record[$this->fieldName()][$i][$this->getRemoteKey()][$this->m_destInstance->primaryKeyField()];
+        else
+          $checked[] = $record[$this->fieldName()][$i][$this->getRemoteKey()];
+
+      }
+
+      if(count($checked) > 0)
+        $filter = "NOT IN ('".implode("','",$checked)."')";
+
+      if (is_object($rel) && $rel->deleteDb($this->m_linkInstance->m_table.'.'.$this->getLocalKey()."='".$record[$this->m_ownerInstance->primaryKeyField()]."' AND ".$this->m_linkInstance->m_table.'.'.$this->getRemoteKey()." $filter"))
+      {
+        for ($i=0;$i<count($record[$this->fieldName()]);$i++)
+        {
+          // magical stuff..
+          $newrecord = $this->m_destInstance->initial_values();
+          $newrecord[$this->getRemoteKey()][$this->m_destInstance->primaryKeyField()] = $record[$this->fieldName()][$i][$this->getRemoteKey()];
+
+          $newrecord[$this->getLocalKey()][$this->m_ownerInstance->primaryKeyField()] = $record[$this->m_ownerInstance->primaryKeyField()];
+
+          // First check if the record does not exist yet.
+          /* @var $rel atkNode */
+          $existing = $rel->selectDb($rel->primaryKey($newrecord), "", "", "", $rel->m_primaryKey);
+          if (!count($existing))
+          {
+            if (!$rel->addDb($newrecord, true, $mode))
+            {
+              return false;
+            }
+          }
+        }
+        return true;
+      }
+      return false;
+    }
+
+    /**
+     * Check if the attribute is empty
+     * @return true if it's empty
+     */
+    function isEmpty($postvars)
+    {
+      return (!is_array($postvars[$this->fieldName()]) || count($postvars[$this->fieldName()])==0);
+    }
+
+
+    /**
+     * Returns a piece of html code for hiding this attribute in an HTML form,
+     * while still posting its value. (<input type="hidden">)
+     *
+     * @param array $record The record that holds the value for this attribute
+     * @param String $fieldprefix The fieldprefix to put in front of the name
+     *                            of any html form element for this attribute.
+     * @return String A piece of htmlcode with hidden form elements that post
+     *                This attribute's value without showing it.
+     */
+    function hide($record="", $fieldprefix="")
+    {
+      if(is_array($record[$this->fieldName()]))
+      {
+        for ($i=0;$i<count($this->m_values);$i++)
+        {
+          if(in_array($this->m_values[$i],$record[$this->fieldName()]))
+          $result .= '<input type="hidden" name="'.$fieldprefix.$this->fieldName().'[]"
+                      value="'.$this->m_values[$i].'">';
+        }
+      } else return parent::hide($record,$fieldprefix);
+      return $result;
+    }
+
+    /**
+     * Returns a piece of html code that can be used in a form to search
+     * @param $record Record
+     * @param $size Size of the editbox
+     * @param $maxsize Maxsize of the editbox
+     * @return Piece of html code that can  be used in a form to edit this
+     */
+    function search($record="", $extended=false, $fieldprefix="")
+    {
+      $this->createDestination();
+
+      // now select all records
+      $recordset = $this->m_destInstance->selectDb();
+
+        $result = '<select ';
+        if ($extended)
+        {
+          $result.='multiple size="'.min(5,count($recordset)+1).'"';
+        }
+
+        if (strstr($fieldprefix,"]["))
+          $result.='name="atksearch['. $fieldprefix.$this->fieldName().'][]">';
+        else
+          $result.='name="atksearch'.$fieldprefix.'['. $this->fieldName().'][]">';
+
+        $pkfield = $this->m_destInstance->primaryKeyField();
+
+        $result.= '<option value="">'.atktext("search_all", "atk");
+
+        for ($i=0;$i<count($recordset);$i++)
+        {
+          $pk = $recordset[$i][$pkfield];
+          if (atk_in_array($pk, $record[$this->fieldName()])) $sel = "selected"; else $sel = "";
+          $result.= '<option value="'.$pk.'" '.$sel.'>'.$this->m_destInstance->descriptor($recordset[$i]);
+        }
+        $result.='</select>';
+        return $result;
+    }
+
+    /**
+     * Creates an search condition for a given search value
+     * @param $table the table name
+     * @param $value the search value
+     * @return a piece of the SQL where clause
+     */
+    function searchCondition(&$query, $table, $value, $searchmode)
+    {
+      // We only support 'exact' matches.
+      // But you can select more than one value, which we search using the IN() statement,
+      // which should work in any ansi compatible database.
+      if (is_array($value) && count($value)>0 && $value[0]!="") // This last condition is for when the user selected the 'search all' option, in which case, we don't add conditions at all.
+      {
+    		$this->createLink();
+    		$query->addJoin($this->m_linkInstance->m_table, $this->fieldName(), $table.".".$this->m_ownerInstance->primaryKeyField()."=".$this->fieldName().".".$this->getLocalKey(),FALSE );
+    		$query->setDistinct(TRUE);
+
+        if (count($value)==1) // exactly one value
+        {
+          $query->addSearchCondition($query->exactCondition($this->fieldName().".".$this->getRemoteKey(),escapeSQL($value[0])));
+        }
+        else // search for more values using IN()
+        {
+          $query->addSearchCondition($this->fieldName().".".$this->getRemoteKey()." IN ('".implode("','",$value)."')");
+        }
+      }
     }
 
   }

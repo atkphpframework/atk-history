@@ -138,6 +138,13 @@
    * @var int
    */
   $config_mysqlfetchmode = MYSQL_ASSOC;
+  
+  /**
+   * Backwardscompatibility setting. Set this to PGSQL_BOTH if your
+   * software relies on numerical indexes (WHICH IS A BAD IDEA!!)
+   * @var int
+   */
+  $config_pgsqlfetchmode = PGSQL_ACCOC;
 
   /********************************** SECURITY *******************************/
 
@@ -259,6 +266,12 @@
    */
   $config_auth_passwordfield = "password";
 
+  /**
+   *
+   * @var String
+   */
+  $config_auth_languagefield   = "lng";
+  
   /**
    *
    * @var String
@@ -554,6 +567,23 @@
    * @var String
    */
   $config_atklangcheckmodule = 2;
+  
+  /**
+   * Where ATK should look for it's supported languages
+   * 
+   * In your own application you should probably make this the module
+   * with the most language translations.
+   * Leaving this empty will turn off functionality where we check
+   * for the user language in the browser or in the user session and will
+   * make sure the application is always presented in the default language.
+   * This config var also accepts 2 'special' modules:
+   * - atk (making it use the languages of ATK)
+   * - langoverrides (making it use the language overrides directory)
+   * 
+   * @var String
+   */
+   //$config_supported_languages_module = $config_atkroot.'atk/languages/';
+   $config_supported_languages_module = '';
 
   /********************* TEMPLATE ENGINE CONFIGURATION ***********************/
 
