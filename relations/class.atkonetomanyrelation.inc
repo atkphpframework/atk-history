@@ -233,7 +233,7 @@
         {
           foreach (array_keys($this->m_ownerInstance->m_postvars[$this->fieldName()]) as $fieldname)
           {
-            if (!in_array($fieldname,array("atkaction","atknodetype","atkprimkey")))
+            if (!in_array($fieldname,array("atkaction","atknodetype","atkprimkey","atkprevaction")))
             {
               $attribute = &$this->m_destInstance->getAttribute($fieldname);
               if (is_object($attribute))

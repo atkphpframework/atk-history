@@ -93,6 +93,10 @@ Changed in ATK 5.5.1
 * Function dispatch_url now checks if parameter $atkaction contains a value.
   [Maurice]
 * Removed atksecure from colorpicker.inc. [Lineke]  
++ Added the ability to influence the html sections to render in the atkPage
+  class, through the member var m_page_flags in atkWizardController. [Maurice]
+* Added atkprevaction check to _checkIntegratedSave method in 
+  atkonetomanyrelation. [Maurice]
 
 Changes in ATK 5.5
 ------------------
