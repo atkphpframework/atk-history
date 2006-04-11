@@ -96,7 +96,9 @@ Changed in ATK 5.5.1
 + Added the ability to influence the html sections to render in the atkPage
   class, through the member var m_page_flags in atkWizardController. [Maurice]
 * Added atkprevaction check to _checkIntegratedSave method in 
-  atkonetomanyrelation. [Maurice]
+  atkonetomanyrelation which fixes an error when using the AF_ONETOMANY_EMBED
+  flag which assumes that postvars other than atkaction, atknodetype,
+  atkprimkey are atkattributes. [Maurice]
 
 Changes in ATK 5.5
 ------------------
