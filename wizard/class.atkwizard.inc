@@ -134,12 +134,12 @@
     
     function dispatch($atkWizardaction)
     {
-      if($atkWizardaction == 'next' || $atkWizardaction == 'save_next')
+      if($atkWizardaction == 'next' || $atkWizardaction == 'saveandnext')
       {        
         $wizardPanel = $this->m_panelList[$this->m_currentPanelIndex+1];        
         $this->setHiddenParam("atkwizardpanelindex", $this->m_currentPanelIndex+1);         
       }
-      elseif($atkWizardaction == 'save_addnew')
+      elseif($atkWizardaction == 'saveandaddnew')
       {        
         //We saved the panel but we want to show the same panel again.
         $wizardPanel = $this->m_panelList[$this->m_currentPanelIndex];        

@@ -119,15 +119,15 @@ atkimport("atk.atkcontroller");
           }
           else 
           {
-            $result[] = '<input type="submit" class="btn_next" name="atkwizardaction[save_addnew]" value="'.atktext("save_addnew", "atk").'">';
-            $result[] = '<input type="submit" class="btn_next" name="atkwizardaction[save_next]" value="'.atktext("save_next", "atk").'">';
+            $result[] = '<input type="submit" class="btn_next" name="atkwizardaction[saveandaddnew]" value="'.atktext("saveandaddnew", "atk").'">';
+            $result[] = '<input type="submit" class="btn_next" name="atkwizardaction[saveandnext]" value="'.atktext("saveandnext", "atk").'">';
           }
         }
         else         
         {          
           if($this->m_node->m_action == 'admin')
           {          
-            $result[] = '<input type="submit" class="btn_next" name="atkwizardaction[save_addnew]" value="'.atktext("save_addnew", "atk").'">';
+            $result[] = '<input type="submit" class="btn_next" name="atkwizardaction[saveandaddnew]" value="'.atktext("saveandaddnew", "atk").'">';
           }            
           $result[] = '<input type="submit" class="btn_next" name="atkwizardaction[finish]" value="'.atktext("finish", "atk").'">';
         }

@@ -99,6 +99,7 @@ Changed in ATK 5.5.1
   atkonetomanyrelation which fixes an error when using the AF_ONETOMANY_EMBED
   flag which assumes that postvars other than atkaction, atknodetype,
   atkprimkey are atkattributes. [Maurice]
++ Added 'saveandandnew', 'finish' and 'next' to dutch language file
 
 Changes in ATK 5.5
 ------------------
