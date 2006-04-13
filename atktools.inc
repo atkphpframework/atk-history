@@ -516,6 +516,7 @@
     global $g_stickyurl;
 
     $newlevel = session_level($sessionstatus, $levelskip);
+    atkdebug("newlevel ". $newlevel. " atklevel() ". atklevel(). " status ".$sessionstatus);
     $vars="";
    // atklevel is already set manually, we don't append it..
     if ($newlevel!=0 && !strpos($url,"atklevel=")>0)
@@ -1491,12 +1492,19 @@
   function dispatch_url($node, $action, $params="",$phpfile='dispatch.php')
   {
     /* create url */
-    $url = $phpfile."?atknodetype=".$node.($action!="" ? "&atkaction=".$action : "");
+    $url = $phpfile;
+    if($node!="")
+      array_unshift($params, array("atknodetype"=>$node));
+    if($action!="") 
+      array_unshift($params, array("atkaction"=>$action));
     if ($params!=""&&is_array($params))
     {
-      foreach ($params as $key => $value)
+      
+      $first = true;
+      foreach($params as $key => $value)
       {
-        $url .= "&$key=".rawurlencode($value);
+        $url .= ($first ? "?" : "&") . $key."=".rawurlencode($value);
+        $first = false;
       }
     }
 

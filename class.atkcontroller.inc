@@ -107,6 +107,8 @@
 
       $this->m_node->m_action = $postvars['atkaction'];
 
+      atkdebug("loaddispatchpage " . $this->m_node->m_action);
+      
       /** DIRTY HACK
           if action is something else than edit, we clear the atkformdata sessionstuff **/
       if ($this->m_node->m_action!="edit"&&$this->m_node->m_action!="add"&&$this->m_node->m_action!="admin")
@@ -116,7 +118,9 @@
       }
 
       $page = &$this->m_node->getPage();
-
+      
+      atkdebug("loaddispatchpage. action:" .$this->m_node->m_action) ;
+      
       if ($this->m_node->allowed($this->m_node->m_action))
       {
         $secMgr = &atkGetSecurityManager();
@@ -228,13 +232,19 @@
     function feedbackUrl($action, $status, $record="", $message="")
     {
       if((isset($this->m_feedback[$action]) && hasFlag($this->m_feedback[$action], $status)) || $status==ACTION_FAILED)
+      {
         $vars = array("atkaction"=>"feedback", "atkfbaction"=>$action, "atkactionstatus"=>$status,"atkfbmessage"=>$message);
-      atk_var_dump($vars, "atkController::feedbackUrl()");
+        $sessionStatus = SESSION_REPLACE;
+      }
+      else
+        $sessionStatus = SESSION_BACK;
+        
+      atk_var_dump($vars, "atkController::feedbackUrl() " . $sessionStatus);
       
       $dispatch_url = $this->dispatchUrl($vars);
       atkdebug("dispatch_url " . $dispatch_url);
       
-      return (session_url($dispatch_url,SESSION_REPLACE));
+      return (session_url($dispatch_url, $sessionStatus));
     }
     
     
@@ -258,10 +268,12 @@
       elseif($this->m_php_file!="") $phpfile = $this->m_php_file;
       else $phpfile = $_SERVER["PHP_SELF"];
       
-      $dispatch_url = dispatch_url(($atknodetype=="" ? $this->m_node->atkNodeType() : $atknodetype), $vars["atkaction"], $vars, $phpfile);
+      //$dispatch_url = dispatch_url(($atknodetype=="" ? $this->m_node->atkNodeType() : $atknodetype), $vars["atkaction"], $vars, $phpfile);
+      //When $atknodetype is empty this means that we use the atknodetype from session
+      $dispatch_url = dispatch_url($atknodetype, $vars["atkaction"], $vars, $phpfile);
       atkdebug("dispatch_url " . $dispatch_url);
       
-      return (session_url($dispatch_url,SESSION_REPLACE));
+      return $dispatch_url;
       
     }        
 

@@ -100,6 +100,11 @@ Changed in ATK 5.5.1
   flag which assumes that postvars other than atkaction, atknodetype,
   atkprimkey are atkattributes. [Maurice]
 + Added 'saveandandnew', 'finish' and 'next' to dutch language file
+* Fixed bug when returning from adding a record in a manytoone relation 
+  which was caused by changes in dispatch_url function. The problem was
+  that the atknodetype was wrong. When you go one step back in your 
+  session, the sessionmgr determines what your atknodetype is. So
+  we should not post it in the url. [Maurice]
 
 Changes in ATK 5.5
 ------------------
