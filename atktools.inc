@@ -1489,14 +1489,16 @@
    * @param string $phpfile The php file to use for dispatching, defaults to dispatch.php
    * @return string url for the node with the action
    */
-  function dispatch_url($node, $action, $params="",$phpfile='dispatch.php')
+  function dispatch_url($node, $action, $params=array(),$phpfile='dispatch.php')
   {
     /* create url */
     $url = $phpfile;
+    $atkparams = array();
     if($node!="")
-      array_unshift($params, array("atknodetype"=>$node));
+      $atkparams["atknodetype"] = $node;
     if($action!="") 
-      array_unshift($params, array("atkaction"=>$action));
+      $atkparams["atkaction"] = $action;
+    $params = array_merge($atkparams, $params);
     if ($params!=""&&is_array($params))
     {
       

@@ -105,6 +105,7 @@ Changed in ATK 5.5.1
   that the atknodetype was wrong. When you go one step back in your 
   session, the sessionmgr determines what your atknodetype is. So
   we should not post it in the url. [Maurice]
+* Better inplementation of dispatch_url function. [Maurice]
 
 Changes in ATK 5.5
 ------------------
