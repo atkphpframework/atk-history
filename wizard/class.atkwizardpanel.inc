@@ -117,12 +117,19 @@ atkimport("atk.wizard.atkwizardcontroller");
       if (!is_object($this->m_node))
       {
         atkdebug("atkWizardPanel::getPanelNode() create node. Node name: " . $this->m_nodeName);
+
         $this->m_node = &getNode($this->m_nodeName);          
         if(!is_object($this->m_node)) 
         {
           atkerror("atkWizardPanel::getPanelNode() Node could not be created. Node name: " . $this->m_nodeName);
           return;
         }
+
+        //Set wizard specific controller
+        atkdebug("atkWizardPanel::getPanelNode() Register controller for. Node: " . getNodeType($this->m_nodeName));
+        registerNodeController(getNodeType($this->m_nodeName), new atkWizardController($this->m_node, $this));
+
+
         //Add listeners to node
         for($i=0, $_i=count($this->m_listeners); $i<$_i; $i++)
         {
@@ -140,11 +147,7 @@ atkimport("atk.wizard.atkwizardcontroller");
           $handler = new $handlerName();
           registerNodeHandler($this->m_node->m_type, $handlerAction, $handler);
         }
-        
-        //Set wizard specific controller
-        atkdebug("atkWizardPanel::getPanelNode() Register controller for. Node: " . getNodeType($this->m_nodeName));
-        registerNodeController(getNodeType($this->m_nodeName), new atkWizardController($this->m_node, $this));
-        
+                
         //todo: not sure if this needed
         //Add postvars to node manually 
         $this->m_node->m_postvars = atkGetPostVar();

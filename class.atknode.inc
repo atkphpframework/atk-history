@@ -3326,6 +3326,7 @@
      */
     function allowed($action, $record="")
     {
+      atkdebug("atknode.allowed action:" .$action) ;
       $secMgr = &atkGetSecurityManager();
       if (empty($this->m_securityAlias))
       {
@@ -3347,7 +3348,7 @@
         list($node, $action) = explode(".", $action);
         $alias = $this->m_module.".".$node;
       }
-
+    
       return ($this->hasFlag(NF_NO_SECURITY)
               ||in_array($action, $this->m_unsecuredActions)
               || $secMgr->allowed($alias,$action)
@@ -3817,7 +3818,7 @@
         if($controller == NULL)
         {          
           atkimport("atk.atkcontroller");
-          $this->m_controller = new atkController($this);
+          $this->m_controller = new atkController(&$this);
         }
         else
         {

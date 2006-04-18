@@ -106,6 +106,8 @@ Changed in ATK 5.5.1
   session, the sessionmgr determines what your atknodetype is. So
   we should not post it in the url. [Maurice]
 * Better inplementation of dispatch_url function. [Maurice]
+* Updatehandler is now able to handle actions triggered by atkwizard buttons.
+  [Maurice]
 
 Changes in ATK 5.5
 ------------------

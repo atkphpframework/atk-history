@@ -70,7 +70,7 @@ atkimport("atk.atkcontroller");
       $ui = &$this->m_node->getUi();
       $page = &$this->m_node->getPage();
       atkdebug("atkWizardController::dispatch() flags" . $this->m_page_flags);
-      $screen = $page->render(atktext('app_shorttitle')." - ".$ui->title($this->m_node->m_module, $this->m_node->m_type, $this->m_node->m_postvars['atkaction']), $this->m_page_flags);
+      $screen = $page->render(atktext('app_shorttitle')." - ".$ui->title($this->m_node->m_module, $this->m_node->m_type, $this->m_node->m_postvars['atkaction'], true), $this->m_page_flags);
 
       if(!$this->m_return_output)
       {
@@ -135,6 +135,24 @@ atkimport("atk.atkcontroller");
         // if action is admin, we don't show the cancelbutton or the add next button
         $result[] = '<input type="submit" class="btn_cancel" name="atkwizardcancel" value="'.atktext("cancel", "atk").'">';
       }
+      elseif ($mode == "edit")
+      {
+        // We post the action as key value in de atkwizardaction var. Therefor
+        // we have to convert the atkwizardaction value in atkWizard::start().        
+        if(!$this->m_wizardPanel->isFinishPanel())
+        {
+          $result[] = '<input type="submit" class="btn_save" name="atknoclose" value="'.atktext("save", "atk").'">';
+          $result[] = '<input type="submit" class="btn_next" name="atkwizardaction[saveandnext]" value="'.atktext("saveandnext", "atk").'">';          
+        }
+        else         
+        {          
+          $result[] = '<input type="submit" class="btn_save" name="atknoclose" value="'.atktext("save", "atk").'">';
+          $result[] = '<input type="submit" class="btn_next" name="atkwizardaction[finish]" value="'.atktext("finish", "atk").'">';
+        }
+          
+        $result[] = '<input type="submit" class="btn_cancel" name="atkcancel" value="'.atktext("cancel", "atk").'">';
+      }
+
       else
       {
         $result = parent::getFormButtons($mode, $record);
