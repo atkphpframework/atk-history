@@ -843,6 +843,7 @@
     atkdebug("Warning: deprecated use of stringfields(). Use atkStringParser class instead");
     $tmp = "";
     $adding = false;
+    $fields = array();
     for ($i=0;$i<strlen($string);$i++)
     {
       if ($string[$i]=="]")
