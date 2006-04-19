@@ -88,7 +88,6 @@
          }
          else
          {
-           atkdebug("<b>filling worldcountries array</b>");
            $this->fillWorldCountriesArray();
          }
 
@@ -128,7 +127,6 @@
         foreach($this->m_country as $iso => $value)
            $tmp_array[]=$value;
       }
-      atk_var_dump($tmp_array, "<b>tmp array</b>");
       return $tmp_array;
     }
 
