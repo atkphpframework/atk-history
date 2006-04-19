@@ -6,6 +6,8 @@ Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 
 Changed in ATK 5.5.1
 --------------------
+* atkCountryAtttibute: added all europe countries to fillCountriesArray, 
+  so we can use switch 'europe'. [Nico]
 + Added atkMessageQueue for user notification messages, which can be shown
   via the atkmessages plugin. [Patrick]
 + Added atkCalculatorAttribute for adding columns with calculated values. [Ivo]
