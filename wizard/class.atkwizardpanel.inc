@@ -20,7 +20,12 @@ atkimport("atk.handlers.atkactionhandler");
 atkimport("atk.handlers.atkaddhandler");
 atkimport("atk.handlers.atksavehandler");
 atkimport("atk.wizard.atkwizardcontroller");
- 
+
+
+define(FINISH_BUTTON_DEFAULT, 1);
+define(FINISH_BUTTON_SHOW, 2);
+define(FINISH_BUTTON_DONT_SHOW, 3);
+
 /**
  * Wizardpanel which binds to a atknodes
  *
@@ -80,16 +85,16 @@ atkimport("atk.wizard.atkwizardcontroller");
     /**
      * The default atkNode action for this wizardpanel
      *
-     * @var unknown_type
+     * @var string
      */
     var $m_defaultAction;
     
     /**
-     * 
+     * Explicity set the finish button on this panel
      *
-     * @var unknown_type
+     * @var boolean
      */    
-    var $m_finishPanel = false;
+    var $m_showFinishButton = false;
     
     /**
      * atkWizardPanel constructor
@@ -103,13 +108,13 @@ atkimport("atk.wizard.atkwizardcontroller");
      * @param unknown_type $nodeName
      * @return atkWizardPanel
      */    
-    function atkWizardPanel(&$wizard, $panelName, $nodeName, $defaultAction="", $finishPanel=false)
+    function atkWizardPanel(&$wizard, $panelName, $nodeName, $defaultAction="", $finishButton=FINISH_BUTTON_DEFAULT)
     {
       $this->m_wizard = &$wizard;
       $this->m_panelName = $panelName;
       $this->m_nodeName = $nodeName;           
       $this->m_defaultAction = $defaultAction;
-      $this->m_finishPanel = $finishPanel;
+      $this->m_showFinishButton = $finishButton;
     }
     
     function getPanelNode()
@@ -225,7 +230,7 @@ atkimport("atk.wizard.atkwizardcontroller");
 	      else 
 	        $ATK_VARS['atkaction'] = $this->m_defaultAction;
 	    }
-
+	    
 	    //If atk renders the page itself the return value is empty
 	    $output = $controller->dispatch($ATK_VARS, false);
         
@@ -255,10 +260,25 @@ atkimport("atk.wizard.atkwizardcontroller");
       //else it will return an 'add form' with error messages
       return $controller->dispatch(atkGetPostVar(), false);
     }
+
+    /**
+     * Return the setting which specifies if the button
+     * should be shown, not shown or should depend on the
+     * default behaviour. Default behaviour is that the last
+     * panel in the wizard will have a finish button.
+     *
+     * @return int FINISH_BUTTON_DEFAULT
+     *             FINISH_BUTTON_SHOW
+     *             FINISH_BUTTON_DONT_SHOW
+     */    
+    function showFinishButton()
+    {
+      return $this->m_showFinishButton;
+    }
     
     function isFinishPanel()
     {
-      return $this->m_finishPanel;
+      return $this->m_wizard->isFinishPanel($this->getPanelName());
     }
 
   }   

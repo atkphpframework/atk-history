@@ -43,7 +43,7 @@ atkimport("atk.atkcontroller");
       $this->m_wizardPanel = &$wizardPanel;      
     }
 
-        /**
+    /**
      * This is the wrapper method for all http requests on a node.
      *
      * The method looks at the atkaction from the postvars and determines what
@@ -95,67 +95,64 @@ atkimport("atk.atkcontroller");
      * Returns the form buttons for a certain page.
      *
      * Can be overridden by derived classes to define custom buttons.
-     * @param String $mode The action for which the buttons are retrieved.
+     * @param String $action The action for which the buttons are retrieved.
      * @param array $record The record currently displayed/edited in the form.
      *                      This param can be used to define record specific
      *                      buttons.
      */
-    function getFormButtons($mode, $record)
+    function getFormButtons($action, $record)
     {
-      //global $ATK_VARS;
-      
-      atkdebug("atkWizardController::getFormButtons()");
       $result = array();
-
-      if ($mode == "add")
+      
+      if ($this->m_wizardPanel->m_wizard->m_mode == WIZARD_MODE_ADD)
       {
+        
         // We post the action as key value in de atkwizardaction var. Therefor
-        // we have to convert the atkwizardaction value in atkWizard::start().        
-        if(!$this->m_wizardPanel->isFinishPanel())
+        // we have to convert the atkwizardaction value in atkWizard::start().                
+        if($this->m_node->m_action != 'admin')
         {
-          if($this->m_node->m_action != 'admin')
-          {
-            $result[] = '<input type="submit" class="btn_next" name="atkwizardaction[next]" value="'.atktext("next", "atk").'">';
-          }
+          //if we explicitly don't want the finish button we set a hidden var to post the atkwizardaction
+          atkdebug("FINISH_BUTTON ".$this->m_wizardPanel->showFinishButton());
+          atkdebug("FINISH_BUTTON_DONT_SHOW ".($this->m_wizardPanel->showFinishButton() == FINISH_BUTTON_DONT_SHOW ? "TRUE" : "FALSE") ." isfinishpanel " . ($this->m_wizardPanel->isFinishPanel() ? "TRUE" : "FALSE"));
+          if(($this->m_wizardPanel->showFinishButton() == FINISH_BUTTON_DONT_SHOW) && $this->m_wizardPanel->isFinishPanel())
+            $atkwizardaction = "finish";
           else 
-          {
-            $result[] = '<input type="submit" class="btn_next" name="atkwizardaction[saveandaddnew]" value="'.atktext("saveandaddnew", "atk").'">';
-            $result[] = '<input type="submit" class="btn_next" name="atkwizardaction[saveandnext]" value="'.atktext("saveandnext", "atk").'">';
-          }
-        }
-        else         
-        {          
-          if($this->m_node->m_action == 'admin')
-          {          
-            $result[] = '<input type="submit" class="btn_next" name="atkwizardaction[saveandaddnew]" value="'.atktext("saveandaddnew", "atk").'">';
-          }            
-          $result[] = '<input type="submit" class="btn_next" name="atkwizardaction[finish]" value="'.atktext("finish", "atk").'">';
-        }
+            $atkwizardaction = "next";
           
-        // if action is admin, we don't show the cancelbutton or the add next button
+          if($this->showFinishButton())
+            $result[] = '<input type="submit" class="btn_next" name="atkwizardaction[finish]" value="'.atktext("finish", "atk").'">';
+          else 
+            $result[] = '<input type="submit" class="btn_next" name="atkwizardaction['.$atkwizardaction.']" value="'.atktext("next", "atk").'">';
+        }
+        else 
+        {
+          //if we explicitly don't want the finish button we set a hidden var to post the atkwizardaction
+          if($this->m_wizardPanel->showFinishButton() == FINISH_BUTTON_DONT_SHOW && $this->m_wizardPanel->isFinishPanel())
+            $atkwizardaction = "finish";
+          else 
+            $atkwizardaction = "saveandnext";
+          
+          $result[] = '<input type="submit" class="btn_next" name="atkwizardaction[saveandaddnew]" value="'.atktext("saveandaddnew", "atk").'">';
+          if($this->showFinishButton())
+            $result[] = '<input type="submit" class="btn_next" name="atkwizardaction[finish]" value="'.atktext("finish", "atk").'">';
+          else
+            $result[] = '<input type="submit" class="btn_next" name="atkwizardaction['.$atkwizardaction.']" value="'.atktext("saveandnext", "atk").'">';
+        }
+        
         $result[] = '<input type="submit" class="btn_cancel" name="atkwizardcancel" value="'.atktext("cancel", "atk").'">';
       }
-      elseif ($mode == "edit")
+      elseif ($this->m_wizardPanel->m_wizard->m_mode == WIZARD_MODE_EDIT)
       {
         // We post the action as key value in de atkwizardaction var. Therefor
         // we have to convert the atkwizardaction value in atkWizard::start().        
-        if(!$this->m_wizardPanel->isFinishPanel())
-        {
-          $result[] = '<input type="submit" class="btn_save" name="atknoclose" value="'.atktext("save", "atk").'">';
-          $result[] = '<input type="submit" class="btn_next" name="atkwizardaction[saveandnext]" value="'.atktext("saveandnext", "atk").'">';          
-        }
-        else         
-        {          
-          $result[] = '<input type="submit" class="btn_save" name="atknoclose" value="'.atktext("save", "atk").'">';
-          $result[] = '<input type="submit" class="btn_next" name="atkwizardaction[finish]" value="'.atktext("finish", "atk").'">';
-        }
-          
+        $result[] = '<input type="submit" class="btn_save" name="atknoclose" value="'.atktext("save", "atk").'">';
+        //$result[] = '<input type="submit" class="btn_next" name="atkwizardaction[saveandnext]" value="'.atktext("saveandnext", "atk").'">';                //$result[] = '<input type="submit" class="btn_save" name="atknoclose" value="'.atktext("save", "atk").'">';        
+        $result[] = '<input type="submit" class="btn_next" name="atkwizardaction[finish]" value="'.atktext("finish", "atk").'">';          
         $result[] = '<input type="submit" class="btn_cancel" name="atkcancel" value="'.atktext("cancel", "atk").'">';
       }
-
       else
       {
-        $result = parent::getFormButtons($mode, $record);
+        $result = parent::getFormButtons($action, $record);
       }
 
       return $result;
@@ -165,6 +162,15 @@ atkimport("atk.atkcontroller");
     {
       $this->m_page_flags = $flag;
     }
+
+    /**
+     * Determine if this panel should show a finish button
+     */
+    function showFinishButton()
+    {
+      return (($this->m_wizardPanel->showFinishButton() == FINISH_BUTTON_SHOW) ||
+               ($this->m_wizardPanel->showFinishButton() == FINISH_BUTTON_DEFAULT && $this->m_wizardPanel->isFinishPanel()));
+    }    
     
   }
   

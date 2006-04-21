@@ -95,16 +95,6 @@
         $this->m_node->redirect($location);
       }
     }
-    
-    /*
-    function renderAddPage($record)
-    {
-      $this->m_action="add";
-      $this->m_node->m_action = "add";
-      $page = &$this->getPage();
-      $addhandler = &$this->m_node->getHandler("add");
-      $page->addContent($this->m_node->renderActionPage("add", $addhandler->invoke("addPage", $record)));
-    }*/
 
     /**
      * Render add or admin page again

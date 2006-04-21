@@ -110,6 +110,13 @@ Changed in ATK 5.5.1
 * Better inplementation of dispatch_url function. [Maurice]
 * Updatehandler is now able to handle actions triggered by atkwizard buttons.
   [Maurice]
++ Added m_mode member var to atkWizard. This member var is used by 
+  atkWizardController to determine which buttons to show on forms. [Maurice]
++ Added method isFinishPanel($name) to atkWizard which determines it the given
+  panel is the last one and thus should send the atkwizardaction 'finish'.
+  [Maurice]
++ Added method showFinishButton to atkWizardPanel to explicitly set the finish
+  button for the wizard panel. [Maurice]
 
 Changes in ATK 5.5
 ------------------

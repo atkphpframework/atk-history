@@ -18,6 +18,9 @@
   
  atkimport("atk.wizard.atkwizardactionloader");
  
+ define("WIZARD_MODE_ADD"     , 1);
+ define("WIZARD_MODE_EDIT"    , 2);
+ 
 /**
  * atkWizard class which is capable of using atknodes
  *
@@ -39,6 +42,15 @@
      */
     var $m_panelList = array();
     var $m_panelIndex = array();
+
+    /**
+     * The mode in which the wizard is run (add/edit).
+     * Default is add
+     *      
+     * @access private
+     * @var array
+     */
+    var $m_mode = WIZARD_MODE_ADD;
     
     /**
      * Key-value array which will be added as hidden value in edit/add forms
@@ -46,7 +58,6 @@
      * @access private
      * @var array
      */
-
     var $m_hiddenParams = array();
     
     /**
@@ -91,8 +102,9 @@
      * @param boolean $returnOutput Indicate if this wizard should return output or not
      * @return atkWizard
      */    
-    function atkWizard($returnOutput=false)
+    function atkWizard($mode = WIZARD_MODE_ADD, $returnOutput=false)
     {
+      $this->m_mode = $mode;
       $this->m_currentPanelIndex = atkGetPostVar("atkwizardpanelindex");      
       $this->m_returnOutput = $returnOutput;
       $this->m_self = &$this;
@@ -164,7 +176,7 @@
       $this->m_self->setRedirectParam("atkwizardaction", $atkwizardaction);
       
       $currentWizardPanel = $this->getCurrentPanel();
-      atkdebug("atkWizard::save panel: " . $currentWizardPanel->getPanelName());
+      atkdebug("atkWizard::save panel: " . $currentWizardPanel->getPanelName() . " \$atkwizardaction ". $atkwizardaction);
       return $currentWizardPanel->save();
     }
     
@@ -208,7 +220,23 @@
         return NULL;
       }
       return $currentWizardPanel;
+    }   
+    
+    /**
+     * Return if this panel is the last one in the wizard
+     *
+     * @param unknown_type $name
+     * @return unknown
+     */
+    
+    function isFinishPanel($name)
+    {
+      $count = count($this->m_panelList);
+      atkdebug("count panellist " . ($count-1) . " panelIndex ". $this->m_panelIndex[$name]);
+      if (!isset($this->m_panelIndex[$name])) return false;
+      return (($count-1) == $this->m_panelIndex[$name]);
     }
+
     
   }
 ?>
