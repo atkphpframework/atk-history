@@ -3527,9 +3527,24 @@
      */
     function &getHandler($action)
     {
-      atkimport("atk.handlers.atkactionhandler");
-      $handler = &atkActionHandler::getDefaultHandler($action);
-      $handler->setNode($this);
+      //todo: should the module be taken into account
+      $handler = &getNodeHandler($this->m_type, $action);
+      
+      //The node handler might return a function as nodehandler. We cannot
+      //return a function so we ignore this option.     
+      
+      // handler object
+      if ($handler != NULL && is_subclass_of($handler, "atkActionHandler"))
+      {
+        atkdebug("Using override atkActionHandler class for '".$action."'");
+        $handler->setNode($this);
+      }
+      else
+      {
+        atkimport("atk.handlers.atkactionhandler");
+        $handler = &atkActionHandler::getDefaultHandler($action);
+        $handler->setNode($this);
+      }
       return $handler;
     }
 
