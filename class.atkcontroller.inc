@@ -231,18 +231,19 @@
      */
     function feedbackUrl($action, $status, $record="", $message="")
     {
+      //Default we leave atkNodeType empty because the sessionmanager will determine
+      //which is de atkNodeType
+      $atkNodeType = ""; 
       if((isset($this->m_feedback[$action]) && hasFlag($this->m_feedback[$action], $status)) || $status==ACTION_FAILED)
       {
         $vars = array("atkaction"=>"feedback", "atkfbaction"=>$action, "atkactionstatus"=>$status,"atkfbmessage"=>$message);
+        $atkNodeType = $this->m_node->atkNodeType();
         $sessionStatus = SESSION_REPLACE;
       }
       else
         $sessionStatus = SESSION_BACK;
         
-      atk_var_dump($vars, "atkController::feedbackUrl() " . $sessionStatus);
-      
-      $dispatch_url = $this->dispatchUrl($vars);
-      atkdebug("dispatch_url " . $dispatch_url);
+      $dispatch_url = $this->dispatchUrl($vars, $atkNodeType);
       
       return (session_url($dispatch_url, $sessionStatus));
     }
@@ -259,10 +260,8 @@
      * @return string url for the node with the action
      */
     function dispatchUrl($params=array(), $atknodetype="", $file="")
-    {
-      
+    {      
       $vars = array_merge($params, $this->m_hidden_vars);
-      atk_var_dump($vars, "atkController::dispatchUrl()");
       
       if($file!="") $phpfile = $file;
       elseif($this->m_php_file!="") $phpfile = $this->m_php_file;
@@ -271,7 +270,6 @@
       //$dispatch_url = dispatch_url(($atknodetype=="" ? $this->m_node->atkNodeType() : $atknodetype), $vars["atkaction"], $vars, $phpfile);
       //When $atknodetype is empty this means that we use the atknodetype from session
       $dispatch_url = dispatch_url($atknodetype, $vars["atkaction"], $vars, $phpfile);
-      atkdebug("dispatch_url " . $dispatch_url);
       
       return $dispatch_url;
       
@@ -369,6 +367,17 @@
     function setReturnOutput($returnOutput)
     {
       $this->m_return_output = $returnOutput;
+    }
+    
+    /**
+     * Return a reference to the atkPage object. This object
+     * is used to render output as an html page.
+     *
+     * @return object reference
+     */
+    function &getPage()
+    {
+      return $this->m_node->getPage();
     }
     
     /**
