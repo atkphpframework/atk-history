@@ -34,6 +34,7 @@
      */
     function action_edit()
     {
+      atk_var_dump($this->m_renderBoxVars, "m_renderBoxVars action_edit 1");
       $page = &$this->getPage();
       $recordset = $this->m_node->selectDb($this->m_postvars['atkselector'],"","","","","edit");
       if ($this->m_node->hasFlag(NF_LOCK))
@@ -49,6 +50,8 @@
       }
       else
       {
+        atkdebug("invoke editpage");
+        atk_var_dump($this->m_renderBoxVars, "m_renderBoxVars action_edit 2");
         $res = $this->invoke("editPage", $recordset[0], false);
       }
 
@@ -105,8 +108,10 @@
 
         $output = $ui->renderAction("edit", $params);
 
-        return $ui->renderBox(array("title"=>$node->actionTitle('edit', $record),
-                                      "content"=>$output));
+        $this->addRenderBoxVar("title", $node->actionTitle('edit', $record));
+        $this->addRenderBoxVar("content", $output);
+                atk_var_dump($this->m_renderBoxVars, "m_renderBoxVars");
+        return $ui->renderBox($this->m_renderBoxVars);
       }
       else
       {
@@ -308,7 +313,7 @@
       if (!$template) $template = $node->getTemplate($mode, $record, $tab);
       $result.= $ui->render($template, $params);
 
-	  return $result;
+	    return $result;
     }
 
     /**

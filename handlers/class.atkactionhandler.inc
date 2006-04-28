@@ -46,6 +46,9 @@
     
     /** @access private */
     var $m_postvars = array();
+    
+    /** @access private */
+    var $m_renderBoxVars = array();
 
     /**
      * Default constructor.
@@ -214,6 +217,11 @@
     function notify($action, $record)
     {
       $this->m_node->notify($action, $record);
+    }
+    
+    function addRenderBoxVar($key, $value)
+    {
+      $this->m_renderBoxVars[$key] = $value;
     }
   }
 

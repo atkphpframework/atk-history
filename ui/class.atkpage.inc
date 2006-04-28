@@ -130,6 +130,15 @@
     }
 
     /**
+     * Return all javascript files
+     *
+     * @return array contain file paths
+     */
+    function getScripts()
+    {
+      return $this->m_scriptfiles;
+    }
+    /**
      * Register a javascript code statement which will be rendered in the
      * header.
      *
@@ -163,6 +172,16 @@
    {
      if (!in_array($code, $this->m_loadscripts)) $this->m_loadscripts[] = $code;
    }
+   
+   /**
+    * Return all javascript codes
+    *
+    * @return array
+    */
+   function getScriptCodes()
+   {
+     return array_merge($this->m_scriptcode, $this->m_submitscripts, $this->m_loadscripts);
+   }
 
     /**
      * Register a Cascading Style Sheet.
@@ -178,6 +197,16 @@
     }
 
     /**
+     * Return all stylesheet files
+     *
+     * @return array contain file paths
+     */
+    function getStyles()
+    {
+      return $this->m_stylesheets;
+    }
+    
+    /**
      * Register Cascading Style Sheet fragment that will be included in the
      * page header.
      * @param String $code The Cascading Style Sheet code fragment to place in
@@ -187,7 +216,17 @@
      {
        if (!in_array($code, $this->m_stylecode)) $this->m_stylecode[] = $code;
      }
-
+     
+    /**
+     * Return all style codes
+     *
+     * @return array
+     */
+     function getStyleCodes()
+     {
+       return $this->m_stylecode;
+     }
+     
      /**
       * Register hidden variables. These will be accessible to javascript and DHTML functions/scripts
       * but will not be shown to the user unless he/she has a very, very old browser
@@ -222,11 +261,7 @@
 
       $this->addScripts($res);
 
-      for ($i = 0; $i < count($this->m_stylesheets); $i++)
-        $res.='  <link href="'.$this->m_stylesheets[$i].'" rel="stylesheet" type="text/css">'."\n";
-
-      for ($i = 0; $i < count($this->m_stylecode); $i++)
-        $res.= '<style type="text/css"> '.$this->m_stylecode[$i].' </style>'."\n";
+      $this->addStyles($res);
 
       $favico = atkconfig("defaultfavico");
       if ($favico!="")
@@ -241,7 +276,7 @@
 
     /**
      * Adds javascripts from the member variables to HTML output
-     * @param String $res The HTML output
+     * @param String $res Reference to the HTML output
      */
     function addScripts(&$res)
     {
@@ -284,7 +319,20 @@
       $res.= "  </script>\n\n";
     }
 
+    /**
+     * Add stylesheets and stylecodes to the HMTL output
+     *
+     * @param String $res Reference to the HTML output
+     */
+    function addStyles(&$res)
+    {
+      for ($i = 0; $i < count($this->m_stylesheets); $i++)
+        $res.='  <link href="'.$this->m_stylesheets[$i].'" rel="stylesheet" type="text/css">'."\n";
 
+      for ($i = 0; $i < count($this->m_stylecode); $i++)
+        $res.= '<style type="text/css"> '.$this->m_stylecode[$i].' </style>'."\n";
+    }
+    
     /**
      * Add content to the page.
      * @param String $content The content to add to the page.

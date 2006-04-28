@@ -124,6 +124,12 @@
       $this->m_panelIndex[$atkWizardPanel->getPanelName()] = count($this->m_panelList)-1;
     }
     
+    /**
+     * Main execution function (start of the wizard). Every page load will go through
+     * this function
+     *
+     * @return Strig The html output
+     */
     function excecute()    
     {
       atk_var_dump(atkGetPostVar(), "Postvars");
@@ -140,12 +146,20 @@
       }
       else 
       {
-        return $this->dispatch($atkwizardaction);
+        return $this->wizardDispatch($atkwizardaction);
       }  
     }        
     
-    function dispatch($atkWizardaction)
+    /**
+     * Determine the wizardPanel to load and render the form
+     * for this wizardPanel.
+     *
+     * @param String $atkWizardaction
+     * @return String The html output
+     */
+    function wizardDispatch($atkWizardaction)
     {
+      atkdebug("wizardDispatch");
       if($atkWizardaction == 'next' || $atkWizardaction == 'saveandnext')
       {        
         $wizardPanel = $this->m_panelList[$this->m_currentPanelIndex+1];        
@@ -160,11 +174,11 @@
       else 
       {
         //first panel     
+        $this->m_currentPanelIndex = 0;
         $wizardPanel = $this->m_panelList[0];        
         $this->setHiddenParam("atkwizardpanelindex", 0);                 
       }
-      atkdebug("atkWizard::dispatch() Calling ".$wizardPanel->getPanelName()."->dispatchForm");
-      return $wizardPanel->dispatchForm($this->m_hiddenParams, $this->m_returnOutput);
+      return $wizardPanel->dispatchForm($this->m_hiddenParams);
     }
     
     //Rename to more generic name
@@ -176,7 +190,6 @@
       $this->m_self->setRedirectParam("atkwizardaction", $atkwizardaction);
       
       $currentWizardPanel = $this->getCurrentPanel();
-      atkdebug("atkWizard::save panel: " . $currentWizardPanel->getPanelName() . " \$atkwizardaction ". $atkwizardaction);
       return $currentWizardPanel->save();
     }
     
@@ -212,7 +225,6 @@
     
     function getCurrentPanel()
     {
-      
       $currentWizardPanel = $this->m_panelList[$this->m_currentPanelIndex];      
       if(!is_object($currentWizardPanel)) 
       {
@@ -232,7 +244,6 @@
     function isFinishPanel($name)
     {
       $count = count($this->m_panelList);
-      atkdebug("count panellist " . ($count-1) . " panelIndex ". $this->m_panelIndex[$name]);
       if (!isset($this->m_panelIndex[$name])) return false;
       return (($count-1) == $this->m_panelIndex[$name]);
     }

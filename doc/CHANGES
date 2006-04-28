@@ -117,6 +117,17 @@ Changed in ATK 5.5.1
   [Maurice]
 + Added method showFinishButton to atkWizardPanel to explicitly set the finish
   button for the wizard panel. [Maurice]
++ Added getPage method to atkcontroller. This methoid returns a reference to 
+  the atkPage object. [Maurice]
++ Added member var m_renderBoxVars to atkActionHandler which is an array
+  containing the template vars to be rendered by smarty in box.tpl. [Maurice]
+* Fix for 'save and close' bug in atkcontroller::feedbackUrl. The message
+  'session expired' would be shown because the redirect did not contain a
+   nodetype. [Maurice]
++ Added 'get' functions to atkPage for javascript and stylesheets. [Maurice]
++ Implemented reuse of handlers in atknode::getHandler method, which is also 
+  necessary when you want to save member vars before you use them at a later
+  time in your pageload. [Maurice]
 
 Changes in ATK 5.5
 ------------------

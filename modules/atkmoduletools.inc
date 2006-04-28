@@ -304,7 +304,7 @@
   {
     global $g_nodeHandlers;
     if (isset($g_nodeHandlers[$node][$action])) return FALSE;
-    else $g_nodeHandlers[$node][$action] = $handler;
+    else $g_nodeHandlers[$node][$action] = &$handler;
     return TRUE;
   }
 

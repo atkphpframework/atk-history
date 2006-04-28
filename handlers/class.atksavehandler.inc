@@ -111,7 +111,7 @@
 
       $page = &$this->getPage();
       $handler = &$this->m_node->getHandler($this->m_node->m_action);
-      //$handler->m_action = $this->m_node->m_action;
+      $handler->m_action = $this->m_node->m_action;
       atkdebug("atkSaveHandler::renderAddPage() " . $this->m_node->m_action);
       $invoke = ($this->m_node->m_action=='admin' ? "action_admin" : "addPage");
       $page->addContent($this->m_node->renderActionPage($this->m_node->m_action, $handler->invoke($invoke, $record)));

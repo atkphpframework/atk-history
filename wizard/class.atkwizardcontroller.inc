@@ -65,11 +65,9 @@ atkimport("atk.atkcontroller");
       // Use invoke to be backwards compatible with overrides 
       // of loadDispatchPage in atknode.
       $this->invoke("loadDispatchPage", $postvars);
-      //$this->loadDispatchPage($postvars);
 
       $ui = &$this->m_node->getUi();
       $page = &$this->m_node->getPage();
-      atkdebug("atkWizardController::dispatch() flags" . $this->m_page_flags);
       $screen = $page->render(atktext('app_shorttitle')." - ".$ui->title($this->m_node->m_module, $this->m_node->m_type, $this->m_node->m_postvars['atkaction'], true), $this->m_page_flags);
 
       if(!$this->m_return_output)
@@ -112,8 +110,6 @@ atkimport("atk.atkcontroller");
         if($this->m_node->m_action != 'admin')
         {
           //if we explicitly don't want the finish button we set a hidden var to post the atkwizardaction
-          atkdebug("FINISH_BUTTON ".$this->m_wizardPanel->showFinishButton());
-          atkdebug("FINISH_BUTTON_DONT_SHOW ".($this->m_wizardPanel->showFinishButton() == FINISH_BUTTON_DONT_SHOW ? "TRUE" : "FALSE") ." isfinishpanel " . ($this->m_wizardPanel->isFinishPanel() ? "TRUE" : "FALSE"));
           if(($this->m_wizardPanel->showFinishButton() == FINISH_BUTTON_DONT_SHOW) && $this->m_wizardPanel->isFinishPanel())
             $atkwizardaction = "finish";
           else 

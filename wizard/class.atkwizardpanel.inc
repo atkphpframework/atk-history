@@ -149,19 +149,17 @@ define(FINISH_BUTTON_DONT_SHOW, 3);
           
           atkdebug("atkWizardPanel::getPanelNode() registerNodeHandler for. Node: " . getNodeType($this->m_nodeName). " name: ".$handlerName. " action ". $handlerAction);
           
-          $handler = new $handlerName();
-          registerNodeHandler($this->m_node->m_type, $handlerAction, $handler);
+          $handler = &new $handlerName();
+          registerNodeHandler($this->m_node->m_type, $handlerAction, &$handler);
         }
-                
+        
         //todo: not sure if this needed
         //Add postvars to node manually 
-        $this->m_node->m_postvars = atkGetPostVar();
-        
-        
+        //$this->m_node->m_postvars = atkGetPostVar();
+                
         //All nodes should return the output and not try to fill the screen themselves
         $controller = &$this->m_node->getController();
         $controller->setReturnOutput(true);
-        atkdebug("atkController m_return_output: " . ($controller->m_return_output ? "TRUE" : "False"));
         
         //We set how we want the atk page to be returned
         atkdebug("getPanelNode flags" . $this->m_wizard->m_page_flags);
@@ -203,7 +201,7 @@ define(FINISH_BUTTON_DONT_SHOW, 3);
       $this->m_actionHandlers[] = array("name" => $handlerName, "action" => $handlerAction);
     }
    
-    function dispatchForm($params, $returnOutput)
+    function dispatchForm($params)
     {    	
       atkdebug("atkWizardPanel::getAddForm() panel=".$this->getPanelName() . " atknode=".$this->m_nodeName);
       $node = &$this->getPanelNode();         
@@ -211,7 +209,6 @@ define(FINISH_BUTTON_DONT_SHOW, 3);
       
       $controller = &$node->getController();                
       
-      atk_var_dump($params, "hiddenparams");
       if(count($params))
       {
         foreach($params as $hiddenVarName => $hiddenVarValue)
@@ -221,19 +218,29 @@ define(FINISH_BUTTON_DONT_SHOW, 3);
       }
       
 	    global $ATK_VARS;
-	    atkdebug("atkaction set " .$ATK_VARS['atkaction']);
 	    if(!isset($ATK_VARS['atkaction']) || $ATK_VARS['atkaction'] == "")
 	    {
-	      atkdebug("default action " .$this->m_defaultAction);
 	      if(!isset($this->m_defaultAction) || $this->m_defaultAction == "")
 	        $ATK_VARS['atkaction'] = 'add';
 	      else 
 	        $ATK_VARS['atkaction'] = $this->m_defaultAction;
 	    }
 	    
+	    //Load some smarty vars
+	    if($ATK_VARS['atkaction'] == 'add' || $ATK_VARS['atkaction'] == 'edit' || $ATK_VARS['atkaction'] == 'admin')
+	    {	      
+	      $this->loadRenderBoxVars($ATK_VARS['atkaction'] );
+	      if($ATK_VARS['atkaction'] == 'admin') $this->loadRenderBoxVars("add");
+	      
+	      //TODO Fixme: Somehow we can't save the Renderboxvars in this object
+	      //why doesn't this work for override classes. Some kind of reference problem
+	      //$handler = &$this->m_node->getHandler($ATK_VARS['atkaction']);
+        //atk_var_dump($handler->m_renderBoxVars, "dispatchForm m_renderBoxVars");
+	    }
+	    
 	    //If atk renders the page itself the return value is empty
 	    $output = $controller->dispatch($ATK_VARS, false);
-        
+	    
       return $output;
     }    
     
@@ -250,11 +257,14 @@ define(FINISH_BUTTON_DONT_SHOW, 3);
       if(count($hiddenVars))
       {
         foreach($hiddenVars as $hiddenVarName => $hiddenVarValue)
-        {          
-          atkdebug("Add $hiddenVarName value $hiddenVarValue");          
           $controller->setHiddenVar($hiddenVarName, $hiddenVarValue);
-        }
       }
+      
+      //Little dirty, we have to do this to make sure that in case
+      //of an error the paneltitle and intro text are known
+      //in the template
+      $this->loadRenderBoxVars("add");
+      if($node->m_action = 'admin') $this->loadRenderBoxVars("admin");
       
       //Save, on succes dispatch() will redirect
       //else it will return an 'add form' with error messages
@@ -280,7 +290,42 @@ define(FINISH_BUTTON_DONT_SHOW, 3);
     {
       return $this->m_wizard->isFinishPanel($this->getPanelName());
     }
+    
+    function _getText($key, $fallbackKey)
+    {
+      
+      $panelNode = $this->getPanelNode();
+      $text = atktext($key,
+                     $panelNode->m_module, 
+                     "",
+                     "",
+                     "",
+                     true);
+      atkdebug("_getText key: " .$key." text: ".$text);
+      if($text != "") return $text;
+      atkdebug("_getText key: " .$key." fallbackKey: ".$fallbackKey);
 
-  }   
-  
+      return  atktext($fallbackKey,
+                     $panelNode->m_module, 
+                     "",
+                     "",
+                     "",
+                     true);
+    }
+    
+    /**
+     * Add smarty vars to actionhandler
+     *
+     * @param string $action
+     */
+    function loadRenderBoxVars($action)
+    {
+      $handler = &$this->m_node->getHandler($action);
+      $handler->addRenderBoxVar("paneltitle", $this->_getText($this->getPanelName()."_".$action, $this->getPanelName()));
+      $handler->addRenderBoxVar("intro", $this->_getText($this->getPanelName()."_".$action."_intro", $this->getPanelName()."_intro"));        
+      atkdebug("loadRenderBoxVars actionhandler: ". get_class($handler)." action: ".$action);
+      atk_var_dump($handler->m_renderBoxVars, "loadRenderBoxVars m_renderBoxVars");
+    }
+
+  }     
 ?>

@@ -61,7 +61,7 @@
     function addPage($record=NULL)
     {
       // Reuse the atkAddHandler for the addPage.
-      $handler = atknew("atk.handlers.atkaddhandler");
+      $handler = $this->m_node->getHandler("add");
       $handler->setNode($this->m_node);
       return $handler->invoke("addPage", $record);
     }
@@ -173,8 +173,9 @@
 
         $output = $ui->renderList("admin", $params);
 
-        $output = $ui->renderBox(array("title"=>$node->actionTitle('admin'),
-                                    "content"=>$output));
+        $this->addRenderBoxVar("title", $node->actionTitle('admin'));
+        $this->addRenderBoxVar("content", $output);
+        $output = $ui->renderBox($this->m_renderBoxVars);
         if ($this->m_node->hasFlag(NF_CACHE_RECORDLIST)) $recordlistcache->writeCache($output, $recordlist->m_actionloader);
       }
       else

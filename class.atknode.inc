@@ -3498,20 +3498,21 @@
       // handler function
       if ($handler != NULL && function_exists($handler))
       {
-        atkdebug("Calling external handler function for '".$action."'");
+        atkdebug("atkNode::callHandler: Calling external handler function for '".$action."'");
         $handler($this, $action);
       }
       
       // handler object
       elseif ($handler != NULL && is_subclass_of($handler, "atkActionHandler"))
       {
-        atkdebug("Using override atkActionHandler class for '".$action."'");
-        $handler->handle($this, $action, $this->m_postvars);
+        atkdebug("atkNode::callHandler:Using override/existing atkActionHandler ".get_class($handler). " class for '".$action."'");
+        $handler->handle($this, $action, $this->m_postvars);        
       }
 
       // no (valid) handler
       else
       {
+        atkdebug("atkNode::callHandler:No existing atkActionHandler class found for ".$this->m_type." action: '".$action."'");
         $this->m_handler = &$this->getHandler($action);
         $this->m_handler->handle($this, $action, $this->m_postvars);
       }
@@ -3536,14 +3537,18 @@
       // handler object
       if ($handler != NULL && is_subclass_of($handler, "atkActionHandler"))
       {
-        atkdebug("Using override atkActionHandler class for '".$action."'");
+        atkdebug("atkNode::getHandler: Using existing atkActionHandler ".get_class($handler)." class for '".$action."'");
         $handler->setNode($this);
       }
       else
       {
         atkimport("atk.handlers.atkactionhandler");
         $handler = &atkActionHandler::getDefaultHandler($action);
-        $handler->setNode($this);
+        $handler->setNode($this);        
+        //If we use a default handler we need to register it to this node
+        //because we might call it a second time.
+        atkdebug("atkNode::getHandler: Register default atkActionHandler for ".$this->m_type." action: '".$action."'");
+        registerNodeHandler($this->m_type, $action, &$handler);
       }
       return $handler;
     }
