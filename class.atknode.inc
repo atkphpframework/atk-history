@@ -2342,6 +2342,8 @@
     {
       $db = &$this->getDb();
       $query = &$db->createQuery();
+      
+      if($exectrigger) $this->executeTrigger("preUpdate",$record);
 
       $query->addTable($this->m_table);
 
@@ -2387,8 +2389,6 @@
           $p_attrib = &$this->m_attribList[$storelist["query"][$i]];
           $p_attrib->addToQuery($query,$this->m_table,"",$record,1,"update"); // start at level 1
         }
-
-        if($exectrigger) $this->executeTrigger("preUpdate",$record);
 
         if (count($query->m_fields) && !$query->executeUpdate()) return false;
 

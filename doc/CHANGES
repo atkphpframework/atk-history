@@ -128,6 +128,9 @@ Changed in ATK 5.5.1
 + Implemented reuse of handlers in atknode::getHandler method, which is also 
   necessary when you want to save member vars before you use them at a later
   time in your pageload. [Maurice]
+* Moved execution of preUpdate trigger to begin of updateDb function. This 
+  way changing the record in the preUpdate function will have effect.
+  [Lineke]
 
 Changes in ATK 5.5
 ------------------
