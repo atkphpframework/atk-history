@@ -40,52 +40,11 @@
     var $m_cols=3;
 
     /**
-     * Constructor.
-     * @param String $name The name of the relation.
-     * @param String $link The full name of the node that is used as
-     *                     intermediairy node.
-     * @param String $destination The full name of the node that is the
-     *                            destination end of the relationship.
-     * @param int $flags Attribute flags.
-     */
-    function atkManyBoolRelation($name, $link, $destination, $flags=0)
-    {
-      $this->atkManyToManyRelation($name, $link, $destination, $flags);
-    }
-  
-  
-    function _getSelectableRecords($record=array(), $mode="")
-    {
-      $method = $this->fieldName()."_selection";
-      if (method_exists($this->m_ownerInstance, $method))
-        return $this->m_ownerInstance->$method($record, $mode);
-      else return $this->getSelectableRecords($record, $mode);
-    }
-
-    function getSelectableRecords($record=array(), $mode="",$force=false)
-    {
-      if ($this->createDestination())
-      {
-        if ($this->m_destinationFilter!="")
-        {
-          atkimport("atk.utils.atkstringparser");
-          $parser = new atkStringParser($this->m_destinationFilter);
-          $filter = $parser->parse($record);
-          $this->m_destInstance->addFilter($filter);
-        }         
-        
-        return $this->m_destInstance->selectDb("","","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
-      }
-      
-      return array();
-    }  
-
-    /**
      * Return a piece of html code to edit the attribute
      * @param $record Current record
      * @return String piece of html code
      */
-    function edit($record="", $fieldprefix="")
+    function edit($record="", $fieldprefix="", $mode="")
     {
       $cols = $this->m_cols;
       $modcols = $cols-1;
@@ -118,7 +77,7 @@
                      atktext("check_none", "atk").
                 '</a> <a href="javascript:profile_checkInvert(\''.$this->fieldName().'\')">'.
                      atktext("invert_selection", "atk").'</a>]</font></div>';
-       	
+
       $result.= '<table border="0"><tr>';
       for ($i=0;$i<count($recordset);$i++)
       {
@@ -163,154 +122,10 @@
       return $result;
     }
 
-    /**
-     * Stores the values in the database
-     * @param $notused Not used
-     * @param $record Current record
-     */
-    function store($notused, $record, $mode)
+    function setCols($cols)
     {
-      $this->createLink();
-      $this->createDestination();
-      $rel = &$this->m_linkInstance;
-
-      // Find items that are checked.
-      $checked = array();
-      for ($i=0;$i<count($record[$this->fieldName()]);$i++)
-      {
-        if(is_array($record[$this->fieldName()][$i][$this->getRemoteKey()]))
-          $checked[] = $record[$this->fieldName()][$i][$this->getRemoteKey()][$this->m_destInstance->primaryKeyField()];
-        else
-          $checked[] = $record[$this->fieldName()][$i][$this->getRemoteKey()];
-
-      }
-
-      if(count($checked) > 0)
-        $filter = " AND ".$this->m_linkInstance->m_table.'.'.$this->getRemoteKey()." $filter NOT IN ('".implode("','",$checked)."')";
-
-      if (is_object($rel) && $rel->deleteDb($this->m_linkInstance->m_table.'.'.$this->getLocalKey()."='".$record[$this->m_ownerInstance->primaryKeyField()]."'".$filter))
-      {
-        for ($i=0;$i<count($record[$this->fieldName()]);$i++)
-        {
-          // magical stuff..
-          $newrecord = $this->m_destInstance->initial_values();
-          $newrecord[$this->getRemoteKey()] = $record[$this->fieldName()][$i][$this->getRemoteKey()];
-          $newrecord[$this->getLocalKey()] = $record[$this->m_ownerInstance->primaryKeyField()];
-
-          // First check if the record does not exist yet.
-          /* @var $rel atkNode */
-          $existing = $rel->selectDb($rel->primaryKey($newrecord), "", "", "", $rel->m_primaryKey);
-          if (!count($existing))
-          {
-            if (!$rel->addDb($newrecord, true, $mode))
-            {
-              return false;
-            }
-          }
-        }
-        return true;
-      }
-      return false;
+      $this->m_cols = $cols;
     }
 
-    /**
-     * Check if the attribute is empty
-     * @return true if it's empty
-     */
-    function isEmpty($postvars)
-    {
-      return (!is_array($postvars[$this->fieldName()]) || count($postvars[$this->fieldName()])==0);
-    }
-
-    /**
-     * Returns a piece of html code for hiding this attribute in an HTML form,
-     * while still posting its value. (<input type="hidden">)
-     *
-     * @param array $record The record that holds the value for this attribute
-     * @param String $fieldprefix The fieldprefix to put in front of the name
-     *                            of any html form element for this attribute.
-     * @return String A piece of htmlcode with hidden form elements that post
-     *                This attribute's value without showing it.
-     */
-    function hide($record="", $fieldprefix="")
-    {
-      if(is_array($record[$this->fieldName()]))
-      {
-        for ($i=0;$i<count($this->m_values);$i++)
-        {
-          if(in_array($this->m_values[$i],$record[$this->fieldName()]))
-          $result .= '<input type="hidden" name="'.$fieldprefix.$this->fieldName().'[]"
-                      value="'.$this->m_values[$i].'">';
-        }
-      } else return parent::hide($record,$fieldprefix);
-      return $result;
-    }
-
-    /**
-     * Returns a piece of html code that can be used in a form to search
-     * @param $record Record
-     * @param $size Size of the editbox
-     * @param $maxsize Maxsize of the editbox
-     * @return Piece of html code that can  be used in a form to edit this
-     */
-    function search($record="", $extended=false, $fieldprefix="")
-    {
-      $this->createDestination();
-
-      // now select all records
-      $recordset = $this->m_destInstance->selectDb();
-
-        $result = '<select ';
-        if ($extended)
-        {
-          $result.='multiple size="'.min(5,count($recordset)+1).'"';
-        }
-
-        if (strstr($fieldprefix,"]["))
-          $result.='name="atksearch['. $fieldprefix.$this->fieldName().'][]">';
-        else
-          $result.='name="atksearch'.$fieldprefix.'['. $this->fieldName().'][]">';
-
-        $pkfield = $this->m_destInstance->primaryKeyField();
-
-        $result.= '<option value="">'.atktext("search_all", "atk");
-
-        for ($i=0;$i<count($recordset);$i++)
-        {
-          $pk = $recordset[$i][$pkfield];
-          if (atk_in_array($pk, $record[$this->fieldName()])) $sel = "selected"; else $sel = "";
-          $result.= '<option value="'.$pk.'" '.$sel.'>'.$this->m_destInstance->descriptor($recordset[$i]);
-        }
-        $result.='</select>';
-        return $result;
-    }
-
-    /**
-     * Creates an search condition for a given search value
-     * @param $table the table name
-     * @param $value the search value
-     * @return a piece of the SQL where clause
-     */
-    function searchCondition(&$query, $table, $value, $searchmode)
-    {
-      // We only support 'exact' matches.
-      // But you can select more than one value, which we search using the IN() statement,
-      // which should work in any ansi compatible database.
-      if (is_array($value) && count($value)>0 && $value[0]!="") // This last condition is for when the user selected the 'search all' option, in which case, we don't add conditions at all.
-      {
-    		$this->createLink();
-    		$query->addJoin($this->m_linkInstance->m_table, $this->fieldName(), $table.".".$this->m_ownerInstance->primaryKeyField()."=".$this->fieldName().".".$this->getLocalKey(),FALSE );
-    		$query->setDistinct(TRUE);
-    		
-        if (count($value)==1) // exactly one value
-        {
-          $query->addSearchCondition($query->exactCondition($this->fieldName().".".$this->getRemoteKey(),escapeSQL($value[0])));
-        }
-        else // search for more values using IN()
-        {
-          $query->addSearchCondition($this->fieldName().".".$this->getRemoteKey()." IN ('".implode("','",$value)."')");
-        }
-      }
-    }
   }
 ?>

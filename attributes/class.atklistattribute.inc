@@ -243,6 +243,7 @@
         {
           $sel = "";
         }
+
         $result.= '<option value="'.$values[$i].'" '.$sel.'>'.$this->_translateValue($values[$i],$record);
       }
       $result.='</select>';

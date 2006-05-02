@@ -98,7 +98,6 @@ function atkSubmitMRA(name, form, target)
 
   /* no selectors?! impossible situation, bail out! */
   if (typeof(list) == 'undefined') return;
-  if (typeof(list.length) == 'undefined') return;
 
   /* count selectors */
   var selectorLength = 0;
@@ -150,6 +149,24 @@ function atkSubmitMRA(name, form, target)
     {
       form.atkrecordlist.value = name;
     }
+    
+    // default the form is build using SESSION_DEFAULT,
+    // but if we submit a multi-record-action we should
+    // use SESSION_NESTED instead, the difference is that
+    // SESSION_NESTED increases the session level by 1, so
+    // let's do so manually
+    if (form.atklevel == null)
+    {
+      var input = document.createElement('input');
+      input.setAttribute('type', 'hidden');
+      input.setAttribute('name', 'atklevel');      
+      input.setAttribute('value', 1);
+      form.appendChild(input);    
+    }
+    else 
+    {
+      form.atklevel.value += 1;
+    }    
     
     globalSubmit(form);
     form.submit();

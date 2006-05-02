@@ -61,6 +61,14 @@
     var $m_filenameTpl = "";
 
     /**
+     * When set to true, a file is auto-renumbered if another record exists with the
+     * same filename.
+     *
+     * @var boolean
+     */
+    var $m_autonumbering = false;
+
+    /**
      * Constructor
      * @param string $name Name of the attribute
      * @param array $dir Can be a string with the Directory with images/files or an array with a Directory and a Display Url
@@ -84,6 +92,20 @@
         $this->m_dir = $this->AddSlash($dir);
 	      $this->m_url = $this->AddSlash($dir);
       }
+    }
+
+    /**
+     * Turn auto-numbering of filenames on/off.
+     *
+     * When autonumbering is turned on, uploading a file with the same name as
+     * the file of another record, will result in the file getting a unique
+     * sequence number.
+     *
+     * @param unknown_type $autonumbering
+     */
+    function setAutonumbering($autonumbering=true)
+    {
+      $this->m_autonumbering = $autonumbering;
     }
 
 
@@ -186,7 +208,22 @@
       {
         if($this->hasFlag(AF_FILE_PHYSICAL_DELETE))
         {
-          unlink($this->m_dir.$rec[$this->fieldName()]["orgfilename"]);
+          $file = "";
+          if (isset($rec[$this->fieldName()]["postdel"]) && $rec[$this->fieldName()]["postdel"]!="")
+          {
+            atkdebug("postdel set");
+            $file = $rec[$this->fieldName()]["postdel"];
+          }
+          else if ( isset($rec[$this->fieldName()]["orgfilename"]))
+          {
+            atkdebug("postdel not set");
+            $file = $rec[$this->fieldName()]["orgfilename"];
+          }
+          atkdebug("file is now ".$file);
+          if ($file!="")
+          {
+            unlink($this->m_dir.$file);
+          }
         }
         return '';
       }
@@ -201,12 +238,11 @@
             {
               if (@copy($rec[$this->fieldName()]["tmpfile"],$this->m_dir.$filename))
               {
-                atkdebug("COPY: ".$rec[$this->fieldName()]["tmpfile"]." -> ".$this->m_dir.$filename);
+                $this->processFile($this->m_dir, $filename);
                 return $filename;
               }
               else
               {
-                atkdebug("tmp file ".$rec[$this->fieldName()]["tmpfile"]." dir ".$this->m_dir.$filename);
                 atkerror("File could not be saved");
                 return "";
               }
@@ -214,6 +250,20 @@
         }
         return $rec[$this->fieldName()]["orgfilename"];
       }
+    }
+
+    /**
+     * Perform processing on an image right after it is uploaded.
+     *
+     * If you need any resizing or other postprocessing to be done on a file
+     * after it is uploaded, you can create a derived attribute that
+     * implements the processFile($filepath) method.
+     * The default implementation does not do any processing.
+     * @param String $filepath The path of the uploaded file.
+     * @param String $filename The name of the uploaded file.
+     */
+    function processFile($filepath, $filename)
+    {
     }
 
     /**
@@ -277,12 +327,20 @@
              && !$this->hasFlag(AF_FILE_NO_SELECT))
           {
             atkdebug("file selected!");
-            (isset($del[$this->fieldName()]) && $del[$this->fieldName()]=="on") ? $filename='' : $filename=$rec[$this->fieldName()]["select"];
+            $filename=$rec[$this->fieldName()]["select"];
+            $orgfilename = $filename;
+            $postdel = '';
+            if (isset($del[$this->fieldName()]) && $del[$this->fieldName()]=="on")
+            {
+              $filename = '';
+              $orgfilename='';
+              $postdel = $rec[$this->fieldName()]["select"];
+            }
             $result = array("tmpfile"=>"",
-
                           "filename"=>$filename,
                           "filesize"=>0,
-                          "orgfilename"=>$filename);
+                          "orgfilename"=>$orgfilename,
+                          "postdel"=>$postdel);
           }  // maybe we atk restored data from session
           elseif(isset($rec[$this->fieldName()]["filename"]) && $rec[$this->fieldName()]["filename"]!="")
           {
@@ -299,6 +357,12 @@
         else
         {
           $realname = $this->_filenameMangle($rec, $_FILES[$postfiles_basename]["name"]);
+
+          if ($this->m_autonumbering)
+          {
+            $realname = $this->_filenameUnique($rec, $realname);
+          }
+
           $result = array("tmpfile"=>$_FILES[$postfiles_basename]["tmp_name"],
                           "filename"=>$realname,
                           "filesize"=>$_FILES[$postfiles_basename]["size"],
@@ -409,6 +473,7 @@
     
     /**
      * Determine the real filename of a file (based on m_filenameTpl).
+     * @access private
      */
     function _filenameMangle($rec, $default)
     {
@@ -424,6 +489,41 @@
         $filename = stringparse($this->m_filenameTpl, $record).".".$ext;
       }
       return str_replace(' ','_',$filename);
+    }
+
+    /**
+     * Give the file a uniquely numbered filename.
+     *
+     * @access private
+     * @param array $rec The record for thish the file was uploaded
+     * @param String $filename The name of the uploaded file
+     * @return String The name of the uploaded file, renumbered if necessary
+     */
+    function _filenameUnique($rec, $filename)
+    {
+      // check if there's another record using this same name. If so, (re)number the filename.
+      atkdebug("unique check");
+
+      $name = substr($filename, 0, strrpos($filename,'.'));
+      $ext = substr($filename, strrpos($filename,'.')+1);
+
+      $selector = "(".$this->fieldName()."='$filename' OR ".$this->fieldName()." LIKE '$name-_.$ext')";
+      if ($rec[$this->m_ownerInstance->primaryKeyField()]!="")
+      {
+        $selector.= " AND NOT (".$this->m_ownerInstance->primaryKey($rec).")";
+      }
+
+      $count = $this->m_ownerInstance->countDb("($selector)", "", array($this->fieldName()));
+
+      atkdebug("count ".$count);
+
+      if ($count>0)
+      {
+        // file name exists, so mangle it with a number.
+        $filename = $name."-".$count.".".$ext;
+      }
+
+      return $filename;
     }
 
     /**

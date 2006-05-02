@@ -73,9 +73,9 @@
      * @param $record Array with fields
      * @return piece of html code with a checkbox
      */
-    function search($record="")
+    function search($record="", $extended=false, $fieldprefix="")
     {
-      $result = '<select name="atksearch['.$this->formName().']">';
+      $result = '<select name="atksearch'.$fieldprefix.'['.$this->formName().']">';
       $result.= '<option value="">'.atktext("search_all", "atk");
       $result.= '<option value="0" ';
       if($record[$this->fieldName()]==='0' && !empty($record)) $result.="selected";
@@ -114,6 +114,18 @@
 	    // We display true (1) as 'Yes' and false as 'No'
 	    if ($record[$this->fieldName()]>0) return atktext("yes", "atk");
 	    return atktext("no", "atk");
+    }
+
+    function fetchValue($postvars)
+    {
+      if (is_array($postvars)&&isset($postvars[$this->fieldName()]))
+      {
+        return $postvars[$this->fieldName()];
+      }
+      else
+      {
+        return 0;
+      }
     }
 
     function getSearchModes()

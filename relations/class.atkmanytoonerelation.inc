@@ -644,7 +644,7 @@
       // it at the beginning to work properly, so we reverse it here
       if (substr($fieldprefix, -4) == "_AE_")
         $fieldprefix = "_AE_".substr($fieldprefix, 0, -4);
-      
+
       if (!$this->hasFlag(AF_LARGE))
       {
         if ($this->createDestination())
@@ -699,6 +699,46 @@
         return $result;
       }
     }
+    
+    /**
+     * Creates a smart search condition for a given search value, and adds it
+     * to the query that will be used for performing the actual search.
+     * 
+     * @param Integer  $id         The unique smart search criterium identifier.
+     * @param Integer  $nr         The element number in the path.
+     * @param Array    $path       The remaining attribute path.
+     * @param atkQuery $query      The query to which the condition will be added.
+     * @param String   $ownerAlias The owner table alias to use.
+     * @param Mixed    $value      The value the user has entered in the searchbox.
+     * @param String   $mode       The searchmode to use.
+     */
+    function smartSearchCondition($id, $nr, $path, &$query, $ownerAlias, $value, $mode)
+    {
+      if (count($path) > 0)
+      {
+        $this->createDestination();
+        
+        $destAlias = "ss_{$id}_{$nr}_".$this->fieldName();
+        
+        $query->addJoin(
+          $this->m_destInstance->m_table, $destAlias,
+          $this->getJoinCondition($query, $ownerAlias, $destAlias),
+          false
+        );
+
+        $attrName = array_shift($path);
+        $attr = &$this->m_destInstance->getAttribute($attrName);
+        
+        if (is_object($attr))
+        {
+          $attr->smartSearchCondition($id, $nr + 1, $path, $query, $destAlias, $value, $mode);
+        }
+      }
+      else 
+      {
+        $this->searchCondition($query, $ownerAlias, $value, $mode);
+      }
+    }       
 
     /**
      * Creates an search condition for a given search value
@@ -730,7 +770,7 @@
   		      if (!empty($attrValue))
   		      {
   		        $p_attrib = &$this->m_destInstance->m_attribList[$attr];
-  		        if (!$p_attrib == NULL)
+  		        if ($p_attrib != NULL)
   		          $p_attrib->searchCondition($query, $this->fieldName(), $attrValue, $searchmode);
   		      }
   		    }
@@ -1095,7 +1135,7 @@
      */
     function addToListArrayHeader($action, &$arr, $fieldprefix, $flags, $atksearch, $atkorderby)
     {
-      $prefix = $fieldprefix.$this->fieldName()."_AE_";
+      $prefix = $fieldprefix.'_AE_'.$this->fieldName();
 
       // regular behaviour.
       parent::addToListArrayHeader($action, $arr, $prefix, $flags, $atksearch[$this->fieldName()], $atkorderby);
@@ -1170,7 +1210,7 @@
      */
     function addToListArrayRow($action, &$arr, $nr, $fieldprefix, $flags)
     {
-      $prefix = $fieldprefix.$this->fieldName()."_AE_";
+      $prefix = $fieldprefix.'_AE_'.$this->fieldName();
       
       parent::addToListArrayRow($action, $arr, $nr, $prefix, $flags);
       
@@ -1204,9 +1244,9 @@
      */
     function addToSearchformFields(&$fields, &$node, &$record, $fieldprefix = "")
     {
-      $prefix = "_AE_".$fieldprefix.$this->fieldName();
+      $prefix = $fieldprefix.'_AE_'.$this->fieldName();
 
-      parent::addToSearchformFields($fields,$node,$record, $prefix);
+      parent::addToSearchformFields($fields,$node,$record[$this->fieldName()], $prefix);
 
       // only add extra columns when needed
       if ($this->hasFlag(AF_HIDE_LIST) && !$this->m_alwaysShowListColumns) return; 

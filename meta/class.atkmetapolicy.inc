@@ -753,6 +753,12 @@ class atkMetaPolicy
   function &_applyAttribute($name, $type, $params, $flags, $tabs, $order, $forceUpdate)
   {
     if (!$this->_isAttributeIncluded($name)) return;
+    
+    if ($type == NULL)
+    {
+      atkdebug('atkMetaPolicy::_applyAttribute: '.$this->m_node->atkNodeType().' / '.$name. ' (no type set, ignoring!)');
+      return;
+    }
 
     if (atkexists("attribute", $type))
       atkuse("attribute", $type);
