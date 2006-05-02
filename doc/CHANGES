@@ -47,6 +47,7 @@ Changes in tomorrow branch
 + Added descriptor handler support to atkNode and atkRelation. [Peter]
 + Added setForceInsert method to atkAttribute (works just the same as  
   setForceUpdate, only then for inserts). [Peter]
++ Added $excludes / $includes parameters to updateDb. [Peter]
 * Improvements to error reporting of importing and added ability 
   to add multiple fields for the entire import ('allfields'). [Boy]
 * Added id to field td. [Boy]
