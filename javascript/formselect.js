@@ -13,6 +13,22 @@
    * @version $Revision$
    * $Id$
    */
+  
+function getATKSelectors(name, form)
+{
+  var list = new Array();
+  var prefix = name + '_atkselector';
+
+  for (var i = 0; i < form.elements.length; i++)
+  {
+    if (form.elements[i].name != null && form.elements[i].name.substring(0, prefix.length) == prefix)
+    {
+      list[list.length] = form.elements[i];
+    }
+  }
+
+  return list;
+}
 
 /**
  * Updates the selection of select boxes for the record list form.
@@ -23,13 +39,9 @@
 function updateSelection(name, form, type)
 {
   /* get selectors */
-  var list = form.elements[name + '_atkselector[]'];
-
-  /* no selectors?! impossible situation, bail out! */
-  if (typeof(list) == 'undefined') return;
+  var list = getATKSelectors(name, form);
 
   /* walk through list */
-  if (typeof(list.length) == 'undefined') list = new Array(list);
   for (var i = 0; i < list.length; i++)
   {
     if      ("all"    == type && !list[i].disabled)	list[i].checked = true;
@@ -47,17 +59,13 @@ function updateSelection(name, form, type)
 function updateSelectable(name, form)
 {
   /* get selectors */
-  var list = form.elements[name + '_atkselector[]'];
-
-  /* no selectors?! impossible situation, bail out! */
-  if (typeof(list) == 'undefined') return;
+  var list = getATKSelectors(name, form);
 
   /* some stuff we need to know */
   var index  = form.elements[name + '_atkaction'].selectedIndex;
   var action = form.elements[name + '_atkaction'][index].value;
 
   /* walk through list */
-  if (typeof(list.length) == 'undefined') list = new Array(list);
   for (var i = 0; i < list.length; i++)
   {
     /* supported actions */
@@ -87,25 +95,17 @@ function updateSelectable(name, form)
 function atkSubmitMRA(name, form, target)
 {
   /* some stuff we need to know */
-  var index  = form.elements[name + '_atkaction'].selectedIndex;
+  var index = form.elements[name + '_atkaction'].selectedIndex;
   if (typeof(index) == 'undefined') var atkaction = form.elements[name + '_atkaction'].value;
   else var atkaction = form.elements[name + '_atkaction'][index].value;
   
   if (atkaction == '') return;
 
   /* get selectors */
-  var list = form.elements[name + '_atkselector[]'];
+  var list = getATKSelectors(name, form);
 
-  /* no selectors?! impossible situation, bail out! */
-  if (typeof(list) == 'undefined') return;
-
-  /* count selectors */
+  /* count selected selectors */
   var selectorLength = 0;
-  
-  if (typeof(list.length) == 'undefined') 
-  {
-    list = new Array(list);
-  }
   
   for (var i = 0; i < list.length; i++)
   {
@@ -113,7 +113,7 @@ function atkSubmitMRA(name, form, target)
     {
       var input = document.createElement('input');
       input.setAttribute('type', 'hidden');
-      input.setAttribute('name', 'atkselector[' + i + ']');
+      input.setAttribute('name', list[i].name.substring(name.length + 1));
       input.setAttribute('value', list[i].value);
       form.appendChild(input);    
 
@@ -185,30 +185,31 @@ function atkSubmitMRA(name, form, target)
 function atkSubmitMRPA(name, form, target)
 {
   /* some stuff we need to know */
-  var index  = form.elements[name + '_atkaction'].selectedIndex;
+  var index = form.elements[name + '_atkaction'].selectedIndex;
   if (typeof(index) == 'undefined') var atkaction = form.elements[name + '_atkaction'].value;
   else var atkaction = form.elements[name + '_atkaction'][index].value;
-
+  
+  if (atkaction == '') return;
+  
   /* initial target URL */
   target += 'atkaction=' + atkaction;
 
   /* get selectors */
-  var list = form.elements[name + '_atkselector[]'];
-
-  /* no selectors?! impossible situation, bail out! */
-  if (index == 0 || typeof(list) == 'undefined') return;
+  var list = getATKSelectors(name, form);
 
   /* add the selectors to the target URL */
   var selectorLength = 0;
-  if (typeof(list.selectedIndex) != 'undefined') list = new Array(list);
+  
   for (var i = 0; i < list.length; i++)
+  {
     if (list[i].selectedIndex != 0)
     {
       var priority = list[i][list[i].selectedIndex].value;
       target += '&atkselector[' + list[i][0].value + ']=' + priority;
       selectorLength++;
     }
-
+  }
+  
   /* change atkescape value and submit form */
   if (selectorLength > 0)
   {

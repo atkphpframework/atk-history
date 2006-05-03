@@ -354,7 +354,7 @@
           /* multi-record-priority-actions -> priority selection */
           if (hasFlag($flags, RL_MRPA))
           {
-            $select = '<select name="'.$listName.'_atkselector[]">'.
+            $select = '<select name="'.$listName.'_atkselector['.$i.']">'.
                         '<option value="'.rawurlencode($list["rows"][$i]["selector"]).'"></option>';
             for ($j = $this->m_node->m_priority_min; $j <= $this->m_node->m_priority_max; $j++)
               $select .= '<option value="'.$j.'">'.$j.'</option>';
@@ -372,16 +372,16 @@
               switch($mraSelectionMode)
               {
                 case MRA_SINGLE_SELECT:
-                  $inputHTML = '<input type="radio" name="'.$listName.'_atkselector[]" value="'.$list["rows"][$i]["selector"].'" onclick="if (this.disabled) this.checked = false">';                
+                  $inputHTML = '<input type="radio" name="'.$listName.'_atkselector['.$i.']" value="'.$list["rows"][$i]["selector"].'" onclick="if (this.disabled) this.checked = false">';                
                   break;
                 case MRA_NO_SELECT:
                   $inputHTML = 
                     '<input type="checkbox" disabled="disabled" checked="checked">'.
-                    '<input type="hidden" name="'.$listName.'_atkselector[]" value="'.$list["rows"][$i]["selector"].'">';
+                    '<input type="hidden" name="'.$listName.'_atkselector['.$i.']" value="'.$list["rows"][$i]["selector"].'">';
                   break;
                 case MRA_MULTI_SELECT:
                 default:
-                  $inputHTML = '<input type="checkbox" name="'.$listName.'_atkselector[]" value="'.$list["rows"][$i]["selector"].'" onclick="if (this.disabled) this.checked = false">';                
+                  $inputHTML = '<input type="checkbox" name="'.$listName.'_atkselector['.$i.']" value="'.$list["rows"][$i]["selector"].'" onclick="if (this.disabled) this.checked = false">';                
               }              
               
               $record["cols"][] = array("content"=>$inputHTML.'<script language="javascript"  type="text/javascript">'.$listName.'["'.$list["rows"][$i]["selector"].'"] = new Array("'.implode($list["rows"][$i]["mra"], '","').'");</script>', "type" => "mra");

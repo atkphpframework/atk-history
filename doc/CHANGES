@@ -102,6 +102,10 @@ Changes in tomorrow branch
 * atkManyBoolRelation does not require atkManyToOneRelations in the 
   intermediate node anymore. [Peter]
 * Logout link in menu is now configurable. [Peter]
+* Fixed bug in atkThemeCompiler (non-array theme variables did not
+  override default variable values). [Peter]
+* Statefulness of DHTML tabs is now configurable. [Peter]
+
 
 Changed in ATK 5.5.1
 --------------------

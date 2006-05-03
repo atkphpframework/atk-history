@@ -203,7 +203,7 @@
 
     function _getEditOutput($record="", $fieldprefix="")
     {
-      $myrecords = $this->_getRecords($record,true);
+      $myrecords = $this->_getRecords($record, false); // TODO: fix paging
 
       $output=$this->editHeader($record, $myrecords);
 
@@ -211,7 +211,7 @@
 
 
       $output.=$this->editFooter($record, $myrecords);
-      $this->_fetchNavigationLinks($output);
+      //$this->_fetchNavigationLinks($output); // TODO: fix paging
 
       if($this->m_destInstance->allowed("add"))
       {

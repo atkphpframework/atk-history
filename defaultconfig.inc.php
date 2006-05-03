@@ -509,6 +509,13 @@
    * @var boolean
    */
   $config_tabs = true;
+  
+  /**
+   * Whatever DHTML tabs should be stateful or not
+   * (E.g. the current tab is saved for the current node/selector combination)
+   * @var boolean
+   */
+  $config_dhtml_tabs_stateful = true;
 
   /**
    * The number of records to display on a single page

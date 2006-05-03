@@ -97,7 +97,7 @@
      */
     function getThemedef()
     {
-      $file = array_shift($this->m_themedefs);
+      $file = array_pop($this->m_themedefs);
       if (file_exists($file))
       {
         include($file);
@@ -235,17 +235,20 @@
 
       foreach ($themedef as $themedefitemname => $themedefitem)
       {
+        // if not an array, the last definition will overwrite the first definition
         if (!is_array($themedef[$themedefitemname]))
         {
           $this->m_def[$themedefitemname]=$themedefitem;
         }
+        
+        // if an array, push the last definition at the beginning of the array
         else
         {
           if ((!isset($this->m_def[$themedefitemname])) || (!is_array($this->m_def[$themedefitemname])))
           {
             $this->m_def[$themedefitemname] = array();
           }
-          $this->m_def[$themedefitemname][]= array($from => $themedefitem);
+          array_unshift($this->m_def[$themedefitemname], array($from => $themedefitem));
         }
       }
     }
@@ -256,6 +259,7 @@
     function compile()
     {
       $this->getThemedef();
+      atk_var_dump($this->m_def, "DEFS");
 
       $compiled = $this->_compileThemedef();
       $this->_checkLocation();
