@@ -1539,7 +1539,7 @@
     $params = array_merge($atkparams, $params);
     
     if ($params != "" && is_array($params) && count($params) > 0)
-      $url .= '&'.buildQueryString($params);
+      $url .= '?'.buildQueryString($params);
       
     return $url;
   }
