@@ -174,13 +174,17 @@
    }
    
    /**
-    * Return all javascript codes
+    * Return all javascript codes in an array
     *
     * @return array
     */
    function getScriptCodes()
    {
-     return array_merge($this->m_scriptcode, $this->m_submitscripts, $this->m_loadscripts);
+     $scriptCodes = $this->m_scriptcode;
+     $scriptCodes[] = $this->_getGlobalSubmitScriptCode();
+     $scriptCodes[] = $this->_getGlobalLoadScriptCode();
+     
+     return $scriptCodes;
    }
 
     /**
@@ -279,16 +283,49 @@
      * @param String $res Reference to the HTML output
      */
     function addScripts(&$res)
-    {
+    {   
+      $res = "";
+        
       for ($i = 0; $i < count($this->m_scriptfiles); $i++)
       {
         $res.='  <script type="text/javascript" language="JavaScript" src="'.$this->m_scriptfiles[$i].'"></script>'."\n";
       }
 
-      $res.="  <script type=\"text/javascript\">
-  function globalSubmit(form)
-  {
-     var retval = true;\n";
+      $res.="  <script type=\"text/javascript\">";
+      
+      $res.= $this->_getGlobalSubmitScriptCode();
+      $res.= $this->_getGlobalLoadScriptCode();
+
+      // javascript code.
+      for ($i=0, $_i=count($this->m_scriptcode); $i<$_i; $i++)     
+      {
+        $res.= $this->m_scriptcode[$i]."\n";
+      }
+
+      $res.= "  </script>\n\n";
+    }
+    
+    function _getGlobalLoadScriptCode()
+    {
+      $res = "";
+      if (count($this->m_loadscripts))
+      {
+        $res.="  function globalLoad()
+        {\n";
+        for ($i=0, $_i=count($this->m_loadscripts); $i<$_i; $i++)
+        {
+          $res.= $this->m_loadscripts[$i]."\n";
+        }
+        $res.="  }\n";
+      }
+      return $res;
+    }
+    
+    function _getGlobalSubmitScriptCode()
+    {      
+      $res = "\nfunction globalSubmit(form)
+      {
+         var retval = true;\n";
 
       for ($i=0, $_i = count($this->m_submitscripts); $i<$_i; $i++)
       {
@@ -297,26 +334,8 @@
       }
 
       $res.="    return retval;
-   }\n";
-
-      if (count($this->m_loadscripts))
-      {
-        $res.="  function globalLoad()
-  {\n";
-        for ($i=0, $_i=count($this->m_loadscripts); $i<$_i; $i++)
-        {
-          $res.= $this->m_loadscripts[$i]."\n";
-        }
-        $res.="  }\n";
-      }
-
-      // javascript code.
-      for ($i=0, $_i=count($this->m_scriptcode); $i<$_i; $i++)
-      {
-        $res.= $this->m_scriptcode[$i]."\n";
-      }
-
-      $res.= "  </script>\n\n";
+      }\n";
+      return $res;
     }
 
     /**

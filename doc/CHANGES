@@ -131,6 +131,8 @@ Changed in ATK 5.5.1
 * Moved execution of preUpdate trigger to begin of updateDb function. This 
   way changing the record in the preUpdate function will have effect.
   [Lineke]
+* Some functional decomposition of javascript rendering to be able to fetch
+  the javascript seperately from the atkPage object. [Maurice]
 
 Changes in ATK 5.5
 ------------------
