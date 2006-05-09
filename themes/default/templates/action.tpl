@@ -15,17 +15,6 @@
     </tr>
   {/if}
   <tr>
-    <td align="center" valign="top">
-      <br>
-      <div class="atkmessages">
-        {atkmessages}
-        {foreach from=$atkmessages item=message}
-          &nbsp;{$message}<br>
-        {/foreach}
-      </div>
-    </td>
-  </tr>
-  <tr>
     <td valign="top" align="center">{$content}<br></td>
   </tr>
   <tr>

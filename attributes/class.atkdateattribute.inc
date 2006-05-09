@@ -15,6 +15,11 @@
    * @version $Revision$
    * $Id$
    */
+  
+  /**
+   * @internal baseclass include
+   */
+  useattrib("atkattribute");
 
   /** flag(s) specific for atkDateAttribute */
   define("AF_DATE_STRING",              AF_SPECIFIC_1); // date must be entered as an english date string (strtotime)
@@ -27,9 +32,7 @@
   $config_atkroot = atkconfig("atkroot");
   require_once($config_atkroot."atk/utils/adodb-time.inc.php");
   // Include browsertools for PDA detection
-  include_once($config_atkroot."atk/atkbrowsertools.inc");
-  
-  useattrib("atkattribute");
+  include_once($config_atkroot."atk/atkbrowsertools.inc"); 
 
   /**
    * The atkDateAttribute class offers a date widget for date fields.
@@ -524,11 +527,14 @@
       }
 
       // Set default values to null.
-      $record[$this->fieldName()]=array("year"=>0, "month"=>0, "day"=>0);
+      if (!isset($record[$this->fieldName()]) || empty($record[$this->fieldName()]))
+        $record[$this->fieldName()]=array("year"=>0, "month"=>0, "day"=>0);
 
       // FIXME, we need a way to set the date to 'nothing' (i.e., unselected)
-      $res = $this->draw($record, "atksearch_AE_".$fieldprefix, "_AE_from");
-      $res.= "&nbsp;".atktext("until").": ".$this->draw($record, "atksearch_AE_".$fieldprefix, "_AE_to");
+      $rec = isset($record[$this->fieldName()]['from']) ? array($this->fieldName() => $record[$this->fieldName()]['from']) : $record;
+      $res = $this->draw($rec, "atksearch_AE_".$fieldprefix, "_AE_from");
+      $rec = isset($record[$this->fieldName()]['to']) ? array($this->fieldName() => $record[$this->fieldName()]['to']) : $record;
+      $res.= "&nbsp;".atktext("until").": ".$this->draw($rec, "atksearch_AE_".$fieldprefix, "_AE_to");
       return $res;
     }
 
@@ -796,7 +802,7 @@
     function display($record)
     {
       $value = $record[$this->fieldName()];
-      if (empty($value["month"]) or empty($value["day"]) or empty( $value["year"])) return "";
+      if (!is_array($value) || empty($value["month"]) || empty($value["day"]) || empty( $value["year"])) return "";
       $tmp_date = adodb_getdate(adodb_mktime(0, 0, 0, $value["month"], $value["day"], $value["year"]));
       if (!empty($tmp_date))
       {

@@ -272,6 +272,81 @@
     }
 
     /**
+     * Get the selected language of the current user if he/she set one,
+     * otherwise we try to get it from the browser settings and if even THAT
+     * fails, we return the default language.
+     *
+     * @static
+     * @return unknown
+     */
+    function getUserLanguage()
+    {
+      $supported = atkLanguage::getSupportedLanguages();
+
+      $sessionmanager = &atkGetSessionManager();
+      if (!empty($sessionmanager))
+      {
+        if (function_exists("getUser"))
+        {
+          $userinfo = getUser();
+          $fieldname = atkconfig('auth_languagefield');
+          if (isset($userinfo[$fieldname]) && in_array($userinfo[$fieldname],$supported)) return $userinfo[$fieldname];
+        }
+      }
+
+      // Otherwise we check the headers
+      $headerlng = atkLanguage::getLanguageFromHeaders();
+      if ($headerlng && in_array($headerlng,$supported)) return $headerlng;
+
+      // We give up and just return the default language
+      return atkconfig('language');
+    }
+
+    /**
+     * Get the primary languagecode that the user has set in his/her browser
+     *
+     * @static
+     * @return String The languagecode
+     */
+    function getLanguageFromHeaders()
+    {
+      if (isset($_SERVER['HTTP_ACCEPT_LANGUAGE']))
+      {
+        $langs = split ('[,;]',$_SERVER['HTTP_ACCEPT_LANGUAGE']);
+        if ($langs[0]!="")
+        {
+          $elems=explode("-", $langs[0]); // lng might contain a subset after the dash.
+          $autolng=$elems[0];
+        }
+      }
+      return $autolng;
+    }
+
+    /**
+     * Get the languages supported by the application
+     *
+     * @static
+     * @return Array An array with the languages supported by the application.
+     */
+    function getSupportedLanguages()
+    {
+      static $s_supported = array();
+
+      $supportedlanguagesmodule = atkconfig('supported_languages_module');
+      if (empty($s_supported) && $supportedlanguagesmodule)
+      {
+        $supportedlanguagesdir = atkLanguage::getLanguageDirForModule($supportedlanguagesmodule);
+        atkimport('atk.utils.atkdirectorytraverser');
+        $supportedlanguagescollector = new getSupportedLanguagesCollector();
+        $traverser = new atkDirectoryTraverser();
+        $traverser->addCallbackObject($supportedlanguagescollector);
+        $traverser->traverse($supportedlanguagesdir);
+        $s_supported = $supportedlanguagescollector->getLanguages();
+      }
+      return $s_supported;
+    }
+
+    /**
      * Determine the list of modules we need to go through to check
      * language strings. Overrides have precedence, then the
      * passed module is considered, finally if no string is found
@@ -414,6 +489,36 @@
     }
 
     /**
+     * Method for getting the relative path to the languagedirectory
+     * of a module.
+     * Supports 2 special modules:
+     * - atk (returns the path of the atk languagedir)
+     * - langoverrides (returns the path of the languageoverrides dir)
+     *
+     * Special method in that it can run both in static and non-static
+     * mode.
+     *
+     * @param String $module The module to get the languagedir for
+     * @return String The relative path to the languagedir
+     */
+    function getLanguageDirForModule($module)
+    {
+      if ($module=="atk")
+      {
+        $path = atkconfig("atkroot")."atk/".($this?$this->LANGDIR:'languages/');
+      }
+      else if ($module=="langoverrides")
+      {
+        $path = atkconfig("language_basedir",($this?$this->LANGDIR:'languages/'));
+      }
+      else
+      {
+        $path = moduleDir($module).($this?$this->LANGDIR:'languages/');
+      }
+      return $path;
+    }
+
+    /**
      * A function to change the original "$something_text" string to
      * "Something text"
      * This is only used when we really can't find the "$something_text" anywhere
@@ -462,15 +567,15 @@
       $this->m_customStrings[$lng][$code]=$text;
     }
   }
-  
-  
+
+
   /**
    * A collector for supported languages
    */
   class getSupportedLanguagesCollector
   {
     var $m_languages=array();
-    
+
     function visitFile($fullpath)
     {
       if (substr($fullpath,strlen($fullpath)-4)==='.lng')
@@ -480,7 +585,7 @@
         $this->m_languages[] = substr($lng,0,2);
       }
     }
-    
+
     function getLanguages()
     {
       return $this->m_languages;

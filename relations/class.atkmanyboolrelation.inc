@@ -91,7 +91,7 @@
        }
 
       $recordset = $this->_getSelectableRecords($record, $mode);
-      
+
       $page = &atkPage::getInstance();
       $page->register_script(atkconfig("atkroot")."atk/javascript/class.atkprofileattribute.js.php");
 

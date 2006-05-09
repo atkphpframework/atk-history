@@ -207,6 +207,7 @@
   function &newNode($node, $init=TRUE)
   {
     $module = getNodeModule($node);
+    
     if ($module=="")
     {
       // No module, use the default instance.
@@ -216,12 +217,17 @@
     {
       $module_inst = &getModule($module);
     }
-    if (is_object($module_inst) && method_exists($module_inst,'newNode'))
+    if (is_object($module_inst))
     {
-      $node = &$module_inst->newNode($node);
-      if ($init && $node != NULL) $node->init();
-      return $node;
+      if (method_exists($module_inst,'newNode'))
+      {
+        $node = &$module_inst->newNode($node);
+        if ($init && $node != NULL) $node->init();
+        return $node;
+      }
+      else atkerror("Module $module does not have newNode function (does it extend from atkModule?)");
     }
+    else atkerror("Module $module could not be instantiated.");
     return NULL;
   }
 

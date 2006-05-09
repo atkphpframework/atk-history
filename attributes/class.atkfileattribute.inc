@@ -15,13 +15,39 @@
    * $Id$
    */
 
+  useattrib("atkattribute");
+
   /** flag(s) specific for the atkFileAttribute */
-  define("AF_FILE_NO_UPLOAD",           AF_SPECIFIC_1); // unable to upload files
-  define("AF_FILE_NO_SELECT",           AF_SPECIFIC_2); // unable to select files
-  define("AF_FILE_NO_DELETE",           AF_SPECIFIC_3); // unable to delete files
-  define("AF_FILE_NO_AUTOPREVIEW",      AF_SPECIFIC_4); // don't try to detect the file type (shows only filename)
-  define("AF_FILE_PHYSICAL_DELETE",     AF_SPECIFIC_5); // removes the file physically
-  define("AF_FILE_POPUP",                    AF_POPUP); // show preview in popup instead of inline
+
+  /**
+   * Disable uploading of files
+   */
+  define("AF_FILE_NO_UPLOAD",           AF_SPECIFIC_1);
+
+  /**
+   * Disable selecting of files
+   */
+  define("AF_FILE_NO_SELECT",           AF_SPECIFIC_2);
+
+  /**
+   * Disable deleting of files
+   */
+  define("AF_FILE_NO_DELETE",           AF_SPECIFIC_3);
+
+  /**
+   * Don't try to detect the file type (shows only filename)
+   */
+  define("AF_FILE_NO_AUTOPREVIEW",      AF_SPECIFIC_4);
+
+  /**
+   * Removed the files physically
+   */
+  define("AF_FILE_PHYSICAL_DELETE",     AF_SPECIFIC_5);
+
+  /**
+   * Show preview in popup instead of inline
+   */
+  define("AF_FILE_POPUP",                    AF_POPUP);
 
   /**
    * With this you can upload, select and remove files in a given directory.
@@ -61,6 +87,14 @@
     var $m_filenameTpl = "";
 
     /**
+     * When set to true, a file is auto-renumbered if another record exists with the
+     * same filename.
+     *
+     * @var boolean
+     */
+    var $m_autonumbering = false;
+
+    /**
      * Constructor
      * @param string $name Name of the attribute
      * @param array $dir Can be a string with the Directory with images/files or an array with a Directory and a Display Url
@@ -84,6 +118,20 @@
         $this->m_dir = $this->AddSlash($dir);
 	      $this->m_url = $this->AddSlash($dir);
       }
+    }
+
+    /**
+     * Turn auto-numbering of filenames on/off.
+     *
+     * When autonumbering is turned on, uploading a file with the same name as
+     * the file of another record, will result in the file getting a unique
+     * sequence number.
+     *
+     * @param unknown_type $autonumbering
+     */
+    function setAutonumbering($autonumbering=true)
+    {
+      $this->m_autonumbering = $autonumbering;
     }
 
 
@@ -171,7 +219,6 @@
      */
     function value2db($rec)
     {
-      atk_var_dump($rec, "this is the file");
       if(isset($_REQUEST["del"])) $del = $_REQUEST["del"];
 
       if($rec[$this->fieldName()]["tmpfile"]=="" && $rec[$this->fieldName()]["filename"]!=""
@@ -217,12 +264,11 @@
             {
               if (@copy($rec[$this->fieldName()]["tmpfile"],$this->m_dir.$filename))
               {
-                atkdebug("COPY: ".$rec[$this->fieldName()]["tmpfile"]." -> ".$this->m_dir.$filename);
+                $this->processFile($this->m_dir, $filename);
                 return $filename;
               }
               else
               {
-                atkdebug("tmp file ".$rec[$this->fieldName()]["tmpfile"]." dir ".$this->m_dir.$filename);
                 atkerror("File could not be saved");
                 return "";
               }
@@ -230,6 +276,20 @@
         }
         return $rec[$this->fieldName()]["orgfilename"];
       }
+    }
+
+    /**
+     * Perform processing on an image right after it is uploaded.
+     *
+     * If you need any resizing or other postprocessing to be done on a file
+     * after it is uploaded, you can create a derived attribute that
+     * implements the processFile($filepath) method.
+     * The default implementation does not do any processing.
+     * @param String $filepath The path of the uploaded file.
+     * @param String $filename The name of the uploaded file.
+     */
+    function processFile($filepath, $filename)
+    {
     }
 
     /**
@@ -276,6 +336,7 @@
       $postfiles_basename = $rec[$this->fieldName()."_postfileskey"];
 
       $basename = $this->fieldName();
+
       if (is_array($_FILES)||($rec[$this->fieldName()]["select"] != "" && !$this->hasFlag(AF_FILE_NO_SELECT)) || ($rec[$this->fieldName()]["filename"]!="")) // php4
       {
         // if an error occured during the upload process
@@ -323,6 +384,12 @@
         else
         {
           $realname = $this->_filenameMangle($rec, $_FILES[$postfiles_basename]["name"]);
+
+          if ($this->m_autonumbering)
+          {
+            $realname = $this->_filenameUnique($rec, $realname);
+          }
+
           $result = array("tmpfile"=>$_FILES[$postfiles_basename]["tmp_name"],
                           "filename"=>$realname,
                           "filesize"=>$_FILES[$postfiles_basename]["size"],
@@ -376,7 +443,6 @@
      */
     function display($record)
     {
-
       $filename    = $record[$this->fieldName()]["orgfilename"];
       atkdebug($this->fieldname()." - File: $filename");
       $prev_type     = Array("jpg","jpeg","gif","tif","png","bmp","htm","html","txt");  // file types for preview
@@ -385,7 +451,7 @@
       {
         if(is_file($this->m_dir.$filename))
         {
-          $ext = strtolower(substr($filename, strrpos($filename,'.')+1,strlen($filename)));
+          $ext = $this->getFileExtension($filename);
           if((in_array($ext, $prev_type) && $this->hasFlag(AF_FILE_NO_AUTOPREVIEW))||(!in_array($ext, $prev_type)))
           {
             return "<a href=\"".$this->m_url."$filename\" target=\"_blank\">$filename</a>";
@@ -413,6 +479,11 @@
       }
     }
 
+    function getFileExtension($filename)
+    {
+      return strtolower(substr($filename, strrpos($filename,'.')+1,strlen($filename)));
+    }
+
     function getSearchModes()
     {
       // exact match and substring search should be supported by any database.
@@ -425,6 +496,7 @@
 
     /**
      * Determine the real filename of a file (based on m_filenameTpl).
+     * @access private
      */
     function _filenameMangle($rec, $default)
     {
@@ -434,10 +506,47 @@
       }
       else
       {
+        atkimport("atk.utils.stringparser");
+        $parser = new atkStringParser($this->m_filenameTpl);
         $ext = strtolower(substr($default, strrpos($default,'.')+1));
-        $filename = stringparse($this->m_filenameTpl, $rec).".".$ext;
+        $filename = $parser->parse($rec).".".$ext;
       }
       return str_replace(' ','_',$filename);
+    }
+
+    /**
+     * Give the file a uniquely numbered filename.
+     *
+     * @access private
+     * @param array $rec The record for thish the file was uploaded
+     * @param String $filename The name of the uploaded file
+     * @return String The name of the uploaded file, renumbered if necessary
+     */
+    function _filenameUnique($rec, $filename)
+    {
+      // check if there's another record using this same name. If so, (re)number the filename.
+      atkdebug("unique check");
+
+      $name = substr($filename, 0, strrpos($filename,'.'));
+      $ext = substr($filename, strrpos($filename,'.')+1);
+
+      $selector = "(".$this->fieldName()."='$filename' OR ".$this->fieldName()." LIKE '$name-_.$ext')";
+      if ($rec[$this->m_ownerInstance->primaryKeyField()]!="")
+      {
+        $selector.= " AND NOT (".$this->m_ownerInstance->primaryKey($rec).")";
+      }
+
+      $count = $this->m_ownerInstance->countDb("($selector)", "", array($this->fieldName()));
+
+      atkdebug("count ".$count);
+
+      if ($count>0)
+      {
+        // file name exists, so mangle it with a number.
+        $filename = $name."-".$count.".".$ext;
+      }
+
+      return $filename;
     }
 
     /**

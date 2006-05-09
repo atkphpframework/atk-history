@@ -6,8 +6,6 @@ Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 
 Changed in ATK 5.5.1
 --------------------
-* atkCountryAtttibute: added all europe countries to fillCountriesArray, 
-  so we can use switch 'europe'. [Nico]
 + Added atkMessageQueue for user notification messages, which can be shown
   via the atkmessages plugin. [Patrick]
 + Added atkCalculatorAttribute for adding columns with calculated values. [Ivo]
@@ -30,6 +28,22 @@ Changed in ATK 5.5.1
   with _id appended to it. [Ivo]
 + Added atkManyBoolRelation::setCols() method to set the number of columns
   with checkboxes. [Ivo]
++ Added new lesson (9) to demo application to demonstrate many-to-many
+  relations. [Ivo]
++ Added setToolbarSet() method to atkFckAttribute to change the displayed
+  toolbars. [Ivo]
++ Added setAutonumbering() method to atkFileAttribute to turn on autonumbering
+  of files when files with the same name as that of a different record are
+  uploaded. [Ivo]
++ Added ajax powered smart search functionality for performing arbitraty 
+  searches on any node. [Peter]
++ atkPage::register_style() and the {atkstyle} now accept a 'media' parameter.
+  [Peter]
++ Added processFile() method to atkFileAttribute, to override in derived 
+  classes when processing (such as resizing) needs to be done on uploaded 
+  files. [Ivo]
+* Changed the copydb method by filtering the executetriggers and added 
+  support for different modes. [dennisjan, Peter]
 * Introduced atkeditlng which can be passed along to force ML attributes to
   display a specific language. [Boy]
 * Fixed a bug in the 'remove current file' feature of atkFileAttribute when
@@ -62,10 +76,43 @@ Changed in ATK 5.5.1
 * Postgresql records are now fetched in PGSQL_ASSOC mode (only associative
   array instead of numerical indexes). This should save a lot of memory.
   For applications that rely on the numerical record indexes (EVIL!) you
-  can set $config_pgsqlfetchmode = PGSQL_BOTH in your configfile.
+  can set $config_pgsqlfetchmode = PGSQL_BOTH in your configfile. [Sandy]
+* Fixed bug in the atkManyToManyRelation if the filter isn't set. [Sandy]
+* Upgrade FCKEditor (for atkFckAttribute) to version 2.2. [Ivo, Olav]
+* Fixed db2value method of atkManyToOneRelation (now calls db2value on
+  destination attributes). Warning: this change might give you problems if 
+  you depend on the old (incorrect) behaviour! [Peter]
+* Fixed loading existing search in atkDateAttribute. [Peter]
+* Improved title support (stack trace and action title). [Peter]
+* Fixed distinct count support in atkQuery (using setDistinct). [Peter]
+* Backported array support for $params parameter dispatch_url. [Peter]
+* Backported atkDateTimeAttribute search support. [Peter]
+* Backported prototype/scriptaculous JavaScript libs. [Peter]
+* Fixed the width of forms inside tabs to be 100%, for 'outlook', 'win2k' and 
+  'modern' themes. [Ivo]
+* Generated select/count queries now have spaces between the field- and table
+  names for improved readability. Side effect is that the debugoutput no longer
+  causes the screen to have an overly large scrollbar. [Ivo]
+* Made the colorpicker popup multilanguage. [Sandy]
+* Added extra is_array check to they display function the atkdateattribute
+  because the empty function doesn't work correct in the php 5.0.5 version
+  (this is fixed in the php 5.1.1 as far as i can see). [Sandy]
+* Added ability to call display on atkManyToOneRelation without mode. [Boy]
+* Fixed include order in atkDateAttribute that could cause it to be displayed
+  as a text input when included before atkAttribute. [Ivo]
+* Updated Dutch translation. [Peter]
+* Fixed double cursor declaration in tabs css file of outlook theme. [Yury]
+* Fixed bug in the countDb that used wrong var in the in_array. [Sandy]
+* Fixed MRA button translation when there is only one action. [Boy]
+* Improved error handling when module doesn't extend from atkModule. [Boy]
+* Updated atkFileAttribute phpdoc, updated some deprecated elements and did
+  some functional decomposition. [Boy]
+* Updated date format and decimal seperator in french language file. [Sandy]
 - Removed atk/styles.css as this only belongs in themes. [Ivo]
 - Default styles.css file from an application's root is no longer loaded by
   default. [Ivo]
+* atkCountryAtttibute: added all europe countries to fillCountriesArray, 
+  so we can use switch 'europe'. [Nico]
 + Added atkWizardActionLoader which convertes a atkwizardaction key array
   to string value. [Maurice]
 + Added to possibility to override a atkController class in atkNode. [Maurice]

@@ -137,14 +137,14 @@
    * software relies on numerical indexes (WHICH IS A BAD IDEA!!)
    * @var int
    */
-  $config_mysqlfetchmode = MYSQL_ASSOC;
-  
+  $config_mysqlfetchmode = defined("MYSQL_ASSOC") ? MYSQL_ASSOC : 0;
+
   /**
    * Backwardscompatibility setting. Set this to PGSQL_BOTH if your
    * software relies on numerical indexes (WHICH IS A BAD IDEA!!)
    * @var int
    */
-  $config_pgsqlfetchmode = PGSQL_ACCOC;
+  $config_pgsqlfetchmode = defined("PGSQL_ASSOC") ? PGSQL_ASSOC : 0;
 
   /********************************** SECURITY *******************************/
 
@@ -271,7 +271,7 @@
    * @var String
    */
   $config_auth_languagefield   = "lng";
-  
+
   /**
    *
    * @var String
@@ -585,6 +585,23 @@
    //$config_supported_languages_module = $config_atkroot.'atk/languages/';
    $config_supported_languages_module = '';
 
+  /**
+   * Where ATK should look for it's supported languages
+   *
+   * In your own application you should probably make this the module
+   * with the most language translations.
+   * Leaving this empty will turn off functionality where we check
+   * for the user language in the browser or in the user session and will
+   * make sure the application is always presented in the default language.
+   * This config var also accepts 2 'special' modules:
+   * - atk (making it use the languages of ATK)
+   * - langoverrides (making it use the language overrides directory)
+   *
+   * @var String
+   */
+   //$config_supported_languages_module = $config_atkroot.'atk/languages/';
+   $config_supported_languages_module = '';
+
   /********************* TEMPLATE ENGINE CONFIGURATION ***********************/
 
   /**
@@ -738,4 +755,13 @@
    * @var boolean
    */
   $config_mail_enabled = true;
+  
+  /**
+   * Default extended search action. This action can always be overriden
+   * in the node by using $node->setExtendedSearchAction. At this time
+   * (by default) the following values are supported: 'search' or 'smartsearch'
+   * 
+   * @var string
+   */
+  $config_extended_search_action = 'search';
 ?>
