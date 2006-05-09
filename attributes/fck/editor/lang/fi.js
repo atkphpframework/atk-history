@@ -8,8 +8,6 @@
  * For further information visit:
  * 		http://www.fckeditor.net/
  * 
- * "Support Open Source software. What about a donation today?"
- * 
  * File Name: fi.js
  * 	Finnish language file.
  * 
@@ -43,8 +41,6 @@ RemoveLink			: "Poista linkki",
 Anchor				: "Lisää ankkuri/muokkaa ankkuria",
 InsertImageLbl		: "Kuva",
 InsertImage			: "Lisää kuva/muokkaa kuvaa",
-InsertFlashLbl		: "Flash",
-InsertFlash			: "Lisää/muokkaa Flashia",
 InsertTableLbl		: "Taulu",
 InsertTable			: "Lisää taulu/muokkaa taulua",
 InsertLineLbl		: "Murtoviiva",
@@ -85,8 +81,6 @@ Find				: "Etsi",
 Replace				: "Korvaa",
 SpellCheck			: "Tarkista oikeinkirjoitus",
 UniversalKeyboard	: "Universaali näppäimistö",
-PageBreakLbl		: "Sivun vaihto",
-PageBreak			: "Lisää sivun vaihto",
 
 Form			: "Lomake",
 Checkbox		: "Valintaruutu",
@@ -108,11 +102,9 @@ InsertCell			: "Lisää solu",
 DeleteCells			: "Poista solut",
 MergeCells			: "Yhdistä solut",
 SplitCell			: "Jaa solu",
-TableDelete			: "Poista taulu",
 CellProperties		: "Solun ominaisuudet",
 TableProperties		: "Taulun ominaisuudet",
 ImageProperties		: "Kuvan ominaisuudet",
-FlashProperties		: "Flash ominaisuudet",
 
 AnchorProp			: "Ankkurin ominaisuudet",
 ButtonProp			: "Painikkeen ominaisuudet",
@@ -136,9 +128,6 @@ UnknownToolbarItem	: "Tuntemanton työkalu \"%1\"",
 UnknownCommand		: "Tuntematon komento \"%1\"",
 NotImplemented		: "Komentoa ei ole liitetty sovellukseen",
 UnknownToolbarSet	: "Työkalukokonaisuus \"%1\" ei ole olemassa",
-NoActiveX			: "Selaimesi turvallisuusasetukset voivat rajoittaa joitain editorin ominaisuuksia. Sinun pitää ottaa käyttöön asetuksista \"Suorita ActiveX komponentit ja -plugin-laajennukset\". Saatat kohdata virheitä ja huomata puuttuvia ominaisuuksia.",
-BrowseServerBlocked : "Resurssiselainta ei voitu avata. Varmista, että ponnahdusikkunoiden estäjät eivät ole päällä.",
-DialogBlocked		: "Apuikkunaa ei voitu avaata. Varmista, että ponnahdusikkunoiden estäjät eivät ole päällä.",
 
 // Dialogs
 DlgBtnOK			: "OK",
@@ -147,8 +136,6 @@ DlgBtnClose			: "Sulje",
 DlgBtnBrowseServer	: "Selaa palvelinta",
 DlgAdvancedTag		: "Lisäominaisuudet",
 DlgOpOther			: "Muut",
-DlgInfoTab			: "Info",
-DlgAlertUrl			: "Lisää URL",
 
 // General Dialogs Labels
 DlgGenNotSet		: "&lt;ei asetettu&gt;",
@@ -173,7 +160,7 @@ DlgImgInfoTab		: "Kuvan tiedot",
 DlgImgBtnUpload		: "Lähetä palvelimelle",
 DlgImgURL			: "Osoite",
 DlgImgUpload		: "Lisää kuva",
-DlgImgAlt			: "Vaihtoehtoinen teksti",
+DlgImgAlt			: "Kuvateksti",
 DlgImgWidth			: "Leveys",
 DlgImgHeight		: "Korkeus",
 DlgImgLockRatio		: "Lukitse suhteet",
@@ -194,16 +181,6 @@ DlgImgAlignTop		: "Ylös",
 DlgImgPreview		: "Esikatselu",
 DlgImgAlertUrl		: "Kirjoita kuvan osoite (URL)",
 DlgImgLinkTab		: "Linkki",
-
-// Flash Dialog
-DlgFlashTitle		: "Flash ominaisuudet",
-DlgFlashChkPlay		: "Automaattinen käynnistys",
-DlgFlashChkLoop		: "Toisto",
-DlgFlashChkMenu		: "Näytä Flash-valikko",
-DlgFlashScale		: "Levitä",
-DlgFlashScaleAll	: "Näytä kaikki",
-DlgFlashScaleNoBorder	: "Ei rajaa",
-DlgFlashScaleFit	: "Tarkka koko",
 
 // Link Dialog
 DlgLnkWindowTitle	: "Linkki",
@@ -283,7 +260,6 @@ DlgTableHeight		: "Korkeus",
 DlgTableCellSpace	: "Solujen väli",
 DlgTableCellPad		: "Solujen sisennys",
 DlgTableCaption		: "Otsikko",
-DlgTableSummary		: "Yhteenveto",
 
 // Table Cell Dialog
 DlgCellTitle		: "Solun ominaisuudet",
@@ -334,11 +310,7 @@ PasteErrorCopy	: "Selaimesi turva-asetukset eivät salli editorin toteuttaa kopi
 PasteAsText		: "Liitä tekstinä",
 PasteFromWord	: "Liitä Wordista",
 
-DlgPasteMsg2	: "Liitä painamalla (<STRONG>Ctrl+V</STRONG>) ja painamalla <STRONG>OK</STRONG>.",
-DlgPasteIgnoreFont		: "Jätä huomioimatta fonttimääritykset",
-DlgPasteRemoveStyles	: "Poista tyylimääritykset",
-DlgPasteCleanBox		: "Tyhjennä",
-
+DlgPasteMsg		: "Editori ei voinut toteuttaa liittämistä selaimesi <STRONG>turva-asetusten</STRONG> takia.<BR>Suorita liittäminen käyttäen näppäimistöä (<STRONG>Ctrl+V</STRONG>) ja valitse <STRONG>OK</STRONG>.",
 
 // Color Picker
 ColorAutomatic	: "Automaattinen",
@@ -422,7 +394,7 @@ BulletedListProp	: "Luettelon ominaisuudet",
 NumberedListProp	: "Numeroinnin ominaisuudet",
 DlgLstType			: "Tyyppi",
 DlgLstTypeCircle	: "Kehä",
-DlgLstTypeDisc		: "Ympyrä",
+DlgLstTypeDisk		: "Ympyrä",
 DlgLstTypeSquare	: "Neliö",
 DlgLstTypeNumbers	: "Numerot (1, 2, 3)",
 DlgLstTypeLCase		: "Pienet kirjaimet (a, b, c)",

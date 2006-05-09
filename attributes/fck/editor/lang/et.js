@@ -8,8 +8,6 @@
  * For further information visit:
  * 		http://www.fckeditor.net/
  * 
- * "Support Open Source software. What about a donation today?"
- * 
  * File Name: et.js
  * 	Estonian language file.
  * 
@@ -43,8 +41,6 @@ RemoveLink			: "Eemalda link",
 Anchor				: "Insert/Edit Anchor",	//MISSING
 InsertImageLbl		: "Pilt",
 InsertImage			: "Sisesta/Muuda pilt",
-InsertFlashLbl		: "Flash",	//MISSING
-InsertFlash			: "Insert/Edit Flash",	//MISSING
 InsertTableLbl		: "Tabel",
 InsertTable			: "Sisesta/Muuda tabel",
 InsertLineLbl		: "Joon",
@@ -85,8 +81,6 @@ Find				: "Otsi",
 Replace				: "Asenda",
 SpellCheck			: "Check Spell",	//MISSING
 UniversalKeyboard	: "Universal Keyboard",	//MISSING
-PageBreakLbl		: "Page Break",	//MISSING
-PageBreak			: "Insert Page Break",	//MISSING
 
 Form			: "Form",	//MISSING
 Checkbox		: "Checkbox",	//MISSING
@@ -108,11 +102,9 @@ InsertCell			: "Lisa lahter",
 DeleteCells			: "Eemalda lahtrid",
 MergeCells			: "Ühenda lahtrid",
 SplitCell			: "Lahuta lahtrid",
-TableDelete			: "Delete Table",	//MISSING
 CellProperties		: "Lahtri atribuudid",
 TableProperties		: "Tabeli atribuudid",
 ImageProperties		: "Pildi  atribuudid",
-FlashProperties		: "Flash Properties",	//MISSING
 
 AnchorProp			: "Anchor Properties",	//MISSING
 ButtonProp			: "Button Properties",	//MISSING
@@ -136,9 +128,6 @@ UnknownToolbarItem	: "Tundmatu tööriistariba üksus \"%1\"",
 UnknownCommand		: "Tundmatu käsunimi \"%1\"",
 NotImplemented		: "Käsku ei täidetud",
 UnknownToolbarSet	: "Tööriistariba \"%1\" ei eksisteeri",
-NoActiveX			: "You browser's security settings could limit some features of the editor. You must enable the option \"Run ActiveX controls and plug-ins\". You may experience errors and notice missing features.",	//MISSING
-BrowseServerBlocked : "The resources browser could not be opened. Make sure that all popup blockers are disabled.",	//MISSING
-DialogBlocked		: "It was not possible to open the dialog window. Make sure all popup blockers are disabled.",	//MISSING
 
 // Dialogs
 DlgBtnOK			: "OK",
@@ -147,8 +136,6 @@ DlgBtnClose			: "Sule",
 DlgBtnBrowseServer	: "Browse Server",	//MISSING
 DlgAdvancedTag		: "Täpsemalt",
 DlgOpOther			: "&lt;Other&gt;",	//MISSING
-DlgInfoTab			: "Info",	//MISSING
-DlgAlertUrl			: "Please insert the URL",	//MISSING
 
 // General Dialogs Labels
 DlgGenNotSet		: "&lt;määramata&gt;",
@@ -194,16 +181,6 @@ DlgImgAlignTop		: "Üles",
 DlgImgPreview		: "Eelvaade",
 DlgImgAlertUrl		: "Palun kirjuta pildi URL",
 DlgImgLinkTab		: "Link",	//MISSING
-
-// Flash Dialog
-DlgFlashTitle		: "Flash Properties",	//MISSING
-DlgFlashChkPlay		: "Auto Play",	//MISSING
-DlgFlashChkLoop		: "Loop",	//MISSING
-DlgFlashChkMenu		: "Enable Flash Menu",	//MISSING
-DlgFlashScale		: "Scale",	//MISSING
-DlgFlashScaleAll	: "Show all",	//MISSING
-DlgFlashScaleNoBorder	: "No Border",	//MISSING
-DlgFlashScaleFit	: "Exact Fit",	//MISSING
 
 // Link Dialog
 DlgLnkWindowTitle	: "Link",
@@ -283,7 +260,6 @@ DlgTableHeight		: "Kõrgus",
 DlgTableCellSpace	: "Lahtri vahe",
 DlgTableCellPad		: "Lahtri täidis",
 DlgTableCaption		: "Seletiitel",
-DlgTableSummary		: "Summary",	//MISSING
 
 // Table Cell Dialog
 DlgCellTitle		: "Lahtri atribuudid",
@@ -334,11 +310,7 @@ PasteErrorCopy	: "Sinu brauseri turvaseaded ei luba redaktoril automaatselt kope
 PasteAsText		: "Kleebi tavalise tekstina",
 PasteFromWord	: "Kleebi Wordist",
 
-DlgPasteMsg2	: "Please paste inside the following box using the keyboard (<STRONG>Ctrl+V</STRONG>) and hit <STRONG>OK</STRONG>.",	//MISSING
-DlgPasteIgnoreFont		: "Ignore Font Face definitions",	//MISSING
-DlgPasteRemoveStyles	: "Remove Styles definitions",	//MISSING
-DlgPasteCleanBox		: "Clean Up Box",	//MISSING
-
+DlgPasteMsg		: "Redaktor ei saanud sinu brauseri <STRONG>turvaseadete</STRONG> pärast automatselt kleepida.<BR>Palun kleebi järgmisse kasti kasutades klaviatuuri(<STRONG>Ctrl+V</STRONG>) ja vajuta <STRONG>OK</STRONG>.",
 
 // Color Picker
 ColorAutomatic	: "Automaatne",
@@ -422,7 +394,7 @@ BulletedListProp	: "Bulleted List Properties",	//MISSING
 NumberedListProp	: "Numbered List Properties",	//MISSING
 DlgLstType			: "Type",	//MISSING
 DlgLstTypeCircle	: "Circle",	//MISSING
-DlgLstTypeDisc		: "Disc",	//MISSING
+DlgLstTypeDisk		: "Disk",	//MISSING
 DlgLstTypeSquare	: "Square",	//MISSING
 DlgLstTypeNumbers	: "Numbers (1, 2, 3)",	//MISSING
 DlgLstTypeLCase		: "Lowercase Letters (a, b, c)",	//MISSING

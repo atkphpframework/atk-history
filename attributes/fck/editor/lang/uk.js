@@ -8,8 +8,6 @@
  * For further information visit:
  * 		http://www.fckeditor.net/
  * 
- * "Support Open Source software. What about a donation today?"
- * 
  * File Name: uk.js
  * 	Ukrainian language file.
  * 
@@ -43,8 +41,6 @@ RemoveLink			: "Знищити посилання",
 Anchor				: "Вставити/Редагувати якір",
 InsertImageLbl		: "Зображення",
 InsertImage			: "Вставити/Редагувати зображення",
-InsertFlashLbl		: "Flash",
-InsertFlash			: "Вставити/Редагувати Flash",
 InsertTableLbl		: "Таблиця",
 InsertTable			: "Вставити/Редагувати таблицю",
 InsertLineLbl		: "Лінія",
@@ -85,8 +81,6 @@ Find				: "Пошук",
 Replace				: "Заміна",
 SpellCheck			: "Перевірити орфографію",
 UniversalKeyboard	: "Універсальна клавіатура",
-PageBreakLbl		: "Page Break",	//MISSING
-PageBreak			: "Insert Page Break",	//MISSING
 
 Form			: "Форма",
 Checkbox		: "Флагова кнопка",
@@ -108,11 +102,9 @@ InsertCell			: "Вставити комірку",
 DeleteCells			: "Видалити комірки",
 MergeCells			: "Об'єднати комірки",
 SplitCell			: "Роз'єднати комірку",
-TableDelete			: "Delete Table",	//MISSING
 CellProperties		: "Властивості комірки",
 TableProperties		: "Властивості таблиці",
 ImageProperties		: "Властивості зображення",
-FlashProperties		: "Властивості Flash",
 
 AnchorProp			: "Властивості якоря",
 ButtonProp			: "Властивості кнопки",
@@ -136,9 +128,6 @@ UnknownToolbarItem	: "Невідомий елемент панелі інстр�
 UnknownCommand		: "Невідоме ім'я команди \"%1\"",
 NotImplemented		: "Команда не реалізована",
 UnknownToolbarSet	: "Панель інструментів \"%1\" не існує",
-NoActiveX			: "You browser's security settings could limit some features of the editor. You must enable the option \"Run ActiveX controls and plug-ins\". You may experience errors and notice missing features.",	//MISSING
-BrowseServerBlocked : "The resources browser could not be opened. Make sure that all popup blockers are disabled.",	//MISSING
-DialogBlocked		: "It was not possible to open the dialog window. Make sure all popup blockers are disabled.",	//MISSING
 
 // Dialogs
 DlgBtnOK			: "ОК",
@@ -147,8 +136,6 @@ DlgBtnClose			: "Зачинити",
 DlgBtnBrowseServer	: "Передивитися на сервері",
 DlgAdvancedTag		: "Розширений",
 DlgOpOther			: "&lt;Інше&gt;",
-DlgInfoTab			: "Інфо",
-DlgAlertUrl			: "Вставте, будь-ласка, URL",
 
 // General Dialogs Labels
 DlgGenNotSet		: "&lt;не визначено&gt;",
@@ -194,16 +181,6 @@ DlgImgAlignTop		: "По верху",
 DlgImgPreview		: "Попередній перегляд",
 DlgImgAlertUrl		: "Будь ласка, введіть URL зображення",
 DlgImgLinkTab		: "Посилання",
-
-// Flash Dialog
-DlgFlashTitle		: "Властивості Flash",
-DlgFlashChkPlay		: "Авто програвання",
-DlgFlashChkLoop		: "Зациклити",
-DlgFlashChkMenu		: "Дозволити меню Flash",
-DlgFlashScale		: "Масштаб",
-DlgFlashScaleAll	: "Показати всі",
-DlgFlashScaleNoBorder	: "Без рамки",
-DlgFlashScaleFit	: "Дійсний розмір",
 
 // Link Dialog
 DlgLnkWindowTitle	: "Посилання",
@@ -283,7 +260,6 @@ DlgTableHeight		: "Висота",
 DlgTableCellSpace	: "Проміжок (spacing)",
 DlgTableCellPad		: "Відступ (padding)",
 DlgTableCaption		: "Заголовок",
-DlgTableSummary		: "Summary",	//MISSING
 
 // Table Cell Dialog
 DlgCellTitle		: "Властивості комірки",
@@ -334,11 +310,7 @@ PasteErrorCopy	: "Настройки безпеки вашого браузер�
 PasteAsText		: "Вставити тільки текст",
 PasteFromWord	: "Вставити з Word",
 
-DlgPasteMsg2	: "Будь-ласка, вставте з буфера обміну в цю область, користуючись комбінацією клавіш (<STRONG>Ctrl+V</STRONG>) та натисніть <STRONG>OK</STRONG>.",
-DlgPasteIgnoreFont		: "Ігнорувати налаштування шрифтів",
-DlgPasteRemoveStyles	: "Видалити налаштування стилів",
-DlgPasteCleanBox		: "Очистити область",
-
+DlgPasteMsg		: "Редактор не може автоматично виконати операцію вставки  внаслідок <STRONG>налаштування безпеки</STRONG> вашого браузера.<BR> Будь ласка, вставте текст в наступне поле введення, використовуючи клавіатуру (<STRONG>Ctrl+V</STRONG>),  і натисніть <STRONG>ОК</STRONG>.",
 
 // Color Picker
 ColorAutomatic	: "Автоматичний",
@@ -422,7 +394,7 @@ BulletedListProp	: "Властивості маркованого списка",
 NumberedListProp	: "Властивості нумерованного списка",
 DlgLstType			: "Тип",
 DlgLstTypeCircle	: "Коло",
-DlgLstTypeDisc		: "Disc",	//MISSING
+DlgLstTypeDisk		: "Диск",
 DlgLstTypeSquare	: "Квадрат",
 DlgLstTypeNumbers	: "Номери (1, 2, 3)",
 DlgLstTypeLCase		: "Літери нижнього регістра(a, b, c)",

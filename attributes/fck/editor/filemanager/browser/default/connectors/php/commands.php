@@ -9,10 +9,8 @@
  * For further information visit:
  * 		http://www.fckeditor.net/
  * 
- * "Support Open Source software. What about a donation today?"
- * 
  * File Name: commands.php
- * 	This is the File Manager Connector for PHP.
+ * 	This is the File Manager Connector for ASP.
  * 
  * File Authors:
  * 		Frederico Caldeira Knabben (fredck@fckeditor.net)
@@ -23,25 +21,18 @@ function GetFolders( $resourceType, $currentFolder )
 	// Map the virtual path to the local server path.
 	$sServerDir = ServerMapFolder( $resourceType, $currentFolder ) ;
 
-	// Array that will hold the folders names.
-	$aFolders	= array() ;
+	// Open the "Folders" node.
+	echo "<Folders>" ;
 
 	$oCurrentFolder = opendir( $sServerDir ) ;
 
 	while ( $sFile = readdir( $oCurrentFolder ) )
 	{
 		if ( $sFile != '.' && $sFile != '..' && is_dir( $sServerDir . $sFile ) )
-			$aFolders[] = '<Folder name="' . ConvertToXmlAttribute( $sFile ) . '" />' ;
+			echo '<Folder name="' . ConvertToXmlAttribute( $sFile ) . '" />' ;
 	}
 
 	closedir( $oCurrentFolder ) ;
-
-	// Open the "Folders" node.
-	echo "<Folders>" ;
-	
-	natcasesort( $aFolders ) ;
-	foreach ( $aFolders as $sFolder )
-		echo $sFolder ;
 
 	// Close the "Folders" node.
 	echo "</Folders>" ;
@@ -52,9 +43,9 @@ function GetFoldersAndFiles( $resourceType, $currentFolder )
 	// Map the virtual path to the local server path.
 	$sServerDir = ServerMapFolder( $resourceType, $currentFolder ) ;
 
-	// Arrays that will hold the folders and files names.
-	$aFolders	= array() ;
-	$aFiles		= array() ;
+	// Initialize the output buffers for "Folders" and "Files".
+	$sFolders	= '<Folders>' ;
+	$sFiles		= '<Files>' ;
 
 	$oCurrentFolder = opendir( $sServerDir ) ;
 
@@ -63,7 +54,7 @@ function GetFoldersAndFiles( $resourceType, $currentFolder )
 		if ( $sFile != '.' && $sFile != '..' )
 		{
 			if ( is_dir( $sServerDir . $sFile ) )
-				$aFolders[] = '<Folder name="' . ConvertToXmlAttribute( $sFile ) . '" />' ;
+				$sFolders .= '<Folder name="' . ConvertToXmlAttribute( $sFile ) . '" />' ;
 			else
 			{
 				$iFileSize = filesize( $sServerDir . $sFile ) ;
@@ -73,27 +64,17 @@ function GetFoldersAndFiles( $resourceType, $currentFolder )
 					if ( $iFileSize < 1 ) $iFileSize = 1 ;
 				}
 
-				$aFiles[] = '<File name="' . ConvertToXmlAttribute( $sFile ) . '" size="' . $iFileSize . '" />' ;
+				$sFiles	.= '<File name="' . ConvertToXmlAttribute( $sFile ) . '" size="' . $iFileSize . '" />' ;
 			}
 		}
 	}
 
-	// Send the folders
-	natcasesort( $aFolders ) ;
-	echo '<Folders>' ;
-
-	foreach ( $aFolders as $sFolder )
-		echo $sFolder ;
-
+	echo $sFolders ;
+	// Close the "Folders" node.
 	echo '</Folders>' ;
 
-	// Send the files
-	natcasesort( $aFiles ) ;
-	echo '<Files>' ;
-
-	foreach ( $aFiles as $sFiles )
-		echo $sFiles ;
-
+	echo $sFiles ;
+	// Close the "Files" node.
 	echo '</Files>' ;
 }
 
@@ -106,36 +87,31 @@ function CreateFolder( $resourceType, $currentFolder )
 	{
 		$sNewFolderName = $_GET['NewFolderName'] ;
 
-		if ( strpos( $sNewFolderName, '..' ) !== FALSE )
-			$sErrorNumber = '102' ;		// Invalid folder name.
-		else
+		// Map the virtual path to the local server path of the current folder.
+		$sServerDir = ServerMapFolder( $resourceType, $currentFolder ) ;
+
+		if ( is_writable( $sServerDir ) )
 		{
-			// Map the virtual path to the local server path of the current folder.
-			$sServerDir = ServerMapFolder( $resourceType, $currentFolder ) ;
+			$sServerDir .= $sNewFolderName ;
 
-			if ( is_writable( $sServerDir ) )
+			$sErrorMsg = CreateServerFolder( $sServerDir ) ;
+
+			switch ( $sErrorMsg )
 			{
-				$sServerDir .= $sNewFolderName ;
-
-				$sErrorMsg = CreateServerFolder( $sServerDir ) ;
-
-				switch ( $sErrorMsg )
-				{
-					case '' :
-						$sErrorNumber = '0' ;
-						break ;
-					case 'Invalid argument' :
-					case 'No such file or directory' :
-						$sErrorNumber = '102' ;		// Path too long.
-						break ;
-					default :
-						$sErrorNumber = '110' ;
-						break ;
-				}
+				case '' :
+					$sErrorNumber = '0' ;
+					break ;
+				case 'Invalid argument' :
+				case 'No such file or directory' :
+					$sErrorNumber = '102' ;		// Path too long.
+					break ;
+				default :
+					$sErrorNumber = '110' ;
+					break ;
 			}
-			else
-				$sErrorNumber = '103' ;
 		}
+		else
+			$sErrorNumber = '103' ;
 	}
 	else
 		$sErrorNumber = '102' ;

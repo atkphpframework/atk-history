@@ -8,8 +8,6 @@
  * For further information visit:
  * 		http://www.fckeditor.net/
  * 
- * "Support Open Source software. What about a donation today?"
- * 
  * File Name: es.js
  * 	Spanish language file.
  * 
@@ -43,8 +41,6 @@ RemoveLink			: "Eliminar Vínculo",
 Anchor				: "Referencia",
 InsertImageLbl		: "Imagen",
 InsertImage			: "Insertar/Editar Imagen",
-InsertFlashLbl		: "Flash",
-InsertFlash			: "Insertar/Editar Flash",
 InsertTableLbl		: "Tabla",
 InsertTable			: "Insertar/Editar Tabla",
 InsertLineLbl		: "Línea",
@@ -85,8 +81,6 @@ Find				: "Buscar",
 Replace				: "Reemplazar",
 SpellCheck			: "Ortografía",
 UniversalKeyboard	: "Teclado Universal",
-PageBreakLbl		: "Salto de Página",
-PageBreak			: "Insertar Salto de Página",
 
 Form			: "Formulario",
 Checkbox		: "Casilla de Verificación",
@@ -108,11 +102,9 @@ InsertCell			: "Insertar Celda",
 DeleteCells			: "Eliminar Celdas",
 MergeCells			: "Combinar Celdas",
 SplitCell			: "Dividir Celda",
-TableDelete			: "Eliminar Tabla",
 CellProperties		: "Propiedades de Celda",
 TableProperties		: "Propiedades de Tabla",
 ImageProperties		: "Propiedades de Imagen",
-FlashProperties		: "Propiedades de Flash",
 
 AnchorProp			: "Propiedades de Referencia",
 ButtonProp			: "Propiedades de Botón",
@@ -125,7 +117,7 @@ SelectionFieldProp	: "Propiedades de Campo de Selección",
 TextareaProp		: "Propiedades de Area de Texto",
 FormProp			: "Propiedades de Formulario",
 
-FontFormats			: "Normal;Con formato;Dirección;Encabezado 1;Encabezado 2;Encabezado 3;Encabezado 4;Encabezado 5;Encabezado 6;Normal (DIV)",
+FontFormats			: "Normal;Formateado;Direccion;Encabezado 1;Encabezado 2;Encabezado 3;Encabezado 4;Encabezado 5;Encabezado 6",
 
 // Alerts and Messages
 ProcessingXHTML		: "Procesando XHTML. Por favor, espere...",
@@ -136,9 +128,6 @@ UnknownToolbarItem	: "Item de barra desconocido \"%1\"",
 UnknownCommand		: "Nombre de comando desconocido \"%1\"",
 NotImplemented		: "Comando no implementado",
 UnknownToolbarSet	: "Nombre de barra \"%1\" no definido",
-NoActiveX			: "La configuración de las opciones de seguridad de su navegador puede estar limitando algunas características del editor. Por favor active la opción \"Ejecutar controles y complementos de ActiveX \", de lo contrario puede experimentar errores o ausencia de funcionalidades.",
-BrowseServerBlocked : "La ventana de visualización del servidor no pudo ser abierta. Verifique que su navegador no esté bloqueando las ventanas emergentes (pop up).",
-DialogBlocked		: "No se ha podido abrir la ventana de diálogo. Verifique que su navegador no esté bloqueando las ventanas emergentes (pop up).",
 
 // Dialogs
 DlgBtnOK			: "OK",
@@ -147,8 +136,6 @@ DlgBtnClose			: "Cerrar",
 DlgBtnBrowseServer	: "Ver Servidor",
 DlgAdvancedTag		: "Avanzado",
 DlgOpOther			: "&lt;Otro&gt;",
-DlgInfoTab			: "Información",
-DlgAlertUrl			: "Inserte el URL",
 
 // General Dialogs Labels
 DlgGenNotSet		: "&lt;No definido&gt;",
@@ -194,16 +181,6 @@ DlgImgAlignTop		: "Tope",
 DlgImgPreview		: "Vista Previa",
 DlgImgAlertUrl		: "Por favor tipee el URL de la imagen",
 DlgImgLinkTab		: "Vínculo",
-
-// Flash Dialog
-DlgFlashTitle		: "Propiedades de Flash",
-DlgFlashChkPlay		: "Autoejecución",
-DlgFlashChkLoop		: "Repetir",
-DlgFlashChkMenu		: "Activar Menú Flash",
-DlgFlashScale		: "Escala",
-DlgFlashScaleAll	: "Mostrar todo",
-DlgFlashScaleNoBorder	: "Sin Borde",
-DlgFlashScaleFit	: "Ajustado",
 
 // Link Dialog
 DlgLnkWindowTitle	: "Vínculo",
@@ -283,7 +260,6 @@ DlgTableHeight		: "Altura",
 DlgTableCellSpace	: "Esp. e/celdas",
 DlgTableCellPad		: "Esp. interior",
 DlgTableCaption		: "Título",
-DlgTableSummary		: "Síntesis",
 
 // Table Cell Dialog
 DlgCellTitle		: "Propiedades de Celda",
@@ -334,11 +310,7 @@ PasteErrorCopy	: "La configuración de seguridad de este navegador no permite la
 PasteAsText		: "Pegar como Texto Plano",
 PasteFromWord	: "Pegar desde Word",
 
-DlgPasteMsg2	: "Por favor pegue dentro del cuadro utilizando el teclado (<STRONG>Ctrl+V</STRONG>); luego presione <STRONG>OK</STRONG>.",
-DlgPasteIgnoreFont		: "Ignorar definiciones de fuentes",
-DlgPasteRemoveStyles	: "Remover definiciones de estilo",
-DlgPasteCleanBox		: "Clean Up Box",
-
+DlgPasteMsg		: "El editor no pudo ejecutar automáticamente el pegado debido a la <STRONG>configuración de seguridad</STRONG> de su navegador.<BR>Por favor pegue dentro del sigueinte recuadro usando el teclado (<STRONG>Ctrl+V</STRONG>) y presione <STRONG>OK</STRONG>.",
 
 // Color Picker
 ColorAutomatic	: "Automático",
@@ -422,7 +394,7 @@ BulletedListProp	: "Propiedades de Viñetas",
 NumberedListProp	: "Propiedades de Numeraciones",
 DlgLstType			: "Tipo",
 DlgLstTypeCircle	: "Círculo",
-DlgLstTypeDisc		: "Disco",
+DlgLstTypeDisk		: "Disco",
 DlgLstTypeSquare	: "Cuadrado",
 DlgLstTypeNumbers	: "Números (1, 2, 3)",
 DlgLstTypeLCase		: "letras en minúsculas (a, b, c)",

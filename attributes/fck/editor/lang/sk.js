@@ -8,8 +8,6 @@
  * For further information visit:
  * 		http://www.fckeditor.net/
  * 
- * "Support Open Source software. What about a donation today?"
- * 
  * File Name: sk.js
  * 	Slovak language file.
  * 
@@ -28,7 +26,7 @@ ToolbarExpand		: "Zobraziť panel nástrojov",
 // Toolbar Items and Context Menu
 Save				: "Uložit",
 NewPage				: "Nová stránka",
-Preview				: "Náhľad",
+Preview				: "Náhľed",
 Cut					: "Vystrihnúť",
 Copy				: "Kopírovať",
 Paste				: "Vložiť",
@@ -43,8 +41,6 @@ RemoveLink			: "Odstrániť odkaz",
 Anchor				: "Vložiť/zmeniť kotvu",
 InsertImageLbl		: "Obrázok",
 InsertImage			: "Vložiť/zmeniť obrazok",
-InsertFlashLbl		: "Flash",
-InsertFlash			: "Vložiť/zmeniť Flash",
 InsertTableLbl		: "Tabuľka",
 InsertTable			: "Vložiť/zmeniť tabulku",
 InsertLineLbl		: "Čiara",
@@ -65,13 +61,13 @@ CenterJustify		: "Zarovnať na stred",
 RightJustify		: "Zarovnať vpravo",
 BlockJustify		: "Zarovnať do bloku",
 DecreaseIndent		: "Zmenšiť odsadenie",
-IncreaseIndent		: "Zväčšiť odsadenie",
+IncreaseIndent		: "Zvětšiť odsadenie",
 Undo				: "Späť",
 Redo				: "Znovu",
 NumberedListLbl		: "Číslovanie",
 NumberedList		: "Vložiť/odstrániť číslovaný zoznam",
 BulletedListLbl		: "Odrážky",
-BulletedList		: "Vložiť/odstraniť odrážky",
+BulletedList		: "Vloži/odstranit odrážky",
 ShowTableBorders	: "Zobraziť okraje tabuliek",
 ShowDetails			: "Zobraziť podrobnosti",
 Style				: "Štýl",
@@ -85,8 +81,6 @@ Find				: "Hľadať",
 Replace				: "Nahradiť",
 SpellCheck			: "Kontrola pravopisu",
 UniversalKeyboard	: "Univerzálna klávesnica",
-PageBreakLbl		: "Page Break",	//MISSING
-PageBreak			: "Insert Page Break",	//MISSING
 
 Form			: "Formulár",
 Checkbox		: "Zaškrtávacie políčko",
@@ -108,11 +102,9 @@ InsertCell			: "Vložiť bunku",
 DeleteCells			: "Zmazať bunky",
 MergeCells			: "Zlúčiť bunky",
 SplitCell			: "Rozdeliť bunku",
-TableDelete			: "Delete Table",	//MISSING
 CellProperties		: "Vlastnosti bunky",
 TableProperties		: "Vlastnosti tabulky",
 ImageProperties		: "Vlastnosti obrázka",
-FlashProperties		: "Vlastnosti Flashu",
 
 AnchorProp			: "Vlastnosti kotvy",
 ButtonProp			: "Vlastnosti tlačítka",
@@ -136,9 +128,6 @@ UnknownToolbarItem	: "Neznáma položka panela nástrojov \"%1\"",
 UnknownCommand		: "Neznámy príkaz \"%1\"",
 NotImplemented		: "Príkaz nie je implementovaný",
 UnknownToolbarSet	: "Panel nástrojov \"%1\" neexistuje",
-NoActiveX			: "You browser's security settings could limit some features of the editor. You must enable the option \"Run ActiveX controls and plug-ins\". You may experience errors and notice missing features.",	//MISSING
-BrowseServerBlocked : "The resources browser could not be opened. Make sure that all popup blockers are disabled.",	//MISSING
-DialogBlocked		: "It was not possible to open the dialog window. Make sure all popup blockers are disabled.",	//MISSING
 
 // Dialogs
 DlgBtnOK			: "OK",
@@ -147,8 +136,6 @@ DlgBtnClose			: "Zavrieť",
 DlgBtnBrowseServer	: "Prechádzať server",
 DlgAdvancedTag		: "Rozšírené",
 DlgOpOther			: "&lt;Ďalšie&gt;",
-DlgInfoTab			: "Info",
-DlgAlertUrl			: "Prosím vložte URL",
 
 // General Dialogs Labels
 DlgGenNotSet		: "&lt;nenastavené&gt;",
@@ -193,17 +180,7 @@ DlgImgAlignTextTop	: "Na horný okraj textu",
 DlgImgAlignTop		: "Nahor",
 DlgImgPreview		: "Náhľad",
 DlgImgAlertUrl		: "Zadajte prosím URL obrázku",
-DlgImgLinkTab		: "Odkaz",
-
-// Flash Dialog
-DlgFlashTitle		: "Vlastnosti Flashu",
-DlgFlashChkPlay		: "Automatické prehrávanie",
-DlgFlashChkLoop		: "Opakovanie",
-DlgFlashChkMenu		: "Povoliť Flash Menu",
-DlgFlashScale		: "Mierka",
-DlgFlashScaleAll	: "Zobraziť mierku",
-DlgFlashScaleNoBorder	: "Bez okrajov",
-DlgFlashScaleFit	: "Roztiahnuť na celé",
+DlgImgLinkTab		: "Link",	//MISSING
 
 // Link Dialog
 DlgLnkWindowTitle	: "Odkaz",
@@ -283,7 +260,6 @@ DlgTableHeight		: "Výška",
 DlgTableCellSpace	: "Vzdialenosť buniek",
 DlgTableCellPad		: "Odsadenie obsahu",
 DlgTableCaption		: "Popis",
-DlgTableSummary		: "Summary",	//MISSING
 
 // Table Cell Dialog
 DlgCellTitle		: "Vlastnosti bunky",
@@ -334,11 +310,7 @@ PasteErrorCopy	: "Bezpečnostné nastavenie Vášho prohehliadača nedovoľujú 
 PasteAsText		: "Vložiť ako čistý text",
 PasteFromWord	: "Vložiť text z Wordu",
 
-DlgPasteMsg2	: "Please paste inside the following box using the keyboard (<STRONG>Ctrl+V</STRONG>) and hit <STRONG>OK</STRONG>.",
-DlgPasteIgnoreFont		: "Ignorovať nastavenia typu písma",
-DlgPasteRemoveStyles	: "Odstrániť formátovanie",
-DlgPasteCleanBox		: "Vyčistiť schránku",
-
+DlgPasteMsg		: "<strong>Bezpečnostné nastavenie</strong> Vášho prohehliadača nedovoľujú editoru spustiť funkciu pre vloženie textu zo schránky.<br />Text zo schránky prosím vložte pomocou klávesnice do tohto poľa (<strong>Ctrl+V</strong>) a potom stlačte tlačítko <strong>OK</strong>.",
 
 // Color Picker
 ColorAutomatic	: "Automaticky",
@@ -422,7 +394,7 @@ BulletedListProp	: "Vlastnosti odrážok",
 NumberedListProp	: "Vlastnosti číslovania",
 DlgLstType			: "Typ",
 DlgLstTypeCircle	: "Krúžok",
-DlgLstTypeDisc		: "Disc",	//MISSING
+DlgLstTypeDisk		: "Disk",
 DlgLstTypeSquare	: "Štvorec",
 DlgLstTypeNumbers	: "Číslovanie (1, 2, 3)",
 DlgLstTypeLCase		: "Malé písmená (a, b, c)",
@@ -466,11 +438,11 @@ DlgDocMeCopy		: "Autorské práva",
 DlgDocPreview		: "Náhľad",
 
 // Templates Dialog
-Templates			: "Šablóny",
-DlgTemplatesTitle	: "Šablóny obsahu",
-DlgTemplatesSelMsg	: "Prosím vyberte šablóny ma otvorenie v editore<br>(terajší obsah bude stratený):",
-DlgTemplatesLoading	: "Nahrávam zoznam šablón. Čakajte prosím...",
-DlgTemplatesNoTpl	: "(žiadne šablóny nenájdené)",
+Templates			: "Templates",	//MISSING
+DlgTemplatesTitle	: "Content Templates",	//MISSING
+DlgTemplatesSelMsg	: "Please select the template to open in the editor<br>(the actual contents will be lost):",	//MISSING
+DlgTemplatesLoading	: "Loading templates list. Please wait...",	//MISSING
+DlgTemplatesNoTpl	: "(No templates defined)",	//MISSING
 
 // About Dialog
 DlgAboutAboutTab	: "O aplikáci",

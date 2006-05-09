@@ -8,8 +8,6 @@
  * For further information visit:
  * 		http://www.fckeditor.net/
  * 
- * "Support Open Source software. What about a donation today?"
- * 
  * File Name: fr.js
  * 	French language file.
  * 
@@ -43,8 +41,6 @@ RemoveLink			: "Supprimer Lien",
 Anchor				: "Insérer/Modifier Ancre",
 InsertImageLbl		: "Image",
 InsertImage			: "Insérer/Modifier Image",
-InsertFlashLbl		: "Animation Flash",
-InsertFlash			: "Insérer/Modifier Animation Flash",
 InsertTableLbl		: "Tableau",
 InsertTable			: "Insérer/Modifier Tableau",
 InsertLineLbl		: "Séparateur",
@@ -85,8 +81,6 @@ Find				: "Chercher",
 Replace				: "Remplacer",
 SpellCheck			: "Orthographe",
 UniversalKeyboard	: "Clavier Universel",
-PageBreakLbl		: "Page Break",	//MISSING
-PageBreak			: "Insert Page Break",	//MISSING
 
 Form			: "Formulaire",
 Checkbox		: "Case à cocher",
@@ -108,11 +102,9 @@ InsertCell			: "Insérer une Cellule",
 DeleteCells			: "Supprimer des Cellules",
 MergeCells			: "Fusionner les Cellules",
 SplitCell			: "Scinder les Cellules",
-TableDelete			: "Delete Table",	//MISSING
 CellProperties		: "Propriétés de Cellule",
 TableProperties		: "Propriétés de Tableau",
 ImageProperties		: "Propriétés d'Image",
-FlashProperties		: "Propriétés d'Animation Flash",
 
 AnchorProp			: "Propriétés d'Ancre",
 ButtonProp			: "Propriétés de Bouton",
@@ -136,9 +128,6 @@ UnknownToolbarItem	: "Elément de barre d'outil inconnu \"%1\"",
 UnknownCommand		: "Nom de commande inconnu \"%1\"",
 NotImplemented		: "Commande non encore écrite",
 UnknownToolbarSet	: "La barre d'outils \"%1\" n'existe pas",
-NoActiveX			: "Les paramètres de sécurité de votre navigateur peuvent limiter quelques fonctionnalités de l'éditeur. Veuillez activer l'option \"Exécuter les contrôles ActiveX et les plug-ins\". Il se peut que vous rencontriez des erreurs et remarquiez quelques limitations.",
-BrowseServerBlocked : "The resources browser could not be opened. Make sure that all popup blockers are disabled.",	//MISSING
-DialogBlocked		: "It was not possible to open the dialog window. Make sure all popup blockers are disabled.",	//MISSING
 
 // Dialogs
 DlgBtnOK			: "OK",
@@ -147,8 +136,6 @@ DlgBtnClose			: "Fermer",
 DlgBtnBrowseServer	: "Parcourir le Serveur",
 DlgAdvancedTag		: "Avancé",
 DlgOpOther			: "&lt;Autre&gt;",
-DlgInfoTab			: "Info",
-DlgAlertUrl			: "Veuillez saisir l'URL",
 
 // General Dialogs Labels
 DlgGenNotSet		: "&lt;Par Défaut&gt;",
@@ -194,16 +181,6 @@ DlgImgAlignTop		: "Haut",
 DlgImgPreview		: "Prévisualisation",
 DlgImgAlertUrl		: "Veuillez saisir l'URL de l'image",
 DlgImgLinkTab		: "Lien",
-
-// Flash Dialog
-DlgFlashTitle		: "Propriétés d'animation Flash",
-DlgFlashChkPlay		: "Lecture automatique",
-DlgFlashChkLoop		: "Boucle",
-DlgFlashChkMenu		: "Activer menu Flash",
-DlgFlashScale		: "Affichage",
-DlgFlashScaleAll	: "Par défault (tout montrer)",
-DlgFlashScaleNoBorder	: "Sans Bordure",
-DlgFlashScaleFit	: "Ajuster aux Dimensions",
 
 // Link Dialog
 DlgLnkWindowTitle	: "Propriétés de Lien",
@@ -283,7 +260,6 @@ DlgTableHeight		: "Hauteur",
 DlgTableCellSpace	: "Espacement",
 DlgTableCellPad		: "Contour",
 DlgTableCaption		: "Titre",
-DlgTableSummary		: "Résumé",
 
 // Table Cell Dialog
 DlgCellTitle		: "Propriétés de cellule",
@@ -334,11 +310,7 @@ PasteErrorCopy	: "Les paramètres de sécurité de votre navigateur empêchent l
 PasteAsText		: "Coller comme texte",
 PasteFromWord	: "Coller à partir de Word",
 
-DlgPasteMsg2	: "Veuillez coller dans la zone ci-dessous en utilisant le clavier (<STRONG>Ctrl+V</STRONG>) et cliquez sur <STRONG>OK</STRONG>.",
-DlgPasteIgnoreFont		: "Ignorer les Polices de Caractères",
-DlgPasteRemoveStyles	: "Supprimer les Styles",
-DlgPasteCleanBox		: "Effacer le contenu",
-
+DlgPasteMsg		: "L'éditeur n'a pu coller automatiquement vos données à cause des <STRONG>paramètres de sécurité</STRONG> de votre navigateur.<BR>Veuillez coller dans la zone suivante en utilisant le clavier (<STRONG>Ctrl+V</STRONG>) et cliquez sur <STRONG>OK</STRONG>.",
 
 // Color Picker
 ColorAutomatic	: "Automatique",
@@ -422,7 +394,7 @@ BulletedListProp	: "Propriétés de Liste à puces",
 NumberedListProp	: "Propriétés de Numérotée",
 DlgLstType			: "Type",
 DlgLstTypeCircle	: "Cercle",
-DlgLstTypeDisc		: "Disque",
+DlgLstTypeDisk		: "Disque",
 DlgLstTypeSquare	: "Carré",
 DlgLstTypeNumbers	: "Nombres (1, 2, 3)",
 DlgLstTypeLCase		: "Lettres Minuscules (a, b, c)",

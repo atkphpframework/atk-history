@@ -8,8 +8,6 @@
  * For further information visit:
  * 		http://www.fckeditor.net/
  * 
- * "Support Open Source software. What about a donation today?"
- * 
  * File Name: ar.js
  * 	Arabic language file.
  * 
@@ -43,8 +41,6 @@ RemoveLink			: "إزالة رابط",
 Anchor				: "إدراج/تحرير إشارة مرجعية",
 InsertImageLbl		: "صورة",
 InsertImage			: "إدراج/تحرير صورة",
-InsertFlashLbl		: "فلاش",
-InsertFlash			: "إدراج/تحرير فيلم فلاش",
 InsertTableLbl		: "جدول",
 InsertTable			: "إدراج/تحرير جدول",
 InsertLineLbl		: "خط فاصل",
@@ -85,8 +81,6 @@ Find				: "بحث",
 Replace				: "استبدال",
 SpellCheck			: "تدقيق إملائي",
 UniversalKeyboard	: "لوحة المفاتيح العالمية",
-PageBreakLbl		: "Page Break",	//MISSING
-PageBreak			: "Insert Page Break",	//MISSING
 
 Form			: "نموذج",
 Checkbox		: "خانة اختيار",
@@ -108,11 +102,9 @@ InsertCell			: "إدراج خلية",
 DeleteCells			: "حذف خلايا",
 MergeCells			: "دمج خلايا",
 SplitCell			: "تقسيم خلية",
-TableDelete			: "Delete Table",	//MISSING
 CellProperties		: "خصائص الخلية",
 TableProperties		: "خصائص الجدول",
 ImageProperties		: "خصائص الصورة",
-FlashProperties		: "خصائص فيلم الفلاش",
 
 AnchorProp			: "خصائص الإشارة المرجعية",
 ButtonProp			: "خصائص زر الضغط",
@@ -136,9 +128,6 @@ UnknownToolbarItem	: "عنصر شريط أدوات غير معروف \"%1\"",
 UnknownCommand		: "أمر غير معروف \"%1\"",
 NotImplemented		: "لم يتم دعم هذا الأمر",
 UnknownToolbarSet	: "لم أتمكن من العثور على طقم الأدوات \"%1\" ",
-NoActiveX			: "You browser's security settings could limit some features of the editor. You must enable the option \"Run ActiveX controls and plug-ins\". You may experience errors and notice missing features.",	//MISSING
-BrowseServerBlocked : "The resources browser could not be opened. Make sure that all popup blockers are disabled.",	//MISSING
-DialogBlocked		: "It was not possible to open the dialog window. Make sure all popup blockers are disabled.",	//MISSING
 
 // Dialogs
 DlgBtnOK			: "موافق",
@@ -147,8 +136,6 @@ DlgBtnClose			: "إغلاق",
 DlgBtnBrowseServer	: "تصفح الخادم",
 DlgAdvancedTag		: "متقدم",
 DlgOpOther			: "&lt;أخرى&gt;",
-DlgInfoTab			: "معلومات",
-DlgAlertUrl			: "الرجاء كتابة عنوان الإنترنت",
 
 // General Dialogs Labels
 DlgGenNotSet		: "&lt;بدون تحديد&gt;",
@@ -193,17 +180,7 @@ DlgImgAlignTextTop	: "أعلى النص",
 DlgImgAlignTop		: "أعلى",
 DlgImgPreview		: "معاينة",
 DlgImgAlertUrl		: "فضلاً اكتب الموقع الذي توجد عليه هذه الصورة.",
-DlgImgLinkTab		: "الرابط",
-
-// Flash Dialog
-DlgFlashTitle		: "خصائص فيلم الفلاش",
-DlgFlashChkPlay		: "تشغيل تلقائي",
-DlgFlashChkLoop		: "تكرار",
-DlgFlashChkMenu		: "تمكين قائمة فيلم الفلاش",
-DlgFlashScale		: "الحجم",
-DlgFlashScaleAll	: "إظهار الكل",
-DlgFlashScaleNoBorder	: "بلا حدود",
-DlgFlashScaleFit	: "ضبط تام",
+DlgImgLinkTab		: "Link",	//MISSING
 
 // Link Dialog
 DlgLnkWindowTitle	: "ارتباط تشعبي",
@@ -283,7 +260,6 @@ DlgTableHeight		: "الارتفاع",
 DlgTableCellSpace	: "تباعد الخلايا",
 DlgTableCellPad		: "المسافة البادئة",
 DlgTableCaption		: "الوصف",
-DlgTableSummary		: "Summary",	//MISSING
 
 // Table Cell Dialog
 DlgCellTitle		: "خصائص الخلية",
@@ -334,11 +310,7 @@ PasteErrorCopy	: "الإعدادات الأمنية للمتصفح الذي تس
 PasteAsText		: "لصق كنص بسيط",
 PasteFromWord	: "لصق من وورد",
 
-DlgPasteMsg2	: "الصق داخل الصندوق باستخدام زرّي (<STRONG>Ctrl+V</STRONG>) في لوحة المفاتيح، ثم اضغط زر  <STRONG>موافق</STRONG>.",
-DlgPasteIgnoreFont		: "تجاهل تعريفات أسماء الخطوط",
-DlgPasteRemoveStyles	: "إزالة تعريفات الأنماط",
-DlgPasteCleanBox		: "نظّف محتوى الصندوق",
-
+DlgPasteMsg		: "لم يتمكن المحرر من القيام باللصق تلقائياً، نظراً <STRONG>لإعدادت متصفحك الأمنية</STRONG>.<BR>فضلاً إلصق داخل المربع التالي باستخدام لوحة المفاتيح (<STRONG>Ctrl+V</STRONG>) ثم اضغط <STRONG>موافق</STRONG>.",
 
 // Color Picker
 ColorAutomatic	: "تلقائي",
@@ -422,7 +394,7 @@ BulletedListProp	: "خصائص التعداد النقطي",
 NumberedListProp	: "خصائص التعداد الرقمي",
 DlgLstType			: "النوع",
 DlgLstTypeCircle	: "دائرة",
-DlgLstTypeDisc		: "Disc",	//MISSING
+DlgLstTypeDisk		: "قرص",
 DlgLstTypeSquare	: "مربع",
 DlgLstTypeNumbers	: "أرقام (1، 2، 3)َ",
 DlgLstTypeLCase		: "حروف صغيرة (a, b, c)َ",
@@ -466,11 +438,11 @@ DlgDocMeCopy		: "المالك",
 DlgDocPreview		: "معاينة",
 
 // Templates Dialog
-Templates			: "القوالب",
-DlgTemplatesTitle	: "قوالب المحتوى",
-DlgTemplatesSelMsg	: "اختر القالب الذي تود وضعه في المحرر <br>(سيتم فقدان المحتوى الحالي):",
-DlgTemplatesLoading	: "جاري تحميل قائمة القوالب، الرجاء الانتظار...",
-DlgTemplatesNoTpl	: "(لم يتم تعريف أي قالب)",
+Templates			: "Templates",	//MISSING
+DlgTemplatesTitle	: "Content Templates",	//MISSING
+DlgTemplatesSelMsg	: "Please select the template to open in the editor<br>(the actual contents will be lost):",	//MISSING
+DlgTemplatesLoading	: "Loading templates list. Please wait...",	//MISSING
+DlgTemplatesNoTpl	: "(No templates defined)",	//MISSING
 
 // About Dialog
 DlgAboutAboutTab	: "نبذة",

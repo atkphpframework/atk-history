@@ -9,8 +9,6 @@
  * For further information visit:
  * 		http://www.fckeditor.net/
  * 
- * "Support Open Source software. What about a donation today?"
- * 
  * File Name: io.php
  * 	This is the File Manager Connector for ASP.
  * 
@@ -34,12 +32,14 @@ function RemoveExtension( $fileName )
 function ServerMapFolder( $resourceType, $folderPath )
 {
 	// Get the resource type directory.
+//	$sResourceTypePath = $GLOBALS["UserFilesDirectory"] . $resourceType . '\\' ;
 	$sResourceTypePath = $GLOBALS["UserFilesDirectory"] . $resourceType . '/' ;
 
 	// Ensure that the directory exists.
 	CreateServerFolder( $sResourceTypePath ) ;
 
 	// Return the resource type directory combined with the required path.
+//	return $sResourceTypePath . str_replace( '/', '\\', RemoveFromStart( $folderPath, '/' ) ) ;
 	return $sResourceTypePath . RemoveFromStart( $folderPath, '/' ) ;
 }
 
@@ -89,7 +89,9 @@ function GetRootPath()
 {
 	$sRealPath = realpath( './' ) ;
 
+//	$sSelfPath = str_replace( '/', '\\', $_SERVER['PHP_SELF'] ) ;
 	$sSelfPath = $_SERVER['PHP_SELF'] ;
+//	$sSelfPath = substr( $sSelfPath, 0, strrpos( $sSelfPath, '\\' ) ) ;
 	$sSelfPath = substr( $sSelfPath, 0, strrpos( $sSelfPath, '/' ) ) ;
 
 	return substr( $sRealPath, 0, strlen( $sRealPath ) - strlen( $sSelfPath ) ) ;

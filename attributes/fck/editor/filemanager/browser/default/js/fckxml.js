@@ -8,8 +8,6 @@
  * For further information visit:
  * 		http://www.fckeditor.net/
  * 
- * "Support Open Source software. What about a donation today?"
- * 
  * File Name: fckxml.js
  * 	Defines the FCKXml object that is used for XML data calls
  * 	and XML processing.
@@ -48,7 +46,7 @@ FCKXml.prototype.LoadUrl = function( urlToCall, asyncFunctionPointer )
 			if ( oXmlHttp.readyState == 4 )
 			{
 				oFCKXml.DOMDocument = oXmlHttp.responseXML ;
-				if ( oXmlHttp.status == 200 || oXmlHttp.status == 304 )
+				if ( oXmlHttp.status == 200 )
 					asyncFunctionPointer( oFCKXml ) ;
 				else
 					alert( 'XML request error: ' + oXmlHttp.statusText + ' (' + oXmlHttp.status + ')' ) ;
@@ -60,7 +58,7 @@ FCKXml.prototype.LoadUrl = function( urlToCall, asyncFunctionPointer )
 	
 	if ( ! bAsync )
 	{
-		if ( oXmlHttp.status == 200 || oXmlHttp.status == 304 )
+		if ( oXmlHttp.status == 200 )
 			this.DOMDocument = oXmlHttp.responseXML ;
 		else
 		{

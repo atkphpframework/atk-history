@@ -8,8 +8,6 @@
  * For further information visit:
  * 		http://www.fckeditor.net/
  * 
- * "Support Open Source software. What about a donation today?"
- * 
  * File Name: pl.js
  * 	Polish language file.
  * 
@@ -44,8 +42,6 @@ RemoveLink			: "Usuń hiperłącze",
 Anchor				: "Wstaw/edytuj kotwicę",
 InsertImageLbl		: "Obrazek",
 InsertImage			: "Wstaw/edytuj obrazek",
-InsertFlashLbl		: "Flash",
-InsertFlash			: "Dodaj/Edytuj element Flash",
 InsertTableLbl		: "Tabela",
 InsertTable			: "Wstaw/edytuj tabelę",
 InsertLineLbl		: "Linia pozioma",
@@ -86,8 +82,6 @@ Find				: "Znajdź",
 Replace				: "Zamień",
 SpellCheck			: "Sprawdź pisownię",
 UniversalKeyboard	: "Klawiatura Uniwersalna",
-PageBreakLbl		: "Page Break",	//MISSING
-PageBreak			: "Insert Page Break",	//MISSING
 
 Form			: "Formularz",
 Checkbox		: "Checkbox",
@@ -109,11 +103,9 @@ InsertCell			: "Wstaw komórkę",
 DeleteCells			: "Usuń komórki",
 MergeCells			: "Połącz komórki",
 SplitCell			: "Podziel komórkę",
-TableDelete			: "Delete Table",	//MISSING
 CellProperties		: "Właściwości komórki",
 TableProperties		: "Właściwości tabeli",
 ImageProperties		: "Właściwości obrazka",
-FlashProperties		: "Właściwości elementu Flash",
 
 AnchorProp			: "Właściwości kotwicy",
 ButtonProp			: "Właściwości przycisku",
@@ -137,9 +129,6 @@ UnknownToolbarItem	: "Nieznany element paska narzędzi \"%1\"",
 UnknownCommand		: "Nieznana komenda \"%1\"",
 NotImplemented		: "Komenda niezaimplementowana",
 UnknownToolbarSet	: "Pasek narzędzi \"%1\" nie istnieje",
-NoActiveX			: "Ustawienia zabezpieczeń twojej przeglądarki mogą ograniczyć niektóre funkcje edytora. Musisz włączyć opcję \"Uruchamianie formantów Activex i dodatków plugin\". W przeciwnym wypadku mogą pojawiać się błędy.",
-BrowseServerBlocked : "The resources browser could not be opened. Make sure that all popup blockers are disabled.",	//MISSING
-DialogBlocked		: "It was not possible to open the dialog window. Make sure all popup blockers are disabled.",	//MISSING
 
 // Dialogs
 DlgBtnOK			: "OK",
@@ -148,8 +137,6 @@ DlgBtnClose			: "Zamknij",
 DlgBtnBrowseServer	: "Przeglądaj",
 DlgAdvancedTag		: "Zaawansowane",
 DlgOpOther			: "&lt;Inny&gt;",
-DlgInfoTab			: "Informacje",
-DlgAlertUrl			: "Proszę podać URL",
 
 // General Dialogs Labels
 DlgGenNotSet		: "&lt;nieustawione&gt;",
@@ -194,17 +181,7 @@ DlgImgAlignTextTop	: "Do góry tekstu",
 DlgImgAlignTop		: "Do góry",
 DlgImgPreview		: "Podgląd",
 DlgImgAlertUrl		: "Podaj adres obrazka.",
-DlgImgLinkTab		: "Link",
-
-// Flash Dialog
-DlgFlashTitle		: "Właściwości elementu Flash",
-DlgFlashChkPlay		: "Auto Odtwarzanie",
-DlgFlashChkLoop		: "Pętla",
-DlgFlashChkMenu		: "Włącz menu",
-DlgFlashScale		: "Skaluj",
-DlgFlashScaleAll	: "Pokaż wszystko",
-DlgFlashScaleNoBorder	: "Bez Ramki",
-DlgFlashScaleFit	: "Dokładne dopasowanie",
+DlgImgLinkTab		: "Link",	//MISSING
 
 // Link Dialog
 DlgLnkWindowTitle	: "Hiperłącze",
@@ -284,7 +261,6 @@ DlgTableHeight		: "Wysokość",
 DlgTableCellSpace	: "Odstęp pomiędzy komórkami",
 DlgTableCellPad		: "Margines wewnętrzny komórek",
 DlgTableCaption		: "Tytuł",
-DlgTableSummary		: "Summary",	//MISSING
 
 // Table Cell Dialog
 DlgCellTitle		: "Właściwości komórki",
@@ -335,11 +311,7 @@ PasteErrorCopy	: "Ustawienia bezpieczeństwa Twojej przeglądarki nie pozwalają
 PasteAsText		: "Wklej jako czysty tekst",
 PasteFromWord	: "Wklej z Worda",
 
-DlgPasteMsg2	: "Proszę wkleić w poniższym polu używając klawiaturowego skrótu (<STRONG>Ctrl+V</STRONG>) i kliknąć <STRONG>OK</STRONG>.",
-DlgPasteIgnoreFont		: "Ignoruj definicje 'Font Face'",
-DlgPasteRemoveStyles	: "Usuń definicje Stylów",
-DlgPasteCleanBox		: "Wyczyść",
-
+DlgPasteMsg		: "Automatyczne wklejenie tekstu nie było możliwe z powodu <STRONG>restrykcyjnych</STRONG> ustawień bezpieczeństwa Twojej przeglądarki.<BR>Wklej tekst w poniższe pole używając skrótu klawiszowego (<STRONG>Ctrl+V</STRONG>) i wciśnij <STRONG>OK</STRONG>.",
 
 // Color Picker
 ColorAutomatic	: "Automatycznie",
@@ -423,7 +395,7 @@ BulletedListProp	: "Właściwości listy punktowanej",
 NumberedListProp	: "Właściwości listy numerowanej",
 DlgLstType			: "Typ",
 DlgLstTypeCircle	: "Koło",
-DlgLstTypeDisc		: "Dysk",
+DlgLstTypeDisk		: "Dysk",
 DlgLstTypeSquare	: "Kwadrat",
 DlgLstTypeNumbers	: "Cyfry (1, 2, 3)",
 DlgLstTypeLCase		: "Małe litery (a, b, c)",
@@ -467,11 +439,11 @@ DlgDocMeCopy		: "Copyright",
 DlgDocPreview		: "Podgląd",
 
 // Templates Dialog
-Templates			: "Sablony",
-DlgTemplatesTitle	: "Szablony zawartości",
-DlgTemplatesSelMsg	: "Wybierz szablon do otwarcia w edytorze<br>(obecna zawartość okna edytora zostanie utracona):",
-DlgTemplatesLoading	: "Ładowanie listy szablonów. Proszę czekać...",
-DlgTemplatesNoTpl	: "(Brak zdefiniowanych szablonów)",
+Templates			: "Templates",	//MISSING
+DlgTemplatesTitle	: "Content Templates",	//MISSING
+DlgTemplatesSelMsg	: "Please select the template to open in the editor<br>(the actual contents will be lost):",	//MISSING
+DlgTemplatesLoading	: "Loading templates list. Please wait...",	//MISSING
+DlgTemplatesNoTpl	: "(No templates defined)",	//MISSING
 
 // About Dialog
 DlgAboutAboutTab	: "O ...",

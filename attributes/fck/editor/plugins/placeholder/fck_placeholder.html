@@ -9,8 +9,6 @@
  * For further information visit:
  * 		http://www.fckeditor.net/
  * 
- * "Support Open Source software. What about a donation today?"
- * 
  * File Name: fck_placeholder.html
  * 	Placeholder Plugin.
  * 
@@ -47,31 +45,29 @@ function LoadSelected()
 		return ;
 
 	if ( eSelected.tagName == 'SPAN' && eSelected._fckplaceholder )
-		document.getElementById('txtName').value = eSelected._fckplaceholder ;
+		txtName.value = eSelected._fckplaceholder ;
 	else
 		eSelected == null ;
 }
 
 function Ok()
 {
-	var sValue = document.getElementById('txtName').value ;
-	
-	if ( eSelected && eSelected._fckplaceholder == sValue )
+	if ( eSelected && eSelected._fckplaceholder == document.getElementById('txtName').value )
 		return true ;
 
-	if ( sValue.length == 0 )
+	if ( document.getElementById('txtName').value.length == 0 )
 	{
 		alert( FCKLang.PlaceholderErrNoName ) ;
 		return false ;
 	}
 	
-	if ( FCKPlaceholders.Exist( sValue ) )
+	if ( FCKPlaceholders.Exist( document.getElementById('txtName').value ) )
 	{
 		alert( FCKLang.PlaceholderErrNameInUse ) ;
 		return false ;
 	}
 
-	FCKPlaceholders.Add( sValue ) ;
+	FCKPlaceholders.Add( txtName.value ) ;
 	return true ;
 }
 

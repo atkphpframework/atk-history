@@ -8,8 +8,6 @@
  * For further information visit:
  * 		http://www.fckeditor.net/
  * 
- * "Support Open Source software. What about a donation today?"
- * 
  * File Name: hu.js
  * 	Hungarian language file.
  * 
@@ -43,8 +41,6 @@ RemoveLink			: "Hivatkozás törlése",
 Anchor				: "Horgony beillesztése/szerkesztése",
 InsertImageLbl		: "Kép",
 InsertImage			: "Kép beillesztése/módosítása",
-InsertFlashLbl		: "Flash",
-InsertFlash			: "Flash beillesztése, módosítása",
 InsertTableLbl		: "Táblázat",
 InsertTable			: "Táblázat beillesztése/módosítása",
 InsertLineLbl		: "Vonal",
@@ -85,8 +81,6 @@ Find				: "Keresés",
 Replace				: "Csere",
 SpellCheck			: "Helyesírásellenőrzés",
 UniversalKeyboard	: "Általános billentyűzet",
-PageBreakLbl		: "Oldaltörés",
-PageBreak			: "Oldaltörés beillesztése",
 
 Form			: "Űrlap",
 Checkbox		: "Jelölőnégyzet",
@@ -108,11 +102,9 @@ InsertCell			: "Cella beszúrása",
 DeleteCells			: "Cellák törlése",
 MergeCells			: "Cellák egyesítése",
 SplitCell			: "Cellák szétválasztása",
-TableDelete			: "Táblázat törlése",
 CellProperties		: "Cellák tulajdonsága",
 TableProperties		: "Táblázat tulajdonsága",
 ImageProperties		: "Kép tulajdonsága",
-FlashProperties		: "Flash tulajdonsága",
 
 AnchorProp			: "Horgony(ok) tulajdonsága(i)",
 ButtonProp			: "Gomb(ok) tulajdonsága(i) ",
@@ -136,9 +128,6 @@ UnknownToolbarItem	: "Ismeretlen eszköztár elem \"%1\"",
 UnknownCommand		: "Ismeretlen parancs \"%1\"",
 NotImplemented		: "A parancs nincs beágyazva",
 UnknownToolbarSet	: "Eszközkészlet beállítás \"%1\" nem létezik",
-NoActiveX			: "A böngésződ biztonsági beállításai limitálják a szerkesztő lehetőségeit. Engedélyezned kell ezt az opciót: \"Run ActiveX controls and plug-ins\". Kitapasztalhatod a hibákat és feljegyezheted a hiányzó képességeket.",
-BrowseServerBlocked : "Nem lehet megnyitni a fájlböngészőt. Bizonyosodj meg róla, hogy a popup albakok engedélyezve vannak.",
-DialogBlocked		: "Nem tudom megnyitni a párbeszédablakot. Bizonyosodj meg róla, hogy a popup ablakok engedélyezve vannak.",
 
 // Dialogs
 DlgBtnOK			: "OK",
@@ -147,8 +136,6 @@ DlgBtnClose			: "Bezárás",
 DlgBtnBrowseServer	: "Szerver tallózása",
 DlgAdvancedTag		: "Haladó",
 DlgOpOther			: "Egyéb",
-DlgInfoTab			: "Információ",
-DlgAlertUrl			: "Illeszd be a hivatkozást",
 
 // General Dialogs Labels
 DlgGenNotSet		: "&lt;nincs beállítva&gt;",
@@ -193,17 +180,7 @@ DlgImgAlignTextTop	: "Szöveg tetjére",
 DlgImgAlignTop		: "Tetejére",
 DlgImgPreview		: "Elõnézet",
 DlgImgAlertUrl		: "Töltse ki a kép URL-ét",
-DlgImgLinkTab		: "Hivatkozás",
-
-// Flash Dialog
-DlgFlashTitle		: "Flash tulajdonsága",
-DlgFlashChkPlay		: "Automata lejátszás",
-DlgFlashChkLoop		: "Folyamatosan",
-DlgFlashChkMenu		: "Flash menü engedélyezése",
-DlgFlashScale		: "Méretezés",
-DlgFlashScaleAll	: "Mindent mutat",
-DlgFlashScaleNoBorder	: "Keret nélkül",
-DlgFlashScaleFit	: "Teljes kitöltés",
+DlgImgLinkTab		: "Link",	//MISSING
 
 // Link Dialog
 DlgLnkWindowTitle	: "Hivatkozás",
@@ -283,7 +260,6 @@ DlgTableHeight		: "Magasság",
 DlgTableCellSpace	: "Cell spacing",
 DlgTableCellPad		: "Cell padding",
 DlgTableCaption		: "Felirat",
-DlgTableSummary		: "Összegzés",
 
 // Table Cell Dialog
 DlgCellTitle		: "Cella tulajdonságai",
@@ -334,11 +310,7 @@ PasteErrorCopy	: "A böngészõ biztonsági beállításai nem engedélyezik a s
 PasteAsText		: "Beillesztés formázatlan szövegként",
 PasteFromWord	: "Beillesztés Wordbõl",
 
-DlgPasteMsg2	: "Másold be az alábbi mezőbe a következő billentyűk használatával (<STRONG>Ctrl+V</STRONG>) és nyomj <STRONG>OK</STRONG>.",
-DlgPasteIgnoreFont		: "Betű formázások megszüntetése",
-DlgPasteRemoveStyles	: "Stíluslapok eltávolítása",
-DlgPasteCleanBox		: "Mező tartalmának törlése",
-
+DlgPasteMsg		: "A szerkesztõ nem képes végrehajtani a beillesztési mûveletet a bõngészõ <STRONG>biztonsági beállításai</STRONG> miatt.<BR>Másolja be az alábbi mezõbe a (<STRONG>Ctrl+V</STRONG>) billentyûzetkombinációval és kattintson <STRONG>OK</STRONG> gombra.",
 
 // Color Picker
 ColorAutomatic	: "Automatikus",
@@ -422,7 +394,7 @@ BulletedListProp	: "Felsorolás tulajdonságai",
 NumberedListProp	: "Számozás tulajdonságai",
 DlgLstType			: "Típus",
 DlgLstTypeCircle	: "Ciklus",
-DlgLstTypeDisc		: "Lemez",
+DlgLstTypeDisk		: "Lemez",
 DlgLstTypeSquare	: "Négyzet",
 DlgLstTypeNumbers	: "Számok (1, 2, 3)",
 DlgLstTypeLCase		: "Kisbetűs (a, b, c)",
@@ -466,11 +438,11 @@ DlgDocMeCopy		: "Szerzői jog",
 DlgDocPreview		: "Előnézet",
 
 // Templates Dialog
-Templates			: "Sablonok",
-DlgTemplatesTitle	: "Elérhető sablonok",
-DlgTemplatesSelMsg	: "Válaszd ki melyik sablon nyíljon meg a szerkesztőben<br>(a jelenlegi tartalom elveszik):",
-DlgTemplatesLoading	: "Sablon lista betöltése. Kis türelmet...",
-DlgTemplatesNoTpl	: "(Nincs sablon megadva)",
+Templates			: "Templates",	//MISSING
+DlgTemplatesTitle	: "Content Templates",	//MISSING
+DlgTemplatesSelMsg	: "Please select the template to open in the editor<br>(the actual contents will be lost):",	//MISSING
+DlgTemplatesLoading	: "Loading templates list. Please wait...",	//MISSING
+DlgTemplatesNoTpl	: "(No templates defined)",	//MISSING
 
 // About Dialog
 DlgAboutAboutTab	: "About",

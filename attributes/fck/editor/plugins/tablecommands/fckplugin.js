@@ -8,8 +8,6 @@
  * For further information visit:
  * 		http://www.fckeditor.net/
  * 
- * "Support Open Source software. What about a donation today?"
- * 
  * File Name: fckplugin.js
  * 	This plugin register the required Toolbar items to be able to insert the
  * 	toolbar commands in the toolbar.

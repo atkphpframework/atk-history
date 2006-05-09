@@ -8,8 +8,6 @@
  * For further information visit:
  * 		http://www.fckeditor.net/
  * 
- * "Support Open Source software. What about a donation today?"
- * 
  * File Name: bs.js
  * 	Bosnian language file.
  * 
@@ -43,8 +41,6 @@ RemoveLink			: "Izbriši link",
 Anchor				: "Insert/Edit Anchor",	//MISSING
 InsertImageLbl		: "Slika",
 InsertImage			: "Ubaci/Izmjeni sliku",
-InsertFlashLbl		: "Flash",	//MISSING
-InsertFlash			: "Insert/Edit Flash",	//MISSING
 InsertTableLbl		: "Tabela",
 InsertTable			: "Ubaci/Izmjeni tabelu",
 InsertLineLbl		: "Linija",
@@ -85,8 +81,6 @@ Find				: "Naði",
 Replace				: "Zamjeni",
 SpellCheck			: "Check Spell",	//MISSING
 UniversalKeyboard	: "Universal Keyboard",	//MISSING
-PageBreakLbl		: "Page Break",	//MISSING
-PageBreak			: "Insert Page Break",	//MISSING
 
 Form			: "Form",	//MISSING
 Checkbox		: "Checkbox",	//MISSING
@@ -108,11 +102,9 @@ InsertCell			: "Ubaci æeliju",
 DeleteCells			: "Briši æelije",
 MergeCells			: "Spoji æelije",
 SplitCell			: "Razdvoji æeliju",
-TableDelete			: "Delete Table",	//MISSING
 CellProperties		: "Svojstva æelije",
 TableProperties		: "Svojstva tabele",
 ImageProperties		: "Svojstva slike",
-FlashProperties		: "Flash Properties",	//MISSING
 
 AnchorProp			: "Anchor Properties",	//MISSING
 ButtonProp			: "Button Properties",	//MISSING
@@ -136,9 +128,6 @@ UnknownToolbarItem	: "Nepoznata stavka sa trake sa alatima \"%1\"",
 UnknownCommand		: "Nepoznata komanda \"%1\"",
 NotImplemented		: "Komanda nije implementirana",
 UnknownToolbarSet	: "Traka sa alatima \"%1\" ne postoji",
-NoActiveX			: "You browser's security settings could limit some features of the editor. You must enable the option \"Run ActiveX controls and plug-ins\". You may experience errors and notice missing features.",	//MISSING
-BrowseServerBlocked : "The resources browser could not be opened. Make sure that all popup blockers are disabled.",	//MISSING
-DialogBlocked		: "It was not possible to open the dialog window. Make sure all popup blockers are disabled.",	//MISSING
 
 // Dialogs
 DlgBtnOK			: "OK",
@@ -147,8 +136,6 @@ DlgBtnClose			: "Zatvori",
 DlgBtnBrowseServer	: "Browse Server",	//MISSING
 DlgAdvancedTag		: "Naprednije",
 DlgOpOther			: "&lt;Other&gt;",	//MISSING
-DlgInfoTab			: "Info",	//MISSING
-DlgAlertUrl			: "Please insert the URL",	//MISSING
 
 // General Dialogs Labels
 DlgGenNotSet		: "&lt;nije podešeno&gt;",
@@ -194,16 +181,6 @@ DlgImgAlignTop		: "Vrh",
 DlgImgPreview		: "Prikaz",
 DlgImgAlertUrl		: "Molimo ukucajte URL od slike.",
 DlgImgLinkTab		: "Link",	//MISSING
-
-// Flash Dialog
-DlgFlashTitle		: "Flash Properties",	//MISSING
-DlgFlashChkPlay		: "Auto Play",	//MISSING
-DlgFlashChkLoop		: "Loop",	//MISSING
-DlgFlashChkMenu		: "Enable Flash Menu",	//MISSING
-DlgFlashScale		: "Scale",	//MISSING
-DlgFlashScaleAll	: "Show all",	//MISSING
-DlgFlashScaleNoBorder	: "No Border",	//MISSING
-DlgFlashScaleFit	: "Exact Fit",	//MISSING
 
 // Link Dialog
 DlgLnkWindowTitle	: "Link",
@@ -283,7 +260,6 @@ DlgTableHeight		: "Visina",
 DlgTableCellSpace	: "Razmak æelija",
 DlgTableCellPad		: "Uvod æelija",
 DlgTableCaption		: "Naslov",
-DlgTableSummary		: "Summary",	//MISSING
 
 // Table Cell Dialog
 DlgCellTitle		: "Svojstva æelije",
@@ -334,11 +310,7 @@ PasteErrorCopy	: "Sigurnosne postavke Vašeg pretraživaèa ne dozvoljavaju oper
 PasteAsText		: "Zalijepi kao obièan tekst",
 PasteFromWord	: "Zalijepi iz Word-a",
 
-DlgPasteMsg2	: "Please paste inside the following box using the keyboard (<STRONG>Ctrl+V</STRONG>) and hit <STRONG>OK</STRONG>.",	//MISSING
-DlgPasteIgnoreFont		: "Ignore Font Face definitions",	//MISSING
-DlgPasteRemoveStyles	: "Remove Styles definitions",	//MISSING
-DlgPasteCleanBox		: "Clean Up Box",	//MISSING
-
+DlgPasteMsg		: "Editor nije mogao automatski zaljepiti zbog  <STRONG>sigurnosnih postavki</STRONG> vašeg pretraživaèa.<BR>Molimo zalijepite unutar slijedeæe kocke koristeæi tastaturu (<STRONG>Ctrl+V</STRONG>) i pritisnite <STRONG>OK</STRONG>.",
 
 // Color Picker
 ColorAutomatic	: "Automatska",
@@ -422,7 +394,7 @@ BulletedListProp	: "Bulleted List Properties",	//MISSING
 NumberedListProp	: "Numbered List Properties",	//MISSING
 DlgLstType			: "Type",	//MISSING
 DlgLstTypeCircle	: "Circle",	//MISSING
-DlgLstTypeDisc		: "Disc",	//MISSING
+DlgLstTypeDisk		: "Disk",	//MISSING
 DlgLstTypeSquare	: "Square",	//MISSING
 DlgLstTypeNumbers	: "Numbers (1, 2, 3)",	//MISSING
 DlgLstTypeLCase		: "Lowercase Letters (a, b, c)",	//MISSING

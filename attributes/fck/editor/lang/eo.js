@@ -8,8 +8,6 @@
  * For further information visit:
  * 		http://www.fckeditor.net/
  * 
- * "Support Open Source software. What about a donation today?"
- * 
  * File Name: eo.js
  * 	Esperanto language file.
  * 
@@ -43,8 +41,6 @@ RemoveLink			: "Forigi Ligilon",
 Anchor				: "Enmeti/Ŝanĝi Ankron",
 InsertImageLbl		: "Bildo",
 InsertImage			: "Enmeti/Ŝanĝi Bildon",
-InsertFlashLbl		: "Flash",	//MISSING
-InsertFlash			: "Insert/Edit Flash",	//MISSING
 InsertTableLbl		: "Tabelo",
 InsertTable			: "Enmeti/Ŝanĝi Tabelon",
 InsertLineLbl		: "Horizonta Linio",
@@ -85,8 +81,6 @@ Find				: "Serĉi",
 Replace				: "Anstataŭigi",
 SpellCheck			: "Literumada Kontrolilo",
 UniversalKeyboard	: "Universala Klavaro",
-PageBreakLbl		: "Page Break",	//MISSING
-PageBreak			: "Insert Page Break",	//MISSING
 
 Form			: "Formularo",
 Checkbox		: "Markobutono",
@@ -108,11 +102,9 @@ InsertCell			: "Enmeti Ĉelon",
 DeleteCells			: "Forigi Ĉelojn",
 MergeCells			: "Kunfandi Ĉelojn",
 SplitCell			: "Dividi Ĉelojn",
-TableDelete			: "Delete Table",	//MISSING
 CellProperties		: "Atributoj de Ĉelo",
 TableProperties		: "Atributoj de Tabelo",
 ImageProperties		: "Atributoj de Bildo",
-FlashProperties		: "Flash Properties",	//MISSING
 
 AnchorProp			: "Ankraj Atributoj",
 ButtonProp			: "Butonaj Atributoj",
@@ -136,9 +128,6 @@ UnknownToolbarItem	: "Ilobretero nekonata \"%1\"",
 UnknownCommand		: "Komandonomo nekonata \"%1\"",
 NotImplemented		: "Komando ne ankoraŭ realigita",
 UnknownToolbarSet	: "La ilobreto \"%1\" ne ekzistas",
-NoActiveX			: "You browser's security settings could limit some features of the editor. You must enable the option \"Run ActiveX controls and plug-ins\". You may experience errors and notice missing features.",	//MISSING
-BrowseServerBlocked : "The resources browser could not be opened. Make sure that all popup blockers are disabled.",	//MISSING
-DialogBlocked		: "It was not possible to open the dialog window. Make sure all popup blockers are disabled.",	//MISSING
 
 // Dialogs
 DlgBtnOK			: "Akcepti",
@@ -147,8 +136,6 @@ DlgBtnClose			: "Fermi",
 DlgBtnBrowseServer	: "Foliumi en la Servilo",
 DlgAdvancedTag		: "Speciala",
 DlgOpOther			: "&lt;Alia&gt;",
-DlgInfoTab			: "Info",	//MISSING
-DlgAlertUrl			: "Please insert the URL",	//MISSING
 
 // General Dialogs Labels
 DlgGenNotSet		: "&lt;Defaŭlta&gt;",
@@ -194,16 +181,6 @@ DlgImgAlignTop		: "Supre",
 DlgImgPreview		: "Vidigi Aspekton",
 DlgImgAlertUrl		: "Bonvolu tajpi la URL de la bildo",
 DlgImgLinkTab		: "Link",	//MISSING
-
-// Flash Dialog
-DlgFlashTitle		: "Flash Properties",	//MISSING
-DlgFlashChkPlay		: "Auto Play",	//MISSING
-DlgFlashChkLoop		: "Loop",	//MISSING
-DlgFlashChkMenu		: "Enable Flash Menu",	//MISSING
-DlgFlashScale		: "Scale",	//MISSING
-DlgFlashScaleAll	: "Show all",	//MISSING
-DlgFlashScaleNoBorder	: "No Border",	//MISSING
-DlgFlashScaleFit	: "Exact Fit",	//MISSING
 
 // Link Dialog
 DlgLnkWindowTitle	: "Ligilo",
@@ -283,7 +260,6 @@ DlgTableHeight		: "Alto",
 DlgTableCellSpace	: "Interspacigo de Ĉeloj",
 DlgTableCellPad		: "Ĉirkaŭenhava Plenigado",
 DlgTableCaption		: "Titolo",
-DlgTableSummary		: "Summary",	//MISSING
 
 // Table Cell Dialog
 DlgCellTitle		: "Atributoj de Celo",
@@ -334,11 +310,7 @@ PasteErrorCopy	: "La sekurecagordo de via TTT-legilo ne permesas, ke la redaktil
 PasteAsText		: "Interglui kiel Tekston",
 PasteFromWord	: "Interglui el Word",
 
-DlgPasteMsg2	: "Please paste inside the following box using the keyboard (<STRONG>Ctrl+V</STRONG>) and hit <STRONG>OK</STRONG>.",	//MISSING
-DlgPasteIgnoreFont		: "Ignore Font Face definitions",	//MISSING
-DlgPasteRemoveStyles	: "Remove Styles definitions",	//MISSING
-DlgPasteCleanBox		: "Clean Up Box",	//MISSING
-
+DlgPasteMsg		: "La redaktilo ne povis aŭtomate interglui pro la <STRONG>sekurecagordo</STRONG> de via TTT-legilo.<BR>Bonvolu interglui viajn datumojn en la ĉi suban tekstozonon per la klavaro (<STRONG>Ctrl-V</STRONG>) kaj musklaku la butonon <STRONG>Akceptita</STRONG>.",
 
 // Color Picker
 ColorAutomatic	: "Aŭtomata",
@@ -422,7 +394,7 @@ BulletedListProp	: "Atributoj de Bula Listo",
 NumberedListProp	: "Atributoj de Numera Listo",
 DlgLstType			: "Tipo",
 DlgLstTypeCircle	: "Cirklo",
-DlgLstTypeDisc		: "Disc",	//MISSING
+DlgLstTypeDisk		: "Disko",
 DlgLstTypeSquare	: "Kvadrato",
 DlgLstTypeNumbers	: "Ciferoj (1, 2, 3)",
 DlgLstTypeLCase		: "Minusklaj Literoj (a, b, c)",

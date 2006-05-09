@@ -8,10 +8,8 @@
  * For further information visit:
  * 		http://www.fckeditor.net/
  * 
- * "Support Open Source software. What about a donation today?"
- * 
  * File Name: ja.js
- * 	Japanese language file.
+ * 	English language file.
  * 
  * File Authors:
  * 		Takashi Yamaguchi (jack@omakase.net)
@@ -43,8 +41,6 @@ RemoveLink			: "リンク削除",
 Anchor				: "アンカー挿入/編集",
 InsertImageLbl		: "イメージ",
 InsertImage			: "イメージ挿入/編集",
-InsertFlashLbl		: "Flash",
-InsertFlash			: "Flash挿入/編集",
 InsertTableLbl		: "テーブル",
 InsertTable			: "テーブル挿入/編集",
 InsertLineLbl		: "ライン",
@@ -85,8 +81,6 @@ Find				: "検索",
 Replace				: "置き換え",
 SpellCheck			: "スペルチェック",
 UniversalKeyboard	: "ユニバーサル・キーボード",
-PageBreakLbl		: "改ページ",
-PageBreak			: "改ページ挿入",
 
 Form			: "フォーム",
 Checkbox		: "チェックボックス",
@@ -108,11 +102,9 @@ InsertCell			: "セル挿入",
 DeleteCells			: "セル削除",
 MergeCells			: "セル結合",
 SplitCell			: "セル分割",
-TableDelete			: "テーブル削除",
 CellProperties		: "セル プロパティ",
 TableProperties		: "テーブル プロパティ",
 ImageProperties		: "イメージ プロパティ",
-FlashProperties		: "Flash プロパティ",
 
 AnchorProp			: "アンカー プロパティ",
 ButtonProp			: "ボタン プロパティ",
@@ -136,9 +128,6 @@ UnknownToolbarItem	: "未知のツールバー項目 \"%1\"",
 UnknownCommand		: "未知のコマンド名 \"%1\"",
 NotImplemented		: "コマンドはインプリメントされませんでした。",
 UnknownToolbarSet	: "ツールバー設定 \"%1\" 存在しません。",
-NoActiveX			: "エラー、警告メッセージなどが発生した場合、ブラウザーのセキュリティ設定によりエディタのいくつかの機能が制限されている可能性があります。セキュリティ設定のオプションで\"ActiveXコントロールとプラグインの実行\"を有効にするにしてください。",
-BrowseServerBlocked : "サーバーブラウザーを開くことができませんでした。ポップアップ・ブロック機能が無効になっているか確認してください。",
-DialogBlocked		: "ダイアログウィンドウを開くことができませんでした。ポップアップ・ブロック機能が無効になっているか確認してください。",
 
 // Dialogs
 DlgBtnOK			: "OK",
@@ -147,8 +136,6 @@ DlgBtnClose			: "閉じる",
 DlgBtnBrowseServer	: "サーバーブラウザー",
 DlgAdvancedTag		: "高度な設定",
 DlgOpOther			: "&lt;その他&gt;",
-DlgInfoTab			: "情報",
-DlgAlertUrl			: "URLを挿入してください",
 
 // General Dialogs Labels
 DlgGenNotSet		: "&lt;なし&gt;",
@@ -193,17 +180,7 @@ DlgImgAlignTextTop	: "テキスト上部",
 DlgImgAlignTop		: "上",
 DlgImgPreview		: "プレビュー",
 DlgImgAlertUrl		: "イメージのURLを入力してください。",
-DlgImgLinkTab		: "リンク",
-
-// Flash Dialog
-DlgFlashTitle		: "Flash プロパティ",
-DlgFlashChkPlay		: "再生",
-DlgFlashChkLoop		: "ループ再生",
-DlgFlashChkMenu		: "Flashメニュー可能",
-DlgFlashScale		: "拡大縮小設定",
-DlgFlashScaleAll	: "すべて表示",
-DlgFlashScaleNoBorder	: "外が見えない様に拡大",
-DlgFlashScaleFit	: "上下左右にフィット",
+DlgImgLinkTab		: "Link",	//MISSING
 
 // Link Dialog
 DlgLnkWindowTitle	: "ハイパーリンク",
@@ -283,7 +260,6 @@ DlgTableHeight		: "テーブル高さ",
 DlgTableCellSpace	: "セル内余白",
 DlgTableCellPad		: "セル内間隔",
 DlgTableCaption		: "ｷｬﾌﾟｼｮﾝ",
-DlgTableSummary		: "テーブル目的/構造",
 
 // Table Cell Dialog
 DlgCellTitle		: "セル プロパティ",
@@ -334,11 +310,7 @@ PasteErrorCopy	: "ブラウザーのセキュリティ設定によりエディ�
 PasteAsText		: "プレーンテキスト貼り付け",
 PasteFromWord	: "ワード文章から貼り付け",
 
-DlgPasteMsg2	: "キーボード(<STRONG>Ctrl+V</STRONG>)を使用して、次の入力エリア内で貼って、<STRONG>OK</STRONG>を押してください。",
-DlgPasteIgnoreFont		: "FontタグのFace属性を無視します。",
-DlgPasteRemoveStyles	: "スタイル定義を削除します。",
-DlgPasteCleanBox		: "入力エリアクリア",
-
+DlgPasteMsg		: "ブラウザーの<STRONG>セキュリティ設定</STRONG>によりエディタの貼り付け操作が自動で実行することができません。<BR>実行するには手動でキーボードの(<STRONG>Ctrl+V</STRONG>)を実行して<STRONG>OK</STRONG>を押してください。",
 
 // Color Picker
 ColorAutomatic	: "自動",
@@ -422,7 +394,7 @@ BulletedListProp	: "箇条書き プロパティ",
 NumberedListProp	: "段落番号 プロパティ",
 DlgLstType			: "タイプ",
 DlgLstTypeCircle	: "白丸",
-DlgLstTypeDisc		: "黒丸",
+DlgLstTypeDisk		: "黒丸",
 DlgLstTypeSquare	: "四角",
 DlgLstTypeNumbers	: "アラビア数字 (1, 2, 3)",
 DlgLstTypeLCase		: "英字小文字 (a, b, c)",
@@ -466,11 +438,11 @@ DlgDocMeCopy		: "文書の著作権",
 DlgDocPreview		: "プレビュー",
 
 // Templates Dialog
-Templates			: "テンプレート(雛形)",
-DlgTemplatesTitle	: "テンプレート内容",
-DlgTemplatesSelMsg	: "エディターで使用するテンプレートを選択してください。<br>(現在のエディタの内容は失われます):",
-DlgTemplatesLoading	: "テンプレート一覧読み込み中. しばらくお待ちください...",
-DlgTemplatesNoTpl	: "(テンプレートが定義されていません)",
+Templates			: "Templates",	//MISSING
+DlgTemplatesTitle	: "Content Templates",	//MISSING
+DlgTemplatesSelMsg	: "Please select the template to open in the editor<br>(the actual contents will be lost):",	//MISSING
+DlgTemplatesLoading	: "Loading templates list. Please wait...",	//MISSING
+DlgTemplatesNoTpl	: "(No templates defined)",	//MISSING
 
 // About Dialog
 DlgAboutAboutTab	: "バージョン情報",

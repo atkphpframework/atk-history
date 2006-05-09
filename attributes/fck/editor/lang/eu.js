@@ -8,8 +8,6 @@
  * For further information visit:
  * 		http://www.fckeditor.net/
  * 
- * "Support Open Source software. What about a donation today?"
- * 
  * File Name: eu.js
  * 	Basque language file.
  * 	Euskara hizkuntza fitxategia.
@@ -44,8 +42,6 @@ RemoveLink			: "Kendu Esteka",
 Anchor				: "Aingura",
 InsertImageLbl		: "Irudia",
 InsertImage			: "Txertatu/Editatu Irudia",
-InsertFlashLbl		: "Flasha",
-InsertFlash			: "Txertatu/Editatu Flasha",
 InsertTableLbl		: "Taula",
 InsertTable			: "Txertatu/Editatu Taula",
 InsertLineLbl		: "Lerroa",
@@ -86,8 +82,6 @@ Find				: "Bilatu",
 Replace				: "Ordezkatu",
 SpellCheck			: "Ortografia",
 UniversalKeyboard	: "Teklatu Unibertsala",
-PageBreakLbl		: "Orrialde-jauzia",
-PageBreak			: "Txertatu Orrialde-jauzia",
 
 Form			: "Formularioa",
 Checkbox		: "Kontrol-laukia",
@@ -109,11 +103,9 @@ InsertCell			: "Txertatu Gelaxka",
 DeleteCells			: "Kendu Gelaxkak",
 MergeCells			: "Batu Gelaxkak",
 SplitCell			: "Zatitu Gelaxka",
-TableDelete			: "Ezabatu Taula",
 CellProperties		: "Gelaxkaren Ezaugarriak",
 TableProperties		: "Taularen Ezaugarriak",
 ImageProperties		: "Irudiaren Ezaugarriak",
-FlashProperties		: "Flasharen Ezaugarriak",
 
 AnchorProp			: "Ainguraren Ezaugarriak",
 ButtonProp			: "Botoiaren Ezaugarriak",
@@ -137,9 +129,6 @@ UnknownToolbarItem	: "Ataza barrako elementu ezezaguna \"%1\"",
 UnknownCommand		: "Komando izen ezezaguna \"%1\"",
 NotImplemented		: "Komando ez inplementatua",
 UnknownToolbarSet	: "Ataza barra \"%1\" taldea ez da existitzen",
-NoActiveX			: "Zure nabigatzailearen segustasun hobespenak editore honen zenbait ezaugarri mugatu ditzake. \"ActiveX kontrolak eta plug-inak\" aktibatu beharko zenituzke, bestela erroreak eta ezaugarrietan mugak egon daitezke.",
-BrowseServerBlocked : "Baliabideen arakatzailea ezin da ireki. Ziurtatu popup blokeatzaileak desgaituta dituzula.",
-DialogBlocked		: "Ezin da elkarrizketa-leihoa ireki. Ziurtatu popup blokeatzaileak desgaituta dituzula.",
 
 // Dialogs
 DlgBtnOK			: "Ados",
@@ -148,8 +137,6 @@ DlgBtnClose			: "Itxi",
 DlgBtnBrowseServer	: "Zerbitzaria arakatu",
 DlgAdvancedTag		: "Aurreratua",
 DlgOpOther			: "&lt;Bestelakoak&gt;",
-DlgInfoTab			: "Informazioa",
-DlgAlertUrl			: "Mesedez URLa idatzi ezazu",
 
 // General Dialogs Labels
 DlgGenNotSet		: "&lt;Ezarri gabe&gt;",
@@ -195,16 +182,6 @@ DlgImgAlignTop		: "Goian",
 DlgImgPreview		: "Aurrebista",
 DlgImgAlertUrl		: "Mesedez Irudiaren URLa idatzi",
 DlgImgLinkTab		: "Esteka",
-
-// Flash Dialog
-DlgFlashTitle		: "Flasharen Ezaugarriak",
-DlgFlashChkPlay		: "Automatikoki Erreproduzitu",
-DlgFlashChkLoop		: "Begizta",
-DlgFlashChkMenu		: "Flasharen Menua Gaitu",
-DlgFlashScale		: "Eskalatu",
-DlgFlashScaleAll	: "Dena erakutsi",
-DlgFlashScaleNoBorder	: "Ertzarik gabe",
-DlgFlashScaleFit	: "Doitu",
 
 // Link Dialog
 DlgLnkWindowTitle	: "Esteka",
@@ -284,7 +261,6 @@ DlgTableHeight		: "Altuera",
 DlgTableCellSpace	: "Gelaxka arteko tartea",
 DlgTableCellPad		: "Gelaxken betegarria",
 DlgTableCaption		: "Epigrafea",
-DlgTableSummary		: "Laburpena",
 
 // Table Cell Dialog
 DlgCellTitle		: "Gelaxken Ezaugarriak",
@@ -335,11 +311,7 @@ PasteErrorCopy	: "Zure web nabigatzailearen segurtasun ezarpenak testuak automat
 PasteAsText		: "Testu Arrunta bezala Itsatsi",
 PasteFromWord	: "Word-etik itsatsi",
 
-DlgPasteMsg2	: "Mesedez teklatua erabilita (<STRONG>Ctrl+V</STRONG>) ondorego eremuan testua itsatsi eta <STRONG>OK</STRONG> sakatu.",
-DlgPasteIgnoreFont		: "Letra Motaren definizioa ezikusi",
-DlgPasteRemoveStyles	: "Estilo definizioak kendu",
-DlgPasteCleanBox		: "Testu-eremua Garbitu",
-
+DlgPasteMsg		: "Editoreak ezin du atomatikoki testua itsatsi zure nabigatzailearen <STRONG>segurtasun neurriengatik</STRONG>.<BR>Mesedez, itsatsi ezazu ondorengo kutxan teklatuaren bidez (<STRONG>Ctrl+V</STRONG>) eta <STRONG>Ados</STRONG> botoian klik egin.",
 
 // Color Picker
 ColorAutomatic	: "Automatikoa",
@@ -423,7 +395,7 @@ BulletedListProp	: "Buletdun Zerrendaren Ezarpenak",
 NumberedListProp	: "Zenbakidun Zerrendaren Ezarpenak",
 DlgLstType			: "Mota",
 DlgLstTypeCircle	: "Zirkulua",
-DlgLstTypeDisc		: "Diskoa",
+DlgLstTypeDisk		: "Diskoa",
 DlgLstTypeSquare	: "Karratua",
 DlgLstTypeNumbers	: "Zenbakiak (1, 2, 3)",
 DlgLstTypeLCase		: "Letra xeheak (a, b, c)",
