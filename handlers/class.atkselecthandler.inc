@@ -34,10 +34,16 @@
     function action_select()
     {
       $output = $this->invoke("selectPage");
-      if ($output!="")
+      
+      if ($output != "")
       {
+        if ($this->m_partial != NULL)
+        {
+          $output = $this->m_node->renderActionPage("select", $output);
+        }
+        
         $page =  &$this->getPage();
-        $page->addContent($this->m_node->renderActionPage("select", $output));
+        $page->addContent($output);
       }
     }
 
@@ -67,7 +73,7 @@
                                    "",
                                    "select");
 
-      if (count($recordset)==1 && $node->hasFlag(NF_AUTOSELECT))
+      if ($this->m_partial == NULL && count($recordset)==1 && $node->hasFlag(NF_AUTOSELECT))
       {
         // There's only one record and the autoselect flag is set, so we
         // automatically go to the target.
@@ -84,31 +90,22 @@
       else
       {
         $ui = &$this->getUi();
+        
+        /* @var $container atkRecordListContainer */
+        $container = &atknew("atk.recordlist.atkrecordlistcontainer");
+        $container->setNode($this->m_node);
+        $container->setAction($this->m_node->m_action);
+        $container->setRecords($recordset);
+        $container->setActions(array('select' => atkurldecode($node->m_postvars['atktarget'])));
+        if (!empty($this->m_postvars['atkrecordlist']))
+          $container->setName($this->m_postvars['atkrecordlist']);
+        $output = $container->render($this->m_partial != NULL);
 
-        $params["header"] = text("title_select", $node->m_type);
-
-        $navigator = &atknew("atk.utils.atknavigator");
-        if ($node->m_index != "")
-        {
-          $params["index"] = $navigator->buildIndex($node, $recordset[0][$node->m_index]);
-        }
-
-        // create navigation bar
-        $params["navbar"] = $navigator->buildNavigation($node, "select");
-
-        $actions["select"]=atkurldecode($node->m_postvars['atktarget']);
-
-        $recordlist = &atknew("atk.recordlist.atkrecordlist");
-        $params["list"] = $recordlist->render($node, $recordset, $actions);
-
-        $output = $ui->renderList("select", $params);
-
-        return $ui->renderBox(array("title"=>$node->actionTitle('select'),
-                                    "content"=>$output));
+        if ($this->m_partial == NULL)
+          $output = $ui->renderBox(array("title"=>$node->actionTitle('select'), "content"=>$output));        
+        
+        return $output;
       }
-
     }
-
   }
-
 ?>
