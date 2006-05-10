@@ -2851,6 +2851,7 @@
             }
             else
             {
+              atkdebug("Using default search method for $key");
               $condition = "lower(".$this->m_table.".".$key.") LIKE lower('%".escapeSQL($value,true)."%')";
               $query->addSearchCondition($condition);
             }
@@ -3065,6 +3066,7 @@
               }
               else
               {
+                atkdebug("Using default search method for $key");                
                 $condition = "lower(".$this->m_table.".".$key.") LIKE lower('%".escapeSQL($value,true)."%')";
                 $query->addSearchCondition($condition);
               }

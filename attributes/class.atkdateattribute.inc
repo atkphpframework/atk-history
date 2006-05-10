@@ -257,7 +257,6 @@
       $fieldname = $fieldprefix.$this->fieldName().$postfix;
 
       /* text mode? */
-      atkdebug("MODE $mode");
       if ($this->hasFlag(AF_DATE_STRING) || $mode == 'list')
       {
         $value = &$record[$this->fieldName()];
@@ -545,9 +544,8 @@
 
       // Set default values to null.
       if (!isset($record[$this->fieldName()]) || empty($record[$this->fieldName()]))
-        $record[$this->fieldName()]=array("year"=>0, "month"=>0, "day"=>0);
+        $record[$this->fieldName()] = NULL;
 
-      // FIXME, we need a way to set the date to 'nothing' (i.e., unselected)
       $rec = isset($record[$this->fieldName()]['from']) ? array($this->fieldName() => $record[$this->fieldName()]['from']) : $record;
       $res = $this->draw($rec, "atksearch_AE_".$fieldprefix, "_AE_from");
       $rec = isset($record[$this->fieldName()]['to']) ? array($this->fieldName() => $record[$this->fieldName()]['to']) : $record;
@@ -623,7 +621,7 @@
           $searchcondition = $query->exactCondition($field, $value);
         }
       }
-      
+
       return $searchcondition;
     }
 
