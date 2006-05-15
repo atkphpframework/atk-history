@@ -34,22 +34,25 @@
    */
   $config_identifier = "atkapp";
 
-  //----------------- DATABASE CONFIGURATION --------------------
 
+  //----------------- DATABASE CONFIGURATION --------------------
+   
   /**
    * The databasetype.
    *
    * Currently supported are:
-   *   mysql:   MySQL (3.X ?)
-   *   mysql41: MySQL > 4.1.3
-   *   oci8:    Oracle 8i
-   *   oci9:    Oracle 9i and 10g
-   *   pgsql:   PostgreSQL
-   *   mssql:   Microsoft SQL Server
+   * "mysql"   - All MySQL versions since 3.23
+   * "mysql41" - MySQL 4.1+. On top of the "mysql" driver, this one
+   *             has transaction support. (requires PHP5, mysqli extension)
+   * "oci805"  - Oracle 8.0.5
+   * "oci8"    - All Oracle 8i versions
+   * "oci9"    - Oracle9i+ (also works for 10G)
+   * "pgsql"   - PostgreSQL 7.1+
+   * "mssql"   - Microsoft SQL Server
    * @var String
    */
   $config_db["default"]["driver"]   = "mysql";
-  
+
   /**
    * The IP or hostname of the database host
    * @var String
@@ -91,7 +94,7 @@
    * SEVERELY FLAMED!
    * @var String
    */
-  // $config_mailreport = "ivo@ibuildings.nl";
+  // $config_mailreport = "ivo@achievo.org";
 
   /**
    * The debug level.
@@ -230,6 +233,7 @@
    * If config_restrictive is set to true, access is denied for all features
    * for which no access requirements are set. If set to false, access is
    * always granted if no access requirements are set.
+   * @var bool
    */
   $config_restrictive = true;
 
@@ -288,6 +292,16 @@
    * @var int
    */
   $config_max_loginattempts = 5;
+
+  /**
+   * When changerealm is true, the authentication realm is changed on every login.
+   * Advantage: the user is able to logout using the logout link.
+   * Disadvantage: browser's 'remember password' feature won't work.
+   * This setting only affects the http login box, so it is only relevant if
+   * $config_auth_loginform is set to false.
+   * @var bool
+   */
+  $config_auth_changerealm = false;
 
   /**
    * if you use "pop3" or "imap" as authentication, you have to fill in
@@ -384,7 +398,7 @@
    */
   $config_doctemplatedir = "doctemplates/";
 
-  // --------- DATE INTERNATIONALISATION CONFIGURATION ---------
+  // --------- DATA INTERNATIONALISATION CONFIGURATION ---------
 
   /**
    * @todo document me!

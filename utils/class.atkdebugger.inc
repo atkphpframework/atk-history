@@ -49,10 +49,10 @@
       if (!$this->m_isconsole)
       {
         $link = $this->consoleLink('Open console', '', array(), true);
-        $data = &$this->getDebuggerData();
+        $data = &$this->getDebuggerData(true);
         $data = array(); // start clean
         global $g_debug_msg;
-        $g_debug_msg[] = atkGetTimingInfo().$res."Debugger initialized. [".$link."]";
+        $g_debug_msg[] = atkGetTimingInfo()."Debugger initialized. [".$link."]";
       }
     }
 
@@ -96,9 +96,10 @@
       {
         $data = &$this->getDebuggerData();
 
-        atkdebug("[".$this->consoleLink("query&nbsp;details", "query", array("query_id"=>count($data["queries"])), true)."] ".$query);
-
         $data["queries"][] = array("query"=>$query, "trace"=>atk_get_trace());
+
+        atkdebug("[".$this->consoleLink("query&nbsp;details", "query", array("query_id"=>count($data["queries"])-1), true)."] ".$query);
+
         return true;
       }
       return false;
@@ -108,7 +109,7 @@
     {
       static $s_first = true;
       $res = "";
-      $url = atkconfig("atkroot").'debugger.php?atkstackid='.atkStackID().'&action='.$action.$this->urlParams($params);
+      $url = atkconfig("atkroot").'debugger.php?atkstackid='.atkStackID().'&action='.$action.'&atkprevlevel=0'.$this->urlParams($params);
 
       if ($popup)
       {
@@ -130,6 +131,7 @@
     {
       if (count($params))
       {
+        $res = "";
         foreach($params as $key=>$value)
         {
           $res.='&'.$key."=".rawurlencode($value);
@@ -252,12 +254,13 @@
     }
 
 
-    function &getDebuggerData()
+    function &getDebuggerData($clean=false)
     {
       global $g_sessionManager;
       if (is_object($g_sessionManager))
       {
         $session = &$g_sessionManager->getSession();
+        if ($clean) $session['debugger'] = array();        
         $var= &$session["debugger"][atkStackID()];
         return $var;
       }

@@ -14,6 +14,7 @@
    * @version $Revision$
    * $Id$
    */
+  atkimport('atk.ui.atktheme');
 
   atkimport('atk.ui.atktheme');
   
@@ -111,7 +112,7 @@
 
         $this->_addThemedef($theme, $from);
       }
-      if ($this->m_themedefs[0]) { $this->getThemedef();}
+      if (isset($this->m_themedefs[0]) && (!empty($this->m_themedefs[0]))) { $this->getThemedef();}
     }
 
     /**
@@ -122,7 +123,7 @@
      */
     function _checkForBase($theme, $from)
     {
-      if ($theme["base"])
+      if (isset($theme["base"]) && (!empty($theme["base"])))
       {
         array_unshift($this->m_themedefs, "$from/../".$theme["base"]."/".$this->THEMEFILE);
       }
@@ -230,6 +231,10 @@
      */
     function _addThemedef($themedef, $from)
     {
+      // Stripping the atkroot so we store it atkroot independent
+      if (substr($from, 0, strlen(atkconfig('atkroot')))==atkconfig('atkroot'))
+        $from = substr($from, strlen(atkconfig('atkroot')));
+
       foreach ($themedef as $themedefitemname => $themedefitem)
       {
         if (!is_array($themedef[$themedefitemname]))
@@ -238,7 +243,7 @@
         }
         else
         {
-          if (!is_array($this->m_def[$themedefitemname]))
+          if ((!isset($this->m_def[$themedefitemname])) || (!is_array($this->m_def[$themedefitemname])))
           {
             $this->m_def[$themedefitemname] = array();
           }

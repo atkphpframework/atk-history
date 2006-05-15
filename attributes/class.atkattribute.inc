@@ -8,8 +8,8 @@
    * @package atk
    * @subpackage attributes
    *
-   * @copyright (c)2000-2004 Ivo Jansch
-   * @copyright (c)2000-2004 Ibuildings.nl BV
+   * @copyright (c)2000-2006 Ivo Jansch
+   * @copyright (c)2000-2006 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
    * @version $Revision$
@@ -300,6 +300,14 @@
   define("NOSTORE"   ,0);
 
   /**
+   * Do not load this attribute
+   *
+   * Storage type flag, used by the storageType() and related methods
+   */
+  define("NOLOAD"   ,0);
+
+
+  /**
    * Store before all other ('normal') attributes (?)
    *
    * Storage type flag, used by the storageType() and related methods
@@ -443,6 +451,13 @@
      * @var String
      */
     var $m_searchmode = "";
+
+    /**
+     * Wether to force an update of the attribute
+     * @access private
+     * @var bool
+     */
+    var $m_forceupdate=false;
 
     /**
      * Array for onchange code
@@ -662,6 +677,10 @@
       {
         $onchange = 'onChange="'.$id.'_onChange(this);"';
         $this->_renderChangeHandler($fieldprefix);
+      }
+      else
+      {
+        $onchange = '';
       }
 
       $result = '<input type="text" id="'.$id.'" name="'.$id.'" class="atkattribute"'.
@@ -946,7 +965,7 @@
         if ($this->hasFlag(AF_TOTAL))
         {
           $sum = $this->sum($arr["totalraw"], $arr["rows"][$nr]["record"], $fieldprefix);
-          $arr["totalraw"][$fieldprefix.$this->fieldName()] = $sum[$fieldprefix.$this->fieldName()];
+          $arr["totalraw"][$this->fieldName()] = $sum[$this->fieldName()];
           if (method_exists($this->m_ownerInstance, $function))
             $arr["total"][$fieldprefix.$this->fieldName()] = $this->m_ownerInstance->$function($sum, "list");
           else $arr["total"][$fieldprefix.$this->fieldName()] = $this->display($sum, "list");
@@ -999,6 +1018,31 @@
       return $result;
     }
 
+    /**
+     * Creates a smart search condition for a given search value, and adds it
+     * to the query that will be used for performing the actual search.
+     * 
+     * @param Integer  $id         The unique smart search criterium identifier.
+     * @param Integer  $nr         The element number in the path.
+     * @param Array    $path       The remaining attribute path.
+     * @param atkQuery $query      The query to which the condition will be added.
+     * @param String   $ownerAlias The owner table alias to use.
+     * @param Mixed    $value      The value the user has entered in the searchbox.
+     * @param String   $mode       The searchmode to use.
+     */
+    function smartSearchCondition($id, $nr, $path, &$query, $ownerAlias, $value, $mode)
+    {
+      // default implementation doesn't supported nested paths, this method
+      // should be overriden by relations etc. if they want to support this
+      if (count($path) > 0)
+      {
+        atk_var_dump($path, 'Invalid search path for '.$this->m_ownerInstance->atkNodeType().'#'.$this->fieldName().', ignoring criterium!');
+        return;
+      }
+      
+      $this->searchCondition($query, $ownerAlias, $value, $mode);
+    }
+    
     /**
      * Creates a search condition for a given search value, and adds it to the
      * query that will be used for performing the actual search.
@@ -1183,9 +1227,9 @@
      */
     function sum($rec1, $rec2, $fieldprefix="")
     {
-      $value1 = (isset($rec1[$fieldprefix.$this->fieldName()])?$rec1[$fieldprefix.$this->fieldName()]:0);
-      $value2 = (isset($rec2[$fieldprefix.$this->fieldName()])?$rec2[$fieldprefix.$this->fieldName()]:0);
-      return array($fieldprefix.$this->fieldName() => ($value1+$value2));
+      $value1 = (isset($rec1[$this->fieldName()])?$rec1[$this->fieldName()]:0);
+      $value2 = (isset($rec2[$this->fieldName()])?$rec2[$this->fieldName()]:0);
+      return array($this->fieldName() => ($value1+$value2));
     }
 
     /**
@@ -1263,7 +1307,25 @@
      */
     function needsUpdate($record)
     {
-      return (!$this->hasFlag(AF_READONLY_EDIT) && !$this->hasFlag(AF_HIDE_EDIT));
+      return ((!$this->hasFlag(AF_READONLY_EDIT) && !$this->hasFlag(AF_HIDE_EDIT)) || $this->m_forceupdate);
+    }
+
+    /**
+     * Used to force an attribute to update with every updateDb() call
+     * @param bool $force Wether or not to force the attribute to update
+     */
+    function setForceUpdate($force)
+    {
+      $this->m_forceupdate = $force;
+    }
+
+    /**
+     * Getter for wether or not an attribute is forced to update
+     * @return bool Wether or not an attribute is forced to update
+     */
+    function getForceUpdate()
+    {
+      return $this->m_forceupdate;
     }
 
     /**
@@ -1431,7 +1493,7 @@
      */
     function label($record = array())
     {
-      return atktext($this->fieldName(),$this->getModule(), $this->m_ownerInstance->m_type);
+      return $this->text($this->fieldName());
     }
 
     /**
@@ -1549,6 +1611,9 @@
      *                          record is loaded.
      *             ADDTOQUERY - addtoquery() must be called, so the attribute
      *                          can nest itself in the master query.
+     *             NOLOAD     - nor load(), nor addtoquery() should be
+     *                          called (attribute can not be loaded from the
+     *                          database)
      */
     function loadType($mode, $searching=false)
     {
@@ -1655,13 +1720,15 @@
     * Adds the needed searchbox(es) for this attribute to the fields array. This
     * method should only be called by the atkSearchHandler.
     *
-    * @param array     $fields   The array containing fields to use in the
-    *                            extended search
-    * @param atkNode   $node     The node where the field is in
-    * @param array     $record   A record containing default values to put
-    *                            into the search fields.
+    * @param array   $fields            The array containing fields to use in the
+    *                                   extended search
+    * @param atkNode $node              The node where the field is in
+    * @param array   $record            A record containing default values to put
+    *                                   into the search fields.
+    * @param array   $fieldprefix       search / mode field prefix
+    * @param array   $currentSearchMode current search mode
     */
-    function addToSearchformFields(&$fields, &$node, &$record, $fieldprefix = "")
+    function addToSearchformFields(&$fields, &$node, &$record, $fieldprefix = "", $currentSearchMode=array())
     {
       $field = array();
       $defaults = $record;
@@ -1670,8 +1737,7 @@
       $dbSearchModes = $db->getSearchModes();
       $attribSearchModes = $this->getSearchModes();
       $searchModes = array_values(array_intersect($attribSearchModes, $dbSearchModes));
-
-
+      
       // set "widget" value:
       $funcname = $this->m_name."_search";
 
@@ -1688,16 +1754,18 @@
 
       // set "searchmode" value:
       if(count($searchModes)==1)
-      $field["searchmode"] = '<input type="hidden" name="atksearchmode['.$this->m_name.']" value="'.$searchModes[0].'">'.atktext("search_".$searchModes[0]);
-      else
       {
-        $sel = '<select name="atksearchmode['.$this->m_name.']">';
+        $field["searchmode"] = '<input type="hidden" name="atksearchmode'.$fieldprefix.'['.$this->m_name.']" value="'.$searchModes[0].'">'.atktext("search_".$searchModes[0]);
+      }
+      else if (count($searchModes)>1)
+      {
+        $sel = '<select name="atksearchmode'.$fieldprefix.'['.$this->m_name.']">';
         foreach (array_values($searchModes) as $searchMode)
         {
           // if supported, we select the 'like' searchmode by default
           $selected="";
-          if ($node->m_postvars["atksearchmode"][$this->m_name]==$searchMode||
-          ((!is_array($node->m_postvars["atksearchmode"]) || $node->m_postvars["atksearchmode"][$this->m_name]=="")&&
+          if ($currentSearchMode[$this->m_name]==$searchMode||
+          ((!is_array($currentSearchMode) || $currentSearchMode[$this->m_name]=="")&&
           $searchMode=="substring")) $selected="selected";
           $sel.= '<option value="'.$searchMode.'" '.$selected.'>'.atktext("search_".$searchMode);
         }
@@ -1792,6 +1860,14 @@
     function getOrderByStatement()
     {
       return $this->m_ownerInstance->m_table.".".$this->fieldName();
+    }
+
+ /**
+     * Translate using the owner instance's module and type.
+     */
+    function text($string)
+    {
+      return $this->m_ownerInstance->text($string, $this->getModule());
     }
   }
 ?>

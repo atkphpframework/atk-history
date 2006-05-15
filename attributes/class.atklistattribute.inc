@@ -16,13 +16,23 @@
    * $Id$
    */
 
+  atkimport("atk.attributes.atkattribute");
+
+  /**
+   * Do not translate the options
+   */
+  define("AF_NO_TRANSLATION", AF_SPECIFIC_1);
+
    /**
-    * Flags for the attribute
+    * Do not add a default null option.
     */
-   define("AF_NO_TRANSLATION", AF_SPECIFIC_1); // Do not translate the options
-   define("AF_LIST_NO_OBLIGATORY_NULL_ITEM", AF_SPECIFIC_2); // Do not add a default
-                                                             // null option.
-   define("AF_LIST_NO_NULL_ITEM", AF_SPECIFIC_3); // do not add null option ever
+   define("AF_LIST_NO_OBLIGATORY_NULL_ITEM", AF_SPECIFIC_2);
+
+  /**
+   * Do not add null option ever
+   */
+  define("AF_LIST_NO_NULL_ITEM", AF_SPECIFIC_3);
+
 
   /**
    * The atkListAttribute class represents an attribute of a node
@@ -33,7 +43,6 @@
    * @subpackage attributes
    *
    */
-  atkimport("atk.attributes.atkattribute");
   class atkListAttribute extends atkAttribute
   {
     /**
@@ -66,7 +75,7 @@
       * @var int
       */
      var $m_width;
-     
+
      var $m_onchangehandler_init = "newvalue = el.options[el.selectedIndex].value;\n";
 
     /**
@@ -163,10 +172,11 @@
       {
         $result.= '<option value="'.$this->m_emptyvalue.'">'.atktext('list_null_value', '', $this->m_ownerInstance->m_type);
       }
-
       for ($i=0;$i<count($this->m_values);$i++)
       {
-        if ($this->m_values[$i] == $this->m_selected || $this->m_values[$i] == $record[$this->fieldName()] && $record[$this->fieldName()]!="")
+        // If the current value is selected or occurs in the record
+        if ((!is_null($this->m_selected) && $this->m_values[$i] == $this->m_selected) ||
+            ( is_null($this->m_selected) && $this->m_values[$i] == $record[$this->fieldName()] && $record[$this->fieldName()]!=""))
         {
           $sel = "selected";
         }
@@ -177,7 +187,7 @@
         if ($this->hasFlag(AF_NO_TRANSLATION)) $option=$this->m_options[$i];
         else $option = atktext($this->m_options[$i],$this->m_ownerInstance->m_module, $this->m_owner);
 
-        $result.= '<option value="'.$this->m_values[$i].'" '.$sel.'>'.$option;
+        $result.= '<option value="'.$this->m_values[$i].'" '.$sel.'>'.$option.'</option>';
       }
       $result.='</select>';
       return $result;

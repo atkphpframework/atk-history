@@ -43,7 +43,7 @@
       {
 
         // just before we validate the record we call the preAdd() to check if the record needs to be modified
-        $this->m_node->preAdd($record);
+        $this->m_node->executeTrigger("preAdd", $record, "add");
 
         $this->m_node->validate($record, "add");
 
@@ -100,7 +100,8 @@
             }
             else if ($this->m_node->hasFlag(NF_ADDAFTERADD) && isset($this->m_postvars['atksaveandnext']))
             {
-              $location = session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->m_node->atknodetype().'&atkaction=add', SESSION_REPLACE);              
+              $filter = isset($this->m_node->m_postvars['atkfilter']) ? "&atkfilter=".rawurlencode($this->m_node->m_postvars['atkfilter']) : "";
+              $location = session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->m_node->atknodetype().'&atkaction=add'.$filter, SESSION_REPLACE);
             }
             else
             {

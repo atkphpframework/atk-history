@@ -761,7 +761,7 @@
             {
               /* separator and name */
               $arr["fields"][] = array("html"=>"-", "tabs"=>$this->m_tabs);
-              $arr["fields"][] = array("line"=>"<b>".text($this->m_name, $this->m_ownerInstance->m_type)."</b>", "tabs"=>$this->m_tabs);
+              $arr["fields"][] = array("line"=>"<b>".atktext($this->m_name, $this->m_ownerInstance->m_module, $this->m_ownerInstance->m_type)."</b>", "tabs"=>$this->m_tabs);
             }
             $arr["fields"] = array_merge($arr["fields"], $a["fields"]);
 
@@ -954,12 +954,14 @@
           // small trick, the destination record is in a subarray. The destination
           // addToListArrayRow will not expect this though, so we have to modify the
           // record a bit before passing it to the detail columns.
+          $oldrecord = $arr["rows"][$nr]["record"];
           $arr["rows"][$nr]["record"] = $arr["rows"][$nr]["record"][$this->fieldName()];
           foreach (array_keys($this->m_destInstance->m_attribList) as $attribname)
           {
             $p_attrib = &$this->m_destInstance->getAttribute($attribname);
             $p_attrib->addToListArrayRow($action, $arr, $nr, $fieldprefix, $flags);
           }
+          $arr["rows"][$nr]["record"] = $oldrecord;
         }
       }
     }
@@ -1067,8 +1069,11 @@
      * in it.
      * For original documentation for this method, please see the atkAttribute class
      */
-    function addToSearchformFields(&$fields, &$node, &$record, $fieldprefix = "")
+    function addToSearchformFields(&$fields, &$node, &$record, $fieldprefix = "", $currentSearchMode=array())
     {
+      if (!is_array($currentSearchMode))
+        $currentSearchMode = array();
+      
       if ($this->hasFlag(AF_ONETOONE_INTEGRATE) && $this->createDestination())
       {
         foreach (array_keys($this->m_destInstance->m_attribList) as $attribname)
@@ -1082,15 +1087,15 @@
             //       (which completely breaks) in searching a onetoone something like a 'searchname' should
             //       be implemented and used.
             if (method_exists($p_attrib, "atkDateAttribute"))
-              $p_attrib->addToSearchformFields($fields,$node,$record[$this->fieldName()], "_AE_".$this->fieldName()."_AE_");
+              $p_attrib->addToSearchformFields($fields,$node,$record[$this->fieldName()], "_AE_".$this->fieldName()."_AE_", $currentSearchMode[$this->fieldName()]);
             else
-              $p_attrib->addToSearchformFields($fields,$node,$record[$this->fieldName()], "_AE_".$this->fieldName());
+              $p_attrib->addToSearchformFields($fields,$node,$record[$this->fieldName()], "_AE_".$this->fieldName(), $currentSearchMode[$this->fieldName()]);
           }
         }
       }
       else
       {
-        parent::addToSearchformFields($fields,$node,$record, $fieldprefix);
+        parent::addToSearchformFields($fields,$node,$record, $fieldprefix, $currentSearchMode);
       }
     }
   }

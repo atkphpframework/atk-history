@@ -26,8 +26,11 @@
   $cookiepath = atkconfig("application_root");
   session_set_cookie_params($cookie_params["lifetime"],$cookiepath);
 
-  // set cache expire
-  session_cache_expire(atkconfig("session_cache_expire"));
+  // set cache expire (if function exists, or show upgrade hint if not)
+  if (function_exists("session_cache_expire"))
+    session_cache_expire(atkconfig("session_cache_expire"));
+  else
+    atkdebug("session_cache_expire function does not exist, please upgrade to the latest stable php version (at least 4.2.x)", DEBUG_WARNING);
 
   // set the cache limiter (used for caching)
   session_cache_limiter(atkconfig("session_cache_limiter"));
@@ -272,7 +275,11 @@
           $currentitem["defined_pagevars"][] = $var;
         }
         // We always return the current value..
-        return $currentitem[$var];
+        if (isset($currentitem[$var]))
+        {
+          return $currentitem[$var];
+        }
+        return "";
       }
     }
 
@@ -322,7 +329,7 @@
 
       // pagevars are valid on a page. if you go a session level higher, the pagevars are no longer
       // visible until you return.
-      $pageVars = array("atksearch","atksearchmode","atkorderby","atkstartat","atktarget","atkformdata","atktree","atksuppress","atktab");
+      $pageVars = array("atksearch","atksearchmode","atkorderby","atkstartat","atktarget","atkformdata","atktree","atksuppress","atktab","atksmartsearch");
 
       // Mental note: We have an atkLevel() function for retrieving the atklevel,
       // but we use the global var itself here, because it gets modified in
@@ -541,14 +548,27 @@
 
       $stack = $g_sessionData[$this->m_namespace]["stack"][atkStackID()];
       $res = array();
-      
+
       $stackcount = count($stack);
       for ($i=0;$i<$stackcount;$i++)
       {
         if (isset($stack[$i]["descriptor"]) || $i == ($stackcount-1))
         {
-          $node = explode(".",$stack[$i]["atknodetype"]);
-          $res[] = atktext($node[1],$node[0]).($stack[$i]["descriptor"]?" [ {$stack[$i]['descriptor']} ] ":"");
+          $node = &getNode($stack[$i]["atknodetype"]);
+          $module = getNodeModule($stack[$i]["atknodetype"]);
+          $nodename = getNodeType($stack[$i]["atknodetype"]);  
+                    
+          if (is_object($node))
+          {
+            $ui = &atkinstance("atk.ui.atkui");
+            $txt = $ui->title($module, $nodename);
+          }
+          else
+          {
+            $txt = atktext($nodename,$module);
+          }
+
+          $res[] = $txt.(isset($stack[$i]["descriptor"])?" [ {$stack[$i]['descriptor']} ] ":"");
         }
       }
       return $res;
@@ -816,6 +836,16 @@
     return true;
   }
   
+  /**
+   * Returns the sessionmanager.
+   * @return atkSessionManager  session manager
+   */
+  function &atkGetSessionManager()
+  {
+    global $g_sessionManager;
+    return $g_sessionManager;
+  }
+
   /**
    * Returns the sessionmanager.
    * @return atkSessionManager  session manager

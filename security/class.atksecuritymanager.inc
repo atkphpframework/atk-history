@@ -62,27 +62,6 @@
       $atkroot = atkconfig("atkroot");
       require_once($atkroot."atk/security/class.auth_interface.inc");
 
-      $authentication = explode(",",trim(atkconfig("authentication", "none")));
-      if(is_array($authentication))
-      {
-        foreach($authentication as $value)
-        {
-          $value = trim($value);
-          if(is_file($atkroot."atk/security/class.auth_".$value.".inc"))
-          {
-            include_once($atkroot."atk/security/class.auth_".$value.".inc");
-          }
-        }
-      }
-      else
-      {
-        if(is_file($atkroot."atk/security/class.auth_".$authentication.".inc"))
-        {
-          include_once($atkroot."atk/security/class.auth_".$authentication.".inc");
-        }
-      }
-
-      include_once($atkroot."atk/security/class.auth_".atkconfig("authorization", atkconfig("authentication", "none")).".inc");
 
       /* authentication class */
       $authentication = explode(",",trim($authentication_type));
@@ -94,6 +73,7 @@
           if($class!="")
           {
             $classname = "auth_".$class;
+            include_once($atkroot."atk/security/class.".$classname.".inc");
             if(class_exists($classname))
             {
               atkdebug("atkSecurityManager() constructing class $classname");
@@ -105,6 +85,7 @@
       else
       {
         $classname = "auth_".$authentication;
+        include_once($atkroot."atk/security/class.".$classname.".inc");
         if(class_exists($classname))
         {
           atkdebug("atkSecurityManager() constructing class $classname");
@@ -114,6 +95,7 @@
 
       /* authorization class */
       $classname = "auth_".$authorization_type;
+      include_once($atkroot."atk/security/class.auth_".$authorization_type.".inc");
       $this->m_authorization = new $classname;
 
       /* security scheme */
@@ -135,8 +117,8 @@
 
       if (atkconfig("auth_loginform")==true) // form login
       {
-        $auth_user = @$ATK_VARS["auth_user"];
-        $auth_pw = @$ATK_VARS["auth_pw"];
+        $auth_user = isset($ATK_VARS["auth_user"]) ? $ATK_VARS["auth_user"] : null;
+        $auth_pw = isset($ATK_VARS["auth_pw"]) ? $ATK_VARS["auth_pw"] : null;
       }
       else // HTTP login
       {
@@ -152,12 +134,13 @@
         $cookie_params = session_get_cookie_params();
         session_set_cookie_params($cookie_params["lifetime"], dirname($_SERVER["SCRIPT_NAME"]));
         @session_start();
+        $session = array();
         $session["relogin"]=1;
 
         // destroy cookie
         if (atkconfig("authentication_cookie") && $auth_user!="administrator")
         {
-          $cookiename = "atkauth_".str_replace(" ","_",atktext("app_title"));
+          $cookiename = $this->_getAuthCookieName();
           if (!empty($_COOKIE[$cookiename])) setcookie($cookiename, "", 0);
         }
         if($ATK_VARS["atklogout"]>1)
@@ -167,14 +150,14 @@
         }
       }
       // do we need to login?
-      else if (@$session["login"]!=1)
+      else if ((!array_key_exists("login", $session)) || ($session["login"]!=1))
       {
         // authenticated?
         $authenticated = false;
 
         // sometimes we manually have to set the PHP_AUTH vars
         // old style http_authorization
-        if (empty($auth_user) && empty($auth_pw) && ereg("^Basic ", @$_SERVER["HTTP_AUTHORIZATION"]))
+        if (empty($auth_user) && empty($auth_pw) && array_key_exists("HTTP_AUTHORIZATION", $_SERVER) && ereg("^Basic ", $_SERVER["HTTP_AUTHORIZATION"]))
         {
           list($auth_user, $auth_pw) = explode(":", base64_decode(substr($_SERVER["HTTP_AUTHORIZATION"], 6)));
         }
@@ -190,7 +173,7 @@
         {
           // Cookiename is based on the app_title, for there may be more than 1 atk app running,
           // each with their own cookie..
-          $cookiename = "atkauth_".str_replace(" ","_",atktext("app_title"));
+          $cookiename = $this->_getAuthCookieName();
           list($enc, $user, $passwd) = split("\.",base64_decode($_COOKIE[$cookiename]));
 
           // for security reasons administrator will never be cookied..
@@ -343,7 +326,7 @@
         }
         else
         {
-          header('WWW-Authenticate: Basic realm="'.atktext("app_title").' - '.strftime("%c",time()).'"');
+          header('WWW-Authenticate: Basic realm="'.atktext("app_title").(atkconfig("auth_changerealm", true)?' - '.strftime("%c",time()):"").'"');
           if (ereg("Microsoft", $_SERVER['SERVER_SOFTWARE'])) header("Status: 401 Unauthorized");
           else header("HTTP/1.0 401 Unauthorized");
           return false;
@@ -415,6 +398,7 @@
 
       $page->register_style($ui->stylePath("style.css"));
 
+      $page->register_script(atkConfig('atkroot')."atk/javascript/tools.js");
       $page->register_script(atkConfig('atkroot')."atk/javascript/formfocus.js");
 
       $tplvars = Array();
@@ -588,7 +572,6 @@
 
         $_cache[$node][$privilege] = $allowed;
       }
-
       return $_cache[$node][$privilege];
     }
 
@@ -710,6 +693,11 @@
           atkdebug("error opening logfile");
         }
       }
+    }
+
+    function _getAuthCookieName()
+    {
+      return "atkauth_3".str_replace(" ","_",atktext("app_title"));
     }
   }
 

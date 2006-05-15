@@ -43,6 +43,13 @@
         return false;
       }
 
+      // ATKDocTpl must be available to perform this action
+      if (!isset($this->m_postvars["atkdoctpl"]))
+      {
+        atkerror("atkdoctpl parameter not available.");
+        return false;
+      }
+
       // Compose the filename to be used (doctemplatedir/module/node/<docmentfilename)
       $basepath = atkconfig("doctemplatedir", "doctemplates/");
       $module = $this->m_node->m_module;
@@ -64,7 +71,10 @@
       }
 
       // Assign the record variables to the OpenOffice.org DocumentWriter
-      $this->assignRecordVars($openDocumentWriter);
+      if (method_exists($this->m_node, "assignDocumentVars"))
+        $this->m_node->assignDocumentVars($this, $openDocumentWriter, $this->m_postvars["atkselector"]);
+      else
+        $this->assignDocumentVars($openDocumentWriter, $this->m_postvars["atkselector"]);
 
       // Send the document to the browser
       if (!$openDocumentWriter->display($tpl_file, $this->m_postvars["atkdoctpl"]))
@@ -74,41 +84,23 @@
       exit;
     }
 
-    function assignRecordVars(&$documentWriter)
+    /**
+     * Default document assignment function (assigns the given record and
+     * the generic vars)
+     *
+     * @param atkDocumentWriter $documentWriter DocumentWriter to which the variables should be assigned
+     * @param String $selector String containing the selector used to get the document from the database
+     */
+    function assignDocumentVars(&$documentWriter, $selector)
     {
-      // Get the node and select the recordattributes from the database
-      $node = $this->m_node;
-      $record = $node->selectDb($this->m_postvars['atkselector'], "", "", $this->m_viewExcludes, "", "document");
+      // Load the selected record from the database
+      $record = $this->m_node->selectDb($selector, "", "", $this->m_viewExcludes, "", "document");
 
-      // Loop through the attributes in order to assign them all to the documentwriter
-      foreach (array_keys($node->m_attribIndexList) as $i)
-      {
-        $p_attrib = &$node->m_attribList[$node->m_attribIndexList[$i]["name"]];
+      // Assign the record to the documentWriter
+      $documentWriter->assignDocumentSingleRecord($this->m_node, $record[0]);
 
-        // Get the internal attribute name
-        $key = $node->m_attribIndexList[$i]["name"];
-
-        // Get the Label of the attribute (can be suppressed with AF_NOLABEL or AF_BLANKLABEL)
-        if ($p_attrib->hasFlag(AF_NOLABEL) || $p_attrib->hasFlag(AF_BLANKLABEL))
-          $label = "";
-        else
-          $label = $p_attrib->label($record);
-
-        // Get the display value by calling <attribute>_display().
-        // An <attributename>_display function may be provided in a derived
-        // class to display an attribute. If it exists we will use that method
-        // else we will just use the attribute's display method.
-        $funcname = $p_attrib->m_name."_display";
-        if (method_exists($node, $funcname))
-          $value = $node->$funcname($record[0], "plain");
-        else
-          $value = $p_attrib->display($record[0], "plain");
-
-        // Supply the attribute label as [key_label] and value as [key]
-        // where key is the name of the attribute
-        $documentWriter->Assign($key . "_label", $label);
-        $documentWriter->Assign($key, $value);
-      }
+      // Also assign the generic (date) vars tot the documentWriter
+      $documentWriter->assignDocumentGenericVars();
     }
 
   }

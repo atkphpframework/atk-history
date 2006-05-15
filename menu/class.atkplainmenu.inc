@@ -93,17 +93,20 @@
           }
           $menuitems[$i]["url"]=session_url($url);
         }
-      }
-      /* previous */
-      if ($atkmenutop != "main")
-      {
-        $parent = $g_menu_parent[$atkmenutop];
-        $menu .= atkconfig("menu_delimiter");
-        $menu .= href('menu.php?atkmenutop='.$parent,atktext("back_to").' '.atktext("menu_$parent", $modname),SESSION_DEFAULT)."<br />\n";
+        /* previous */
+        if ($atkmenutop != "main")
+        {
+          $parent = $g_menu_parent[$atkmenutop];
+          $menu .= atkconfig("menu_delimiter");
+          $menu .= href('menu.php?atkmenutop='.$parent,atktext("back_to", "atk").' '.$this->getMenuTranslation($parent, $modname),SESSION_DEFAULT).'<br />';
+        }
       }
       $menu.=$this->getFooter($atkmenutop);
+      $page = &atknew("atk.ui.atkpage");
+      $theme = &atkinstance("atk.ui.atktheme");
+      $page->register_style($theme->stylePath("style.css"));
+      $page->register_script(atkconfig("atkroot")."atk/javascript/menuload.js");
       $ui = &atkinstance("atk.ui.atkui");
-
       return $ui->renderBox(array("title"=>atktext("menu_".$atkmenutop,$modname),
                                   "content"=>$menu,
                                   "menuitems"=>$menuitems),"menu");

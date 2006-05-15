@@ -21,6 +21,7 @@
    * flag(s) specific for atkManyToOneRelation
    */
   define("AF_RELATION_AUTOLINK", AF_SPECIFIC_1); // create edit/view links for the items in a manytoonerelation dropdown.
+  define("AF_RELATION_NO_NULL_ITEM", AF_SPECIFIC_2);// Do not add null option ever
 
   /**
    * @internal include base class
@@ -194,8 +195,20 @@
       if (isset($rec[$this->fieldName()]))
       {
         $myrec = $rec[$this->fieldName()];
+        if (is_array($myrec))
+  	    {
+  	      $result = array();
+  	      if ($this->createDestination())
+  	      {
+  	        foreach (array_keys($this->m_destInstance->m_attribList) as $attrName)
+  	        {
+  	          $attr = &$this->m_destInstance->m_attribList[$attrName];
+  	          $result[$attrName] = $attr->db2value($myrec);
+  	        }
+  	      }
 
-        if (is_array($myrec)) return $myrec;
+          return $result;
+  	    }
         else
         {
           // if the record is not an array, probably only the value of the primary key was loaded.
@@ -211,7 +224,7 @@
      * @param $record Record
      * @return a displayable string
      */
-    function display($record, $mode)
+    function display($record, $mode="")
     {
       if ($this->createDestination())
       {
@@ -238,7 +251,7 @@
 
         $result = $title; // default result is just the title.
 
-        if ($this->hasFlag(AF_RELATION_AUTOLINK) && $mode<>"csv") // create link to edit/view screen
+        if ($this->hasFlag(AF_RELATION_AUTOLINK) && (!in_array($mode, array("csv", "plain")))) // create link to edit/view screen
         {
           if (($this->m_destInstance->allowed("view"))&&!$this->m_destInstance->hasFlag(NF_NO_VIEW)&&$title!="")
           {
@@ -270,14 +283,8 @@
       if ($this->createDestination())
       {
         $id = $fieldprefix.$this->fieldName();
-        $filter="";
-        if ($this->m_destinationFilter!="")
-        {
-          atkimport("atk.utils.atkstringparser");
-          $parser = new atkStringParser($this->m_destinationFilter);
-          $filter = $parser->parse($record);
-        }
 
+        $filter=$this->parseFilter($this->m_destinationFilter,$record);
         $autolink = $this->getRelationAutolink($id, $filter);
         $editflag = true;
 
@@ -312,7 +319,7 @@
 
             $this->registerKeyListener($id, KB_CTRLCURSOR|KB_LEFTRIGHT);
             $result.= '<select id="'.$id.'" name="'.$id.'" class="atkmanytoonerelation" '.$onchange.'>';
-            if (!$this->hasFlag(AF_OBLIGATORY)||(atkconfig("list_obligatory_null_item")&&!is_array($value)))
+            if ((!$this->hasFlag(AF_OBLIGATORY) && !$this->hasFlag(AF_RELATION_NO_NULL_ITEM)) || (atkconfig("list_obligatory_null_item")&&!is_array($value)))
             {
               //get the select_none string
               $nodename = $this->m_destInstance->m_type;
@@ -389,11 +396,13 @@
           // we use the current level to automatically return to this page
           // when we come from the select..
           $atktarget = rawurlencode("dispatch.php?atklevel=".atkLevel()."&".$selname."=[pk]");
+          $linkname = atktext("link_select_".getNodeType($this->m_destination), getNodeModule($this->m_destination),getNodeType($this->m_destination),'','',true);
+          if (!$linkname) $linkname = atktext("select_a").' '.strtolower(atktext(getNodeType($this->m_destination), getNodeModule($this->m_destination),getNodeType($this->m_destination)));
           if ($this->m_destinationFilter!="")
           {
             $result.= href("dispatch.php?atknodetype=".$this->m_destination.
                            "&atkaction=select&atkfilter=".$filter."&atktarget=".$atktarget,
-                           atktext("link_select_".getNodeType($this->m_destination), getNodeModule($this->m_destination),getNodeType($this->m_destination)),
+                           $linkname,
                            SESSION_NESTED,
                            true,'class="atkmanytoonerelation"');
           }
@@ -401,14 +410,14 @@
           {
             $result.= href("dispatch.php?atknodetype=".$this->m_destination.
                            "&atkaction=select&atktarget=".$atktarget,
-                           atktext("link_select_".getNodeType($this->m_destination), getNodeModule($this->m_destination),getNodeType($this->m_destination)),
+                           $linkname,
                            SESSION_NESTED,
                            true,'class="atkmanytoonerelation"');
           }
         }
 
-        if($editflag) $result.=$autolink['edit'];
-        $result.= $autolink['add'];
+        if($editflag) $result.= isset($autolink['edit']) ? $autolink['edit'] : "";
+        $result.= isset($autolink['add']) ? $autolink['add'] : "";
         return $result;
       }
       return atkerror("Could not create destination for $this->m_destination!");
@@ -486,9 +495,7 @@
         {
           if ($this->m_destinationFilter!="")
           {
-            atkimport("atk.utils.atkstringparser");
-            $parser = new atkStringParser($this->m_destinationFilter);
-            $filter = $parser->parse($record);
+            $filter = $this->parseFilter($this->m_destinationFilter,$record);
             $this->m_destInstance->addFilter($filter);
           }
           $recordset = $this->m_destInstance->selectDb("","","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
@@ -531,6 +538,46 @@
         return $result;
       }
     }
+    
+    /**
+     * Creates a smart search condition for a given search value, and adds it
+     * to the query that will be used for performing the actual search.
+     * 
+     * @param Integer  $id         The unique smart search criterium identifier.
+     * @param Integer  $nr         The element number in the path.
+     * @param Array    $path       The remaining attribute path.
+     * @param atkQuery $query      The query to which the condition will be added.
+     * @param String   $ownerAlias The owner table alias to use.
+     * @param Mixed    $value      The value the user has entered in the searchbox.
+     * @param String   $mode       The searchmode to use.
+     */
+    function smartSearchCondition($id, $nr, $path, &$query, $ownerAlias, $value, $mode)
+    {
+      if (count($path) > 0)
+      {
+        $this->createDestination();
+        
+        $destAlias = "ss_{$id}_{$nr}_".$this->fieldName();
+        
+        $query->addJoin(
+          $this->m_destInstance->m_table, $destAlias,
+          $this->getJoinCondition($query, $ownerAlias, $destAlias),
+          false
+        );
+
+        $attrName = array_shift($path);
+        $attr = &$this->m_destInstance->getAttribute($attrName);
+        
+        if (is_object($attr))
+        {
+          $attr->smartSearchCondition($id, $nr + 1, $path, $query, $destAlias, $value, $mode);
+        }
+      }
+      else 
+      {
+        $this->searchCondition($query, $ownerAlias, $value, $mode);
+      }
+    }       
 
     /**
      * Creates an search condition for a given search value
@@ -544,7 +591,6 @@
     {
       $searchcondition = $this->getSearchCondition($query, $table, $value, $searchmode);
       $query->addSearchCondition($searchcondition);
-
     }
 
     function getSearchCondition(&$query, $table, $value, $searchmode)
@@ -822,7 +868,20 @@
       if ($this->createDestination())
       {
         // In queries, relations are alias'd by their attribute name, so we use that for the sort prefix here.
-        return $this->fieldName().".".$this->m_destInstance->m_default_order;
+        $order = $this->m_destInstance->getOrder();
+        if ($order == "")
+        {
+          foreach (array_keys($this->m_destInstance->m_attribList) as $attribname)
+          {
+            $attrib = &$this->m_destInstance->m_attribList[$attribname];
+            if ($attrib->hasFlag(AF_PRIMARY))
+            {
+              $order = $attrib->m_name;
+              break;
+            }
+          }
+        }
+        return $this->fieldName().".".$order;
       }
       return parent::getOrderByStatement();
     }

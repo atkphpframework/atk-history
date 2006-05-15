@@ -170,11 +170,20 @@
      * This method has a duplicate check. Calling it with the same stylesheet
      * more than once, will still result in only one single include of the
      * stylesheet.
-     * @param String $file The (relative path and) filename of the stylesheet.
+     * @param String $file  The (relative path and) filename of the stylesheet.
+     * @param String $media The stylesheet media (defaults to 'all').
      */
-    function register_style($file)
+    function register_style($file, $media='all')
     {
-      if (!in_array($file, $this->m_stylesheets)) $this->m_stylesheets[] = $file;
+      if (empty($media))
+      {
+        $media = 'all';
+      }
+
+      if (!array_key_exists($file, $this->m_stylesheets)) 
+      {
+        $this->m_stylesheets[$file] = $media;
+      }
     }
 
     /**
@@ -196,10 +205,10 @@
       */
      function register_hiddenvars($hiddenvars)
      {
-     	 foreach ($hiddenvars as $hiddenvarname => $hiddenvarvalue)
-     	 {
-     	 	 $this->m_hiddenvars[$hiddenvarname] = $hiddenvarvalue;
-     	 }
+       foreach ($hiddenvars as $hiddenvarname => $hiddenvarvalue)
+       {
+         $this->m_hiddenvars[$hiddenvarname] = $hiddenvarvalue;
+       }
      }
 
     /**
@@ -208,7 +217,7 @@
      * @param String $title Title of the html page.
      * @return String The HTML pageheader, including <head> and </head> tags.
      */
-    function head($title)
+    function head($title, $extra_header="")
     {
       $res = "<head>\n  <title>$title</title>\n";
 
@@ -216,16 +225,21 @@
       $version = atkversion();
       if ("\$Name$"!="\$"."Name:  $") $version.=" ($Name$)";
       $res.= '  <META NAME="atkversion" CONTENT="'.$version.'">'."\n";
+
       $res.= '  <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset='.atktext("charset","atk").'">'."\n";
+      if ($extra_header != "") $res.= $extra_header."\n";
+
       $this->addScripts($res);
 
-      for ($i = 0; $i < count($this->m_stylesheets); $i++)
-        $res.='  <link href="'.$this->m_stylesheets[$i].'" rel="stylesheet" type="text/css">'."\n";
+      foreach ($this->m_stylesheets as $file => $media)
+      {
+        $res.='  <link href="'.$file.'" rel="stylesheet" type="text/css" media="'.$media.'" />'."\n";
+      }
 
       for ($i = 0; $i < count($this->m_stylecode); $i++)
-	      $res.= '<style> '.$this->m_stylecode[$i].' </style>'."\n";
+        $res.= '<style type="text/css"> '.$this->m_stylecode[$i].' </style>'."\n";
 
-	    $favico = atkconfig("defaultfavico");
+      $favico = atkconfig("defaultfavico");
       if ($favico!="")
       {
         $res.= '<link rel="icon" href="'.$favico.'" type="image/x-icon">
@@ -303,9 +317,7 @@
       $res = '<body ';
       if (count($this->m_loadscripts))
       {
-        $res.='onLoad="globalLoad(); if ( window.showTab ) {showTab(\'';
-        if (isset($ATK_VARS['atktab'])) $res.=$ATK_VARS['atktab'];
-        $res.='\');}" ';
+        $res.='onLoad="globalLoad();" ';
       }
       $res.= $extraprops.">\n";
       return $res;
@@ -323,7 +335,8 @@
      * @param string $extrabodyprops  Extra attributes to add to the <body> tag.
      * @return String The HTML page, including <html> and </html> tags.
      */
-    function render($title, $flags=7,$extrabodyprops="")
+
+    function render($title, $flags=7,$extrabodyprops="", $extra_header="")
     {
       if(is_bool($flags) && $flags==true)
       {
@@ -337,7 +350,7 @@
       $theme = &atkinstance("atk.ui.atktheme"); 
       if(hasFlag($flags,HTML_DOCTYPE)) $page.=$theme->getAttribute("doctype");
       $page.= "\n<html>\n";
-      if(hasFlag($flags,HTML_HEADER)) $page.= $this->head($title);
+      if(hasFlag($flags,HTML_HEADER)) $page.= $this->head($title, $extra_header);
       if (hasFlag($flags,HTML_BODY)) $page.= $this->body($extrabodyprops);
       $page.= $this->m_content."\n";
       $page.= $this->renderHiddenVars();
@@ -355,16 +368,16 @@
     function renderHiddenVars()
     {
       $page = "";
-    	if ($this->m_hiddenvars)
-    	{
-    	  $page.= "\n".'<div id="hiddenvars" style="display: none">';
-    		foreach ($this->m_hiddenvars as $hiddenvarname => $hiddenvarvalue)
-    		{
-        	$page.="\n <span id='$hiddenvarname'>$hiddenvarvalue</span>";
-    		}
-    		$page.="\n</div>";
-    	}
-    	return $page;
+      if ($this->m_hiddenvars)
+      {
+        $page.= "\n".'<div id="hiddenvars" style="display: none">';
+        foreach ($this->m_hiddenvars as $hiddenvarname => $hiddenvarvalue)
+        {
+          $page.="\n <span id='$hiddenvarname'>$hiddenvarvalue</span>";
+        }
+        $page.="\n</div>";
+      }
+      return $page;
     }
 
     /**
@@ -373,8 +386,22 @@
      */
     function atkPage()
     {
-      // Load default app-level stylesheet.
-      $this->register_style((file_exists(atkconfig("atkroot")."./style.css") ? "." : atkconfig("atkroot")."atk").'/style.css');
+      global $ATK_VARS;
+      /** @todo: Move this to the places where the tabscript is registered. */
+      // Load default tab show script.
+      $this->register_loadscript('if ( window.showTab ) {showTab(\''.(isset($ATK_VARS['atktab'])?$ATK_VARS['atktab']:'').'\');}');
+    }
+
+    /**
+     * Check if the page is empty (no content).
+     *
+     * This is useful to check at the rendering stage of scripts whether there is something to render.
+     *
+     * @return boolean true if there is no content in the page, false if there is
+     */
+    function isEmpty()
+    {
+      return ($this->m_content=="");
     }
 
   }

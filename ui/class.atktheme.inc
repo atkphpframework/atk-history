@@ -92,7 +92,7 @@
     {
       global $g_theme;
       atkdebug("Created a new atkTheme instance");
-      if ($g_theme["Name"]!="")
+      if (isset($g_theme["Name"]) && $g_theme["Name"]!="")
       {
         $this->m_curtheme = $g_theme["Name"];
       }
@@ -200,7 +200,7 @@
           {
             foreach($itemarray as $item)
             {
-              if ($item == $searchfor)
+              if (strtolower($item) == strtolower($searchfor))
               {
                 return array("dir" => $from, "item" => isset($itemarray[$searchfor])?$itemarray[$searchfor]:NULL);
               }
@@ -231,7 +231,7 @@
         $attrib = $this->_getStackedItem($attribname,$attribvalue);
         if ($attrib)
         {
-          return $attrib["dir"].$returnpath;
+          return atkconfig('atkroot').$attrib["dir"].$returnpath;
         }
         return atkconfig("atkroot")."atk/themes/default/".$defaultreturnpath;
       }

@@ -134,7 +134,7 @@
 
       if (!is_array($myrecords))
       {
-        $myrecords = $this->load(atkGetDb(), $record, "admin");
+        $myrecords = $this->load(atkGetDb(), $record, "admin",true);
       }
 
       $result = atktext("none"); // default result
@@ -247,7 +247,7 @@
               }
             }
           }
-          
+
           $this->m_destInstance->validate($this->m_ownerInstance->m_postvars[$this->fieldName()],"add");
           if (!$this->m_ownerInstance->m_postvars[$this->fieldName()]['atkerror'])
           {
@@ -418,7 +418,7 @@
       // for now, we don't support extended search in embedded one2many recordlists.
       atkimport("atk.recordlist.atkrecordlist");
       $flags  = atkRecordList::convertFlags($this->m_destInstance->getFlags());
-      $flags |= RL_EMBED|RL_NO_EXTENDED_SEARCH;
+      $flags |= RL_EMBED|RL_NO_EXTENDED_SEARCH|RL_NO_SORT|RL_NO_SEARCH;
       return $flags;
     }
 
@@ -456,36 +456,46 @@
         $strfilter = implode(" AND ", $filterelems);
         if ($this->m_destinationFilter!="")
         {
-	        atkimport("atk.utils.atkstringparser");
-	        $parser = new atkStringParser($this->m_destinationFilter);
-	        $filter = $parser->parse($record);
-        	$strfilter.=' AND '.$filter;
+        	$strfilter.=' AND '.$this->parseFilter($this->m_destinationFilter,$record);
         }
         $add_url = 'dispatch.php?atknodetype='.$this->m_destination.'&atkaction=add&atkfilter='.rawurlencode($strfilter);
         $label = $this->getAddLabel();
-        
+
         if (count($this->m_onchangecode))
         {
           $onchange = 'onChange="'.$this->fieldName().'_onChange(this);"';
           $this->_renderChangeHandler($fieldprefix);
         }
+        else
+        {
+          $onchange = '';
+        }
         $url = href($add_url,$label,SESSION_NESTED,$saveform,$onchange.' class="atkonetomanyrelation"');
       }
       return $url;
     }
-    
+
+    /**
+     * Attempts to get a translated label which can be used when composing an "add" link
+     *
+     * @return String Localised "add" label
+     */
     function getAddLabel()
     {
       $key = "link_".$this->fieldName()."_add";
-      $label = atktext($key,$this->m_destInstance->m_module);
-      if ($label==""||strtolower($label)==str_replace('_',' ',strtolower($key)))
+      $label = atktext($key,$this->m_ownerInstance->m_module, $this->m_ownerInstance->m_type, "", "", true);
+      if ($label=="")
       {
-        $key = "link_".getNodeType($this->m_destination)."_add";
-        $label = atktext($key,$this->m_destInstance->m_module);
-        if ($label==""||strtolower($label)==str_replace('_',' ',strtolower($key)))
+        $key = "link_".$this->fieldName()."_add";
+        $label = atktext($key,$this->m_destInstance->m_module, "", "", "", true);
+        if ($label=="")
         {
-          $key = atktext(getNodeType($this->m_destination),$this->m_destInstance->m_module)." ".strtolower(atktext("add"));
-          $label = atktext($key,$this->m_destInstance->m_module);
+          $key = "link_".getNodeType($this->m_destination)."_add";
+          $label = atktext($key,$this->m_destInstance->m_module, "", "", "", true);
+          if ($label=="")
+          {
+            $label = atktext(getNodeType($this->m_destination),$this->m_destInstance->m_module)." ".strtolower(atktext("add", "atk"));
+          }
         }
       }
       return $label;
@@ -528,6 +538,33 @@
     }
 
     /**
+     * Create the where clause for the referential key that is used to
+     * retrieve the destination records.
+     * @access private
+     *
+     * @param array $record The master record
+     * @return String SQL where clause
+     */
+    function _getLoadWhereClause($record)
+    {
+      $whereelems = array();
+
+      if (count($this->m_refKey)==0||$this->m_refKey[0]=="") $this->m_refKey[0]=$this->m_owner;
+
+      for ($i=0, $_i = count($this->m_refKey); $i<$_i; $i++)
+      {
+        $primkeyattr = &$this->m_ownerInstance->m_attribList[$this->m_ownerInstance->m_primaryKey[$i]];
+
+        if (!$primkeyattr->isEmpty($record))
+        {
+          $whereelems[] = $this->m_destInstance->m_table.".".$this->m_refKey[$i]."='".$primkeyattr->value2db($record)."'";
+        }
+      }
+
+      return implode(" AND ", $whereelems);
+    }
+
+    /**
      * Retrieve detail records from the database.
      *
      * Called by the framework to load the detail records.
@@ -556,28 +593,13 @@
       {
         if ($this->createDestination())
         {
-          if (count($this->m_refKey)==0||$this->m_refKey[0]=="") $this->m_refKey[0]=$this->m_owner;
+          $where = $this->_getLoadWhereClause($record);
 
-          for ($i=0, $_i = count($this->m_refKey); $i<$_i; $i++)
+          if ($where!="")
           {
-            $primkeyattr = &$this->m_ownerInstance->m_attribList[$this->m_ownerInstance->m_primaryKey[$i]];
-
-            if (!$primkeyattr->isEmpty($record))
-            {
-              $whereelems[] = $this->m_destInstance->m_table.".".$this->m_refKey[$i]."='".$primkeyattr->value2db($record)."'";
-            }
-          }
-
-          if (count($whereelems)>0)
-          {
-            $where = implode(" AND ", $whereelems);
-
             if ($this->m_destinationFilter!="")
             {
-		          atkimport("atk.utils.atkstringparser");
-		          $parser = new atkStringParser($this->m_destinationFilter);
-		          $filter = $parser->parse($record);
-              $this->m_destInstance->addFilter($filter);
+              $this->m_destInstance->addFilter($this->parseFilter($this->m_destinationFilter,$record));
             }
 
             if ($mode=="admin" || $mode=="select" || $mode=="view")
@@ -599,9 +621,9 @@
               $this->m_destInstance->m_postvars['atksearchmode'] = $this->m_ownerInstance->m_postvars['atksearchmode'];
             }
             ($paging==true)?$limitarray=$this->fetchLimitArray():$limitarray="";
-            $recordset = $this->m_destInstance->selectDb($where,@$this->m_ownerInstance->m_postvars['atkorderby'],
-                                                         $limitarray,$excludes,"",$mode);
-
+            $atkorderby = isset($this->m_ownerInstance->m_postvars['atkorderby']) ? $this->m_ownerInstance->m_postvars['atkorderby'] : "";
+            $recordset = $this->m_destInstance->selectDb($where,$atkorderby,
+            $limitarray,$excludes,"",$mode);
             $this->m_loadFilter = $where;
             return $recordset;
           }
@@ -799,6 +821,80 @@
                 ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>';
       return $result;
     }
+    
+    
+    /**
+     * Returns the condition (SQL) that should be used when we want to join an owner
+     * node with the destination node of the atkOneToManyRelation.
+     * 
+     * @param atkQuery $query      The query object.
+     * @param String   $ownerAlias The owner table alias.
+     * @param String   $destAlias  The destination table alias.
+     * 
+     * @return String SQL string for joining the owner with the destination.
+     */
+    function getJoinCondition(&$query, $ownerAlias="", $destAlias="")
+    {
+      if (!$this->createDestination()) return false;
+
+      if ($ownerAlias == "")
+        $ownerAlias = $this->m_ownerInstance->m_table;
+        
+      if ($destAlias == "")
+        $destAlias = $this->m_destInstance->m_table;
+        
+      $conditions = array();
+
+      for ($i = 0, $_i = count($this->m_refKey); $i < $_i; $i++)
+      {
+        $conditions[] = $destAlias.".".$this->m_refKey[$i]."=".$ownerAlias.".".$this->m_ownerInstance->m_primaryKey[$i];
+      }
+
+      return implode(" AND ", $conditions);
+    }     
+
+    /**
+     * Creates a smart search condition for a given search value, and adds it
+     * to the query that will be used for performing the actual search.
+     * 
+     * @param Integer  $id         The unique smart search criterium identifier.
+     * @param Integer  $nr         The element number in the path.
+     * @param Array    $path       The remaining attribute path.
+     * @param atkQuery $query      The query to which the condition will be added.
+     * @param String   $ownerAlias The owner table alias to use.
+     * @param Mixed    $value      The value the user has entered in the searchbox.
+     * @param String   $mode       The searchmode to use.
+     */
+    function smartSearchCondition($id, $nr, $path, &$query, $ownerAlias, $value, $mode)
+    {
+      // one-to-many join means we need to perform a distinct select
+      $query->setDistinct(true);
+      
+      if (count($path) > 0)
+      {
+        $this->createDestination();
+        
+        $destAlias = "ss_{$id}_{$nr}_".$this->fieldName();
+        
+        $query->addJoin(
+          $this->m_destInstance->m_table, $destAlias,
+          $this->getJoinCondition($query, $ownerAlias, $destAlias),
+          false
+        );
+
+        $attrName = array_shift($path);
+        $attr = &$this->m_destInstance->getAttribute($attrName);
+        
+        if (is_object($attr))
+        {
+          $attr->smartSearchCondition($id, $nr + 1, $path, $query, $destAlias, $value, $mode);
+        }
+      }
+      else 
+      {
+        $this->searchCondition($query, $ownerAlias, $value, $mode);
+      }
+    }    
 
     /**
      * Adds a search condition for a given search value
@@ -808,17 +904,18 @@
      */
      function searchCondition(&$query, $table, $value, $searchmode)
      {
-       if ($this->createDestination() && $this->m_ownerInstance->m_postvars["atkselector"])
-       {
+       if ($this->createDestination()) {
          $searchcondition = $this->getSearchCondition($query, $table, $value, $searchmode);
-         if(isset($searchcondition) && !empty($searchcondition))
-         {
-           $query->addTable($this->m_destInstance->m_table);
-           $query->addCondition($this->translateSelector($this->m_ownerInstance->m_postvars['atkselector']));
-           $query->addSearchCondition($searchcondition);
+         if(isset($searchcondition) && !empty($searchcondition)) {
+           if ($this->m_ownerInstance->m_postvars["atkselector"]) {
+             $query->addTable($this->m_destInstance->m_table);
+             $query->addCondition($this->translateSelector($this->m_ownerInstance->m_postvars['atkselector']));
+             $query->addSearchCondition($searchcondition);
+           }
          }
        }
      }
+     
 
      function getSearchCondition(&$query, $table, $value, $searchmode)
      {

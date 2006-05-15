@@ -2,7 +2,7 @@
   /**
    * This file is part of the Achievo ATK distribution.
    * Detailed copyright and licensing information can be found
-   * in the doc/COPYRIGHT and doc/LICENSE files which should be 
+   * in the doc/COPYRIGHT and doc/LICENSE files which should be
    * included in the distribution.
    *
    * @package atk
@@ -16,12 +16,12 @@
    *
    * @version $Revision$
    * $Id$
-   */    
+   */
 
   /**
    * @internal Includes, global definitions etc.
    */
-   
+
   // A repository of node instances..
   $g_nodeRepository = array();
 
@@ -30,6 +30,9 @@
 
   // registered node action handlers
   $g_nodeHandlers = array();
+  
+  // registered node listeners
+  $g_nodeListeners = array();
 
   /**
    * Gets the node type of a node string
@@ -57,26 +60,63 @@
 
   /**
    * Get an instance of a node. If an instance doesn't exist, it is created.
+   * @deprecated Use atkGetNode instead.
    * @param String $node     The node string
    * @param bool   $init     Initialize the node?
    * @param String $cache_id The cache id in the node repository
    * @param bool   $reset    Wether or not to reset the particulair node in the repository
-   * @return the created instance
+   * @return atkNode the created instance
    */
   function &getNode($node, $init=TRUE, $cache_id="default", $reset=false)
+  {
+    return atkGetNode($node, $init, $cache_id, $reset);
+  }
+
+  /**
+   * Get an instance of a node. If an instance doesn't exist, it is created.
+   * @param String $node     The node string
+   * @param bool   $init     Initialize the node?
+   * @param String $cache_id The cache id in the node repository
+   * @param bool   $reset    Wether or not to reset the particulair node in the repository
+   * @return atkNode the created instance
+   */
+  function &atkGetNode($node, $init=TRUE, $cache_id="default", $reset=false)
   {
     global $g_nodeRepository;
     if (!isset($g_nodeRepository[$cache_id][$node])||!is_object($g_nodeRepository[$cache_id][$node]) || $reset)
     {
       atkdebug("Constructing a new node - $node");
       $g_nodeRepository[$cache_id][$node] = &newNode($node, $init);
-    }    
+    }
     return $g_nodeRepository[$cache_id][$node];
+  }
+  
+  /**
+   * Replace, at runtime, the in-memory instance of a node.
+   * 
+   * This is useful to replace nodes with mocks for testing purposes.
+   *
+   * @param String $nodename The full name of the node (module.nodename)
+   * @param atkNode $node The node instance to replace the current one
+   * @param String $cache_id If set, replaces only the instance with a certain
+   *                         cache_id
+   * @return atkNode The current node, useful to restore afterwards. Can be
+   *                 NULL.
+   */
+  function &atkSetNode($nodename, &$node, $cache_id="default")
+  {
+    global $g_nodeRepository;    
+    $org = &$g_nodeRepository[$cache_id][$nodename];
+    $g_nodeRepository[$cache_id][$nodename] = &$node;
+    return $org;
   }
 
   function &getModule($modname)
   {
     global $g_moduleRepository, $g_modules;
+    
+    atkimport("atk.atknode");
+    
     if (!isset($g_moduleRepository[$modname])||!is_object($g_moduleRepository[$modname]))
     {
       atkimport("atk.modules.atkmodule");
@@ -84,8 +124,8 @@
       if ($corporate_base!="")
       {
         atkimport($corporate_base);
-      }      
-      
+      }
+
       $filename = moduleDir($modname)."module.inc";
       if (file_exists($filename))
       {
@@ -94,8 +134,8 @@
       else
       {
         atkdebug("Couldn't find module.inc for module '$modname' in '".moduleDir($modname)."'");
-      }            
-            
+      }
+
       atkdebug("Constructing a new module - $modname");
       if (class_exists("mod_".$modname))
       {
@@ -108,11 +148,11 @@
         $mod = new $modname();
       }
       else
-      {    
-        atkimport("atk.utils.atkclassloader");              
+      {
+        atkimport("atk.utils.atkclassloader");
         $mod = atkClassLoader::invokeFromString(atkconfig("missing_module_handler"), array("module"=>$modname));
-        if ($mod===false)        
-        {               
+        if ($mod===false)
+        {
           // Changed by Ivo: This used to construct a dummy module, so
           // modules could exist that didn't have a module.inc file.
           // We no longer support this (2003-01-11)
@@ -164,6 +204,7 @@
   function &newNode($node, $init=TRUE)
   {
     $module = getNodeModule($node);
+    
     if ($module=="")
     {
       // No module, use the default instance.
@@ -173,15 +214,20 @@
     {
       $module_inst = &getModule(getNodeModule($node));
     }
-    if (is_object($module_inst) && method_exists($module_inst,'newNode'))
+    if (is_object($module_inst))
     {
-      $node = &$module_inst->newNode($node);
-      if ($init && $node != NULL) $node->init();
-      return $node;
+      if (method_exists($module_inst,'newNode'))
+      {
+        $node = &$module_inst->newNode($node);
+        if ($init && $node != NULL) $node->init();
+        return $node;
+      }
+      else atkerror("Module $module does not have newNode function (does it extend from atkModule?)");
     }
+    else atkerror("Module $module could not be instantiated.");
     return NULL;
   }
-  
+
   /**
    * Checks if a certain node exists.
    * @param $node the node type
@@ -190,13 +236,13 @@
   function nodeExists($node)
   {
     static $existence = array();
-    if (array_key_exists($node, $existence)) 
+    if (array_key_exists($node, $existence))
       return $existence[$node];
-      
+
     $module = getNodeModule($node);
     if ($module == "") $module = &new atkModule();
     else $module = &getModule(getNodeModule($node));
-    
+
     $exists = is_object($module) && $module->nodeExists($node);
     $existence[$node] = $exists;
     return $exists;
@@ -210,7 +256,7 @@
     global $g_modules;
     if (isset($g_modules[$module]))
     {
-      $dir = $g_modules[$module];     
+      $dir = $g_modules[$module];
       if (substr($dir,-1)!='/') return $dir."/";
       return $dir;
     }
@@ -264,9 +310,9 @@
     else $g_nodeHandler[$node][$action] = $handler;
     return TRUE;
   }
- 
+
   /**
-   * Perform a member function on all active modules, and return the 
+   * Perform a member function on all active modules, and return the
    * collective result.
    *
    * <b>Example:</b>
@@ -275,7 +321,7 @@
    * </code>
    * This will return the result of the getStuff calls for all modules in a
    * single array.
-   * 
+   *
    * @param String $function The name of the module member function to be
    *                         called. The function does not have to exist for
    *                         all modules, as atkHarvestModules will check if
@@ -290,15 +336,15 @@
   function atkHarvestModules($function, $param="", $associative=false)
   {
     global $g_modules;
-		
+
     $modulekeys = array_keys($g_modules);
     $total = array();
 
     foreach ($modulekeys as $modname)
     {
-      $module = &getModule($modname);      
+      $module = &getModule($modname);
       if (is_object($module) && method_exists($module, $function))
-      {          
+      {
         $res = $module->$function($param);
         if (!empty($res))
         {
@@ -307,7 +353,7 @@
             $total[$modname] = $res;
           }
           else
-          {                          
+          {
             if (is_array($res))
             {
               $total = array_merge($total, $res);
@@ -322,7 +368,7 @@
     }
     return $total;
   }
-  
+
   /**
    * Get/set the status of the readoptimizer.
    * If you need the dataread-functionality of atkNode but don't need
@@ -343,46 +389,46 @@
    */
   function atkReadOptimizer($newvalue=NULL)
   {
-    static $s_optimized=false;    
-    
+    static $s_optimized=false;
+
     if (!($newvalue===NULL)) // New value was set
     {
       $oldvalue = $s_optimized;
-      $s_optimized=$newvalue; 
+      $s_optimized=$newvalue;
       return $oldvalue;
     }
     else
     {
       return $s_optimized; // Return current value.
-    }        
+    }
   }
-  
+
   /**
    * Preloads all modules. If a module_preload.inc file exists in the
    * module directory, this file will be included. If no module_preload.inc
-   * file exists in the module directory the module.inc file will be used 
+   * file exists in the module directory the module.inc file will be used
    * instead (to remain backwards compatible).
    */
   function atkPreloadModules()
   {
-    global $g_modules, $g_modifiers, $g_overloaders, $g_moduleflags;
+    global $g_modules, $g_modifiers, $g_overloaders, $g_moduleflags, $g_nodeListeners;
     
     foreach ($g_modules as $modname => $modpath)
     {
-      if (!hasFlag($g_moduleflags[$modname], MF_NO_PRELOAD))
+      if ((!isset($g_moduleflags[$modname])) || (!hasFlag($g_moduleflags[$modname], MF_NO_PRELOAD)))
       {
         $preload = "$modpath/module_preload.inc";
         $module = "$modpath/module.inc";
         $filename = file_exists($preload) ? $preload : $module;
-  
+
         // no module file exists
         if (!file_exists($filename))
         {
           atkdebug("Couldn't find module_preload.inc or module.inc for module '$modname' in '$modpath'");
           continue;
         }
-        
-        if ($filename != $preload)        
+
+        if ($filename != $preload)
         {
           atkdebug("Loading module - $modname");
           atkimport("atk.modules.atkmodule");
@@ -392,17 +438,21 @@
             atkimport($corporate_base);
           }
         }
-        
+
         // the include file may specify modifiers.
         $modifiers = array();
         $overloaders = array();
+        $listeners = array();
         include_once($filename);
-        
+
         for ($i=0, $_i = count($modifiers); $i < $_i; $i++)
           $g_modifiers[$modifiers[$i]][] = $modname;
-  
+
         if (count($overloaders) > 0)
           $g_overloaders = array_merge($g_overloaders, $overloaders);
+        
+        if (count($listeners) > 0)  
+          $g_nodeListeners = array_merge_recursive($g_nodeListeners, $listeners);
       }
     }
   }

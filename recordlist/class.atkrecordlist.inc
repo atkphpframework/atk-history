@@ -29,11 +29,9 @@
   atkimport("atk.utils.atkstringparser");
 
   /**
-   * Handler for the 'editcopy' action of a node. It copies the selected
-   * record, and then redirects to the edit action for the copied record.
+   * The recordlist class is used to render tables containing records.
    *
    * @author Ivo Jansch <ivo@achievo.org>
-   * @author Peter C. Verhage <peter@ibuildings.nl>
    * @package atk
    * @subpackage recordlist
    *
@@ -224,7 +222,7 @@
           $button = '<input type="submit" class="btn_search" value="'.atktext("search").'">';
           if (!hasFlag($flags, RL_NO_EXTENDED_SEARCH)&&!$this->m_node->hasFlag(NF_NO_EXTENDED_SEARCH))
           {
-            $button .= '<br>'.href($_SERVER["PHP_SELF"]."?atknodetype=".$this->m_node->atkNodeType()."&atkaction=search&atksearchmode=".
+            $button .= '<br>'.href($_SERVER["PHP_SELF"]."?atknodetype=".$this->m_node->atkNodeType()."&atkaction=".$node->getExtendedSearchAction()."&atksearchmode=".
                                                $searchmode,"(".atktext("search_extended").")",SESSION_NESTED);
           }
 
@@ -234,7 +232,9 @@
             $searchstart.='<form action="'.$_SERVER["PHP_SELF"].'?'.SID.'" method="get">'.session_form();
             $searchstart.= '<input type="hidden" name="atknodetype" value="'.$this->m_node->atkNodeType().'">'.
                            '<input type="hidden" name="atkaction" value="'.$this->m_node->m_action.'">'.
-                           '<input type="hidden" name="atksearchmode" value="'.$searchmode.'">';
+                           '<input type="hidden" name="atksearchmode" value="'.$searchmode.'">'.
+                           '<input type="hidden" name="atksmartsearch" value="clear">'.                           
+                           '<input type="hidden" name="atkstartat" value="0">'; // reset atkstartat to first page after a new search;
           }
 
           if (hasFlag($flags, RL_MRA) || hasFlag($flags, RL_MRPA))
@@ -378,24 +378,26 @@
 
           foreach ($list["rows"][$i]["actions"] as $name => $url)
           {
-  	    $actionloader.="\nrl_a['".$listName."'][".$i."]['".$name."'] = '".$url."';";
+      	    $actionloader.="\nrl_a['".$listName."'][".$i."]['".$name."'] = '".$url."';";
 
-	    $link = $name;
+    	      $link = $name;
 
-	    if($icons == true)
-	    {
-	      $icon = $theme->iconPath($name,"recordlist");
-  	      $link = '<img width="16" height="16" border="0" src="'.$icon.'" title="'.atktext($name, $this->m_node->m_module, $this->m_node->m_type).'">';
-	    }
-	    else
-	    {
-	      $link = atktext($name);
-	    }
+    	      if($icons == true)
+    	      {
+    	        $icon = $theme->iconPath(strtolower($name),"recordlist");
+      	      $link = '<img width="16" height="16" border="0" src="'.$icon.'" title="'.atktext($name, $this->m_node->m_module, $this->m_node->m_type).'">';
+    	      }
+    	      else
+    	      {
+    	        $link = atktext($name);
+	          }
+
             $confirmtext= "false";
             if (atkconfig("recordlist_javascript_delete") && $name=="delete")
             $confirmtext = "'".$this->m_node->confirmActionText($name)."'";
             $str_actions.='<a href="'."javascript:rl_do('$listName',$i,'$name',$confirmtext);".'">'.$link.'</a>&nbsp;';
           }
+
           $str_actions.="</span>";
           /* actions (left) */
           if ($orientation == "left" || $orientation == "both")
@@ -511,7 +513,7 @@
           {
             $mra .= '&nbsp; <input type="hidden" name="'.$listName.'_atkaction" value="'.$list["mra"][0].'">'.
             $this->getCustomMraHtml().
-                       '<input type="button" class="btn" value="'.atktext($list["mra"][0]).'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\')">';
+                       '<input type="button" class="btn" value="'.atktext($list["mra"][0],$this->m_node->m_module, $this->m_node->m_type).'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\')">';
           }
 
           if (!hasFlag($flags, RL_EMBED)) $listend = '</form>';
@@ -584,6 +586,7 @@
       $columnConfig = &$this->m_node->getColumnConfig();
 
       /* get the heading and search columns */
+      $atksearchpostvar = isset($this->m_node->m_postvars["atksearch"]) ? $this->m_node->m_postvars["atksearch"] : null;
       if (!hasFlag($flags, RL_NO_SEARCH)) $this->m_node->setAttribSizes();
       foreach (array_keys($this->m_node->m_attribIndexList) as $r)
       {
@@ -591,8 +594,7 @@
         if (!in_array($name, $suppress))
         {
           $attribute = &$this->m_node->m_attribList[$name];
-          $attribute->addToListArrayHeader($this->m_node->m_action, $result, $prefix, $flags,
-                                           @$this->m_node->m_postvars["atksearch"], $columnConfig);
+          $attribute->addToListArrayHeader($this->m_node->m_action, $result, $prefix, $flags, $atksearchpostvar, $columnConfig);
         }
       }
 

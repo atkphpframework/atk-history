@@ -18,6 +18,7 @@
  * imports..
  */
 atkimport("atk.atknode");
+atkimport("atk.meta.grammar.atkmetagrammar");
 atkimport("atk.meta.atkmetapolicy");
 atkimport("atk.meta.atkmetahandler");
 
@@ -43,13 +44,20 @@ class atkMetaNode extends atkNode
    * To make this possible (and for supporting passing parameters by reference)
    * the constructor accepts an array which may contain the following fields:
    *
-   * - type      node type
-   * - table     table name
-   * - sequence  sequence name
-   * - db        database instance
-   * - policy    meta policy, the meta policy to use ((sub-)class atkMetaPolicy instance)
-   * - handler   meta handler, the meta handler to use ((sub-)class atkMetaPolicy instance)   
-   * - flags     node flags
+   * - type        node type
+   * - table       table name
+   * - sequence    sequence name
+   * - db          database instance
+   * - policy      meta policy, the meta policy to use ((sub-)class atkMetaPolicy instance)
+   * - handler     meta handler, the meta handler to use ((sub-)class atkMetaPolicy instance)   
+   * - grammar     meta grammar, the meta grammar to use ((sub-)class atkMetaGrammar instance)
+   * - flags       node flags
+   * - descriptor  descriptor template for this node
+   * - order       (default) order to sort fields
+   * 
+   * All of these variables can also be specified by creating a class variable with
+   * the same name. If you do so for flags, and have to use multiple flags, use
+   * an array of flags.
    */
   function atkMetaNode($args=array())
   {
@@ -61,7 +69,16 @@ class atkMetaNode extends atkNode
     
     $flags = 0;
     if (isset($this->flags))
+    {
       $flags = $this->flags;
+      if (is_array($flags))
+      {
+        $flagList = $flags;
+        $flags = 0;
+        foreach ($flagList as $flag)
+          $flags |= $flag;        
+      }
+    }
     else if (array_key_exists("flags", $args))
       $flags = $args["flags"]; 
 
@@ -80,6 +97,17 @@ class atkMetaNode extends atkNode
       $handler = &$args["handler"];
     else $handler = &$this->_defaultMetaHandler();
     $this->setMetaHandler($handler);
+    
+    if (isset($this->meta_grammar) && is_object($this->meta_grammar))
+      $grammar = &$this->meta_grammar;
+    else if (isset($this->meta_grammar))    
+      $grammar = &atkMetaGrammar::getInstance($this->meta_grammar);
+    else if (array_key_exists("grammar", $args) && is_object($args["grammar"]))
+      $grammar = &$args["grammar"];
+    else if (array_key_exists("grammar", $args))
+      $grammar = &atkMetaGrammar::getInstance($args["grammar"]);      
+    else $grammar = &atkMetaGrammar::getInstance();      
+    $this->m_metaPolicy->setGrammar($grammar);    
 
     if (isset($this->table)) 
       $this->m_table = $this->table;
@@ -98,6 +126,16 @@ class atkMetaNode extends atkNode
     else if (array_key_exists("db", $args))
       $this->m_db = &$args["db"];
     else $this->m_db = &atkGetDb();  
+    
+    if (isset($this->descriptor))
+      $this->setDescriptorTemplate($this->descriptor);
+    else if (array_key_exists("descriptor", $args))
+      $this->setDescriptorTemplate($args["descriptor"]);
+      
+    if (isset($this->order))
+      $this->setOrder($this->order);
+    else if (array_key_exists("order", $args))
+      $this->setOrder($args["order"]);      
 
     $this->applyMetaPolicy($this->m_metaPolicy);
   }
@@ -117,6 +155,14 @@ class atkMetaNode extends atkNode
   {
     return atkMetaHandler::defaultInstance($this);  
   }
+  
+  /**
+   * Returns the default meta grammar.
+   */
+  function &_defaultMetaGrammar()
+  {
+    return atkMetaGrammar::defaultInstance($this);  
+  }  
   
   /**
    * Returns the table.
@@ -150,6 +196,14 @@ class atkMetaNode extends atkNode
   {
     $this->m_metaHandler = &$metaHandler;
   }  
+  
+  /**
+   * Sets the meta grammar.
+   */
+  function setMetaGrammar(&$metaGrammar)
+  {
+    $this->m_metaGrammar = &$metaGrammar;
+  }    
   
   /**
    * Initialize the meta policy data.

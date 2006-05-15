@@ -151,7 +151,7 @@
       $content.= $this->GraphTreeRender();
       $content.= "</table><br>";
 
-      atkdebug("Generating treeview finished!");
+      atkdebug("Generated treeview");
 
       return $ui->renderBox(array("title"=>atktext('title_'.$this->m_type.'_tree', $this->m_module),
                            "content"=>$content));
@@ -235,6 +235,7 @@
     function GraphTreeRender($showactions=true, $expandAll=false, $foldable=true)
     {
       global $g_maxlevel,$g_theme, $exp_index, $PHP_SELF,$config_atkroot;
+      atkimport("atk.utils.atkstringparser");
       if(count($this->m_tree)==1) return "";
 
       $img_expand   = $this->getIcon('expand');
@@ -626,9 +627,10 @@
                 if ($atkencoded) $url = str_replace('[pk]', atkurlencode(rawurlencode($this->primaryKey($this->m_tree[$cnt]["label"])), false), $url);
                 else $url = str_replace('[pk]', rawurlencode($this->primaryKey($this->m_tree[$cnt]["label"])), $url);
 
-                $url = stringparse($url, $this->m_tree[$cnt]["label"], true);
+                $stringparser = new atkStringParser($url);
+                $url = $stringparser->parse($this->m_tree[$cnt]["label"], true);
 
-                $res.=href($url, text($name), SESSION_NESTED)."&nbsp;";
+                $res.=href($url, atktext($name), SESSION_NESTED)."&nbsp;";
               }
             }
 
@@ -647,17 +649,18 @@
      *
      *@param $selector The 'where' clause that indicates which records to select.
      */
-    function copyDb($record)
+    function copyDb($record, $mode="copy")
     {
       $oldparent=$record[$this->m_primaryKey[0]];
-      $this->preCopy($record);
-      $this->addDb($record, true, "copy");
+      
+      parent::copyDb($record, $mode);
+      
       if(!empty($this->m_parent))
       {
         atkdebug("copyDb - Main Record added");
         $newparent=$record[$this->m_primaryKey[0]];
         atkdebug('CopyDbCopychildren('.$this->m_parent.'='.$oldparent.','.$newparent.')');
-        $this->copyChildren($this->m_table.'.'.$this->m_parent.'='.$oldparent, $newparent);
+        $this->copyChildren($this->m_table.'.'.$this->m_parent.'='.$oldparent, $newparent, $mode);
       }
       return true;
     }
@@ -665,10 +668,12 @@
     /**
      * This is a recursive function to copy the children from a parent.
      *
+     * @todo shouldn't we recursively call copyDb here? instead of ourselves
+     * 
      * @param $selector Selector
      * @param $parent Parent ID
      */
-    function copyChildren($selector, $parent="")
+    function copyChildren($selector, $parent="", $mode="copy")
     {
       $recordset = $this->selectDb($selector,"","","","","copy");
 
@@ -678,8 +683,8 @@
         {
           $recordset[$i][$this->m_parent] = array(""=>"",$this->m_primaryKey[0]=>$parent);
           $oldrec = $recordset[$i];
-          $this->preCopy($recordset[$i]);
-          $this->addDb($recordset[$i], true, "copy");
+
+          parent::copyDb($recordset[$i], $mode);
 
           atkdebug("Child Record added");
           $newparent=$recordset[$i][$this->m_primaryKey[0]];
@@ -734,6 +739,7 @@
       for ($i=0;$i<count($recordset);$i++)
       {
         $this->postDel($recordset[$i]);
+        $this->postDelete($recordset[$i]);
       }
 
       return $recordset;

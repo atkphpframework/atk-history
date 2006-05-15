@@ -143,14 +143,14 @@
         }
         if (atkconfig("debug")>0)
         {
-          $res.='<br><div style="font-family: courier; font-size: 11px;" align="left">'.implode("<br>\n ",$g_debug_msg).'</div>';
+          $res.='<br><div style="font-family: monospace; font-size: 11px;" align="left">'.implode("<br>\n ",$g_debug_msg).'</div>';
         }
       }
 
       if (atkconfig("output_gzip") &&
           phpversion() >= '4.0.4pl1' &&
           (strstr($_SERVER["HTTP_USER_AGENT"],'compatible') || strstr($_SERVER["HTTP_USER_AGENT"],'Gecko')) &&
-          strstr($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip')
+          isset($_SERVER['HTTP_ACCEPT_ENCODING']) && strstr($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip')
          )
       {
         header('Content-Encoding: gzip');

@@ -134,7 +134,13 @@
           }
         }
       }
-      if(isset($record['atkerror'])&&count($record['atkerror']) > 0) return false;
+      
+      if(isset($record['atkerror'])&&count($record['atkerror']) > 0)
+      {
+        for ($i = 0, $_i = count($record["atkerror"]); $i < $_i; $i++)
+          $record["atkerror"][$i]["node"] = $this->m_nodeObj->m_type;        
+        return false;
+      }
 
       // After the values check, we check the Flags.
       $db = &$this->m_nodeObj->getDb();
@@ -169,7 +175,7 @@
           }
           // if flag is primary
           else if ($p_attrib->hasFlag(AF_UNIQUE) && !$p_attrib->hasFlag(AF_PRIMARY) &&
-                   count($db->getrows("SELECT ".$p_attrib->fieldName()." FROM ".$this->m_nodeObj->m_table." WHERE $attribname='".escapeSQL($record[$this->m_nodeObj->m_attribList[$attribname]->fieldName()])."' AND NOT (".$this->m_nodeObj->primaryKey($record).")"))>0
+                   count($db->getrows("SELECT ".$p_attrib->fieldName()." FROM ".$this->m_nodeObj->m_table." WHERE $attribname='".escapeSQL($p_attrib->value2db($record))."' AND NOT (".$this->m_nodeObj->primaryKey($record).")"))>0
                   )
           {
             triggerError($record, $attribname, 'error_uniquefield', '', $p_attrib->m_tabs[0]);
@@ -182,8 +188,11 @@
       if (isset($record['atkerror']))
       {
         for ($i = 0, $_i = count($record["atkerror"]); $i < $_i; $i++)
-          $record["atkerror"][$i]["node"] = $this->m_nodeObj->m_type;
+          $record["atkerror"][$i]["node"] = $this->m_nodeObj->m_type;        
+        return false;
       }
+      
+      return true;
     }
 
     /**

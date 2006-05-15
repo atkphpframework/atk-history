@@ -189,9 +189,8 @@
       // load images
       $theme = &atkinstance("atk.ui.atktheme");
       $tipimg = $theme->imgPath("help.gif");
-      $reqimg = '<img align="top" onMouseOver="javascript:window.status=\''.
-                   addslashes(atktext("field_obligatory")).'\';" src="'.$theme->imgPath("required_field.gif").'" border="0" alt="'.
-                   atktext("field_obligatory").'">';
+      $reqimg = '<img align="top" src="'.$theme->imgPath("required_field.gif").'" border="0"
+                  alt="'.atktext("field_obligatory").'" title="'.atktext("field_obligatory").'">';
 
       /* display the edit fields */
       $fields = array();
@@ -265,7 +264,10 @@
           $editsrc = $field["html"];
 
           /* tooltip */
-          $module = $node->m_attribList[$field['name']]->getModule();
+          if (is_object($node->m_attribList[$field['name']]))
+          {
+            $module = $node->m_attribList[$field['name']]->getModule();
+          }
           if (!$module) $module = "atk";
           $ttip = atktext($node->m_type."_".$field["name"]."_tooltip", $module, "", "", "", true);
 
