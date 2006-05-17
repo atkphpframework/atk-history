@@ -165,7 +165,7 @@ function atkSubmitMRA(name, form, target)
     }
     else 
     {
-      form.atklevel.value += 1;
+      form.atklevel.value = parseInt(form.atklevel.value) + 1;
     }    
     
     globalSubmit(form);
