@@ -510,6 +510,7 @@
         elseif (hasFlag($flags, RL_MRA))
         {
           $target = session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->m_node->atkNodeType(), SESSION_NESTED);
+          $embedded = hasFlag($this->m_flags, RL_EMBED) ? 'true' : 'false';
 
           $mra = (count($list["rows"]) > 1 && $mraSelectionMode != MRA_SINGLE_SELECT && $mraSelectionMode != MRA_NO_SELECT ?
                       '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'all\')">'.atktext("select_all").'</a> / '.
@@ -528,7 +529,7 @@
               $mra .= '<option value="'.$name.'">'.atktext($name, $this->m_node->m_module, $this->m_node->m_type).'</option>';
 
             $mra .= '</select>&nbsp;'.$this->getCustomMraHtml().
-                       '<input type="button" class="btn" value="'.atktext("submit").'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\')">';
+                       '<input type="button" class="btn" value="'.atktext("submit").'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\', '.$embedded.')">';
           }
 
           /* one action -> only the submit button */
@@ -536,7 +537,7 @@
           {
             $mra .= ' <input type="hidden" name="'.$listName.'_atkaction" value="'.$list["mra"][0].'">'.
             $this->getCustomMraHtml().
-                       '<input type="button" class="btn" value="'.atktext($list["mra"][0], $node->m_module, $node->m_type).'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\')">';
+                       '<input type="button" class="btn" value="'.atktext($list["mra"][0], $node->m_module, $node->m_type).'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\', '.$embedded.')">';
           }
         }
 

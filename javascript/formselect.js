@@ -92,7 +92,7 @@ function updateSelectable(name, form)
  * @param form reference to the form object
  * @param target where do we escape to?
  */
-function atkSubmitMRA(name, form, target)
+function atkSubmitMRA(name, form, target, embedded)
 {
   /* some stuff we need to know */
   var index = form.elements[name + '_atkaction'].selectedIndex;
@@ -103,7 +103,7 @@ function atkSubmitMRA(name, form, target)
 
   /* get selectors */
   var list = getATKSelectors(name, form);
-
+  
   /* count selected selectors */
   var selectorLength = 0;
   
@@ -111,12 +111,22 @@ function atkSubmitMRA(name, form, target)
   {
     if (list[i].type == 'hidden' || (!list[i].disabled && list[i].checked))
     {
-      var input = document.createElement('input');
-      input.setAttribute('type', 'hidden');
-      input.setAttribute('name', list[i].name.substring(name.length + 1));
-      input.setAttribute('value', list[i].value);
-      form.appendChild(input);    
-
+      var key = list[i].name.substring(name.length + 1);
+      var value = list[i].value;
+      
+      if (embedded)
+      {
+        target += '&' + key + '=' + value;
+      }
+      else
+      {
+        var input = document.createElement('input');
+        input.setAttribute('type', 'hidden');
+        input.setAttribute('name', key);
+        input.setAttribute('value', value);
+        form.appendChild(input);    
+      }
+      
       selectorLength++;
     }
   }
@@ -124,7 +134,11 @@ function atkSubmitMRA(name, form, target)
   /* change atkaction and atkrecordlist values and submit form */
   if (selectorLength > 0)
   {
-    if (form.atkaction == null)
+    if (embedded)
+    {
+      target += '&atkaction=' + atkaction;      
+    }
+    else if (form.atkaction == null)
     {
       var input = document.createElement('input');
       input.setAttribute('type', 'hidden');
@@ -137,7 +151,11 @@ function atkSubmitMRA(name, form, target)
       form.atkaction.value = atkaction;
     }
 
-    if (form.atkrecordlist == null)
+    if (embedded)
+    {
+      target += '&atkrecordlist=' + name;
+    }
+    else if (form.atkrecordlist == null)
     {
       var input = document.createElement('input');
       input.setAttribute('type', 'hidden');
@@ -166,7 +184,12 @@ function atkSubmitMRA(name, form, target)
     else 
     {
       form.atklevel.value = parseInt(form.atklevel.value) + 1;
-    }    
+    } 
+    
+    if (embedded)
+    {
+      form.atkescape.value = target;
+    }
     
     globalSubmit(form);
     form.submit();
