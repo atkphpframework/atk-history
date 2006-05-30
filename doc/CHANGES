@@ -48,6 +48,7 @@ Changes in tomorrow branch
 + Added setForceInsert method to atkAttribute (works just the same as  
   setForceUpdate, only then for inserts). [Peter]
 + Added $excludes / $includes parameters to updateDb. [Peter]
++ Added mock function for selectDb in atMockNode. [Dennis]
 * Improvements to error reporting of importing and added ability 
   to add multiple fields for the entire import ('allfields'). [Boy]
 * Added id to field td. [Boy]
