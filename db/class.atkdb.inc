@@ -35,6 +35,13 @@
   define('MF_AUTO_INCREMENT', 8);
 
   /**
+   * Global array containing database instances. Global is necessary because
+   * PHP4 doesn't support static class members.
+   */
+  global $g_dbinstances;
+
+
+  /**
    * Abstract baseclass for ATK database drivers.
    *
    * Implements some custom functionality and defines some methods that
@@ -297,7 +304,7 @@
         $errstr = $this->errorLookup($this->getDbErrno());
         if($errstr=="")
         {
-          $this->m_error = text('unknown_error').": ".$this->getDbErrno()." (".$this->getDbError().")";
+          $this->m_error = atktext("unknown_error").": ".$this->getDbErrno()." (".$this->getDbError().")";
         }
         else
         {
@@ -310,13 +317,13 @@
         $tmp_error='';
         switch ($errno)
         {
-          case DB_ACCESSDENIED_DB: $tmp_error = sprintf(text("db_access_denied_database"),$this->m_user,$this->m_database);
+          case DB_ACCESSDENIED_DB: $tmp_error = sprintf(atktext("db_access_denied_database", "atk"),$this->m_user,$this->m_database);
                                 break;
-          case DB_ACCESSDENIED_USER: $tmp_error = sprintf(text("db_access_denied_user"),$this->m_user,$this->m_database);
+          case DB_ACCESSDENIED_USER: $tmp_error = sprintf(atktext("db_access_denied_user", "atk"),$this->m_user,$this->m_database);
                                      break;
-          case DB_UNKNOWNDATABASE: $tmp_error = sprintf(text("db_unknown_database"),$this->m_database);
+          case DB_UNKNOWNDATABASE: $tmp_error = sprintf(atktext("db_unknown_database", "atk"),$this->m_database);
                                    break;
-          case DB_UNKNOWNHOST: $tmp_error = sprintf(text("db_unknown_host"),$this->m_host);
+          case DB_UNKNOWNHOST: $tmp_error = sprintf(atktext("db_unknown_host", "atk"),$this->m_host);
                                break;
         }
         $this->m_error = $tmp_error;
@@ -628,7 +635,7 @@
     function func_datetochar($fieldname, $format="")
     {
       if ($format=="") $format = atkconfig("date_to_char", "Y-m-d");
-      return "TO_CHAR($fieldname, ".$this->venderDateFormat($format).")";
+      return "TO_CHAR($fieldname, ".$this->vendorDateFormat($format).")";
     }
 
     /**
@@ -717,23 +724,42 @@
      *                     config.inc.php file (defaults to 'default')
      * @return atkDb Instance of the database class.
      */
-    function &getInstance($conn="default")
+    function &getInstance($conn="default", $reset=false)
     {
-      static $s_instances = array();
-      if (!isset($s_instances[$conn]))
+      global $g_dbinstances;
+      if (!isset($g_dbinstances[$conn]) || $reset)
       {
         atkdebug("Creating new db instance for connection $conn");
         $dbconfig = atkconfig("db");
          // include DB stuff
-        $s_instances[$conn] = &atknew("atk.db.atk".$dbconfig[$conn]["driver"]."db");
-        $s_instances[$conn]->m_database = $dbconfig[$conn]["db"];
-        $s_instances[$conn]->m_user     = $dbconfig[$conn]["user"];
-        $s_instances[$conn]->m_password = $dbconfig[$conn]["password"];
-        $s_instances[$conn]->m_host     = $dbconfig[$conn]["host"];
-        if (isset($dbconfig[$conn]["port"]))
-          $s_instances[$conn]->m_port     = $dbconfig[$conn]["port"];
+        $g_dbinstances[$conn] = &atknew("atk.db.atk".$dbconfig[$conn]["driver"]."db");
+        if (isset($dbconfig[$conn]["db"]))
+        {
+          $g_dbinstances[$conn]->m_database = $dbconfig[$conn]["db"];
+          $g_dbinstances[$conn]->m_user     = $dbconfig[$conn]["user"];
+          $g_dbinstances[$conn]->m_password = $dbconfig[$conn]["password"];
+          $g_dbinstances[$conn]->m_host     = $dbconfig[$conn]["host"];
+          if (isset($dbconfig[$conn]["port"]))
+            $g_dbinstances[$conn]->m_port     = $dbconfig[$conn]["port"];
+        }
       }
-      return $s_instances[$conn];
+      return $g_dbinstances[$conn];
+    }
+
+    /**
+     * Replace the current instance of a named connection at runtime with a
+     * different connection. This is useful for example for replacing a
+     * named database instance with a mock object for testing purposes.
+     *
+     * @param unknown_type $name
+     * @param unknown_type $db
+     */
+    function &setInstance($name, &$db)
+    {
+      global $g_dbinstances;
+      $olddb = &$g_dbinstances[$name];
+      $g_dbinstances[$name] = &$db;
+      return $olddb;
     }
 
   }

@@ -37,6 +37,8 @@
         atkdebug("Loading config file for section $section");
         $config = array();
         @include(atkconfig("configdir").$section.".inc.php");        
+        $other = glob(atkconfig("configdir")."{$section}.*.inc.php");
+        if (is_array($other)) foreach ($other as $file) { @include($file); }
         if (isset($config)) $s_configs[$section] = $config;
       }
       return (isset($s_configs[$section][$tag])&&$s_configs[$section][$tag]!==""?$s_configs[$section][$tag]:$default);
@@ -69,9 +71,9 @@
     {
       $session = &atkSessionManager::getSession();      
       
-      if ($_REQUEST["atkdebug"]["key"])
+      if (isset($_REQUEST["atkdebug"]["key"]))
         $session["debug"]["key"] = $_REQUEST["atkdebug"]["key"];
-      return $session["debug"]["key"] == $params["key"];
+      return (isset($session["debug"]["key"]) && $session["debug"]["key"] == $params["key"]);
     }
 
     /**

@@ -51,6 +51,51 @@
     // error message that caused the fatal error is put in this variable.
     var $m_fatalError = "";
 
+
+    /**
+     * returns the full classname for use with atkimport
+     *
+     * @param string $type
+     * @return string full classname
+     */
+    function _getfullclassname($type)
+    {
+      // assume that when a type includes a dot, the fullclassname is used.
+      if(!stristr($type,"."))
+      {
+        $cls = "atk.security.auth_$type";
+      }
+      else $cls=$type;
+      return $cls;
+    }
+    
+    /**
+     * returns an array of authentication types
+     * authentication_type is a comma delimeted string with
+     * native atk auth types like 'db' or 'none' or it can be a
+     * full classname like module.mymodule.myauthtype
+     *
+     * @param string $authentication_type
+     * @return array authetication types
+     */
+    function _getAuthTypes($authentication_type)
+    {
+      $authentication = explode(",",trim($authentication_type));
+      $types=array();
+      if(!is_array($authentication))
+      {
+        array_push($types,$this->_getfullclassname(trim($authentication)));
+      }
+      else
+      {
+        foreach ($authentication as $type)
+        {
+          array_push($types,$this->_getfullclassname(trim($type)));
+        }
+      }
+      return $types;
+    }
+    
     /**
      * Constructor
      * @access private
@@ -59,62 +104,22 @@
     {
       atkdebug("creating securityManager (authenticationtype: $authentication_type, authorizationtype: $authorization_type, scheme: $securityscheme)");
 
-      $atkroot = atkconfig("atkroot");
-      require_once($atkroot."atk/security/class.auth_interface.inc");
-
-      $authentication = explode(",",trim(atkconfig("authentication", "none")));
-      if(is_array($authentication))
+      // required interface;
+      atkimport("atk.security.auth_interface");
+      
+      $authentication = $this->_getAuthTypes($authentication_type);
+      foreach($authentication as $class)
       {
-        foreach($authentication as $value)
+        if(!$obj = &atknew($class))
         {
-          $value = trim($value);
-          if(is_file($atkroot."atk/security/class.auth_".$value.".inc"))
-          {
-            include_once($atkroot."atk/security/class.auth_".$value.".inc");
-          }
+          atkdebug("atkSecurityManager() unsupported authentication type or type no found for $class");
         }
-      }
-      else
-      {
-        if(is_file($atkroot."atk/security/class.auth_".$authentication.".inc"))
-        {
-          include_once($atkroot."atk/security/class.auth_".$authentication.".inc");
-        }
-      }
-
-      include_once($atkroot."atk/security/class.auth_".atkconfig("authorization", atkconfig("authentication", "none")).".inc");
-
-      /* authentication class */
-      $authentication = explode(",",trim($authentication_type));
-      if(is_array($authentication))
-      {
-        foreach($authentication as $class)
-        {
-          $class = trim($class);
-          if($class!="")
-          {
-            $classname = "auth_".$class;
-            if(class_exists($classname))
-            {
-              atkdebug("atkSecurityManager() constructing class $classname");
-              $this->m_authentication[$class] = new $classname;
-            }
-          }
-        }
-      }
-      else
-      {
-        $classname = "auth_".$authentication;
-        if(class_exists($classname))
-        {
-          atkdebug("atkSecurityManager() constructing class $classname");
-          $this->m_authentication[$authentication] = new $classname;
-        }
+        else $this->m_authentication[$class] = &$obj;
       }
 
       /* authorization class */
-      $classname = "auth_".$authorization_type;
-      $this->m_authorization = new $classname;
+      $clsname = $this->_getfullclassname($authorization_type);
+      $this->m_authorization = &atknew($clsname);
 
       /* security scheme */
       $this->m_scheme = $securityscheme;
@@ -135,8 +140,8 @@
 
       if (atkconfig("auth_loginform")==true) // form login
       {
-        $auth_user = @$ATK_VARS["auth_user"];
-        $auth_pw = @$ATK_VARS["auth_pw"];
+        $auth_user = isset($ATK_VARS["auth_user"]) ? $ATK_VARS["auth_user"] : null;
+        $auth_pw = isset($ATK_VARS["auth_pw"]) ? $ATK_VARS["auth_pw"] : null;
       }
       else // HTTP login
       {
@@ -152,7 +157,7 @@
         $cookie_params = session_get_cookie_params();
         session_set_cookie_params($cookie_params["lifetime"], dirname($_SERVER["SCRIPT_NAME"]));
         @session_start();
-        unset($session);
+        $session = array();
         $session["relogin"]=1;
 
         // destroy cookie
@@ -168,14 +173,14 @@
         }
       }
       // do we need to login?
-      else if (@$session["login"]!=1)
+      else if (!array_key_exists("login", $session) || $session["login"]!=1)
       {
         // authenticated?
         $authenticated = false;
 
         // sometimes we manually have to set the PHP_AUTH vars
         // old style http_authorization
-        if (empty($auth_user) && empty($auth_pw) && ereg("^Basic ", @$_SERVER["HTTP_AUTHORIZATION"]))
+        if (empty($auth_user) && empty($auth_pw) && array_key_exists("HTTP_AUTHORIZATION", $_SERVER) && ereg("^Basic ", $_SERVER["HTTP_AUTHORIZATION"]))
         {
           list($auth_user, $auth_pw) = explode(":", base64_decode(substr($_SERVER["HTTP_AUTHORIZATION"], 6)));
         }
@@ -344,7 +349,7 @@
         }
         else
         {
-          header('WWW-Authenticate: Basic realm="'.atktext("app_title").' - '.strftime("%c",time()).'"');
+          header('WWW-Authenticate: Basic realm="'.atktext("app_title").(atkconfig("auth_changerealm", true)?' - '.strftime("%c",time()):"").'"');
           if (ereg("Microsoft", $_SERVER['SERVER_SOFTWARE'])) header("Status: 401 Unauthorized");
           else header("HTTP/1.0 401 Unauthorized");
           return false;
@@ -416,6 +421,7 @@
 
       $page->register_style($ui->stylePath("style.css"));
 
+      $page->register_script(atkConfig('atkroot')."atk/javascript/tools.js");      
       $page->register_script(atkConfig('atkroot')."atk/javascript/formfocus.js");
 
       $tplvars = Array();
@@ -589,7 +595,6 @@
 
         $_cache[$node][$privilege] = $allowed;
       }
-
       return $_cache[$node][$privilege];
     }
 

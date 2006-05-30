@@ -19,10 +19,26 @@
   /**
    * flags specific for atkOneToOneRelation
    */
-  define("AF_ONETOONE_ADD",             AF_SPECIFIC_1); // override the default no add flag
-  define("AF_ONETOONE_ERROR",           AF_SPECIFIC_2); // enable error notifications / triggers
-  define("AF_ONETOONE_INTEGRATE",       AF_SPECIFIC_3); // invisibly integrate a onetoonerelation as if the fields where part of the current node.
-  define("AF_ONETOONE_LAZY",            AF_SPECIFIC_4); // use lazy loading instead of query addition.
+  
+  /**
+   * Override the default no add flag
+   */
+  define("AF_ONETOONE_ADD",             AF_SPECIFIC_1);
+  
+  /**
+   * Enable error notifications / triggers
+   */
+  define("AF_ONETOONE_ERROR",           AF_SPECIFIC_2);
+  
+  /**
+   * Invisibly integrate a onetoonerelation as if the fields where part of the current node.
+   */
+  define("AF_ONETOONE_INTEGRATE",       AF_SPECIFIC_3);
+  
+  /**
+   * Use lazy loading instead of query addition.
+   */
+  define("AF_ONETOONE_LAZY",            AF_SPECIFIC_4);
 
   /**
    * @internal Include the base class.
@@ -954,12 +970,14 @@
           // small trick, the destination record is in a subarray. The destination
           // addToListArrayRow will not expect this though, so we have to modify the
           // record a bit before passing it to the detail columns.
+          $oldrecord = $arr["rows"][$nr]["record"];
           $arr["rows"][$nr]["record"] = $arr["rows"][$nr]["record"][$this->fieldName()];
           foreach (array_keys($this->m_destInstance->m_attribList) as $attribname)
           {
             $p_attrib = &$this->m_destInstance->getAttribute($attribname);
             $p_attrib->addToListArrayRow($action, $arr, $nr, $fieldprefix, $flags);
           }
+          $arr["rows"][$nr]["record"] = $oldrecord;
         }
       }
     }
@@ -1067,8 +1085,11 @@
      * in it.
      * For original documentation for this method, please see the atkAttribute class
      */
-    function addToSearchformFields(&$fields, &$node, &$record, $fieldprefix = "")
+    function addToSearchformFields(&$fields, &$node, &$record, $fieldprefix = "", $currentSearchMode=array())
     {
+      if (!is_array($currentSearchMode))
+        $currentSearchMode = array();
+      
       if ($this->hasFlag(AF_ONETOONE_INTEGRATE) && $this->createDestination())
       {
         foreach (array_keys($this->m_destInstance->m_attribList) as $attribname)
@@ -1082,15 +1103,15 @@
             //       (which completely breaks) in searching a onetoone something like a 'searchname' should
             //       be implemented and used.
             if (method_exists($p_attrib, "atkDateAttribute"))
-              $p_attrib->addToSearchformFields($fields,$node,$record[$this->fieldName()], "_AE_".$this->fieldName()."_AE_");
+              $p_attrib->addToSearchformFields($fields,$node,$record[$this->fieldName()], "_AE_".$this->fieldName()."_AE_", $currentSearchMode[$this->fieldName()]);
             else
-              $p_attrib->addToSearchformFields($fields,$node,$record[$this->fieldName()], "_AE_".$this->fieldName());
+              $p_attrib->addToSearchformFields($fields,$node,$record[$this->fieldName()], "_AE_".$this->fieldName(), $currentSearchMode[$this->fieldName()]);
           }
         }
       }
       else
       {
-        parent::addToSearchformFields($fields,$node,$record, $fieldprefix);
+        parent::addToSearchformFields($fields,$node,$record, $fieldprefix, $currentSearchMode);
       }
     }
   }

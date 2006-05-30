@@ -31,12 +31,13 @@
    */
   $config_identifier = "atkapp";
 
+
   //----------------- DATABASE CONFIGURATION --------------------
 
   // Currently supported drivers are:
   // "mysql"   - All MySQL versions since 3.23
   // "mysql41" - MySQL 4.1+. On top of the "mysql" driver, this one
-  //             has transaction support.
+  //             has transaction support. (requires PHP5, mysqli extension)
   // "oci805"  - Oracle 8.0.5
   // "oci8"    - All Oracle 8i versions
   // "oci9"    - Oracle9i+ (also works for 10G)
@@ -65,7 +66,7 @@
   // 0 - No debug information
   // 1 - Print some debug information at the bottom of each screen
   // 2 - Print debug information, and pause before redirects
-  $config_debug = 1;
+  $config_debug = 0;
 
   // Smart debug parameters. Is used to dynamically enable debugging for
   // certain IP addresses or if for example the special atkdebug[key] request
@@ -76,6 +77,7 @@
   // $config_smart_debug[] = array("type" => "request", "key" => "test");
   // $config_smart_debug[] = array("type" => "ip", "list" => array("10.0.0.4"));
   $config_smart_debug = array();
+
 
   //----------------- LAYOUT CONFIGURATION --------------------
 
@@ -120,6 +122,21 @@
   // user is forced to make a selection.
   $config_list_obligatory_null_item = false;
 
+  // Wether or not to use the keyboardhandler for attributes and the recordlist
+  // When set to true, arrow keys can be used to navigate through fields and
+  // records, as well as shortcuts 'e' for edit, 'd' for delete, and left/right
+  // cursor for paging. Note however, that using cursor keys to navigate
+  // through fields is not standard web application behaviour.
+  $config_use_keyboard_handler = false;
+
+
+  /*********************************** OUTPUT ********************************/
+
+  // Set to true, to output pages gzip compressed to the browser if the
+  // browser supports it.
+  $config_output_gzip = false;
+
+
   //----------------- SECURITY CONFIGURATION --------------------
 
   // The type of authentication (user/password verification) to use.
@@ -131,6 +148,7 @@
   // "pop3"   - users / passwords are stored in the POP3 server
   // "ldap"   - users / passwords are stored in an LDAP server
   // "server" - authentication is done by the webserver (.htaccess)
+  // custom type with a fullclassname like 'module.mymodule.myauth' (syntax similar as atknew or atkimport)
   // if you need to use multiple authentication types list them delimited by comma
   $config_authentication = "none";
 
@@ -200,6 +218,13 @@
   $config_auth_loginform = true;
   $config_max_loginattempts = 5;
 
+  // When changerealm is true, the authentication realm is changed on every login.
+  // Advantage: the user is able to logout using the logout link.
+  // Disadvantage: browser's 'remember password' feature won't work.
+  // This setting only affects the http login box, so it is only relevant if
+  // $config_auth_loginform is set to false.
+  $config_auth_changerealm = false;
+
   // if you use "pop3" or "imap" as authentication, you have to fill in
   // these parameters:
 
@@ -221,6 +246,15 @@
   // if you use "ldap" as authentication, these parameters are nessesary
   // $config_auth_ldap_host = "";
   // $config_auth_ldap_context = "";
+
+  //filter prefix default: "uid"
+  //$config_auth_ldap_search_filter = "uid";
+
+  // Sometimes we can't bind anomynous, so we have
+  // to use an  account to bind within the tree
+  //$config_auth_ldap_bind_tree = false;   // default off
+  //$config_auth_ldap_bind_dn = "";
+  //$config_auth_ldap_bind_pw = "";
 
   // The application root
   // if you're using urlrewrites within your httpd or htaccess configuration i think this should be '/'
@@ -262,7 +296,7 @@
   // "doctemplates/modulename/nodename/".
   $config_doctemplatedir = "doctemplates/";
 
-  // --------- DATE INTERNATIONALISATION CONFIGURATION ---------
+  // --------- DATA INTERNATIONALISATION CONFIGURATION ---------
 
   $config_supported_languages = array("EN","NL","DE");
   $config_defaultlanguage="EN";

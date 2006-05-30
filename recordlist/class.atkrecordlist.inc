@@ -29,11 +29,9 @@
   atkimport("atk.utils.atkstringparser");
 
   /**
-   * Handler for the 'editcopy' action of a node. It copies the selected
-   * record, and then redirects to the edit action for the copied record.
+   * The recordlist class is used to render tables containing records.
    *
    * @author Ivo Jansch <ivo@achievo.org>
-   * @author Peter C. Verhage <peter@ibuildings.nl>
    * @package atk
    * @subpackage recordlist
    *
@@ -66,37 +64,60 @@
       $result |= hasFlag($flags, NF_NO_SEARCH) ? RL_NO_SEARCH : 0;
       $result |= hasFlag($flags, NF_NO_EXTENDED_SEARCH) ? RL_NO_EXTENDED_SEARCH : 0;
       $result |= hasFlag($flags, NF_EXT_SORT) ? RL_EXT_SORT : 0;
+      $result |= hasFlag($flags, NF_NO_SORT) ? RL_NO_SORT : 0;
       return $result;
     }
 
     /**
      * Creates a normal recordlist based on the given parameters.
-     * @param Array   $recordset    the list of records
-     * @param Array   $actions      the default actions array
-     * @param Integer $flags        recordlist flags (see the top of this file)
-     * @param Array   $suppressList fields we don't display
-     * @param String  $formName     if embedded the form name in which we are embedded
-     * @param Array   $navigation   Navigation links
-     * @param String  $embedprefix  The prefix for embeded fields
+     * 
+     * @param Array   $recordset         the list of records
+     * @param Array   $actions           the default actions array
+     * @param Integer $flags             recordlist flags (see the top of this file)
+     * @param Array   $suppressList      fields we don't display
+     * @param String  $formName          if embedded the form name in which we are embedded
+     * @param Array   $navigation        Navigation links
+     * @param String  $embedprefix       The prefix for embeded fields
+     * @param String  $listName          The recordlist name.
+     * @param Integer $mraSelectionMode  Multi-record-actions selection mode
      * @return String The rendered recordlist
      */
-    function render(&$node, $recordset, $actions, $flags=0, $suppressList="", $formName="", $navigation=array(),$embedprefix="")
+    function render(&$node, $recordset, $actions, $flags=0, $suppressList="", $formName="", $navigation=array(),$embedprefix="",$listName="",$mraSelectionMode=MRA_MULTI_SELECT)
     {
       $this->setNode($node);
       $this->m_flags = $flags;
+      
+      if (!hasFlag($this->m_flags, RL_EMBED))
+      {
+        if (empty($formName)) 
+          $formName = $listName;
+          
+        $formstart = 
+          '<form name="'.$formName.'" method="post">'.
+          session_form(SESSION_DEFAULT).
+          '<input type="hidden" name="atknodetype" value="'.$this->m_node->atkNodeType().'">'.
+          '<input type="hidden" name="atkaction" value="'.$this->m_node->m_action.'">'.
+          '<input type="hidden" name="atksmartsearch" value="clear">'.
+          '<input type="hidden" name="atkstartat" value="0">'; // reset atkstartat to first page          
+
+        $formend = '</form>';       
+      }      
 
       $theme = &atkinstance("atk.ui.atktheme");
       $page = &atkPage::getInstance();
       $page->register_style($theme->stylePath("recordlist.css"));
 
-      $listName = "rl_".getUniqueId("normalRecordList");
+      if (empty($listName))
+        $listName = "rl_".getUniqueId("normalRecordList");
+        
       $page->register_script(atkconfig("atkroot")."atk/javascript/recordlist.js");
+      $page->register_script(atkconfig("atkroot")."atk/javascript/prototype/prototype.js");
 
   	  $defaulthighlight = $theme->getAttribute("highlight");
       $selectcolor = $theme->getAttribute("select");
 
       /* retrieve list array */
-      $list = $this->listArray($recordset, $flags, "", $actions, $suppressList, $embedprefix);
+      $list = $this->listArray($listName, $recordset, $flags, "", $actions, $suppressList, $embedprefix);
 
       /* Check if some flags are still valid or not... */
       if (hasFlag($flags, RL_MRA) && (count($list["mra"]) == 0 || count($list["rows"]) == 0)) $flags ^= RL_MRA;
@@ -150,7 +171,10 @@
           }
           else
           {
-            $headercols[] = array("content"=>href($head["url"], $head["title"]));
+            $url = $head["url"].'&atkpartial=recordlist';
+            $onclick = "new Ajax.Updater('{$listName}_container', '$url', {method: 'post', parameters: Form.serialize('$formName'), evalScripts: true, asynchronous: true })";
+            $href = '<a href="#" onclick="'.$onclick.'">'.$head["title"].'</a>';
+            $headercols[] = array("content"=>$href);
           }
         }
 
@@ -180,17 +204,14 @@
             $sortcols[] = array("content"=>$button);
           }
 
-          $sortstart = '<a name="sortform"></a>'.
-                         '<form action="'.$_SERVER["PHP_SELF"].'?'.SID.'" method="get">'.
-                         session_form().
-                           '<input type="hidden" name="atkstartat" value="0">'; // reset atkstartat to first page after a new sort
+          //$sortstart = '<a name="sortform"></a>';
 
           foreach (array_keys($list["heading"]) as $key)
           {
             if (isset($list["sort"][$key])) $sortcols[] = array("content"=>$list["sort"][$key]);
           }
 
-          $sortend = '</form>';
+          $sortend = '';
 
           if ($orientation == "right" || $orientation == "both")
           {
@@ -221,20 +242,20 @@
             $searchmode = $searchmode[$keys[0]];
           }
 
-          $button = '<input type="submit" class="btn_search" value="'.atktext("search").'">';
+          // TODO: REPLACE HARD CODED AJAX URL!
+          $url = session_url(dispatch_url($node->atkNodeType(), 'admin', $params = array('atkpartial' => 'recordlist')), SESSION_DEFAULT);
+          $onClick = "new Ajax.Updater('{$listName}_container', '$url', {method: 'post', parameters: Form.serialize(this.form), evalScripts: true, asynchronous: true })";
+          $button = '<input type="submit" class="btn_search" value="'.atktext("search").'" onclick="'.$onClick.'; return false">';
           if (!hasFlag($flags, RL_NO_EXTENDED_SEARCH)&&!$this->m_node->hasFlag(NF_NO_EXTENDED_SEARCH))
           {
-            $button .= '<br>'.href($_SERVER["PHP_SELF"]."?atknodetype=".$this->m_node->atkNodeType()."&atkaction=search&atksearchmode=".
+            $button .= '<br>'.href($_SERVER["PHP_SELF"]."?atknodetype=".$this->m_node->atkNodeType()."&atkaction=".$node->getExtendedSearchAction()."&atksearchmode=".
                                                $searchmode,"(".atktext("search_extended").")",SESSION_NESTED);
           }
 
-          $searchstart = '<a name="searchform"></a>';
+          //$searchstart = '<a name="searchform"></a>';
           if (!hasFlag($this->m_flags, RL_EMBED))
           {
-            $searchstart.='<form action="'.$_SERVER["PHP_SELF"].'?'.SID.'" method="get">'.session_form();
-            $searchstart.= '<input type="hidden" name="atknodetype" value="'.$this->m_node->atkNodeType().'">'.
-                           '<input type="hidden" name="atkaction" value="'.$this->m_node->m_action.'">'.
-                           '<input type="hidden" name="atksearchmode" value="'.$searchmode.'">';
+            $formstart.= '<input type="hidden" name="atksearchmode" value="'.$searchmode.'">';
           }
 
           if (hasFlag($flags, RL_MRA) || hasFlag($flags, RL_MRPA))
@@ -267,7 +288,7 @@
           }
 
           $searchend = "";
-          if (!hasFlag($this->m_flags, RL_EMBED)) $searchend = '</form>';
+          if (!hasFlag($this->m_flags, RL_EMBED)) $searchend = '';
         }
 
         /*******************************************/
@@ -278,15 +299,6 @@
         if (hasFlag($flags, RL_MRA) || hasFlag($flags, RL_MRPA))
         {
           $page->register_script(atkconfig("atkroot")."atk/javascript/formselect.js");
-
-          if (!hasFlag($flags, RL_EMBED))
-          {
-            if (empty($formName)) $formName = $listName;
-            $liststart = '<form name="'.$formName.'" method="post">'.
-                       session_form(SESSION_DEFAULT).
-                       '<input type="hidden" name="atknodetype" value="'.$this->m_node->atkNodeType().'">'.
-                       '<input type="hidden" name="atkaction" value="'.$this->m_node->m_action.'">';
-          }
 
           if (hasFlag($flags, RL_MRA))
           {
@@ -342,23 +354,39 @@
           /* multi-record-priority-actions -> priority selection */
           if (hasFlag($flags, RL_MRPA))
           {
-            $select = '<select name="'.$listName.'_atkselector[]">'.
+            $select = '<select name="'.$listName.'_atkselector['.$i.']">'.
                         '<option value="'.rawurlencode($list["rows"][$i]["selector"]).'"></option>';
             for ($j = $this->m_node->m_priority_min; $j <= $this->m_node->m_priority_max; $j++)
               $select .= '<option value="'.$j.'">'.$j.'</option>';
             $select .= '</select>';
-            $record["cols"][] = array("content" => $select);
+            $record["cols"][] = array("content" => $select, "type" => "mrpa");
           }
 
-          /* multi-record-actions -> checkbox */
+          /* multi-record-actions -> checkbox / radiobutton */
           elseif (hasFlag($flags, RL_MRA))
           {
             if (count($list["rows"][$i]["mra"]) > 0)
-              $record["cols"][] = array(
-                           "content"=>'<input type="checkbox" name="'.$listName.'_atkselector[]" value="'.rawurlencode($list["rows"][$i]["selector"]).'" onclick="if (this.disabled) this.checked = false">'.
-                                      '<script language="javascript"  type="text/javascript">'.$listName.'["'.rawurlencode($list["rows"][$i]["selector"]).'"] = new Array("'.implode($list["rows"][$i]["mra"], '","').'");</script>');
-
-            else $record["cols"][] = array("content"=>"");
+            {
+              $inputHTML = '';
+              
+              switch($mraSelectionMode)
+              {
+                case MRA_SINGLE_SELECT:
+                  $inputHTML = '<input type="radio" name="'.$listName.'_atkselector['.$i.']" value="'.$list["rows"][$i]["selector"].'" onclick="if (this.disabled) this.checked = false">';                
+                  break;
+                case MRA_NO_SELECT:
+                  $inputHTML = 
+                    '<input type="checkbox" disabled="disabled" checked="checked">'.
+                    '<input type="hidden" name="'.$listName.'_atkselector['.$i.']" value="'.$list["rows"][$i]["selector"].'">';
+                  break;
+                case MRA_MULTI_SELECT:
+                default:
+                  $inputHTML = '<input type="checkbox" name="'.$listName.'_atkselector['.$i.']" value="'.$list["rows"][$i]["selector"].'" onclick="if (this.disabled) this.checked = false">';                
+              }              
+              
+              $record["cols"][] = array("content"=>$inputHTML.'<script language="javascript"  type="text/javascript">'.$listName.'["'.$list["rows"][$i]["selector"].'"] = new Array("'.implode($list["rows"][$i]["mra"], '","').'");</script>', "type" => "mra");
+            }
+            else $record["cols"][] = array("content"=>"", "type" => "mra");
           }
 
           /* locked? */
@@ -367,9 +395,9 @@
             if (is_array($list["rows"][$i]["lock"]))
             {
               $alt = $list["rows"][$i]["lock"]["user_id"]." / ".$list["rows"][$i]["lock"]["user_ip"];
-              $record["cols"][] = array("content"=>'<img src="'.atkconfig("atkroot").'atk/images/lock.gif" alt="'.$alt.'" border="0">');
+              $record["cols"][] = array("content"=>'<img src="'.atkconfig("atkroot").'atk/images/lock.gif" alt="'.$alt.'" border="0">', "type" => "lock");
             }
-            else $record["cols"][] = array("content"=>"");
+            else $record["cols"][] = array("content"=>"", "type" => "lock");
           }
 
           $str_actions = "<span class=\"actions\">";
@@ -378,45 +406,47 @@
 
           foreach ($list["rows"][$i]["actions"] as $name => $url)
           {
-  	    $actionloader.="\nrl_a['".$listName."'][".$i."]['".$name."'] = '".$url."';";
+      	    $actionloader.="\nrl_a['".$listName."'][".$i."]['".$name."'] = '".$url."';";
 
-	    $link = $name;
+    	      $link = $name;
 
-	    if($icons == true)
-	    {
-	      $icon = $theme->iconPath($name,"recordlist");
-  	      $link = '<img width="16" height="16" border="0" src="'.$icon.'" title="'.atktext($name, $this->m_node->m_module, $this->m_node->m_type).'">';
-	    }
-	    else
-	    {
-	      $link = atktext($name);
-	    }
+    	      if($icons == true)
+    	      {
+    	        $icon = $theme->iconPath(strtolower($name),"recordlist");
+      	      $link = '<img width="16" height="16" border="0" src="'.$icon.'" title="'.atktext($name, $this->m_node->m_module, $this->m_node->m_type).'">';
+    	      }
+    	      else
+    	      {
+    	        $link = atktext($name);
+	          }
+
             $confirmtext= "false";
             if (atkconfig("recordlist_javascript_delete") && $name=="delete")
             $confirmtext = "'".$this->m_node->confirmActionText($name)."'";
             $str_actions.='<a href="'."javascript:rl_do('$listName',$i,'$name',$confirmtext);".'">'.$link.'</a>&nbsp;';
           }
+
           $str_actions.="</span>";
           /* actions (left) */
           if ($orientation == "left" || $orientation == "both")
           {
             if (!empty($str_actions))
             {
-              $record["cols"][] = array("content"=>$str_actions);
+              $record["cols"][] = array("content"=>$str_actions, "type" => "actions");
             }
-            else  $record["cols"][] = array("content"=>"");
+            else  $record["cols"][] = array("content"=>"", "type" => "actions");
 
           }
 
           /* columns */
           foreach ($list["rows"][$i]["data"] as $html)
-            $record["cols"][] = array("content"=>$html);
+            $record["cols"][] = array("content"=>$html, "type" => "data");
 
           /* actions (right) */
           if ($orientation=="right"||$orientation=="both")
           {
-            if (!empty($str_actions)) $record["cols"][] = array("content"=>$str_actions);
-            else $record["cols"][] = array("content"=>"");
+            if (!empty($str_actions)) $record["cols"][] = array("content"=>$str_actions, "type" => "actions");
+            else $record["cols"][] = array("content"=>"", "type" => "actions");
           }
 
           $records[] = $record;
@@ -472,11 +502,6 @@
             $mra= $this->getCustomMraHtml().'<input type="hidden" name="'.$listName.'_atkaction" value="'.$this->m_node->m_priority_actions[0].'">'.
                        '<input type="button" class="btn" value="'.atktext($this->m_node->m_priority_actions[0]).'" onclick="atkSubmitMRPA(\''.$listName.'\', this.form, \''.$target.'\')">';
           }
-
-          if (!hasFlag($flags, RL_EMBED))
-          {
-            $listend= '</form>';
-          }
         }
 
         /****************************************/
@@ -485,11 +510,12 @@
         elseif (hasFlag($flags, RL_MRA))
         {
           $target = session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->m_node->atkNodeType(), SESSION_NESTED);
+          $embedded = hasFlag($this->m_flags, RL_EMBED) ? 'true' : 'false';
 
-          $mra = (count($list["rows"]) > 1 ?
+          $mra = (count($list["rows"]) > 1 && $mraSelectionMode != MRA_SINGLE_SELECT && $mraSelectionMode != MRA_NO_SELECT ?
                       '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'all\')">'.atktext("select_all").'</a> / '.
                       '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'none\')">'.atktext("deselect_all").'</a> / '.
-                      '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'invert\')">'.atktext("select_invert").'</a>'
+                      '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'invert\')">'.atktext("select_invert").'</a>&nbsp;'
                      :
                       '<img src="'.atkconfig("atkroot").'atk/images/dummy.gif" border="0" height="1" width="1">');
 
@@ -503,18 +529,16 @@
               $mra .= '<option value="'.$name.'">'.atktext($name, $this->m_node->m_module, $this->m_node->m_type).'</option>';
 
             $mra .= '</select>&nbsp;'.$this->getCustomMraHtml().
-                       '<input type="button" class="btn" value="'.atktext("submit").'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\')">';
+                       '<input type="button" class="btn" value="'.atktext("submit").'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\', '.$embedded.')">';
           }
 
           /* one action -> only the submit button */
           else
           {
-            $mra .= '&nbsp; <input type="hidden" name="'.$listName.'_atkaction" value="'.$list["mra"][0].'">'.
+            $mra .= ' <input type="hidden" name="'.$listName.'_atkaction" value="'.$list["mra"][0].'">'.
             $this->getCustomMraHtml().
-                       '<input type="button" class="btn" value="'.atktext($list["mra"][0]).'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\')">';
+                       '<input type="button" class="btn" value="'.atktext($list["mra"][0], $node->m_module, $node->m_type).'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\', '.$embedded.')">';
           }
-
-          if (!hasFlag($flags, RL_EMBED)) $listend = '</form>';
         }
 
         if (atkconfig("use_keyboard_handler"))
@@ -536,6 +560,8 @@
                                                    "liststart"=>$liststart,
                                                    "listend"=>$listend,
                                                    "listid"=>$listName,
+                                                   "formstart"=>$formstart,
+                                                   "formend"=>$formend,
                                                    "mra"=>$mra));
         return $res;
       }
@@ -553,6 +579,7 @@
     /**
      * Function outputs an array with all information necessary to output a recordlist.
      *
+     * @param String  $name         The recordlist name
      * @param Array   $recordset    List of records that need to be displayed
      * @param Integer $flags        Recordlist flags
      * @param String  $prefix       Prefix for each column name (used for subcalls)
@@ -561,6 +588,7 @@
      * @param String  $embedprefix  The prefix for embeded fields
      *
      * The result array contains the following information:
+     *  "name"     => the recordlist name
      *  "heading"  => for each visible column an array containing: "title" {, "url"}
      *  "search"   => for each visible column HTML input field(s) for searching
      *  "rows"     => list of rows, per row: "data", "actions", "mra", "record"
@@ -570,10 +598,10 @@
      *
      * @return see above
      */
-    function listArray(&$recordset, $flags=0, $prefix="", $actions=array(), $suppress=array(), $embedprefix="")
+    function listArray($name, &$recordset, $flags=0, $prefix="", $actions=array(), $suppress=array(), $embedprefix="")
     {
       if (!is_array($suppress)) $suppress = array();
-      $result = array("heading" => array(), "search" => array(), "rows" => array(),
+      $result = array("name" => $name, "heading" => array(), "search" => array(), "rows" => array(),
                       "totalraw" => array(), "total" => array(), "mra" => array());
 
       if (hasFlag($this->m_flags, RL_EMBED) && $embedprefix)
@@ -584,15 +612,16 @@
       $columnConfig = &$this->m_node->getColumnConfig();
 
       /* get the heading and search columns */
+      $atksearchpostvar = isset($this->m_node->m_postvars["atksearch"]) ? $this->m_node->m_postvars["atksearch"] : null;
       if (!hasFlag($flags, RL_NO_SEARCH)) $this->m_node->setAttribSizes();
       foreach (array_keys($this->m_node->m_attribIndexList) as $r)
       {
         $name = $this->m_node->m_attribIndexList[$r]["name"];
         if (!in_array($name, $suppress))
         {
+          /* @var $attribute atkAttribute */
           $attribute = &$this->m_node->m_attribList[$name];
-          $attribute->addToListArrayHeader($this->m_node->m_action, $result, $prefix, $flags,
-                                           @$this->m_node->m_postvars["atksearch"], $columnConfig);
+          $attribute->addToListArrayHeader($this->m_node->m_action, $result, $prefix, $flags, $atksearchpostvar, $columnConfig);
         }
       }
 
@@ -627,7 +656,6 @@
 
         /* actions / mra */
         $this->m_node->recordActions($row["record"], $row["actions"], $row["mra"]);
-        $result["mra"] = array_merge($result["mra"], $row["mra"]);
         foreach($row["actions"] as $name => $url)
         {
           if (!empty($url) && $this->m_node->allowed($name, $row["record"]))
@@ -652,6 +680,16 @@
             unset($row["actions"][$name]);
           }
         }
+        
+        $tmpMRA = array();
+        foreach($row["mra"] as $name)
+        {
+          if ($this->m_node->allowed($name, $row["record"]))
+            $tmpMRA[] = $name;
+        }
+        $row["mra"] = $tmpMRA;
+        
+        $result["mra"] = array_merge($result["mra"], $row["mra"]);        
 
         /* columns */
         foreach (array_keys($this->m_node->m_attribIndexList) as $r)

@@ -16,13 +16,14 @@
    */
 
   /**
-   * Includes
+   * @internal Includes
    */
   require_once(atkconfig("atkroot")."atk/atktools.inc");
   require_once(atkconfig("atkroot")."atk/test/simpletest/unit_tester.php");
   require_once(atkconfig("atkroot")."atk/test/simpletest/reporter.php");
   atkimport("atk.test.atktestreporter");
   atkimport("atk.test.atkattributetestcase");
+  atkimport("atk.test.atktestcase");
 
   /**
    * atkTestCaseCollector is a visitor that can be passed to an
@@ -90,20 +91,33 @@
      * @param string $reporttype Simpletest report type, can be 'text' or 'html'
      *                           If you are running it in cli mode, it will select
      *                           text automaticly
+     * @param string $module Run only tests from a single module. Passing an
+     *                       empty string (default) will run all available tests.
+     *                       passing "atk" will only run atk's own tests.
      */
-    function run($reporttype="html")
+    function run($reporttype="html", $module="")
     {
-      global $g_modules, $config_module_path;
-
       $test = &new GroupTest("Full ATK test");
 
       $traverser = &atknew("atk.utils.atkdirectorytraverser");
       $traverser->addCallbackObject(new atkTestCaseCollector($test));
-      $traverser->traverse(".");
-      foreach ($g_modules as $name => $path) {
-        if (strpos($path, $config_module_path . "/") !== 0) {
-          $traverser->traverse($path);
+      
+      if ($module!="")
+      {        
+        if ($module=="atk") // make it possible to only test atk.
+        {
+          $dir = atkconfig("atkroot")."atk/";
         }
+        else 
+        {
+          $dir = moduleDir($module);
+        }
+        $traverser->traverse($dir);
+      }
+      else 
+      {
+        $traverser->traverse(".");
+        $this->_traverseExtraModules();
       }
       if($reporttype=="html")
       {
@@ -112,6 +126,40 @@
       else
       {
         $test->run(new TextReporter());
+      }
+    }
+    
+    /**
+     * Traverse modules that are outside the root
+     * 
+     * Here we actually change directories to all the module directories
+     * then check if the directory is inside the application root.
+     * If it is, we leave it alone, otherwise we traverse that too.
+     */
+    function _traverseExtraModules()
+    {
+      global $g_modules;
+      $curdir = getcwd();
+      if (chdir(atkconfig('modulepath')))
+      {
+        $modulepath = getcwd();
+        if (chdir($curdir))
+        {
+          foreach ($g_modules as $name => $path)
+          {
+            if (chdir($path))
+            {
+              $fullpath = getcwd();
+              if (chdir($curdir))
+              {
+                if (substr($fullpath,0,strlen($curdir))!==$curdir)
+                {
+                  $traverser->traverse($path);
+                }
+              }
+            }
+          }
+        }
       }
     }
   }

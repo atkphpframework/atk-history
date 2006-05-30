@@ -30,7 +30,7 @@
    */
   class atkNavigator
   {
-    function buildNavigation(&$node, $mode="", $navurls="", $embedded=false)
+    function buildNavigation(&$node, $mode="", $navurls="", $embedded=false, $recordlistName="")
     {
       if ($navurls=="")
       {
@@ -40,9 +40,53 @@
       $links=array();
       foreach ($navurls as $key=>$nav)
       {
-        $links[] = href($nav["url"], $nav["title"], SESSION_DEFAULT, $embedded);
+        if (empty($nav["url"]))
+          $links[] = $nav["title"];
+        else $links[] = '<a href="#" onclick="new Ajax.Updater(\''.$recordlistName.'_container\', \''.session_url($nav["url"], SESSION_DEFAULT, $embedded).'\', {evalScripts: true})">'.$nav["title"].'</a>';
       }
-      return implode("&nbsp;|&nbsp;", $links);
+      
+      $limit = "";
+      if (count($links) > 0)
+       $limit = '&nbsp;&nbsp;&nbsp;'.$node->text('show').':&nbsp;'.$this->buildLimit($node, $mode, $embedded, $recordlistName);        
+      
+      return implode("&nbsp;|&nbsp;", $links).$limit;
+        
+    }
+    
+    function buildLimit(&$node, $mode, $embedded=false, $recordlistName="")
+    {
+      $current = (int)$node->m_postvars['atklimit'];
+      $default = atkconfig("recordsperpage");
+      if (empty($current)) 
+        $current = $default;
+      
+      $options = array(5, 10, 15, 20, 25, 30, 40, 50, 100, $default, $current);
+      $options = array_unique($options);
+      sort($options);
+      
+      $url = $_SERVER["PHP_SELF"].
+             "?atknodetype=".$node->atkNodeType().
+             "&atkaction=".$node->m_action.
+             "&atkrecordlist=".$recordlistName.                                      
+             "&atkpartial=recordlist".                                      
+             "&atklimit=[LIMIT]".
+             (isset($ATK_VARS["atktarget"])?"&atktarget=".rawurlencode($ATK_VARS["atktarget"]):"");
+      
+      $url = session_url($url, SESSION_DEFAULT, $embedded);
+             
+      $onChange = "new Ajax.Updater('{$recordlistName}_container', '$url'.replace('[LIMIT]', Form.Element.getValue(this)), {evalScripts: true})";
+      
+      $result = 
+        '<select onChange="'.$onChange.'">'.
+          '<option value="0">'.$node->text('all').'</option>';
+          
+      foreach ($options as $value)
+        $result .= '<option value="'.$value.'"'.($value == $current ? ' selected' : '').'>'.$value.'</option>';
+        
+      $result .= 
+        '</select>';
+        
+      return $result;
     }
 
     /**
@@ -55,14 +99,15 @@
      * @param string $filter a filter for the destination node
      * @return string a HTML string for navigating through records
      */
-    function getNavigationUrls(&$node, $mode="", $filter="")
+    function getNavigationUrls(&$node, $mode="", $filter="", $recordlistName="")
     {
       global $ATK_VARS;
 
       $res = array();
       $limit = (int)$node->m_postvars['atklimit'];
 
-      if (!$filter && isset($node->m_postvars["atkfilter"])) $filter = $node->validateFilter($node->m_postvars["atkfilter"]);
+      if (!$filter && isset($node->m_postvars["atkfilter"])) 
+        $filter = $node->validateFilter($node->m_postvars["atkfilter"]);
 
       $count = (int)$node->countDb($filter, $node->m_listExcludes, "", $mode);
 
@@ -98,8 +143,10 @@
         $newstart = $node->m_postvars['atkstartat'] - $limit;
         $res['previous'] = array( "title"=>atktext("previous", "atk"),
                                   "url"=>$_SERVER["PHP_SELF"].
-                                          "?atknodetype=".$ATK_VARS["atknodetype"].
-                                          "&atkaction=".$action.
+                                          "?atknodetype=".$node->atkNodeType().
+                                          "&atkaction=".$node->m_action.
+                                          "&atkrecordlist=".$recordlistName.
+                                          "&atkpartial=recordlist".
                                           (isset($ATK_VARS["atktarget"])?"&atktarget=".rawurlencode($ATK_VARS["atktarget"]):"").
                                           "&atkstartat".(isset($node->m_postvars["limitPostfix"])?$node->m_postvars["limitPostfix"]:"")."=".$newstart);
       }
@@ -109,8 +156,10 @@
          if ($i==$curr) $res[$i] = array("title"=>"<b>$i</b>", "url"=>"");
          else $res[$i] = array("title"=>$i,
                                "url"=>$_SERVER["PHP_SELF"].
-                                        "?atknodetype=".$ATK_VARS["atknodetype"].
-                                        "&atkaction=".$action.
+                                        "?atknodetype=".$node->atkNodeType().
+                                        "&atkaction=".$node->m_action.
+                                        "&atkrecordlist=".$recordlistName.                                        
+                                        "&atkpartial=recordlist".                                        
                                         "&atkstartat".(isset($node->m_postvars["limitPostfix"])?$node->m_postvars["limitPostfix"]:"")."=".max(0, ($i-1) * $limit).
                                         (isset($ATK_VARS["atkselector"])?"&atkselector=".rawurlencode($ATK_VARS['atkselector']):"").
                                         (isset($ATK_VARS["atktarget"])?"&atktarget=".rawurlencode($ATK_VARS["atktarget"]):""));
@@ -121,11 +170,14 @@
         $newstart = $node->m_postvars['atkstartat'] + $limit;
         $res['next'] = array("title"=>atktext("next", "atk"),
                               "url"=>$_SERVER["PHP_SELF"].
-                                      "?atknodetype=".$ATK_VARS["atknodetype"].
+                                      "?atknodetype=".$node->atkNodeType().
                                       "&atkaction=".$node->m_action.
+                                      "&atkrecordlist=".$recordlistName.                                      
+                                      "&atkpartial=recordlist".                                      
                                       "&atkstartat".(isset($node->m_postvars["limitPostfix"])?$node->m_postvars["limitPostfix"]:"")."=".$newstart.
                                       (isset($ATK_VARS["atktarget"])?"&atktarget=".rawurlencode($ATK_VARS["atktarget"]):""));
       }
+      
       return $res;
     }
 

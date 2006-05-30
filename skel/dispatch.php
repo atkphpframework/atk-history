@@ -53,7 +53,7 @@
 
     $box = $ui->renderBox(array("title"=>atktext("title_session_expired"),
                                 "content"=>'<br><br>'.atktext("explain_session_expired").'<br><br><br><br>
-                                           <a href="index.php?atklogout=true'.$destination.'" target="_top">'.atktext("relogin").'<a/><br><br>'));
+                                           <a href="index.php?atklogout=true'.$destination.'" target="_top">'.atktext("relogin").'</a><br><br>'));
 
     $page->addContent($box);
 
@@ -71,7 +71,9 @@
 
     if (is_object($obj))
     {
-      $obj->dispatch($ATK_VARS);
+      atkimport("atk.ui.atkpage");
+      $flags = array_key_exists("atkpartial", $ATK_VARS) ? HTML_PARTIAL : HTML_STRICT;
+      $obj->dispatch($ATK_VARS, $flags);
     }
     else
     {

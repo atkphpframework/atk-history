@@ -137,7 +137,7 @@
       {
         $page = &atkPage::getInstance();
         $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");
-        $page->register_script(atkconfig("atkroot")."atk/javascript/dhtml_tabs.js.php");
+        $page->register_script(atkconfig("atkroot")."atk/javascript/dhtml_tabs.js.php?stateful=".(atkconfig('dhtml_tabs_stateful') ? 1 : 0));
 
         $tabscript = "var tabs = new Array();\n";
         foreach($vars["tabs"] as $tab)
@@ -167,15 +167,7 @@
 
       $this->m_smarty->assign($vars);
 
-      // if $tplname contains a full pathname, the template
-      // is rendered as is.
-      // If it's just a filename, we lookup the template in
-      // the theme directory.
-      if (strpos($tplname, "/")===false)
-      {
-        // lookup template in theme.
-        $tplname = $this->m_theme->tplPath($tplname);
-      }
+      $tplname = $this->templatePath($tplname);
 
       // Smarty fetches templates relative from the template_dir setting.
       // Since that is an application directory, and themes reside in
@@ -186,12 +178,35 @@
       // disable smarty caching for ui purposes.
       $old_caching = $this->m_smarty->caching;
       $this->m_smarty->caching = false;
-      $this->m_smarty->template_dir = "./"; // current dir, becaue tplname already contains full relative path.
+      $this->m_smarty->template_dir = "./"; // current dir, because tplname already contains full relative path.
       $res = &$this->m_smarty->fetch($tplname);
       $this->m_smarty->template_dir = $old;
       $this->m_smarty->caching = $old_caching;
 
       return $res;
+    }
+
+    /**
+     * This function returns a complete themed path for a given template.
+     * This is a convenience method, which calls the tplPath method on
+     * the theme instance. However, if the template name contains a '/',
+     * we assume the full template path is already given and we simply
+     * return it.
+     * 
+     * @param String $template  The filename (without path) of the template
+     *                          for which you want to complete the path.
+     * 
+     * @return String the template path
+     */
+    function templatePath($template)
+    {
+      if (strpos($template, "/")===false)
+      {
+        // lookup template in theme.
+        $template = $this->m_theme->tplPath($template);
+      }    
+      
+      return $template;
     }
 
     /**
@@ -215,41 +230,41 @@
      * @param String $module   the module in which to look
      * @param String $nodetype the nodetype of the action
      * @param String $action   the action that we are trying to find a title for
-     * @param bool   $nomodule wether or not to return a translation of the module
+     * @param bool   $actiononly wether or not to return a name of the node
      *                          if we couldn't find a specific title
      * @return String the title for the action
      */
-    function title($module, $nodetype, $action, $nomodule=false)
+    function title($module, $nodetype, $action=NULL, $actiononly=false)
     {
-      // first look for specific text.
-      $key = 'title_'.$module.'_'.$nodetype.'_'.$action;
-      if (atktext($key,$module,"","","",true))
+      if ($module == NULL || $nodetype == NULL) return "";
+      $node = &atkGetNode($module.'.'.$nodetype); 
+      if ($node == NULL) return "";     
+      
+      if ($action != NULL)
       {
-        return atktext($key,$module);
+        $keys = array('title_'.$module.'_'.$nodetype.'_'.$action,
+                      'title_'.$nodetype.'_'.$action);
+
+        $label = $node->text($keys, NULL, "", "", true);
       }
-      else
+      
+      if ($label=="")
       {
-        $key = $nodetype;
-        if (atktext($key,$module,"","","","",true))
+        if ($actiononly)
         {
-          if ($nomodule) return atktext($action, "",$nodetype);
-          else return atktext($key,$module)." - ".atktext($action, $module, $nodetype, "", "atk");
+          return atktext($action, "atk");
         }
         else
         {
-          $key = 'title_'.$nodetype.'_'.$action;
-          if (atktext($key,"","","","",true))
-          {
-            return atktext($key);
-          }
-          else
-          {
-            // if no specific text available for this node,
-            // generate a generic title
-            return atktext($nodetype, $module)." - ".atktext($action, $nodetype);
-          }
+          $keys = array('title_'.$module.'_'.$nodetype, 'title_'.$nodetype);
+          $label = $node->text($keys, NULL, "", "", true);
+          if ($label == "")          
+            $label = $node->text($nodetype);
+          if ($action != NULL)
+            $label .= " - ".atktext($action, "atk");
         }
       }
+      return $label;
     }
   }
 ?>

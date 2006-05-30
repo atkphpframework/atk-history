@@ -2,9 +2,9 @@
   /**
    * This file is part of the Achievo ATK distribution.
    * Detailed copyright and licensing information can be found
-   * in the doc/COPYRIGHT and doc/LICENSE files which should be 
+   * in the doc/COPYRIGHT and doc/LICENSE files which should be
    * included in the distribution.
-   * 
+   *
    * @package atk
    * @subpackage relations
    *
@@ -16,7 +16,7 @@
    */
 
   /**
-   * The atkRelation class defines a relation to another node. 
+   * The atkRelation class defines a relation to another node.
    *
    * @author Ivo Jansch <ivo@achievo.org>
    * @package atk
@@ -32,24 +32,30 @@
     var $m_destination;
 
     /**
-     * @var atkNode Destination instance. 
+     * @var atkNode Destination instance.
      */
     var $m_destInstance="";
 
     /**
-     * @var String Filter for destination records. 
+     * @var String Filter for destination records.
      */
     var $m_destinationFilter="";
-    
+
     /**
      * Descriptor template for destination node.
      * @var String
      */
-    var $m_descTemplate = NULL;    
+    var $m_descTemplate = NULL;
+    
+    /**
+     * Descriptor handler.
+     * @var Object
+     */
+    var $m_descHandler = NULL;
 
     /**
      * Constructor
-     * @param String $name The name of the relation. 
+     * @param String $name The name of the relation.
      * @param String $destination The destination node (in module.name notation)
      * @param int $flags Flags for the relation
      */
@@ -59,7 +65,7 @@
       $this->m_destination = $destination;
 
     }
-    
+
     /**
      * Returns the destination filter.
      * @return String The destination filter.
@@ -68,7 +74,7 @@
     {
       return $this->m_destinationFilter;
     }
-    
+
     /**
      * Sets the destination filter.
      * @param String $filter The destination filter.
@@ -79,14 +85,32 @@
     }
     
     /**
+     * Get descriptor handler.
+     * @return Object descriptor handler
+     */
+    function &getDescriptorHandler()
+    {
+      return $this->m_descHandler;
+    }
+    
+    /**
+     * Set descriptor handler.
+     * @param Object $handler The descriptor handler.
+     */
+    function setDescriptorHandler(&$handler)
+    {
+      $this->m_descHandler = &$handler;
+    }
+
+    /**
      * Returns the descriptor template for the destination node.
      * @return String The descriptor Template
      */
     function getDescriptorTemplate()
     {
       return $this->m_descTemplate;
-    }     
-    
+    }
+
     /**
      * Sets the descriptor template for the destination node.
      * @param String $template The descriptor template.
@@ -95,17 +119,29 @@
     {
       $this->m_descTemplate = $template;
     }
+    
+    /**
+     * Descriptor handler. Forwards description handler calls
+     * to the real description handler.
+     */
+    function descriptor($record, &$node)
+    {
+      $method = $this->m_name."_descriptor";
+      if (method_exists($this->m_descHandler, $method))
+        return $this->m_descHandler->$method($record, $node);
+      else return $this->m_descHandler->descriptor($record, $node);
+    }
 
     /**
-     * Create the instance of the destination. 
+     * Create the instance of the destination.
      *
      * If succesful, the instance is stored in the m_destInstance member variable.
-     * 
+     *
      * @return boolean true if succesful, false if something went wrong.
      */
     function createDestination()
     {
-      if ($this->m_destInstance == "")
+      if (!is_object($this->m_destInstance))
       {
         $cache_id = $this->m_owner.".".$this->m_name;
         $this->m_destInstance = &getNode($this->m_destination, true, $cache_id);
@@ -117,7 +153,7 @@
 	        $this->m_destInstance = NULL;
 	        return false;
 	      }
-	
+
         if ($this->hasFlag(AF_NO_FILTER)) $this->m_destInstance->m_flags |= NF_NO_FILTER;
         foreach (array_keys($this->m_destInstance->m_attribList) as $key)
         {
@@ -126,6 +162,9 @@
             $attribute->m_destInstance = &$this->m_ownerInstance;
         }
         
+        if (!empty($this->m_descHandler))
+          $this->m_destInstance->setDescriptorHandler($this);
+
         if (!empty($this->m_descTemplate))
           $this->m_destInstance->setDescriptorTemplate($this->m_descTemplate);
       }
@@ -133,7 +172,7 @@
     }
 
     /**
-     * Return a displayable string for a record. 
+     * Return a displayable string for a record.
      * @param array $record The record that contains the information to display.
      * @return String a displayable string for this value.
      */
@@ -145,7 +184,7 @@
     /**
      * Validation method. Empty implementation. Derived classes may override
      * this function.
-     * @abstract     
+     * @abstract
      */
     function validate(&$record, $mode)
     {
@@ -178,7 +217,7 @@
       //"regexp","exact","substring", "wildcard","greaterthan","greaterthanequal","lessthan","lessthanequal"
       return array("exact");
     }
-    
+
     /**
      * Since most relations do not store anything in a field, the default
      * fieldtype for relations is "". Exceptions (like the many2oone relation,
@@ -190,21 +229,21 @@
     {
       return "";
     }
-        
+
     /**
      * Returns the condition (SQL) that should be used when we want to join a relation's
      * owner node with the parent node.
-     * @return String SQL string for joining the owner with the destination. 
+     * @return String SQL string for joining the owner with the destination.
      *                Defaults to false.
      */
     function getJoinCondition(&$query, $tablename="",$fieldalias="")
     {
-      return false; 
+      return false;
     }
-    
+
     /**
      * Returns an instance of the node that the relation points to.
-     * @return atkNode The node that this relation points to, or 
+     * @return atkNode The node that this relation points to, or
      *                 NULL if the destination is not valid.
      */
     function &getDestination()
@@ -215,6 +254,25 @@
       }
       return NULL;
     }
+
+    /**
+     * Attempts to get a translated label which can be used when composing an "add" link
+     *
+     * @return String Localised "add" label
+     */
+    function getAddLabel()
+    {
+      // Try to get a translation for link_fieldname_add (or if not found, a translation for link_destination_add)
+      $keys = array("link_" . $this->fieldName() . "_add", "link_" . getNodeType($this->m_destination) . "_add");
+      $label = atktext($keys, getNodeModule($this->m_destination), "", "", "", true);
+
+      // If translation not found, then use a concatenation of translations of the destination and the word "add" as default
+      if ($label=="")
+        $label = atktext(getNodeType($this->m_destination), getNodeModule($this->m_destination)) . " " . strtolower(atktext("add", "atk"));
+
+      // Return the translation
+      return $label;
+    }
   }
-  
+
 ?>

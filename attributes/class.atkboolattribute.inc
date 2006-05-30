@@ -73,9 +73,9 @@
      * @param $record Array with fields
      * @return piece of html code with a checkbox
      */
-    function search($record="")
+    function search($record="", $extended=false, $fieldprefix="")
     {
-      $result = '<select name="atksearch['.$this->formName().']">';
+      $result = '<select name="atksearch'.$fieldprefix.'['.$this->formName().']">';
       $result.= '<option value="">'.atktext("search_all", "atk");
       $result.= '<option value="0" ';
       if($record[$this->fieldName()]==='0' && !empty($record)) $result.="selected";
@@ -114,6 +114,18 @@
 	    // We display true (1) as 'Yes' and false as 'No'
 	    if ($record[$this->fieldName()]>0) return atktext("yes", "atk");
 	    return atktext("no", "atk");
+    }
+
+    function fetchValue($postvars)
+    {
+      if (is_array($postvars)&&isset($postvars[$this->fieldName()]))
+      {
+        return $postvars[$this->fieldName()];
+      }
+      else
+      {
+        return 0;
+      }
     }
 
     function getSearchModes()
@@ -156,5 +168,19 @@
     }
 
 
+    function hide($record="", $fieldprefix="")
+    {
+      // the next if-statement is a workaround for derived attributes which do
+      // not override the hide() method properly. This will not give them a
+      // working hide() functionality but at least it will not give error messages.
+      if ($record[$this->fieldName()]=="")$record[$this->fieldName()] = "0";
+      if (!is_array($record[$this->fieldName()]))
+      {
+        $result = '<input type="hidden" name="'.$fieldprefix.$this->formName().
+                  '" value="'.htmlspecialchars($record[$this->fieldName()]).'">';
+        return $result;
+      }
+      else atkdebug("Warning attribute ".$this->m_name." has no proper hide method!");
+    }
   }
 ?>

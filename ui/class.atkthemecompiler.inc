@@ -14,9 +14,8 @@
    * @version $Revision$
    * $Id$
    */
-
   atkimport('atk.ui.atktheme');
-  
+
   /**
    * Compiles cache for current theme.
    *
@@ -98,7 +97,7 @@
      */
     function getThemedef()
     {
-      $file = array_shift($this->m_themedefs);
+      $file = array_pop($this->m_themedefs);
       if (file_exists($file))
       {
         include($file);
@@ -111,7 +110,7 @@
 
         $this->_addThemedef($theme, $from);
       }
-      if ($this->m_themedefs[0]) { $this->getThemedef();}
+      if (isset($this->m_themedefs[0]) && (!empty($this->m_themedefs[0]))) { $this->getThemedef();}
     }
 
     /**
@@ -122,7 +121,7 @@
      */
     function _checkForBase($theme, $from)
     {
-      if ($theme["base"])
+      if (isset($theme["base"]) && (!empty($theme["base"])))
       {
         array_unshift($this->m_themedefs, "$from/../".$theme["base"]."/".$this->THEMEFILE);
       }
@@ -230,19 +229,26 @@
      */
     function _addThemedef($themedef, $from)
     {
+      // Stripping the atkroot so we store it atkroot independent
+      if (substr($from, 0, strlen(atkconfig('atkroot')))==atkconfig('atkroot'))
+        $from = substr($from, strlen(atkconfig('atkroot')));
+
       foreach ($themedef as $themedefitemname => $themedefitem)
       {
+        // if not an array, the last definition will overwrite the first definition
         if (!is_array($themedef[$themedefitemname]))
         {
           $this->m_def[$themedefitemname]=$themedefitem;
         }
+        
+        // if an array, push the last definition at the beginning of the array
         else
         {
-          if (!is_array($this->m_def[$themedefitemname]))
+          if ((!isset($this->m_def[$themedefitemname])) || (!is_array($this->m_def[$themedefitemname])))
           {
             $this->m_def[$themedefitemname] = array();
           }
-          $this->m_def[$themedefitemname][]= array($from => $themedefitem);
+          array_unshift($this->m_def[$themedefitemname], array($from => $themedefitem));
         }
       }
     }
@@ -253,6 +259,7 @@
     function compile()
     {
       $this->getThemedef();
+      atk_var_dump($this->m_def, "DEFS");
 
       $compiled = $this->_compileThemedef();
       $this->_checkLocation();

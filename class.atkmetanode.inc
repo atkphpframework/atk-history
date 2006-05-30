@@ -44,16 +44,18 @@ class atkMetaNode extends atkNode
    * To make this possible (and for supporting passing parameters by reference)
    * the constructor accepts an array which may contain the following fields:
    *
-   * - type        node type
-   * - table       table name
-   * - sequence    sequence name
-   * - db          database instance
-   * - policy      meta policy, the meta policy to use ((sub-)class atkMetaPolicy instance)
-   * - handler     meta handler, the meta handler to use ((sub-)class atkMetaPolicy instance)   
-   * - grammar     meta grammar, the meta grammar to use ((sub-)class atkMetaGrammar instance)
-   * - flags       node flags
-   * - descriptor  descriptor template for this node
-   * - order       (default) order to sort fields
+   * - type           node type
+   * - table          table name
+   * - sequence       sequence name
+   * - db             database instance
+   * - policy         meta policy, the meta policy to use ((sub-)class atkMetaPolicy instance)
+   * - handler        meta handler, the meta handler to use ((sub-)class atkMetaPolicy instance)   
+   * - grammar        meta grammar, the meta grammar to use ((sub-)class atkMetaGrammar instance)
+   * - flags          node flags
+   * - descriptor     descriptor template for this node
+   * - order          (default) order to sort fields
+   * - securityAlias  security alias for this node
+   * - securityMap    security map for this node (will be added to the existing security map!)
    * 
    * All of these variables can also be specified by creating a class variable with
    * the same name. If you do so for flags, and have to use multiple flags, use
@@ -135,7 +137,17 @@ class atkMetaNode extends atkNode
     if (isset($this->order))
       $this->setOrder($this->order);
     else if (array_key_exists("order", $args))
-      $this->setOrder($args["order"]);      
+      $this->setOrder($args["order"]); 
+
+    if (isset($this->securityAlias))
+      $this->setSecurityAlias($this->securityAlias);
+    else if (array_key_exists("securityAlias", $args))
+      $this->setSecurityAlias($args["securityAlias"]);      
+      
+    if (isset($this->securityMap))
+      $this->m_securityMap = array_merge($this->m_securityMap, $this->securityMap);
+    else if (array_key_exists("securityMap", $args))
+      $this->m_securityMap = array_merge($this->m_securityMap, $args["securityMap"]);          
 
     $this->applyMetaPolicy($this->m_metaPolicy);
   }

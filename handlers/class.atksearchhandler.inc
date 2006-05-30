@@ -78,7 +78,7 @@
         // we reload the adminpage with the searched items.
         else
         {
-          $params["formstart"].=session_form(SESSION_DEFAULT);
+          $params["formstart"].=session_form(SESSION_NESTED);
           $params["formstart"].='<input type="hidden" name="atkaction" value="admin">';
         }
         $params["formstart"].='<input type="hidden" name="atknodetype" value="'.$node->atknodetype().'">';
@@ -128,7 +128,7 @@
           $p_attrib = &$node->m_attribList[$attribname];
 
           if (!$p_attrib->hasFlag(AF_HIDE_SEARCH))
-            $p_attrib->addToSearchformFields($params["fields"], $node, $record);
+            $p_attrib->addToSearchformFields($params["fields"], $node, $record, "", $this->m_postvars['atksearchmode']);
         }
         return $ui->render($node->getTemplate("search", $record), $params);
       }

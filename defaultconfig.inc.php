@@ -74,7 +74,7 @@
    * @var String
    */
   $config_meta_handler = "atk.meta.atkmetahandler";
-  
+
   /**
    * Use the given meta grammar as the default meta grammar
    * @var String
@@ -114,7 +114,7 @@
    * this as the application won't constantly have to connect to the database.
    * However, the database server won't be able to handle a lot of persistent
    * connections.
-   * @var bool
+   * @var boolean
    */
   $config_databasepersistent = true;
 
@@ -137,7 +137,14 @@
    * software relies on numerical indexes (WHICH IS A BAD IDEA!!)
    * @var int
    */
-  $config_mysqlfetchmode = MYSQL_ASSOC;
+  $config_mysqlfetchmode = defined("MYSQL_ASSOC") ? MYSQL_ASSOC : 0;
+
+  /**
+   * Backwardscompatibility setting. Set this to PGSQL_BOTH if your
+   * software relies on numerical indexes (WHICH IS A BAD IDEA!!)
+   * @var int
+   */
+  $config_pgsqlfetchmode = defined("PGSQL_ASSOC") ? PGSQL_ASSOC : 0;
 
   /********************************** SECURITY *******************************/
 
@@ -163,13 +170,13 @@
 
   /**
    *
-   * @var bool
+   * @var boolean
    */
   $config_authentication_md5 = true;
 
   /**
    *
-   * @var bool
+   * @var boolean
    */
   $config_authentication_cookie = false;
 
@@ -181,7 +188,7 @@
 
   /**
    *
-   * @var bool
+   * @var boolean
    */
   $config_authentication_session = true;
 
@@ -193,13 +200,13 @@
 
   /**
    *
-   * @var bool
+   * @var boolean
    */
   $config_restrictive = true;
 
   /**
    *
-   * @var bool
+   * @var boolean
    */
   $config_security_attributes = false;
 
@@ -263,6 +270,12 @@
    *
    * @var String
    */
+  $config_auth_languagefield   = "lng";
+
+  /**
+   *
+   * @var String
+   */
   $config_auth_accountdisablefield = "";
 
   /**
@@ -300,15 +313,32 @@
 
   /**
    * No vmail.
-   * @var bool
+   * @var boolean
    */
   $config_auth_mail_virtual = false;
 
   /**
    * Use bugzilla-style crypted password storage
-   * @var bool
+   * @var boolean
    */
   $config_auth_usecryptedpassword = false;
+
+  /**
+   * When changerealm is true, the authentication realm is changed on every
+   * login.
+   *
+   * Advantage: the user is able to logout using the logout link.
+   * Disadvantage: browser's 'remember password' feature won't work.
+   *
+   * This setting only affects the http login box, so it is only relevant if
+   * $config_auth_loginform is set to false.
+   *
+   * The default is true for backwardscompatibility reasons. For new
+   * applications, it defaults to false since the skel setting is set to false
+   * by default.
+   * @var boolean
+   */
+  $config_auth_changerealm = true;
 
   /**
    * 0 = no maximum.
@@ -316,9 +346,10 @@
    */
   $config_max_loginattempts = 5;
 
+
   /**
    *
-   * @var bool
+   * @var boolean
    */
   $config_auth_dropdown = false;
 
@@ -381,7 +412,7 @@
 
   /**
    *
-   * @var bool
+   * @var boolean
    */
   $config_display_errors = true;
 
@@ -429,6 +460,13 @@
    * @var String
    */
   $config_menu_align = "center";
+  
+  /**
+   * Auto-include logout link in menu?
+   * 
+   * @var Boolean
+   */
+  $config_menu_logout_link = true;
 
   /**
    * 0 = no   - 1 = yes
@@ -468,9 +506,16 @@
 
   /**
    * Whatever tabs are enabled or not
-   * @var bool
+   * @var boolean
    */
   $config_tabs = true;
+  
+  /**
+   * Whatever DHTML tabs should be stateful or not
+   * (E.g. the current tab is saved for the current node/selector combination)
+   * @var boolean
+   */
+  $config_dhtml_tabs_stateful = true;
 
   /**
    * The number of records to display on a single page
@@ -480,7 +525,7 @@
 
   /**
    * Display a 'stack' of the user activities in the top right corner.
-   * @var bool
+   * @var boolean
    */
   $config_stacktrace = true;
 
@@ -490,6 +535,14 @@
    * @var int
    */
   $config_max_input_size = 70;
+
+  /*********************************** OUTPUT ********************************/
+
+  /**
+   * Set to true, to output pages gzip compressed to the browser if the
+   * browser supports it.
+   */
+  $config_output_gzip = false;
 
   /********************************** LANGUAGE *******************************/
 
@@ -515,7 +568,7 @@
    * True: one language switch attributes automatically switches all others on
    * screen.
    * False: each language switch attributes operates only on it's own node
-   * @var bool
+   * @var boolean
    */
   $config_multilanguage_linked = true;
 
@@ -529,6 +582,23 @@
    */
   $config_atklangcheckmodule = 2;
 
+  /**
+   * Where ATK should look for it's supported languages
+   *
+   * In your own application you should probably make this the module
+   * with the most language translations.
+   * Leaving this empty will turn off functionality where we check
+   * for the user language in the browser or in the user session and will
+   * make sure the application is always presented in the default language.
+   * This config var also accepts 2 'special' modules:
+   * - atk (making it use the languages of ATK)
+   * - langoverrides (making it use the language overrides directory)
+   *
+   * @var String
+   */
+   //$config_supported_languages_module = $config_atkroot.'atk/languages/';
+   $config_supported_languages_module = '';
+
   /********************* TEMPLATE ENGINE CONFIGURATION ***********************/
 
   /**
@@ -540,7 +610,7 @@
 
   /**
    *
-   * @var bool
+   * @var boolean
    */
   $config_tplcaching = false;
 
@@ -605,7 +675,7 @@
 
   /**
    * Wether or not to enable Internet Explorer extensions
-   * @var bool
+   * @var boolean
    * @todo update this bit of documentation as it doesn't really say much
    */
   $config_enable_ie_extensions = false;
@@ -621,17 +691,19 @@
   /**
    * Forces the themecompiler to recompile the theme all the time
    * This can be handy when working on themes.
-   * @var bool
+   * @var boolean
    */
   $config_force_theme_recompile = false;
 
   /**
    * Wether or not to use the keyboardhandler for attributes and the recordlist
-   * Defaults to 1 (true), comment or set to null to remove keyboard handler
+   * When set to true, arrow keys can be used to navigate through fields and
+   * records, as well as shortcuts 'e' for edit, 'd' for delete, and left/right
+   * cursor for paging. Note however, that using cursor keys to navigate
+   * through fields is not standard web application behaviour.
    * @var int
    */
-  $config_use_keyboard_handler = 1;
-
+  $config_use_keyboard_handler = false;
 
   /**
    * Session cache expire (minutes)
@@ -661,7 +733,7 @@
   /**
    * Make the recordlist use a javascript
    * confirm box for deleting instead of a seperate page
-   * @var bool
+   * @var boolean
    */
   $config_javascript_confirmation = false;
 
@@ -670,8 +742,23 @@
    * of OpenSSL encryption (atk.security.encryption.atkopensslencryption)
    * It makes sure that the user password is available in the session
    * for the private key.
-   * @var bool
+   * @var boolean
    */
   $config_enable_ssl_encryption = false;
 
+  /**
+   * Enable / disable sending of e-mails (works only if the atk.utils.atkMail::mail
+   * function has been used for sending e-mails).
+   * @var boolean
+   */
+  $config_mail_enabled = true;
+  
+  /**
+   * Default extended search action. This action can always be overriden
+   * in the node by using $node->setExtendedSearchAction. At this time
+   * (by default) the following values are supported: 'search' or 'smartsearch'
+   * 
+   * @var string
+   */
+  $config_extended_search_action = 'search';
 ?>

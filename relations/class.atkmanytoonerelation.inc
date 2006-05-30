@@ -20,7 +20,9 @@
   /**
    * flag(s) specific for atkManyToOneRelation
    */
-  define("AF_RELATION_AUTOLINK", AF_SPECIFIC_1); // create edit/view links for the items in a manytoonerelation dropdown.
+  define("AF_RELATION_AUTOLINK", AF_SPECIFIC_1);     // create edit/view links for the items in a manytoonerelation dropdown.
+  define("AF_RELATION_NO_NULL_ITEM", AF_SPECIFIC_2); // do not add null option ever
+  define("AF_RELATION_AUTOCOMPLETE", AF_SPECIFIC_3); // use auto-completition instead of drop-down / selection page
 
   /**
    * @internal include base class
@@ -81,6 +83,28 @@
      */
     var $m_selectableRecords = array();
 
+    /**
+     * List columns.
+     * @Access private
+     * @var Array
+     */
+    var $m_listColumns = array();
+    
+    /**
+     * Always show list columns?
+     * @access private
+     * @var boolean
+     */
+    var $m_alwaysShowListColumns = false;
+    
+    /**
+     * Label to use for the 'none' option.
+     *
+     * @access private
+     * @var String
+     */
+    var $m_noneLabel = NULL;
+
     var $m_onchangehandler_init = "newvalue = el.options[el.selectedIndex].value;\n";
 
 
@@ -118,6 +142,38 @@
     }
 
     /**
+     * Add list column. An attribute of the destination node
+     * that (only) will be displayed in the recordlist.
+     */
+    function addListColumn($attr)
+    {
+      $this->m_listColumns[] = $attr;
+    }
+
+    /**
+     * Add multiple list columns. Attributes of the destination node
+     * that (only) will be displayed in the recordlist.
+     */
+    function addListColumns()
+    {
+      $attrs = func_get_args();
+      foreach ($attrs as $attr)
+        $this->m_listColumns[] = $attr;
+    }
+    
+
+    /**
+     * Always show list columns in list view, 
+     * even if the attribute itself is hidden?
+     * 
+     * @param $value always show list columns?
+     */
+    function setAlwaysShowListColumns($value)
+    {    
+      $this->m_alwaysShowListColumns = $value;
+    }
+
+    /**
      * Convert value to DataBase value
      * @param array $rec Record to convert
      * @return int Database safe value
@@ -136,7 +192,6 @@
           if (is_array($rec[$this->fieldName()]))
           {
             $pkfield = $this->m_destInstance->m_primaryKey[0];
-            //return $rec[$this->fieldName()][$pkfield];
             $pkattr = &$this->m_destInstance->getAttribute($pkfield);
             return $pkattr->value2db($rec[$this->fieldName()]);
           }
@@ -178,6 +233,7 @@
           }
           $result[$field] = $value;
         }
+        
         return $result;
       }
       return NULL;
@@ -194,8 +250,20 @@
       if (isset($rec[$this->fieldName()]))
       {
         $myrec = $rec[$this->fieldName()];
+        if (is_array($myrec)) 
+        {
+          $result = array();
+          if ($this->createDestination())
+          {
+            foreach (array_keys($this->m_destInstance->m_attribList) as $attrName)
+            {
+              $attr = &$this->m_destInstance->m_attribList[$attrName];
+              $result[$attrName] = $attr->db2value($myrec);
+            }
+          }
 
-        if (is_array($myrec)) return $myrec;
+          return $result;
+        }
         else
         {
           // if the record is not an array, probably only the value of the primary key was loaded.
@@ -205,35 +273,67 @@
         }
       }
     }
-
+    
+    /**
+     * Set none label.
+     */
+    function setNoneLabel($label)
+    {
+      $this->m_noneLabel = $label;
+    }
+    
+    /**
+     * Get none label.
+     */
+    function getNoneLabel()
+    {
+      if ($this->m_noneLabel !== NULL)
+        return $this->m_noneLabel;
+      $nodename = $this->m_destInstance->m_type;
+      $modulename = $this->m_destInstance->m_module;;
+      return atktext('select_none', $modulename, $nodename);
+    }
+    
+    /**
+     * Populate the record with the destination record data.
+     * 
+     * @param $record  record
+     * @param $full    load all data or only the descriptor fields?
+     */
+    function populate(&$record, $full=false)
+    {
+      if ($record[$this->fieldName()] == "") return;
+      
+      atkdebug("Delayed loading of ".($full ? "" : "descriptor ")."fields for ".$this->m_name);
+      $this->createDestination();
+      
+      $includes = "";
+      if (!$full)
+        $includes = $this->m_destInstance->descriptorFields();
+        
+      list($record[$this->fieldName()]) = 
+        $this->m_destInstance->selectDb($this->m_destInstance->primaryKey($record[$this->fieldName()]), "", "", "", $includes);
+    }
+    
     /**
      * Returns a displayable string for this value.
      * @param $record Record
      * @return a displayable string
      */
-    function display($record, $mode)
+    function display($record, $mode='list')
     {
       if ($this->createDestination())
       {
         if (count($record[$this->fieldName()])==1)
+          $this->populate($record);
+
+        if(!$this->isEmpty($record))
         {
-          // The record consist of only one field, which is the primary key.
-          // This means we have to load the rest of the data, in order to
-          // load a descriptor.
-          atkdebug("Delayed loading of descriptor fields for ".$this->m_name);
-          $recs = $this->m_destInstance->selectDb($this->m_destInstance->primaryKey($record[$this->fieldName()]), "", "", "", $this->m_destInstance->descriptorFields());
-          $title = $this->m_destInstance->descriptor($recs[0]);
+          $title = $this->m_destInstance->descriptor($record[$this->fieldName()]);
         }
         else
         {
-          if(!$this->isEmpty($record))
-          {
-            $title = $this->m_destInstance->descriptor($record[$this->fieldName()]);
-          }
-          else
-          {
-            $title = ""; // no record
-          }
+          $title = ""; // no record
         }
 
         $result = $title; // default result is just the title.
@@ -245,8 +345,11 @@
             $result = href("dispatch.php?atknodetype=".$this->m_destination."&atkaction=view&atkselector=".rawurlencode($this->m_destInstance->primaryKey($record[$this->fieldName()])), $title, SESSION_NESTED);
           }
         }
-
         return $result;
+      }
+      else
+      {
+       atkdebug("Can't create destination! ($this->m_destination");
       }
       return "";
     }
@@ -258,14 +361,61 @@
      * @param String $fieldprefix  Prefix for the fieldname
      * @return Piece of html code that can  be used in a form to edit this
      */
-    function edit(&$record, $fieldprefix="")
+    function edit(&$record, $fieldprefix="", $mode="")
     {
-      global $ATK_VARS;
-
       // Two variances.. one with a dropdownbox containing all records,
       // and one with a dropdownbox that contains the last 10 used records,
       // with a link to a selector with all records. This second one is for
       // relations with large tables, so is only used when AF_LARGE is set.
+      if ($this->hasFlag(AF_RELATION_AUTOCOMPLETE))
+      {
+        $this->createDestination();
+        
+        $page = &$this->m_ownerInstance->getPage();        
+        
+        $id = $fieldprefix.$this->fieldName();
+        $url = partial_url($this->m_ownerInstance->atkNodeType(), 'edit', 'attribute.'.$this->fieldName().'.auto_complete');
+        $value = $record[$this->fieldName()] == NULL ? '' : $this->m_destInstance->primaryKey($record[$this->fieldName()]);
+        $code = "new Ajax.AdvancedAutocompleter('${id}_search', '{$id}_result', '{$id}_selection', '$id', '$url', { paramName: 'value', minChars: 2, frequency: 0.5 });";    
+        
+        $page->register_script(atkconfig("atkroot").'atk/javascript/prototype/prototype.js');
+        $page->register_script(atkconfig("atkroot").'atk/javascript/scriptaculous/scriptaculous.js');
+        $page->register_loadscript($code);         
+        
+        $style = "
+          div.{$id}_result {
+            position: absolute;
+            width: 250px;
+            background-color: white;
+            border: 1px solid #888;
+            margin: 0px;
+            padding: 0px;
+          }
+          
+          div.{$id}_result ul  {
+            list-style-type: none;
+            margin:0px;
+            padding:0px;
+          }
+          
+          div.{$id}_result li.selected { background-color: #ffb; }
+          div.{$id}_result li {
+            list-style-type: none;
+            display: block;
+            margin: 0;
+            padding: 2px;
+            height: 32px;
+          }          
+        ";
+        
+        $page->register_stylecode($style);       
+        
+        return 
+          '<input type="text" id="'.$id.'_search" class="'.$id.'_search" size="40" />
+           <div id="'.$id.'_result" class="'.$id.'_result"></div>      
+           <input type="hidden" name="'.$id.'" value="'.$value.'"/><br />
+           <span id="'.$id.'_selection" class"'.$id.'_selection">'.$this->display($record).'</span>';            
+      }      
 
       if ($this->createDestination())
       {
@@ -288,15 +438,14 @@
           if(isset($record[$this->fieldName()]))
             $value = $record[$this->fieldName()];
           $currentPk = $this->m_destInstance->primaryKey($value);
-          $this->m_destInstance->addFilter($filter);
-          $recordset = $this->getSelectableRecords();
+          $recordset = $this->_getSelectableRecords($record, $mode);
           if(count($recordset)==0) $editflag = false;
 
           // autoselect if there is only one record (if obligatory is not set,
           // we don't autoselect, since user may wist to select 'none' instead
           // of the 1 record.
           $result = "";
-          if (count($recordset)==1&&$this->hasFlag(AF_OBLIGATORY))
+          if ((count($recordset)==1 || $this->_checkPrimaryKeysForSelector($recordset))&&$this->hasFlag(AF_OBLIGATORY))
           {
             $result.= $this->m_destInstance->descriptor($recordset[0])."&nbsp;&nbsp;";
             $result.= $this->hide(array($this->fieldName()=>$recordset[0]), $fieldprefix);
@@ -312,14 +461,10 @@
 
             $this->registerKeyListener($id, KB_CTRLCURSOR|KB_LEFTRIGHT);
             $result.= '<select id="'.$id.'" name="'.$id.'" class="atkmanytoonerelation" '.$onchange.'>';
-            if (!$this->hasFlag(AF_OBLIGATORY)||(atkconfig("list_obligatory_null_item")&&!is_array($value)))
+            if ((!$this->hasFlag(AF_OBLIGATORY) && !$this->hasFlag(AF_RELATION_NO_NULL_ITEM)) || (atkconfig("list_obligatory_null_item")&&!is_array($value)))
             {
-              //get the select_none string
-              $nodename = $this->m_destInstance->m_type;
-              $modulename = $this->m_destInstance->m_module;;
-              $nonetext = atktext('select_none', $modulename, $nodename);
               // Relation may be empty, so we must provide an empty selectable..
-              $result.= '<option value="">'.$nonetext;
+              $result.= '<option value="">'.$this->getNoneLabel();
             }
             // Newly added check
             $newlyadded = "";
@@ -327,6 +472,7 @@
             {
               $newlyadded = $this->m_ownerInstance->m_postvars[$id."_ret"];
             }
+
             for ($i=0, $_i=count($recordset);$i<$_i;$i++)
             {
               $pk = $this->m_destInstance->primaryKey($recordset[$i]);
@@ -345,39 +491,7 @@
           $id = $fieldprefix.$this->fieldName();
           $newlyadded = $this->m_ownerInstance->m_postvars[$id."_ret"];
 
-          if ($ATK_VARS[$selname]!="")
-          // new record selected
-          {
-            // $ATK_VARS[$selname] contains full primary key of selected record.
-            $recset = $this->m_destInstance->selectDb($ATK_VARS[$selname],"","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
-            $destrecord = $recset[0];
-            $record[$this->fieldName()] = $destrecord; // put destrecord inside original record.
-          }
-          elseif ($newlyadded!="")
-          {
-            $recset = $this->m_destInstance->selectDb($newlyadded,"","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
-            $destrecord = $recset[0];
-            $record[$this->fieldName()] = $destrecord; // put destrecord inside original record.
-		      }
-          elseif (is_array($record[$this->fieldName()]) && count($record[$this->fieldName()]) == count($this->m_destInstance->m_primaryKey))
-          // old record present, but probably only primary key fields are loaded (this happens after pressing 'save' on a record)
-          {
-            $currentPk = $this->m_destInstance->primaryKey($record[$this->fieldName()]);
-            $recset = $this->m_destInstance->selectDb($currentPk,"","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
-            $destrecord = $recset[0];
-            $record[$this->fieldName()] = $destrecord; // put destrecord inside original record.
-          }
-          elseif (is_array($record[$this->fieldName()]) && !$this->isEmpty($record))
-          // complete old record present
-          {
-            $destrecord = $record[$this->fieldName()];
-          }
-          else
-          // no record yet, empty value.
-          {
-            $destrecord = array();
-            $editflag = false;
-          }
+          $destrecord = $this->_getDestRecord($selname, $newlyadded, $record, $editflag);
 
           if (count($destrecord))
           {
@@ -389,11 +503,13 @@
           // we use the current level to automatically return to this page
           // when we come from the select..
           $atktarget = rawurlencode("dispatch.php?atklevel=".atkLevel()."&".$selname."=[pk]");
+          $linkname = atktext("link_select_".getNodeType($this->m_destination), getNodeModule($this->m_destination),getNodeType($this->m_destination),'','',true);
+          if (!$linkname) $linkname = atktext("select_a").' '.strtolower(atktext(getNodeType($this->m_destination), getNodeModule($this->m_destination),getNodeType($this->m_destination)));
           if ($this->m_destinationFilter!="")
           {
             $result.= href("dispatch.php?atknodetype=".$this->m_destination.
                            "&atkaction=select&atkfilter=".$filter."&atktarget=".$atktarget,
-                           atktext("link_select_".getNodeType($this->m_destination), getNodeModule($this->m_destination),getNodeType($this->m_destination)),
+                           $linkname,
                            SESSION_NESTED,
                            true,'class="atkmanytoonerelation"');
           }
@@ -401,17 +517,60 @@
           {
             $result.= href("dispatch.php?atknodetype=".$this->m_destination.
                            "&atkaction=select&atktarget=".$atktarget,
-                           atktext("link_select_".getNodeType($this->m_destination), getNodeModule($this->m_destination),getNodeType($this->m_destination)),
+                           $linkname,
                            SESSION_NESTED,
                            true,'class="atkmanytoonerelation"');
           }
         }
 
-        if($editflag) $result.=$autolink['edit'];
-        $result.= $autolink['add'];
+        if($editflag) $result.= isset($autolink['edit']) ? $autolink['edit'] : "";
+        $result.= isset($autolink['add']) ? $autolink['add'] : "";
         return $result;
       }
-      return atkerror("Could not create destination for $this->m_destination!");
+
+      return atkerror("Could not create destination for destination: $this->m_destination!");
+    }
+
+    /**
+     * Get the destination record for the edit action
+     *
+     * @param String $selname    The name that the selected variable uses in the URL
+     * @param String $newlyadded The name that the selected variable uses in the postvars
+     * @param Array $record      The original record
+     * @param bool $editflag     The edit flag (?)
+     * @return Array The destination record
+     */
+    function _getDestRecord($selname, $newlyadded, &$record, &$editflag)
+    {
+      global $ATK_VARS;
+      if ($ATK_VARS[$selname]!="" || $newlyadded!="")
+      // new record selected
+      {
+        // $ATK_VARS[$selname] contains full primary key of selected record.
+        $recset = $this->m_destInstance->selectDb(($ATK_VARS[$selname]?$ATK_VARS[$selname]:$newlyadded),"","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
+        $destrecord = $recset[0];
+        $record[$this->fieldName()] = $destrecord; // put destrecord inside original record.
+      }
+      elseif (is_array($record[$this->fieldName()]) && count($record[$this->fieldName()]) == count($this->m_destInstance->m_primaryKey))
+      // old record present, but probably only primary key fields are loaded (this happens after pressing 'save' on a record)
+      {
+        $currentPk = $this->m_destInstance->primaryKey($record[$this->fieldName()]);
+        $recset = $this->m_destInstance->selectDb($currentPk,"","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
+        $destrecord = $recset[0];
+        $record[$this->fieldName()] = $destrecord; // put destrecord inside original record.
+      }
+      elseif (is_array($record[$this->fieldName()]) && !$this->isEmpty($record))
+      // complete old record present
+      {
+        $destrecord = $record[$this->fieldName()];
+      }
+      else
+      // no record yet, empty value.
+      {
+        $destrecord = array();
+        $editflag = false;
+      }
+      return $destrecord;
     }
 
     /**
@@ -480,6 +639,12 @@
      */
     function search($record=array(), $extended=false, $fieldprefix="")
     {
+      // ugly workaround in addToListArrayHeader we define the prefix with 
+      // _AE_ at the end, this is correct, unfortuanately the search field needs
+      // it at the beginning to work properly, so we reverse it here
+      if (substr($fieldprefix, -4) == "_AE_")
+        $fieldprefix = "_AE_".substr($fieldprefix, 0, -4);
+
       if (!$this->hasFlag(AF_LARGE))
       {
         if ($this->createDestination())
@@ -491,7 +656,8 @@
             $filter = $parser->parse($record);
             $this->m_destInstance->addFilter($filter);
           }
-          $recordset = $this->m_destInstance->selectDb("","","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
+
+          $recordset = $this->_getSelectableRecords($record, 'search');
 
           $result = '<select class="'.get_class($this).'" ';
           if ($extended)
@@ -507,6 +673,8 @@
           $pkfield = $this->m_destInstance->primaryKeyField();
 
           $result.= '<option value="">'.atktext('search_all');
+          if (!$this->hasFlag(AF_OBLIGATORY))
+            $result.= '<option value="__NONE__"'.(isset($record[$this->fieldName()]) && atk_in_array('__NONE__', $record[$this->fieldName()]) ? ' selected="selected"' : '').'>'.atktext('search_none');
 
           for ($i=0;$i<count($recordset);$i++)
           {
@@ -531,6 +699,46 @@
         return $result;
       }
     }
+    
+    /**
+     * Creates a smart search condition for a given search value, and adds it
+     * to the query that will be used for performing the actual search.
+     * 
+     * @param Integer  $id         The unique smart search criterium identifier.
+     * @param Integer  $nr         The element number in the path.
+     * @param Array    $path       The remaining attribute path.
+     * @param atkQuery $query      The query to which the condition will be added.
+     * @param String   $ownerAlias The owner table alias to use.
+     * @param Mixed    $value      The value the user has entered in the searchbox.
+     * @param String   $mode       The searchmode to use.
+     */
+    function smartSearchCondition($id, $nr, $path, &$query, $ownerAlias, $value, $mode)
+    {
+      if (count($path) > 0)
+      {
+        $this->createDestination();
+        
+        $destAlias = "ss_{$id}_{$nr}_".$this->fieldName();
+        
+        $query->addJoin(
+          $this->m_destInstance->m_table, $destAlias,
+          $this->getJoinCondition($query, $ownerAlias, $destAlias),
+          false
+        );
+
+        $attrName = array_shift($path);
+        $attr = &$this->m_destInstance->getAttribute($attrName);
+        
+        if (is_object($attr))
+        {
+          $attr->smartSearchCondition($id, $nr + 1, $path, $query, $destAlias, $value, $mode);
+        }
+      }
+      else 
+      {
+        $this->searchCondition($query, $ownerAlias, $value, $mode);
+      }
+    }       
 
     /**
      * Creates an search condition for a given search value
@@ -543,8 +751,8 @@
     function searchCondition(&$query, $table, $value, $searchmode)
     {
       $searchcondition = $this->getSearchCondition($query, $table, $value, $searchmode);
-      $query->addSearchCondition($searchcondition);
-
+      if (!empty($searchcondition))
+        $query->addSearchCondition($searchcondition);
     }
 
     function getSearchCondition(&$query, $table, $value, $searchmode)
@@ -556,9 +764,28 @@
     		// which should work in any ansi compatible database.
     		if (is_array($value)) // This last condition is for when the user selected the 'search all' option, in which case, we don't add conditions at all.
     		{
+  		    foreach ($this->m_listColumns as $attr)
+  		    {
+  		      $attrValue = $value[$attr];
+  		      if (!empty($attrValue))
+  		      {
+  		        $p_attrib = &$this->m_destInstance->m_attribList[$attr];
+  		        if ($p_attrib != NULL)
+  		          $p_attrib->searchCondition($query, $this->fieldName(), $attrValue, $searchmode);
+  		      }
+  		    }
+
+  		    $value = isset($value[0]) ? $value : $value[$this->fieldName()];
+  		    
+  		    if (!is_array($value)) return '';
+
     			if (count($value)==1) // exactly one value
     			{
-    			  if ($value[0]!="")
+    			  if ($value[0] == "__NONE__")
+    			  {
+    			    return $query->nullCondition($table.".".$this->fieldName());
+    			  }
+    			  elseif ($value[0] != "")
     			  {
     			    return $query->exactCondition($table.".".$this->fieldName(),escapeSQL($value[0]));
     			  }
@@ -679,7 +906,7 @@
                           $alias,
                           $this->getJoinCondition($query, $tablename, $alias),
                           $this->m_leftjoin);
-          $this->m_destInstance->addToQuery($query, $alias, $level+1);
+          $this->m_destInstance->addToQuery($query, $alias, $level+1, false, $this->m_listColumns);
         }
         else
         {
@@ -691,8 +918,14 @@
             }
             else
             {
-              $fk = &$this->m_destInstance->getAttribute($this->m_destInstance->m_primaryKey[$i]);
-              $query->addField($this->m_refKey[$i],$fk->value2db($rec[$this->fieldName()]),"","",!$this->hasFlag(AF_NO_QUOTES));
+              $value = $rec[$this->fieldName()];
+              if (is_array($value))
+              {
+                $fk = &$this->m_destInstance->getAttribute($this->m_destInstance->m_primaryKey[$i]);
+                $value = $fk->value2db($value);
+              }
+
+              $query->addField($this->m_refKey[$i],$value,"","",!$this->hasFlag(AF_NO_QUOTES));
             }
           }
         }
@@ -744,17 +977,54 @@
       }
       return 0;
     }
-
-    function getSelectableRecords()
+    
+    function _getSelectableRecords($record=array(), $mode="")
     {
-      if (!count($this->m_selectableRecords))
+      $method = $this->fieldName()."_selection";
+      if (method_exists($this->m_ownerInstance, $method))
+        return $this->m_ownerInstance->$method($record, $mode);
+      else return $this->getSelectableRecords($record, $mode);
+    }
+
+    function getSelectableRecords($record=array(), $mode="",$force=false)
+    {
+      if ($this->createDestination())
       {
-        if ($this->createDestination())
+        if ($this->m_destinationFilter!="")
         {
-          $this->m_selectableRecords = $this->m_destInstance->selectDb("","","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
+          atkimport("atk.utils.atkstringparser");
+          $parser = new atkStringParser($this->m_destinationFilter);
+          $filter = $parser->parse($record);
+          $this->m_destInstance->addFilter($filter);
+        }         
+        
+        return $this->m_destInstance->selectDb("","","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
+      }
+      
+      return array();
+    }
+
+    /**
+     * If the primary key of one of the records is the current selected selector
+     * we should only be able to select that record so we set selectablerecords to that record
+     * and return true.
+     *
+     * @return bool Wether one of the records has the current selector or not
+     */
+    function _checkPrimaryKeysForSelector(&$recordset)
+    {
+      if ($this->m_ownerInstance->m_postvars['atkselector'] && $this->m_ownerInstance->m_postvars['atkselector'])
+      {
+        foreach ($recordset as $key=>$record)
+        {
+          if (str_replace("'","\'",$this->m_ownerInstance->m_postvars['atkselector'])==$this->m_ownerInstance->m_postvars['atkselector'])
+          {
+            $recordset = array($record);
+            return true;
+          }
         }
       }
-      return $this->m_selectableRecords;
+      return false;
     }
 
 
@@ -810,22 +1080,213 @@
         // only check if hidewhenempty is set to true
         if ($this->m_hidewhenempty)
         {
-          $recs = $this->getSelectableRecords();
+          $recs = $this->_getSelectableRecords($defaults, $mode);
           if (count($recs)==0) return $this->hide($defaults, $fieldprefix);
         }
       }
       return parent::addToEditArray($mode, $arr, $defaults, $error, $fieldprefix);
     }
 
-    function getOrderByStatement()
+    function getOrderByStatement($extra)
     {
       if ($this->createDestination())
       {
-        // In queries, relations are alias'd by their attribute name, so we use that for the sort prefix here.
-        return $this->fieldName().".".$this->m_destInstance->m_default_order;
+        if (!empty($extra) && in_array($extra, $this->m_listColumns))
+        {
+          return $this->fieldName().".".$extra;
+        }
+        
+        $order = $this->m_destInstance->getOrder();
+        if ($order == "")
+        {
+          $fields = $this->m_destInstance->descriptorFields();
+          if (count($fields) == 0)
+            $fields = array($this->m_destInstance->primaryKeyField());
+
+          $order = "";
+          foreach ($fields as $field)
+            $order .= (empty($order) ? '' : ', ').$this->fieldName().".".$field;
+        }
+        else
+        {
+          if (strpos($order, $this->m_destInstance->m_table.'.') !== FALSE)
+            $order = str_replace($this->m_destInstance->m_table.'.', $this->fieldName().'.', $order);
+          else $order = $this->fieldName().".".$order;
+        }
+
+        return $order;
       }
       return parent::getOrderByStatement();
     }
-  }
 
+
+    /**
+     * Adds the attribute / field to the list header. This includes the column name and search field.
+     *
+     * Framework method. It should not be necessary to call this method directly.
+     *
+     * @param String $action the action that is being performed on the node
+     * @param array  $arr reference to the the recordlist array
+     * @param String $fieldprefix the fieldprefix
+     * @param int    $flags the recordlist flags
+     * @param array  $atksearch the current ATK search list (if not empty)
+     * @param String $atkorderby the current ATK orderby string (if not empty)
+     * @see atkNode::listArray
+     */
+    function addToListArrayHeader($action, &$arr, $fieldprefix, $flags, $atksearch, $atkorderby)
+    {
+      $prefix = $fieldprefix.'_AE_'.$this->fieldName();
+
+      // regular behaviour.
+      parent::addToListArrayHeader($action, $arr, $prefix, $flags, $atksearch[$this->fieldName()], $atkorderby);
+
+      // only add extra columns when needed
+      if ($this->hasFlag(AF_HIDE_LIST) && !$this->m_alwaysShowListColumns) return; 
+      if (!$this->createDestination() || count($this->m_listColumns) == 0) return;
+
+      foreach ($this->m_listColumns as $attribname)
+      {
+        $p_attrib = &$this->m_destInstance->getAttribute($attribname);
+        $p_attrib->m_flags |= AF_HIDE_LIST;
+        $p_attrib->m_flags ^= AF_HIDE_LIST;
+        $p_attrib->addToListArrayHeader($action, $arr, $prefix, $flags, $atksearch[$this->fieldName()], $atkorderby);
+        
+        $needle = $prefix.$attribname;
+        foreach (array_keys($arr['heading']) as $key)
+        {
+          // fix order by clause
+          if (strpos($key, $needle) === 0)
+          {
+            $url = $arr['heading'][$key]['url'];            
+            if (!empty($url))
+            {
+              $start = 'atkorderby=';
+              $startPos = strpos($url, $start) + strlen($start);
+              
+              if ($startPos !== FALSE)
+              {
+                $endPos = strpos($url, '&', $startPos);
+                $end = $endPos !== FALSE ? substr($url, $endPos) : '';
+                
+                $orderBy = $this->fieldName().'.'.($endPos !== FALSE ? substr($url, $startPos, $endPos - $startPos) : substr($url, $startPos));
+                
+                if (is_object($atkorderby) && 
+                    isset($atkorderby->m_colcfg[$this->fieldName()]) && 
+                    $atkorderby->m_colcfg[$this->fieldName()]['extra'] == $attribname)
+                {
+                  $direction = $atkorderby->getDirection($this->fieldName());
+                  if ($direction=="asc") $orderBy.=" desc";
+                }                
+                
+                $url = substr($url, 0, $startPos).$orderBy.$end;
+                $arr['heading'][$key]['url'] = $url;
+              }
+            }
+          }
+          
+          // fix search box
+          $fieldPointer = &$arr["search"][$key];
+          $fieldPointer =
+            str_replace(
+              "atksearch[".$p_attrib->fieldName()."]",
+              "atksearch_".$prefix."[" . $p_attrib->fieldName()."]",
+              $fieldPointer
+            );
+        }
+      }
+    }
+
+    /**
+     * Adds the attribute / field to the list row. And if the row is totalisable also to the total.
+     *
+     * Framework method. It should not be necessary to call this method directly.
+     *
+     * @param String $action the action that is being performed on the node
+     * @param array  $arr reference to the the recordlist array
+     * @param int    $nr the current row number
+     * @param String $fieldprefix the fieldprefix
+     * @param int    $flags the recordlist flags
+     * @see atkNode::listArray
+     */
+    function addToListArrayRow($action, &$arr, $nr, $fieldprefix, $flags)
+    {
+      $prefix = $fieldprefix.'_AE_'.$this->fieldName();
+      
+      parent::addToListArrayRow($action, $arr, $nr, $prefix, $flags);
+      
+      // only add extra columns when needed
+      if ($this->hasFlag(AF_HIDE_LIST) && !$this->m_alwaysShowListColumns) return;       
+      if (!$this->createDestination() || count($this->m_listColumns) == 0) return;
+
+      // small trick, the destination record is in a subarray. The destination
+      // addToListArrayRow will not expect this though, so we have to modify the
+      // record a bit before passing it to the detail columns.
+      $backup = $arr["rows"][$nr]["record"];
+      $arr["rows"][$nr]["record"] = $arr["rows"][$nr]["record"][$this->fieldName()];
+
+      foreach ($this->m_listColumns as $attribname)
+      {
+        $p_attrib = &$this->m_destInstance->getAttribute($attribname);
+        $p_attrib->m_flags |= AF_HIDE_LIST;
+        $p_attrib->m_flags ^= AF_HIDE_LIST;
+        $p_attrib->addToListArrayRow($action, $arr, $nr, $prefix, $flags);
+      }
+
+      $arr["rows"][$nr]["record"] = $backup;
+    }
+
+
+    /**
+     * Overridden method; in the integrated version, we should let the destination
+     * attributes hook themselves into the fieldlist instead of hooking the relation
+     * in it.
+     * For original documentation for this method, please see the atkAttribute class
+     */
+    function addToSearchformFields(&$fields, &$node, &$record, $fieldprefix = "")
+    {
+      $prefix = $fieldprefix.'_AE_'.$this->fieldName();
+
+      parent::addToSearchformFields($fields,$node,$record[$this->fieldName()], $prefix);
+
+      // only add extra columns when needed
+      if ($this->hasFlag(AF_HIDE_LIST) && !$this->m_alwaysShowListColumns) return; 
+      if (!$this->createDestination() || count($this->m_listColumns) == 0) return;
+
+      foreach ($this->m_listColumns as $attribname)
+      {
+        $p_attrib = &$this->m_destInstance->m_attribList[$attribname];
+        $p_attrib->m_flags |= AF_HIDE_LIST;
+        $p_attrib->m_flags ^= AF_HIDE_LIST;
+
+        if (!$p_attrib->hasFlag(AF_HIDE_SEARCH))
+        {
+          // TODO: This is an ugly way to make sure date attributes are changed as well
+          //       Furthermore it does nothing to save the javascript functionality
+          //       (which completely breaks) in searching a onetoone something like a 'searchname' should
+          //       be implemented and used.
+          if (method_exists($p_attrib, "atkDateAttribute"))
+            $p_attrib->addToSearchformFields($fields,$node,$record[$this->fieldName()], "{$prefix}_AE_");
+          else
+            $p_attrib->addToSearchformFields($fields,$node,$record[$this->fieldName()], $prefix);
+        }
+      }
+    }
+
+    function listHeaderSortUrl(&$columnConfig)
+    {
+      $order = $this->fieldName();
+
+      // only add desc if not one of the listColumns is used for the sorting
+      if (isset($columnConfig->m_colcfg[$order]) && empty($columnConfig->m_colcfg[$order]['extra']))
+      {
+        $direction = $columnConfig->getDirection($order);
+        if ($direction=="asc") $order.=" desc";
+      }
+      
+      $node = &$columnConfig->getNode();
+      if ($node == NULL)
+        $node = &$this->m_ownerInstance;
+      return session_url($_SERVER["PHP_SELF"].'?atknodetype='.$node->atkNodeType().'&atkaction='.$node->m_action.'&atkorderby='.rawurlencode($order));
+    }    
+  }
 ?>
