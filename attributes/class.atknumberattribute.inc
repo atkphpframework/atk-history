@@ -169,6 +169,17 @@
      */
     function edit($record="", $fieldprefix="")
     { 
+      $id = $this->getHtmlId($fieldprefix);
+      if (count($this->m_onchangecode))
+      {
+        $onchange = 'onChange="'.$id.'_onChange(this);"';
+        $this->_renderChangeHandler($fieldprefix);
+      }
+      else
+      {
+        $onchange = '';
+      }
+      
       $maxsize = $this->m_maxsize;
       if ($this->m_decimals>0)
       {
@@ -184,7 +195,7 @@
       $result = '<input type="text" id="'.$id.'" class="'.get_class($this).'" name="'.$id.
                 '" value="'.$value.'"'.
                 ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').
-                ($maxsize > 0 ? ' maxlength="'.$maxsize.'"' : '').'>';
+                ($maxsize > 0 ? ' maxlength="'.$maxsize.'"' : '').' '.$onchange.' />';
 
       return $result;
     }
