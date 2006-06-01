@@ -97,6 +97,14 @@
     var $m_self;
     
     /**
+     * Name of the wizardcontroller (for overriding for example getFormButtons)
+     *
+     * @access public
+     * @var string
+     */
+    var $m_wizardcontroller = "atkWizardController";
+    
+    /**
      * Constructor
      *
      * @param boolean $returnOutput Indicate if this wizard should return output or not

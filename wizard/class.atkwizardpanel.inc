@@ -132,7 +132,8 @@ define(FINISH_BUTTON_DONT_SHOW, 3);
 
         //Set wizard specific controller
         atkdebug("atkWizardPanel::getPanelNode() Register controller for. Node: " . getNodeType($this->m_nodeName));
-        registerNodeController(getNodeType($this->m_nodeName), new atkWizardController($this->m_node, $this));
+        $wizardcontrollerclass = $this->m_wizard->m_wizardcontroller;
+        registerNodeController(getNodeType($this->m_nodeName), new $wizardcontrollerclass($this->m_node, $this));
 
 
         //Add listeners to node
