@@ -180,6 +180,10 @@ Changed in ATK 5.5.1
   [Lineke]
 * Some functional decomposition of javascript rendering to be able to fetch
   the javascript seperately from the atkPage object. [Maurice]
+* Added m_wizardcontroller variable to atkWizard class. This variable contains
+  the name of the wizardcontroller class that should be used. This way it is
+  possible to override the atkWizardController. [Lineke]
+
 
 Changes in ATK 5.5
 ------------------
