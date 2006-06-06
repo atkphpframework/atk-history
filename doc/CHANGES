@@ -183,6 +183,8 @@ Changed in ATK 5.5.1
 * Added m_wizardcontroller variable to atkWizard class. This variable contains
   the name of the wizardcontroller class that should be used. This way it is
   possible to override the atkWizardController. [Lineke]
+* Removed rawurlencode in createRedirectLocation in atksavehandler because the
+  dispatchUrl function already encodes the variables. [Lineke]  
 
 
 Changes in ATK 5.5

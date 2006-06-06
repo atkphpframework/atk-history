@@ -130,7 +130,7 @@
       $controller = &$this->m_node->getController();
       if ($this->m_node->hasFlag(NF_EDITAFTERADD))
       {
-        $vars = array('atknodetype'=>$this->m_node->atknodetype(), 'atkaction'=>'edit', 'atkselector' => rawurlencode($this->m_node->primaryKey($record)));
+        $vars = array('atknodetype'=>$this->m_node->atknodetype(), 'atkaction'=>'edit', 'atkselector' => $this->m_node->primaryKey($record));
         $location = session_url($controller->dispatchUrl($vars), SESSION_REPLACE);
       }
       else if ($this->m_node->hasFlag(NF_ADDAFTERADD) && isset($this->m_postvars['atksaveandnext']))
@@ -145,6 +145,7 @@
       {
         $location = $this->m_node->feedbackUrl("save", ACTION_SUCCESS, $record);
       }
+      atkdebug($location);
       return $location;      
     }
     
