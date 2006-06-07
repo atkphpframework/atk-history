@@ -15,13 +15,39 @@
    * $Id$
    */
 
+  useattrib("atkattribute");
+
   /** flag(s) specific for the atkFileAttribute */
-  define("AF_FILE_NO_UPLOAD",           AF_SPECIFIC_1); // unable to upload files
-  define("AF_FILE_NO_SELECT",           AF_SPECIFIC_2); // unable to select files
-  define("AF_FILE_NO_DELETE",           AF_SPECIFIC_3); // unable to delete files
-  define("AF_FILE_NO_AUTOPREVIEW",      AF_SPECIFIC_4); // don't try to detect the file type (shows only filename)
-  define("AF_FILE_PHYSICAL_DELETE",     AF_SPECIFIC_5); // removes the file physically
-  define("AF_FILE_POPUP",                    AF_POPUP); // show preview in popup instead of inline
+
+  /**
+   * Disable uploading of files
+   */
+  define("AF_FILE_NO_UPLOAD",           AF_SPECIFIC_1);
+
+  /**
+   * Disable selecting of files
+   */
+  define("AF_FILE_NO_SELECT",           AF_SPECIFIC_2);
+
+  /**
+   * Disable deleting of files
+   */
+  define("AF_FILE_NO_DELETE",           AF_SPECIFIC_3);
+
+  /**
+   * Don't try to detect the file type (shows only filename)
+   */
+  define("AF_FILE_NO_AUTOPREVIEW",      AF_SPECIFIC_4);
+
+  /**
+   * Removed the files physically
+   */
+  define("AF_FILE_PHYSICAL_DELETE",     AF_SPECIFIC_5);
+
+  /**
+   * Show preview in popup instead of inline
+   */
+  define("AF_FILE_POPUP",                    AF_POPUP);
 
   /**
    * With this you can upload, select and remove files in a given directory.
@@ -310,6 +336,7 @@
       $postfiles_basename = $rec[$this->fieldName()."_postfileskey"];
 
       $basename = $this->fieldName();
+
       if (is_array($_FILES)||($rec[$this->fieldName()]["select"] != "" && !$this->hasFlag(AF_FILE_NO_SELECT)) || ($rec[$this->fieldName()]["filename"]!="")) // php4
       {
         // if an error occured during the upload process
@@ -416,6 +443,9 @@
      */
     function display($record)
     {
+      // Get random number to use as param when displaying images
+      // while updating images was not allways visible due to caching
+      $randval = mt_rand();
 
       $filename    = $record[$this->fieldName()]["orgfilename"];
       atkdebug($this->fieldname()." - File: $filename");
@@ -425,7 +455,7 @@
       {
         if(is_file($this->m_dir.$filename))
         {
-          $ext = strtolower(substr($filename, strrpos($filename,'.')+1,strlen($filename)));
+          $ext = $this->getFileExtension($filename);
           if((in_array($ext, $prev_type) && $this->hasFlag(AF_FILE_NO_AUTOPREVIEW))||(!in_array($ext, $prev_type)))
           {
             return "<a href=\"".$this->m_url."$filename\" target=\"_blank\">$filename</a>";
@@ -444,13 +474,18 @@
             $page->register_script(atkconfig("atkroot")."atk/javascript/newwindow.js");
             return '<a href="'.$this->m_url.$filename.'" alt="'.$filename.'" onclick="NewWindow(this.href,\'name\',\''.($imagehw[0]+50).'\',\''.($imagehw[1]+50).'\',\'yes\');return false;">'.$filename.'</a>';
           }
-          return '<img src="'.$this->m_url.$filename.'" alt="'.$filename.'">';
+          return '<img src="'.$this->m_url.$filename.'?b='.$randval.'" alt="'.$filename.'">';
         }
         else
         {
           return $filename."(<font color=\"#ff0000\">".atktext("file_not_exist", "atk")."</font>)";
         }
       }
+    }
+
+    function getFileExtension($filename)
+    {
+      return strtolower(substr($filename, strrpos($filename,'.')+1,strlen($filename)));
     }
 
     function getSearchModes()
@@ -474,7 +509,7 @@
     /**
      * Determine the real filename of a file (based on m_filenameTpl).
      * @access private
-     */
+     */    
     function _filenameMangle($rec, $default)
     {
       if ($this->m_filenameTpl == "")
@@ -485,8 +520,10 @@
       {
         $record = $this->m_ownerInstance->updateRecord($rec, NULL, array($this->fieldName()));
         $record[$this->fieldName()] = substr($default, 0, strrpos($default,'.'));
+        atkimport("atk.utils.atkstringparser");
+        $parser = new atkStringParser($this->m_filenameTpl);
         $ext = strtolower(substr($default, strrpos($default,'.')+1));
-        $filename = stringparse($this->m_filenameTpl, $record).".".$ext;
+        $filename = $parser->parse($record).".".$ext;
       }
       return str_replace(' ','_',$filename);
     }

@@ -15,13 +15,13 @@
    * $Id$
    */
 
+  /** @internal Include base class */
+  useattrib("atklistattribute");
+
   /** Defines */
   define("AF_NO_TOGGLELINKS", AF_SPECIFIC_2);
   define("AF_CHECK_ALL", AF_SPECIFIC_3);
   define("AF_LINKS_BOTTOM", AF_SPECIFIC_4);
-
-  /** @internal Include base class */
-  useattrib("atklistattribute");
 
   /**
    * The atkMultiboolAttribute class represents an attribute of a node
@@ -94,7 +94,7 @@
 
     function db2value($rec)
     {
-      if($rec[$this->fieldName()]!="")
+      if (isset($rec[$this->fieldName()]))
         return explode("|",$rec[$this->fieldName()]);
       else return array();
     }
@@ -144,6 +144,7 @@
         {
           $sel = "checked";
         }
+
         $result .= '<td class="table" valign="top"><input type="checkbox" id="'.$id.'_'.$i.'" name="'.$fieldprefix.$this->fieldName().'[]" value="'.$values[$i].'" '.$sel.'>'.$this->_translateValue($values[$i],$record).'</td>';
         $this->registerKeyListener($id.'_'.$i, KB_CTRLCURSOR|KB_UPDOWN);
 
@@ -162,7 +163,7 @@
 
     function getSearchCondition(&$query, $table, $value, $searchmode)
     {
-    	// Multiselect attribute has only 1 searchmode, and that is substring.
+      // Multiselect attribute has only 1 searchmode, and that is substring.
 
       if(is_array($value) && $value[0]!="" && count($value)>0)
       {

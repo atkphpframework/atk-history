@@ -250,7 +250,7 @@
       if (isset($rec[$this->fieldName()]))
       {
         $myrec = $rec[$this->fieldName()];
-        if (is_array($myrec)) 
+        if (is_array($myrec))
         {
           $result = array();
           if ($this->createDestination())
@@ -261,7 +261,6 @@
               $result[$attrName] = $attr->db2value($myrec);
             }
           }
-
           return $result;
         }
         else
@@ -324,7 +323,7 @@
     {
       if ($this->createDestination())
       {
-        if (count($record[$this->fieldName()])==1)
+        if (count($record[$this->fieldName()])==count($this->m_refKey))
           $this->populate($record);
 
         if(!$this->isEmpty($record))
@@ -420,14 +419,8 @@
       if ($this->createDestination())
       {
         $id = $fieldprefix.$this->fieldName();
-        $filter="";
-        if ($this->m_destinationFilter!="")
-        {
-          atkimport("atk.utils.atkstringparser");
-          $parser = new atkStringParser($this->m_destinationFilter);
-          $filter = $parser->parse($record);
-        }
 
+        $filter=$this->parseFilter($this->m_destinationFilter,$record);
         $autolink = $this->getRelationAutolink($id, $filter);
         $editflag = true;
 
@@ -468,7 +461,7 @@
             }
             // Newly added check
             $newlyadded = "";
-            if (isset($this->m_ownerInstance->m_postvars[$id."_ret"]))
+            if (is_object($this->m_ownerInstance) && isset($this->m_ownerInstance->m_postvars[$id."_ret"]))
             {
               $newlyadded = $this->m_ownerInstance->m_postvars[$id."_ret"];
             }
@@ -543,11 +536,18 @@
     function _getDestRecord($selname, $newlyadded, &$record, &$editflag)
     {
       global $ATK_VARS;
-      if ($ATK_VARS[$selname]!="" || $newlyadded!="")
+      
+      if ($ATK_VARS[$selname]!="")
       // new record selected
       {
         // $ATK_VARS[$selname] contains full primary key of selected record.
-        $recset = $this->m_destInstance->selectDb(($ATK_VARS[$selname]?$ATK_VARS[$selname]:$newlyadded),"","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
+        $recset = $this->m_destInstance->selectDb($ATK_VARS[$selname],"","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
+        $destrecord = $recset[0];
+        $record[$this->fieldName()] = $destrecord; // put destrecord inside original record.
+      }
+      elseif ($newlyadded!="")
+      {
+        $recset = $this->m_destInstance->selectDb($newlyadded,"","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
         $destrecord = $recset[0];
         $record[$this->fieldName()] = $destrecord; // put destrecord inside original record.
       }
@@ -569,7 +569,8 @@
       {
         $destrecord = array();
         $editflag = false;
-      }
+      }      
+      
       return $destrecord;
     }
 
@@ -651,9 +652,7 @@
         {
           if ($this->m_destinationFilter!="")
           {
-            atkimport("atk.utils.atkstringparser");
-            $parser = new atkStringParser($this->m_destinationFilter);
-            $filter = $parser->parse($record);
+            $filter = $this->parseFilter($this->m_destinationFilter,$record);
             $this->m_destInstance->addFilter($filter);
           }
 
@@ -699,11 +698,11 @@
         return $result;
       }
     }
-    
+
     /**
      * Creates a smart search condition for a given search value, and adds it
      * to the query that will be used for performing the actual search.
-     * 
+     *
      * @param Integer  $id         The unique smart search criterium identifier.
      * @param Integer  $nr         The element number in the path.
      * @param Array    $path       The remaining attribute path.
@@ -717,9 +716,9 @@
       if (count($path) > 0)
       {
         $this->createDestination();
-        
+
         $destAlias = "ss_{$id}_{$nr}_".$this->fieldName();
-        
+
         $query->addJoin(
           $this->m_destInstance->m_table, $destAlias,
           $this->getJoinCondition($query, $ownerAlias, $destAlias),
@@ -728,23 +727,23 @@
 
         $attrName = array_shift($path);
         $attr = &$this->m_destInstance->getAttribute($attrName);
-        
+
         if (is_object($attr))
         {
           $attr->smartSearchCondition($id, $nr + 1, $path, $query, $destAlias, $value, $mode);
         }
       }
-      else 
+      else
       {
         $this->searchCondition($query, $ownerAlias, $value, $mode);
       }
-    }       
+    }
 
     /**
      * Creates an search condition for a given search value
-     * @param  atkQuery $query 			query to hook ourselves in to
-     * @param  string   $table 			the table name
-     * @param  string   $value 			the search value
+     * @param  atkQuery $query      query to hook ourselves in to
+     * @param  string   $table      the table name
+     * @param  string   $value      the search value
      * @param  string   $searchmode the searchmode for the search (e.g. substring)
      * @return string          a piece of the SQL where clause
      */
@@ -815,77 +814,77 @@
     /**
      * Gets the searchconditions for attribute in the destination that we are searching on
      * @param  Array    $attribs    the names of the attributes we are searching on
-     * @param  atkQuery $query 			query to hook ourselves in to
-     * @param  string   $value 			the search value
+     * @param  atkQuery $query      query to hook ourselves in to
+     * @param  string   $value      the search value
      * @param  string   $searchmode the searchmode for the search (e.g. substring)
      */
     function _getSearchPerAttrib($attribs, &$query, $value, $searchmode)
     {
-    	$searchConditions = array();
-    	$prevfield = "";
+      $searchConditions = array();
+      $prevfield = "";
 
-    	foreach($attribs as $field)
-    	{
-    		if ($field !== $prevfield)
-    		{
-    			$p_attrib = &$this->m_destInstance->getAttribute($field);
-    			if (is_object($p_attrib))
-    			{
-    				if ($query->m_joinaliases[$this->m_destInstance->m_table."*".$this->m_destInstance->primaryKeyField()])
-    				{
-    					$itsTable = $query->m_joinaliases[$this->m_destInstance->m_table."*".$this->m_destInstance->primaryKeyField()];
-    				}
-    				else if ($p_attrib->m_destInstance)
-    				{
-    					$itsTable = $p_attrib->m_destInstance->m_table;
-    				}
-    				else
-    				{
-    					$itsTable = $p_attrib->m_ownerInstance->m_table;
-    				}
+      foreach($attribs as $field)
+      {
+        if ($field !== $prevfield)
+        {
+          $p_attrib = &$this->m_destInstance->getAttribute($field);
+          if (is_object($p_attrib))
+          {
+            if ($query->m_joinaliases[$this->m_destInstance->m_table."*".$this->m_destInstance->primaryKeyField()])
+            {
+              $itsTable = $query->m_joinaliases[$this->m_destInstance->m_table."*".$this->m_destInstance->primaryKeyField()];
+            }
+            else if ($p_attrib->m_destInstance)
+            {
+              $itsTable = $p_attrib->m_destInstance->m_table;
+            }
+            else
+            {
+              $itsTable = $p_attrib->m_ownerInstance->m_table;
+            }
 
-    				$searchcondition = $this->_getAttribSearchCondition($p_attrib, $query, $itsTable, $value, $searchmode);
-    				if ($searchcondition) $searchConditions[] = $searchcondition;
-    			}
-    			$prevfield = $field;
-    		}
-    	}
+            $searchcondition = $this->_getAttribSearchCondition($p_attrib, $query, $itsTable, $value, $searchmode);
+            if ($searchcondition) $searchConditions[] = $searchcondition;
+          }
+          $prevfield = $field;
+        }
+      }
 
-    	if (count($searchConditions))
-    	{
-    		return "(".implode(" OR ",$searchConditions).")";
-    	}
+      if (count($searchConditions))
+      {
+        return "(".implode(" OR ",$searchConditions).")";
+      }
     }
 
     /**
      * Gets the searchcondition of an attribute or adds it if it can't return it's searchcondition
      * also takes care the attribute get's it's own searchmode if it is set
-     * @param  Object   $p_attrib		An instance of the attribute that we want to the the searchcondition of
-     * @param  atkQuery $query 			query to hook ourselves in to
-     * @param  string   $table 			the table name where the attribute belongs to
-     * @param  string   $value 			the search value
+     * @param  Object   $p_attrib   An instance of the attribute that we want to the the searchcondition of
+     * @param  atkQuery $query      query to hook ourselves in to
+     * @param  string   $table      the table name where the attribute belongs to
+     * @param  string   $value      the search value
      * @param  string   $searchmode the searchmode for the search (e.g. substring)
      */
     function _getAttribSearchCondition($p_attrib, &$query, $table, $value, $searchmode)
     {
-    	// checking for the getSearchCondition
-    	// for backwards compatibility
-    	if (method_exists($p_attrib,"getSearchCondition"))
-    	{
-    		$attribsearchmode = $searchmode;
-    		if (is_array($searchmode))
-    		{
-    			$attribsearchmode = $attribsearchmode[$p_attrib->m_name];
-    		}
-    		$searchcondition = $p_attrib->getSearchCondition($query,$table,$value,$searchmode);
-    	}
-    	else
-    	{
-    		// if the attrib can't return it's searchcondition, we'll just add it to the query
-    		// and hope for the best
-    		$p_attrib->searchCondition($query,$table,$value,$searchmode);
-    	}
-    	return $searchcondition;
+      // checking for the getSearchCondition
+      // for backwards compatibility
+      if (method_exists($p_attrib,"getSearchCondition"))
+      {
+        $attribsearchmode = $searchmode;
+        if (is_array($searchmode))
+        {
+          $attribsearchmode = $attribsearchmode[$p_attrib->m_name];
+        }
+        $searchcondition = $p_attrib->getSearchCondition($query,$table,$value,$searchmode);
+      }
+      else
+      {
+        // if the attrib can't return it's searchcondition, we'll just add it to the query
+        // and hope for the best
+        $p_attrib->searchCondition($query,$table,$value,$searchmode);
+      }
+      return $searchcondition;
     }
 
     /**
@@ -961,7 +960,17 @@
       // relationship with.
       if ($this->createDestination())
       {
-        return $this->m_destInstance->m_attribList[$this->m_destInstance->primaryKeyField()]->dbFieldType();
+        if(count($this->m_refKey)>1)
+        {
+          $keys = array();
+          for($i=0, $_i=count($this->m_refKey); $i<$_i; $i++)
+          {
+            $keys [] = $this->m_destInstance->m_attribList[$this->m_destInstance->m_primaryKey[$i]]->dbFieldType();
+          }
+          return $keys;
+        }
+        else
+          return $this->m_destInstance->m_attribList[$this->m_destInstance->primaryKeyField()]->dbFieldType();
       }
       return "";
     }
@@ -973,7 +982,17 @@
       // relationship with.
       if ($this->createDestination())
       {
-        return $this->m_destInstance->m_attribList[$this->m_destInstance->primaryKeyField()]->dbFieldSize();
+        if(count($this->m_refKey)>1)
+        {
+          $keys = array();
+          for($i=0, $_i=count($this->m_refKey); $i<$_i; $i++)
+          {
+            $keys [] = $this->m_destInstance->m_attribList[$this->m_destInstance->m_primaryKey[$i]]->dbFieldSize();
+          }
+          return $keys;
+        }
+        else
+          return $this->m_destInstance->m_attribList[$this->m_destInstance->primaryKeyField()]->dbFieldSize();
       }
       return 0;
     }

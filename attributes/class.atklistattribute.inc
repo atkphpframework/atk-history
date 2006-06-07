@@ -16,23 +16,24 @@
    * $Id$
    */
 
+  atkimport("atk.attributes.atkattribute");
+
   /**
    * Do not translate the options
    */
   define("AF_NO_TRANSLATION", AF_SPECIFIC_1);
-   
+
    /**
     * Do not add a default null option.
     */
    define("AF_LIST_NO_OBLIGATORY_NULL_ITEM", AF_SPECIFIC_2);
-   
+
   /**
    * Do not add null option ever
    */
   define("AF_LIST_NO_NULL_ITEM", AF_SPECIFIC_3);
 
-  atkimport("atk.attributes.atkattribute");   
-   
+
   /**
    * The atkListAttribute class represents an attribute of a node
    * that has a selectbox to select from predefined values.
@@ -79,7 +80,7 @@
       * @var int
       */
      var $m_width;
-     
+
      var $m_onchangehandler_init = "newvalue = el.options[el.selectedIndex].value;\n";
 
     /**
@@ -302,7 +303,7 @@
 
     function getSearchCondition(&$query, $table, $value, $searchmode)
     {
-    	// We only support 'exact' matches.
+      // We only support 'exact' matches.
       // But you can select more than one value, which we search using the IN() statement,
       // which should work in any ansi compatible database.
       if (is_array($value) && count($value)>0 && $value[0]!="") // This last condition is for when the user selected the 'search all' option, in which case, we don't add conditions at all.

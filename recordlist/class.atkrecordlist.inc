@@ -100,6 +100,12 @@
           '<input type="hidden" name="atksmartsearch" value="clear">'.
           '<input type="hidden" name="atkstartat" value="0">'; // reset atkstartat to first page          
 
+            $searchstart.= '<input type="hidden" name="atknodetype" value="'.$this->m_node->atkNodeType().'">'.
+                           '<input type="hidden" name="atkaction" value="'.$this->m_node->m_action.'">'.
+                           '<input type="hidden" name="atksearchmode" value="'.$searchmode.'">'.
+                           '<input type="hidden" name="atksmartsearch" value="clear">'.
+                           '<input type="hidden" name="atkstartat" value="0">';          
+          
         $formend = '</form>';       
       }      
 
@@ -113,7 +119,7 @@
       $page->register_script(atkconfig("atkroot")."atk/javascript/recordlist.js");
       $page->register_script(atkconfig("atkroot")."atk/javascript/prototype/prototype.js");
 
-  	  $defaulthighlight = $theme->getAttribute("highlight");
+      $defaulthighlight = $theme->getAttribute("highlight");
       $selectcolor = $theme->getAttribute("select");
 
       /* retrieve list array */
@@ -312,8 +318,9 @@
 
         $records = array();
         $keys = array_keys($actions);
+        $actionurl = (count($actions)>0) ? $actions[$keys[0]] : '';
         $actionloader = "rl_a['".$listName."'] = new Array();";
-        $actionloader.= "\nrl_a['".$listName."']['base'] = '".session_vars(SESSION_NESTED,1,$actions[$keys['0']])."';";
+        $actionloader.= "\nrl_a['".$listName."']['base'] = '".session_vars(SESSION_NESTED,1,$actionurl)."';";
         $actionloader.= "\nrl_a['".$listName."']['embed'] = ".(hasFlag($flags, RL_EMBED)?'true':'false').";";
 
         if (isset($navigation["next"]) && isset($navigation["next"]["url"]))
@@ -402,23 +409,23 @@
 
           $str_actions = "<span class=\"actions\">";
           $actionloader.="\nrl_a['".$listName."'][".$i."] = new Array();";
-					$icons = atkconfig("recordlist_icons", true);
+          $icons = atkconfig("recordlist_icons", true);
 
           foreach ($list["rows"][$i]["actions"] as $name => $url)
           {
-      	    $actionloader.="\nrl_a['".$listName."'][".$i."]['".$name."'] = '".$url."';";
+            $actionloader.="\nrl_a['".$listName."'][".$i."]['".$name."'] = '".$url."';";
 
-    	      $link = $name;
+            $link = $name;
 
-    	      if($icons == true)
-    	      {
-    	        $icon = $theme->iconPath(strtolower($name),"recordlist");
-      	      $link = '<img width="16" height="16" border="0" src="'.$icon.'" title="'.atktext($name, $this->m_node->m_module, $this->m_node->m_type).'">';
-    	      }
-    	      else
-    	      {
-    	        $link = atktext($name);
-	          }
+            if($icons == true)
+            {
+              $icon = $theme->iconPath(strtolower($name),"recordlist", $this->m_node->m_module);
+              $link = '<img width="16" height="16" border="0" src="'.$icon.'" title="'.atktext($name, $this->m_node->m_module, $this->m_node->m_type).'">';
+            }
+            else
+            {
+              $link = atktext($name);
+            }
 
             $confirmtext= "false";
             if (atkconfig("recordlist_javascript_delete") && $name=="delete")

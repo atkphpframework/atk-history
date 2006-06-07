@@ -661,7 +661,7 @@
      * @var String
      */
     var $m_modifier = "";
-    
+
     /**
      * List of editable list attributes.
      * @access private
@@ -679,11 +679,11 @@
     /**
      * Extended search action. The action which is called if the user
      * wants to perform an extended search.
-     * 
+     *
      * @access private
      * @var String
      */
-    var $m_extended_search_action = NULL; 
+    var $m_extended_search_action = NULL;
 
     /**
      * Constructor.
@@ -1183,7 +1183,6 @@
         if(is_object($p_attrib))
         {
           $list = atk_array_merge($list, $p_attrib->getAdditionalTabs($action));
-
           // Keep track of the tabs that containg attribs
           // so we only display none-empty tabs
           $tabCode = $this->m_attributeTabs[$attribname][0];
@@ -1219,7 +1218,7 @@
         $secMgr = &atkGetSecurityManager();
 
         // load the $g_nodes array to find out what tabs are required
-        if (!is_array($g_nodes[$this->m_module][$this->m_type]))
+        if (!isset($g_nodes[$this->m_module][$this->m_type]))
         {
           include_once(atkconfig("atkroot") . "atk/atknodetools.inc");
           $module = &getModule($this->m_module);
@@ -1232,11 +1231,11 @@
           // authorisation is required
           if (!$secMgr->allowed($this->m_module.".".$this->m_type,"tab_" . $tablist[$i]))
           {
-            atkdebug("Removing TAB ". $tablist[$i] . " because access to this tab was denied</b>");
+            atkdebug("Removing TAB ". $tablist[$i] . " because access to this tab was denied");
             unset($tablist[$i]);
           }
         }
-        else atkdebug("TAB " . $tablist[$i] . " does not need authorisation",DEBUG_WARNING);
+        else atkdebug("TAB " . $tablist[$i] . " does not need authorisation");
       }
 
       if (is_array($tablist))
@@ -1418,7 +1417,6 @@
     {
       global $g_sessionManager;
       $ui = &$this->getUi();
-
       $res = "";
 
       if ($record!="")
@@ -1592,8 +1590,15 @@
 
             if($attribname!="")
             {
-              $p_attrib = &$this->m_attribList[$attribname];
-              if (is_object($p_attrib)&&(!$p_attrib->hasFlag(AF_NO_FILTER))) $p_attrib->m_flags |= AF_READONLY|AF_HIDE_ADD;
+              if(isset($this->m_attribList[$attribname]))
+              {
+                $p_attrib = &$this->m_attribList[$attribname];
+                if (is_object($p_attrib)&&(!$p_attrib->hasFlag(AF_NO_FILTER))) $p_attrib->m_flags |= AF_READONLY|AF_HIDE_ADD;
+              }
+              else
+              {
+                atkerror("Attribute '$attribname' doens't exist in the attributelist");
+              }
             }
           }
         }
@@ -1712,7 +1717,7 @@
         case "edit": return "editform.tpl";
         case "view": return "viewform.tpl";
         case "search": return "searchform.tpl";
-        case "smartsearch": return "smartsearchform.tpl";        
+        case "smartsearch": return "smartsearchform.tpl";
       }
     }
 
@@ -1884,10 +1889,10 @@
       if (!is_array($actions)) $this->m_priority_actions = array();
       else $this->m_priority_actions = $actions;
     }
-    
+
     /**
      * Get extended search action.
-     * 
+     *
      * @return extended search action
      */
     function getExtendedSearchAction()
@@ -1896,10 +1901,10 @@
         return atkconfig('extended_search_action');
       else return $this->m_extended_search_action;
     }
-    
+
     /**
      * Set extended search action.
-     * 
+     *
      * @param $action extended search action
      */
     function setExtendedSearchAction($action)
@@ -1981,7 +1986,7 @@
                                                 "formstart"=>$formstart,
                                                 "formend"=>'</form>',
                                                 "buttons"=>$buttons));
-      return $ui->renderBox(array("title"=>$this->actionTitle('delete', $record),
+      return $ui->renderBox(array("title"=>$this->actionTitle($action, $record),
                                   "content"=>$output));
     }
 
@@ -2218,7 +2223,7 @@
         $secMgr->logAction($this->m_type, $this->m_action);
         $this->callHandler($this->m_action);
 
-        list($selector,$id) = explode("=", $this->m_postvars["atkselector"]);
+        list($selector,$id) = explode("=", atkarraynvl($this->m_postvars, "atkselector", "="));
         $page->register_hiddenvars(array("atknodetype"=>$this->m_module.".".$this->m_type, "atkselector"=>str_replace("'", "", $id)));
       }
       else
@@ -2765,7 +2770,7 @@
       {
         $query->m_searchmethod = $this->m_postvars['atksearchmethod'];
       }
-      
+
       // First we check if we are about to search and set a few things
       // if we are
       if (!atkReadOptimizer())
@@ -2781,7 +2786,7 @@
 
           if ($searchmode=="") $searchmode = atkconfig("search_defaultmode");
         }
-      }      
+      }
 
       if(array_key_exists("atkfilter", $this->m_postvars))
        $query->addCondition($this->validateFilter($this->m_postvars["atkfilter"]));
@@ -2858,12 +2863,12 @@
           }
         }
       }
-      
+
       // there may be smart search criteria which we need to apply
       if (is_array($smartSearchCriteria) && count($smartSearchCriteria) > 0)
       {
         $this->applySmartSearchCriteria($query, $smartSearchCriteria);
-      }     
+      }
 
       $mltool->addMlCondition($query,$this,$mode,$excludeList,$includeList);
 
@@ -2899,8 +2904,8 @@
       {
         if (preg_match('/^__executed.*$/', $key))
           unset($record[$key]);
-      }      
-      
+      }
+
       $this->preCopy($record);
       return $this->addDb($record, true, $mode);
     }
@@ -2931,9 +2936,11 @@
      * @param String $mode The action for which the selectDb is called.
      *                     This param is used to determine which attributes
      *                     to include in the query and which not to include.
+     * @param boolean $distinct Perform a distinct selection (no duplicate
+     *                          records). Defaults to true.
      * @return array Array containing the retrieved records
      */
-    function selectDb($selector="", $order="", $limit="", $excludeList="",$includeList="", $mode="")
+    function selectDb($selector="", $order="", $limit="", $excludeList="",$includeList="", $mode="", $distinct=true)
     {
       $searching=false;
       $selectlist = array();
@@ -3073,7 +3080,7 @@
             }
           }
         }
-        
+
         // there may be smart search criteria which we need to apply
         if (is_array($smartSearchCriteria) && count($smartSearchCriteria) > 0)
         {
@@ -3097,7 +3104,7 @@
         $query->setLimit(0, $limit);
       }
 
-      $querystring = $query->buildSelect();
+      $querystring = $query->buildSelect($distinct);
 
       $db = &$this->getDb();
       $dbrecords = $db->getrows($querystring);
@@ -3184,11 +3191,11 @@
       }
       return $recordset;
     }
-    
+
     /**
      * Apply the given smart search criteria to the
      * given query object.
-     * 
+     *
      * @param atkQuery $query    The query object.
      * @param Array    $criteria The smart search criteria.
      */
@@ -3199,10 +3206,10 @@
         $path = $criterium['attrs'];
         $value = $criterium['value'];
         $mode = $criterium['mode'];
-        
+
         $attrName = array_shift($path);
         $attr = &$this->getAttribute($attrName);
-        
+
         if (is_object($attr))
         {
           $attr->smartSearchCondition($id, 0, $path, $query, $this->m_table, $value, $mode);
@@ -3410,7 +3417,7 @@
         {
           $return = $this->executeTrigger("preDelete",$recordset[$i]);
           if (!$return) return false;
-        }        
+        }
       }
 
       if (count($this->m_cascadingAttribs)>0)
@@ -3897,7 +3904,11 @@
      * This function searches in all fields that are not AF_HIDE_SEARCH, for
      * a certain expression (substring match). The search performed is an
      * 'or' search. If any of the fields contains the expression, the record
-     * is added to the resultset.
+     * is added to the resultset.\
+     *
+     * Currently, searchDb only searches those attributes that are of type
+     * string or text.
+     *
      * @param String $epxression The keyword to search for.
      * @return array Set of records matching the keyword.
      */
@@ -3917,7 +3928,7 @@
       {
         $p_attrib = &$this->m_attribList[$attribname];
         // Only search in fields that aren't explicitly hidden from search
-        if (!$p_attrib->hasFlag(AF_HIDE_SEARCH))
+        if (!$p_attrib->hasFlag(AF_HIDE_SEARCH) && in_array($p_attrib->dbFieldType(), array("string", "text")))
         {
            $this->m_postvars['atksearch'][$attribname]=$expression;
         }

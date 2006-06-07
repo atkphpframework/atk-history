@@ -78,9 +78,7 @@
       {
         if ($this->m_destinationFilter!="")
         {
-          atkimport("atk.utils.atkstringparser");
-          $parser = new atkStringParser($this->m_destinationFilter);
-          $filter = $parser->parse($record);
+          $filter = $this->parseFilter($this->m_destinationFilter, $record);
           $this->m_destInstance->addFilter($filter);
         }
 
@@ -261,7 +259,7 @@
       if ($this->createLink())
       {
         $rel = &$this->m_linkInstance;
-        return $rel->deleteDb($this->getLocalKey()."=".$record[$this->m_ownerInstance->primaryKeyField()]);
+        return $rel->deleteDb($this->m_linkInstance->m_table.".".$this->getLocalKey()."=".$record[$this->m_ownerInstance->primaryKeyField()]);
       }
       return false;
     }

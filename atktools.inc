@@ -699,6 +699,7 @@
 
   /**
    * Translates a string like id='3 AND name='joe'' into Array("id"=>3,"name"=>"joe")
+   * @todo we should also support <=>, >=, >, <=, <, <>
    * @param string $set the string to decode
    * @return array the decoded array
    */
@@ -708,19 +709,22 @@
     $items=split(" AND ",$set);
     for ($i=0;$i<count($items);$i++)
     {
-      if (strstr($items[$i], '=') !== false)
+      if (strstr($items[$i], '!=') !== false)
+      {
+        list($key,$value) = explode("!=",$items[$i]);
+        $result[trim($key)] = stripQuotes($value);
+      }
+      elseif (strstr($items[$i], '=') !== false)
       {
         list($key,$value) = explode("=",$items[$i]);
-        $result[$key] = stripQuotes($value);
+        $result[trim($key)] = stripQuotes($value);
       }
-
       elseif (stristr($items[$i], 'IS NULL') !== false)
       {
         list($key) = spliti('IS NULL', $items[$i]);
         $result[trim($key)] = NULL;
       }
     }
-
     return $result;
   }
 
@@ -1727,6 +1731,7 @@
    */
   function &atknew($fullclassname)
   {
+    $fullclassname = atkResolveClass($fullclassname);
     atkimport($fullclassname, true);
 
     $elems = explode(".", strtolower($fullclassname));
@@ -1745,6 +1750,22 @@
     }
   }
 
+  /**
+   * Resolve a classname to its final classname.
+   *
+   * An application can overload a class with a custom version. This
+   * method resolves the initial classname to its overloaded version
+   * (if any).
+   *
+   * @param String $class The name of the class to resolve
+   * @return String The resolved classname
+   */
+  function atkResolveClass($class)
+  {
+    global $g_overloaders;
+    if (isset($g_overloaders[$class])) return $g_overloaders[$class];
+    return $class;
+  }
   /**
    * Return a singleton instance of the specified class.
    *
@@ -1897,17 +1918,17 @@
       return strtr($str, $trans_table);
     }
   }
-  
+
   /**
    * ATK version of the PHP htmlentities function. Works just like PHP's
-   * htmlentities function, but falls back to the in the language file 
-   * configured charset instead of PHP's default charset, if no 
+   * htmlentities function, but falls back to the in the language file
+   * configured charset instead of PHP's default charset, if no
    * charset is given.
-   * 
+   *
    * @param String $string    string to convert
    * @param int $quote_style  quote style (defaults to ENT_COMPAT)
    * @param String $charset   character set to use (default to atktext('charset', 'atk'))
-   * 
+   *
    * @return String encoded string
    */
   function atk_htmlentities($string, $quote_style=null, $charset=null)
@@ -1916,7 +1937,21 @@
     {
       $charset = atktext('charset', 'atk');
     }
-    
+
     return htmlentities($string, $quote_style, $charset);
+  }
+
+  /**
+   * Looks up a value using the given key in the given array and returns
+   * the value if found or a default value if not found.
+   *
+   * @param array $array Array to be searched for key
+   * @param string $key Key for which we are looking in array
+   * @param mixed $defaultvalue Value we will return if key was not found in array
+   * @return mixed Value retrieved from array or default value if not found in array
+   */
+  function atkArrayNvl($array, $key, $defaultvalue=null)
+  {
+    return (isset($array[$key]) ? $array[$key] : $defaultvalue);
   }
 ?>

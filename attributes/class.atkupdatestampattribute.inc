@@ -52,7 +52,7 @@
       $this->setForceInsert(true);
       $this->setForceUpdate(true);
     }
-    
+
     /**
      * Value to DB.
      */
@@ -71,7 +71,7 @@
     {
       return atkDateTimeAttribute::datetimeArray();
     }
-
+    
     /**
      * Returns a piece of html code for hiding this attribute in an HTML form,
      * while still posting its value. (<input type="hidden">)

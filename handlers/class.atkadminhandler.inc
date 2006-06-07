@@ -113,7 +113,8 @@
 
         $columnConfig = &$node->getColumnConfig();
 
-        $recordset = $node->selectDb(@$node->m_postvars['atkfilter'],
+        $atkfilter = atkArrayNvl($node->m_postvars, 'atkfilter', "");
+        $recordset = $node->selectDb($atkfilter,
                                      $columnConfig->getOrderByStatement(),
                                      array("offset" => $node->m_postvars['atkstartat'], "limit" => $node->m_postvars['atklimit']),
                                      $node->m_listExcludes,
@@ -124,7 +125,7 @@
         if(count($recordset) == 0 && $node->m_postvars['atkstartat'] != 0)
         {
           $node->m_postvars['atkstartat'] = 0;
-          $recordset = $node->selectDb($node->m_postvars['atkfilter'],
+          $recordset = $node->selectDb($atkfilter,
                                      $node->m_postvars['atkorderby'],
                                      array("offset" => $node->m_postvars['atkstartat'], "limit" => $node->m_postvars['atklimit']),
                                      $node->m_listExcludes,
@@ -224,13 +225,8 @@
       if ($this->m_node->hasFlag(NF_ADD_LINK) && !$this->m_node->hasFlag(NF_NO_ADD) && $this->m_node->allowed("add"))
       {
         $addurl = $_SERVER["PHP_SELF"].'?atknodetype='.$this->m_node->atknodetype().'&atkaction=add';
-        $lngkey = "txt_link_".getNodeType($this->m_node->m_type)."_add";
-        if (isset($GLOBALS[$lngkey]))
-        {
-          // specific text
-          $label = atktext("link_".getNodeType($this->m_node->m_type)."_add");
-        }
-        else
+        $label = atktext("link_".$this->m_node->m_type."_add", $this->m_node->m_module, "", "", "", true);
+        if (empty($label))
         {
           // generic text
           $label = atktext(getNodeType($this->m_node->m_type),$this->m_node->m_module,$this->m_node->m_type)." ".atktext("add","atk","");

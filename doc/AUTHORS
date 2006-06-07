@@ -49,7 +49,8 @@ development of new features.
 
 * For Zicht Nieuwe Media Ontwerpers, The Netherlands (http://www.zicht.nl), we
   added the atkShuttleRelation, enhanced the atkFckAttribute and added the
-  autonumbering feature to atkFileAttribute.
+  autonumbering feature to atkFileAttribute. Zicht also sponsored a large part
+  of the atkMlWrapper functionality.
 
 To become a sponsor, please read http://www.achievo.org/support/sponsor.
 
@@ -172,6 +173,7 @@ Theme Designers
 'outlook'   Paul Verhoeff   <paul@ibuildings.nl>
 'win2k'     Markus Schubert <achievo@schubert24.com>
 'moronic'   Sandy Pleyte    <sandy@achievo.org>
+'macoslike' Marcel Visscher <m.visscher@promez.nl>
 
 
 Other Contributors
@@ -215,6 +217,7 @@ Christian Hudson [ChristianH]         <chrish@apstat.com>
 Ludo Beumer                           <ludo@ibuildings.nl>
 Dennis-Jan Broerse                    <dennisjan@ibuildings.nl>
 Patrick van der Velden                <patrick@ibuildings.nl>
+Kevin L. Winmoe [KevinLW]             <kevinlwinmoe@yahoo.com>
 
 Names between [] are the names they are refered by in the CHANGES file. (If
 different from their first name).

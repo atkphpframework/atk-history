@@ -169,6 +169,7 @@
       // We don't translate nothing
       if ($string=='') return '';
       if ($lng=="") $lng = atkLanguage::getLanguage();
+      $lng = strtolower($lng);
       $atklanguage =& atkLanguage::getInstance();
 
       // If only one string given, process it immediatly
@@ -349,7 +350,7 @@
 
       if (!$nodefaulttext)
       {
-        atkdebug("atkLanguage: translation for '$key' with module: '$module' and node: '$node' not found, returning default text");
+        atkdebug("atkLanguage: translation for '$key' with module: '$module' and node: '$node' and language: '$lng' not found, returning default text");
         // Still nothing found. return default string
         return $this->defaultText($key);
       }

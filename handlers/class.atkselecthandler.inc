@@ -75,16 +75,24 @@
 
       if ($this->m_partial == NULL && count($recordset)==1 && $node->hasFlag(NF_AUTOSELECT))
       {
-        // There's only one record and the autoselect flag is set, so we
-        // automatically go to the target.
-        atkimport("atk.utils.atkstringparser");
-        $parser = new atkStringParser(rawurldecode(atkurldecode($node->m_postvars['atktarget'])));
+        if ((atkLevel() > 0) && (atkArrayNvl($node->m_postvars, "atkprevlevel", 0) > atkLevel()))
+        {
+          $backlinkurl = session_url($_SERVER["PHP_SELF"].'?atklevel='.session_level(SESSION_BACK));
+          $node->redirect($backlinkurl);
+        }
+        else
+        {
+          // There's only one record and the autoselect flag is set, so we
+          // automatically go to the target.
+          atkimport("atk.utils.atkstringparser");
+          $parser = new atkStringParser(rawurldecode(atkurldecode($node->m_postvars['atktarget'])));
 
-        // for backwardscompatibility reasons, we also support the '[pk]' var.
-        $recordset[0]['pk'] = $node->primaryKey($recordset[0]);
-        $target = $parser->parse($recordset[0],true);
+          // for backwardscompatibility reasons, we also support the '[pk]' var.
+          $recordset[0]['pk'] = $node->primaryKey($recordset[0]);
+          $target = $parser->parse($recordset[0],true);
 
-        $node->redirect(session_url($target, SESSION_NESTED));
+          $node->redirect(session_url($target, SESSION_NESTED));
+        }
         return "";
       }
       else
