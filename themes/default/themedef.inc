@@ -30,5 +30,9 @@
   $theme["ol_menucolor"]="#ffffff";
   $theme["ol_wincolor"]="#eeeee0";
   $theme["ol_background"]="#677EB1";
+  
+  $theme["recordlist_orientation"]='left';
+  $theme["recordlist_vorientation"]='top';
+  $theme['recordlist_icons']=true;
 
 ?>

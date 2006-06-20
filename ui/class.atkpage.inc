@@ -181,7 +181,7 @@
         $media = 'all';
       }
 
-      if (!array_key_exists($file, $this->m_stylesheets)) 
+      if (!array_key_exists($file, $this->m_stylesheets))
       {
         $this->m_stylesheets[$file] = $media;
       }
@@ -234,17 +234,17 @@
 
       foreach ($this->m_stylesheets as $file => $media)
       {
-        $res.='  <link href="'.$file.'" rel="stylesheet" type="text/css" media="'.$media.'" />'."\n";
+        $res.='  <link href="'.$file.'" rel="stylesheet" type="text/css" media="'.$media.'">'."\n";
       }
 
       for ($i = 0; $i < count($this->m_stylecode); $i++)
-        $res.= '<style type="text/css"> '.$this->m_stylecode[$i].' </style>'."\n";
+        $res.= '  <style type="text/css"> '.$this->m_stylecode[$i].' </style>'."\n";
 
       $favico = atkconfig("defaultfavico");
       if ($favico!="")
       {
-        $res.= '<link rel="icon" href="'.$favico.'" type="image/x-icon">
-                <link rel="shortcut icon" href="'.$favico.'" type="image/x-icon">'."\n";
+        $res.= '  <link rel="icon" href="'.$favico.'" type="image/x-icon">'."\n";
+        $res.= '  <link rel="shortcut icon" href="'.$favico.'" type="image/x-icon">'."\n";
       }
 
       $res.="</head>\n";

@@ -74,8 +74,7 @@
     if ($errtype==E_NOTICE || error_reporting()==0)
     {
       // Just show notices in the debug log, but don't influence the program flow
-//      atkdebug("[$errortypestring] $errstr in $errfile (line $errline)");
-      //echo "[$errortypestring] $errstr in $errfile (line $errline)";
+      //atkdebug("[$errortypestring] $errstr in $errfile (line $errline)");
       return;
     }
     else if (($errtype & (E_WARNING|E_USER_WARNING)) > 0)
@@ -681,8 +680,8 @@
    */
   function stripQuotes($string)
   {
-    if ($string[0]=="'" && substr($string,-1)=="'") return substr($string,1,-1);
-    if ($string[0]=='"' && substr($string,-1)=='"') return substr($string,1,-1);
+    if (substr($string,0,1)=="'" && substr($string,-1)=="'") return substr($string,1,-1);
+    if (substr($string,0,1)=='"' && substr($string,-1)=='"') return substr($string,1,-1);
     return $string;
   }
 
@@ -957,7 +956,7 @@
    */
   function mailreport()
   {
-    global $g_error_msg, $g_debug_msg, $g_sessionManager, $g_sessionData, $g_user;
+    global $g_error_msg, $g_debug_msg, $g_sessionManager, $g_sessionData, $g_user, $g_modules;
     $config_mailreport = atkconfig("mailreport");
     $txt_app_title = atktext("app_title");
 
@@ -1028,6 +1027,13 @@
         {
           $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".var_export($value,1))."\n";
         }
+      }
+
+      $body.= "\n\nMODULE CONFIGURATION\n".str_repeat("-",70)."\n";
+      foreach ($g_modules as $modname => $modpath)
+      {
+        $modexists = file_exists($modpath) ? " (path exists)" : " (PATH DOES NOT EXIST!)";
+        $body.=_wordwrap($modname.":".str_repeat(" ",max(1,20-strlen($modname))).var_export($modpath,1).$modexists)."\n";
       }
 
       $body.= "\n\nCurrent User:\n".str_repeat("-",70)."\n";
@@ -1777,6 +1783,7 @@
   function &atkinstance($fullclassname, $reset=false)
   {
     static $s_instances = array();
+    $fullclassname = atkResolveClass($fullclassname);
     if (!isset($s_instances[$fullclassname]) || $reset)
     {
       atkimport($fullclassname);
@@ -1953,5 +1960,57 @@
   function atkArrayNvl($array, $key, $defaultvalue=null)
   {
     return (isset($array[$key]) ? $array[$key] : $defaultvalue);
+  }
+  
+  /**
+   * Add a class overloader
+   *
+   * @param String $original
+   * @param String $overload
+   * @param bool $overwrite
+   * @return bool Wether or not we added the overloader
+   */
+  function addOverloader($original, $overload, $overwrite=true)
+  {
+    global $g_overloaders;
+    if (!array_key_exists($original, $g_overloaders) || $overwrite)
+    {
+      $g_overloaders[$original] = $overload;
+      return true;
+    }
+    return false;
+  }
+  
+  /**
+   * Remove a class overloader for a class
+   *
+   * @param String $original
+   * @return bool Wether or not we removed an overloader
+   */
+  function removeOverloader($original)
+  {
+    global $g_overloaders;
+    if (array_key_exists($original, $g_overloaders))
+    {
+      unset($g_overloaders[$original]);
+      return true;
+    }
+    return false;
+  }
+  
+  /**
+   * Checks wether or not a class has an overloader defined
+   *
+   * @param String $original The class to check for
+   * @return bool Wether or not the class has an overloader
+   */
+  function hasOverloader($original)
+  {
+    global $g_overloaders;
+    if (array_key_exists($original, $g_overloaders))
+    {
+      return true;
+    }
+    return false;
   }
 ?>

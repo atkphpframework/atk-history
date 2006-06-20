@@ -153,7 +153,7 @@
 
       // Regenerate the password
       $passwordattr = &$usernode->getAttribute(atkconfig("auth_passwordfield"));
-      $newpassword = $passwordattr->makePassword();
+      $newpassword = $passwordattr->generatePassword();
 
       // Update the record in the database
       $userrecords[0][atkconfig("auth_passwordfield")]["hash"] = md5($newpassword);
@@ -257,7 +257,7 @@
         $authenticated = false;
 
         // Email password if password forgotten and passwordmailer enabled
-        if ((atkconfig("auth_loginform")==true) && (atkconfig("auth_enablepasswordmailer", false)) && (atkArrayNvl($ATK_VARS, "login", "")==atktext('password_forgotten')))
+        if ((!empty($auth_user)) && (atkconfig("auth_loginform")==true) && (atkconfig("auth_enablepasswordmailer", false)) && (atkArrayNvl($ATK_VARS, "login", "")==atktext('password_forgotten')))
         {
           $this->mailPassword($auth_user);
           $response = AUTH_PASSWORDSENT;
@@ -479,7 +479,7 @@
       $tplvars = Array();
       $output ='<form action="'.$_SERVER["PHP_SELF"].'" method="post">';
       $output.=makeHiddenPostVars(array("atklogout", "loginattempts"));
-      $output.='<br><br><table border=0 cellspacing=2 cellpadding=0 align=center>';
+      $output.='<br><br><table border="0" cellspacing="2" cellpadding="0" align="center">';
 
       $tplvars["atksessionformvars"] = makeHiddenPostVars(array("atklogout", "loginattempts"));
       $tplvars["formurl"] = $_SERVER["PHP_SELF"];
@@ -492,6 +492,8 @@
       }
       else
       {
+        $page->register_loadscript("document.forms[0].auth_user.focus();");
+
         // generate the username input field
         // based upon the config_authdropdown and auth. method
         $userField = $this->auth_userField($defaultname);
@@ -524,6 +526,7 @@
         $output.="<tr><td valign=top>".atktext('password')."</td><td>:</td><td><input type=password size=15 name=auth_pw value=''></td></tr>";
         $output.='<tr><td colspan="3" align="center" height="50" valign="middle">';
         $output.='<input name="login" class="button" type="submit" value="'.atktext('login').'">';
+        $tplvars["auth_enablepasswordmailer"] = atkconfig("auth_enablepasswordmailer", false);
         if (atkconfig("auth_enablepasswordmailer", false))
         {
           $output.='&nbsp;&nbsp;<input name="login" class="button" type="submit" value="'.atktext('password_forgotten').'">';
@@ -533,8 +536,6 @@
       }
 
       $output.='</table></form>';
-
-      $output.='<SCRIPT type="text/javascript">placeFocus()</SCRIPT>';
 
       $tplvars["content"]=$output;
       $page->addContent($ui->render("login.tpl", $tplvars));

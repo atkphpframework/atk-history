@@ -302,7 +302,12 @@
 
           // First check if the record does not exist yet.
           /* @var $rel atkNode */
-          $existing = $rel->selectDb($rel->primaryKey($newrecord), "", "", "", $rel->m_primaryKey);
+          $where = $this->m_linkInstance->m_table.'.'.$this->getLocalKey()."='".
+                     $record[$this->m_ownerInstance->primaryKeyField()]."'".
+                     " AND ".$this->m_linkInstance->m_table.'.'.$this->getRemoteKey()."='".
+                     $record[$this->fieldName()][$i][$this->getRemoteKey()]."'";
+
+          $existing = $rel->selectDb($where, "", "", "", $rel->m_primaryKey);
           if (!count($existing))
           {
             if (!$rel->addDb($newrecord, true, $mode))
@@ -338,15 +343,18 @@
      */
     function hide($record="", $fieldprefix="")
     {
-      if(is_array($record[$this->fieldName()]))
+      $result = "";
+      if(is_array(atkArrayNvl($record,$this->fieldName())))
       {
-        for ($i=0;$i<count($this->m_values);$i++)
+        for($i=0,$_i=count($record[$this->fieldName()]);$i<$_i;$i++)
         {
-          if(in_array($this->m_values[$i],$record[$this->fieldName()]))
-          $result .= '<input type="hidden" name="'.$fieldprefix.$this->fieldName().'[]"
-                      value="'.$this->m_values[$i].'">';
+          if(atkArrayNvl($record[$this->fieldName()][$i],$this->getLocalKey()))
+            $result .= '<input type="hidden" name="'.$fieldprefix.$this->formName().'['.$i.']['.$this->getLocalKey().']" value="'.$record[$this->fieldName()][$i][$this->getLocalKey()].'">';
+
+          if(atkArrayNvl($record[$this->fieldName()][$i],$this->getRemoteKey()))
+            $result .= '<input type="hidden" name="'.$fieldprefix.$this->formName().'['.$i.']['.$this->getRemoteKey().']" value="'.$record[$this->fieldName()][$i][$this->getRemoteKey()].'">';
         }
-      } else return parent::hide($record,$fieldprefix);
+      }
       return $result;
     }
 
@@ -362,8 +370,7 @@
       $this->createDestination();
 
       // now select all records
-      $recordset = $this->m_destInstance->selectDb();
-
+      $recordset = $this->m_destInstance->selectDb("","","","*",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
         $result = '<select ';
         if ($extended)
         {

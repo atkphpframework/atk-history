@@ -366,7 +366,7 @@
       }
       else
       {
-        $atkval = array($attributename=>$attr->fetchValue(array($attributename=>$newval)));
+        $atkval = array($attributename=>$newval);
       }
       return $attr->display($atkval);
     }
@@ -770,30 +770,7 @@
           $record[$intattr] = array('mode'=>"add",'atkaction'=>"save");
       }
 
-      if(!$this->isRelationAttribute($attrname))
-      {
-        if(!$this->hasRelationAttribute($attrname))
-        {
-          if (!is_string($value))
-          {
-            $record[$attrname] = $value;
-          }
-          else
-          {
-            $record[$attrname] = $attr->parseStringValue($value);
-          }
-        }
-        else
-        {
-          $attr->createDestination();
-          $key = $attr->m_destInstance->m_primaryKey;
-          $record[$attrname] = array($key[0]=>$attr->parseStringValue($value));
-        }
-      }
-      else
-      {
-        $record[$this->isRelationAttribute($attrname)][$attrname] = $attr->parseStringValue($value);
-      }
+      $record[$attrname] = $value;
     }
 
     /**
@@ -1070,17 +1047,9 @@
           }
         }
       }
-      else if (is_object($attr) && method_exists($attr,"fetchValue"))
+      else if (is_object($attr) && method_exists($attr,"parseStringValue"))
       {
-        $relation = $this->isRelationAttribute($attributename);
-        if ($relation)
-        {
-          $value = $attr->fetchValue(array($attributename=>$value));
-        }
-        else
-        {
-          $value = $attr->fetchValue(array($attributename=>$value));
-        }
+        $value = $attr->parseStringValue($value);
       }
       else
       {

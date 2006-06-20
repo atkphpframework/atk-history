@@ -32,6 +32,11 @@
    * Do not add null option ever
    */
   define("AF_LIST_NO_NULL_ITEM", AF_SPECIFIC_3);
+  
+  /**
+    * Add a default null option to obligatory items
+    */
+   define("AF_LIST_OBLIGATORY_NULL_ITEM", AF_SPECIFIC_4);
 
 
   /**
@@ -226,10 +231,7 @@
 
       $result = '<select id="'.$id.'" name="'.$id.'"  class="atklistattribute" '.$onchange.($this->m_width?" style='width: {$this->m_width}px'":"").'>';
 
-      if(!$this->hasFlag(AF_OBLIGATORY)&&!$this->hasFlag(AF_LIST_NO_NULL_ITEM)||(atkconfig("list_obligatory_null_item")&&$record[$this->fieldName()]==""&&!$this->hasFlag(AF_LIST_NO_OBLIGATORY_NULL_ITEM)))
-      {
-        $result.= '<option value="'.$this->m_emptyvalue.'">'.atktext('list_null_value', '', $this->m_ownerInstance->m_type);
-      }
+      $result.=$this->_addEmptyListOption();
       
       $values = $this->getValues($record);
       for ($i=0;$i<count($values);$i++)
@@ -249,6 +251,28 @@
       }
       $result.='</select>';
       return $result;
+    }
+    
+    /**
+     * If this attribute is NOT obligatory
+     * Or if the attribute is obligatory and we set a config saying all obligatory lists should have a null item
+     * and we didn't add the flag AF_LIST_NO_OBLIGATORY_NULL_ITEM
+     * Or if the AF_LIST_OBLIGATORY_NULL_ITEM is set
+     * ... we add an empty list option
+     * @return The empty list option or an empty string
+     */
+    function _addEmptyListOption()
+    {
+      $ret='';
+      if (!$this->hasFlag(AF_OBLIGATORY) ||
+           ($this->hasFlag(AF_OBLIGATORY) && 
+           // CONFIG IS DEPRECATED
+          ((atkconfig("list_obligatory_null_item")&&!$this->hasFlag(AF_LIST_NO_OBLIGATORY_NULL_ITEM))||
+           ($this->hasFlag(AF_LIST_OBLIGATORY_NULL_ITEM)))))
+      {
+        $ret = '<option value="'.$this->m_emptyvalue.'">'.atktext("list_null_value", "", is_object($this->m_ownerInstance) ? $this->m_ownerInstance->m_type : "");
+      }
+      return $ret;
     }
 
     /**

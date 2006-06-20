@@ -136,10 +136,8 @@
           $this->m_node->m_priority_max = $this->m_node->m_priority_min + count($list["rows"]) - 1;
       }
 
-      $orientation  = atkconfig("recordlist_orientation");
-      if (trim(atkconfig("recordlist_vorientation")) != "")
-        $vorientation = atkconfig("recordlist_vorientation");
-      else $vorientation = 'top';
+      $orientation  = atkconfig('recordlist_orientation', $theme->getAttribute("recordlist_orientation"));
+      $vorientation = trim(atkconfig('recordlist_orientation', $theme->getAttribute("recordlist_vorientation")));
 
       $ui = &$this->m_node->getUi();
 
@@ -196,7 +194,7 @@
         $sortstart=""; $sortend="";
         if (hasFlag($flags, RL_EXT_SORT))
         {
-          $button = '<input type="submit" value="'.text("sort").'">';
+          $button = '<input type="submit" value="'.atktext("sort").'">';
           if (hasFlag($flags, RL_MRA) || hasFlag($flags, RL_MRPA))
           {
             $sortcols[] = array("content"=>""); // Empty leader on top of mra action list.
@@ -409,7 +407,8 @@
 
           $str_actions = "<span class=\"actions\">";
           $actionloader.="\nrl_a['".$listName."'][".$i."] = new Array();";
-          $icons = atkconfig("recordlist_icons", true);
+          $icons = (atkconfig('recordlist_icons', $theme->getAttribute("recordlist_icons"))===false ||
+                    atkconfig('recordlist_icons', $theme->getAttribute("recordlist_icons"))==='false'?false:true);
 
           foreach ($list["rows"][$i]["actions"] as $name => $url)
           {
@@ -420,11 +419,11 @@
             if($icons == true)
             {
               $icon = $theme->iconPath(strtolower($name),"recordlist", $this->m_node->m_module);
-              $link = '<img width="16" height="16" border="0" src="'.$icon.'" title="'.atktext($name, $this->m_node->m_module, $this->m_node->m_type).'">';
+              $link = sprintf('<img width="16" height="16" border="0" src="%1$s" alt="%2$s" title="%2$s">', $icon, atktext($name, $this->m_node->m_module, $this->m_node->m_type));
             }
             else
             {
-              $link = atktext($name);
+              $link = atktext($name, $this->m_node->m_module, $this->m_node->m_type);
             }
 
             $confirmtext= "false";
@@ -533,7 +532,12 @@
                        '<option value="">'.atktext("with_selected").':</option>';
 
             foreach ($list["mra"] as $name)
-              $mra .= '<option value="'.$name.'">'.atktext($name, $this->m_node->m_module, $this->m_node->m_type).'</option>';
+            {
+              if ($this->m_node->allowed($name))
+              {
+                $mra .= '<option value="'.$name.'">'.atktext($name, $this->m_node->m_module, $this->m_node->m_type).'</option>';
+              }
+            }
 
             $mra .= '</select>&nbsp;'.$this->getCustomMraHtml().
                        '<input type="button" class="btn" value="'.atktext("submit").'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\', '.$embedded.')">';
@@ -542,9 +546,12 @@
           /* one action -> only the submit button */
           else
           {
-            $mra .= ' <input type="hidden" name="'.$listName.'_atkaction" value="'.$list["mra"][0].'">'.
-            $this->getCustomMraHtml().
-                       '<input type="button" class="btn" value="'.atktext($list["mra"][0], $node->m_module, $node->m_type).'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\', '.$embedded.')">';
+            if ($this->m_node->allowed($list["mra"][0]))
+            {
+              $mra .= '&nbsp; <input type="hidden" name="'.$listName.'_atkaction" value="'.$list["mra"][0].'">'.
+              $this->getCustomMraHtml().
+                         '<input type="button" class="btn" value="'.atktext($list["mra"][0],$this->m_node->m_module, $this->m_node->m_type).'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\')">';
+            }
           }
         }
 
