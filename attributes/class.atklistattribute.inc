@@ -157,11 +157,25 @@
     }
     
     /**
-     * get functions to access member variables
+     * get functions to access member variables.
+     * For backwards compatibility we also check the old member variables m_options,
+     * m_values and m_lookup.
      */
-    function getOptions($rec=null) { return $this->_get("options",$rec); }
-    function getValues($rec=null) { return $this->_get("values",$rec); }
-    function getLookup($rec=null) { return $this->_get("lookup",$rec); }
+    function getOptions($rec=null) { 
+    	if(!isset($this->m_types["options"]) || $this->m_types["options"] == array())
+    		return $this->m_options;
+    	return $this->_get("options",$rec); 
+    }
+    function getValues($rec=null) { 
+    	if(!isset($this->m_types["values"]) || $this->m_types["values"] == array())
+    		return $this->m_values;
+    	return $this->_get("values",$rec); 
+    }
+    function getLookup($rec=null) { 
+    	if(!isset($this->m_types["lookup"]) || $this->m_types["lookup"] == array())
+    		return $this->m_lookup;
+    	return $this->_get("lookup",$rec); 
+    }
     
     /**
      * Returns one of the following arrays
