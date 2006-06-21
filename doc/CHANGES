@@ -50,6 +50,8 @@ Changes in tomorrow branch
 + Added $excludes / $includes parameters to updateDb. [Peter]
 + Added mock function for selectDb in atMockNode. [Dennis]
 + Added onchange handler for atkNumberAttribute. [Dennis]
+* Changed functionality for 'count distinct' in atkMysqlQuery (count
+  did not count correctly when some of the fields where NULL) [Peter]
 * Improvements to error reporting of importing and added ability 
   to add multiple fields for the entire import ('allfields'). [Boy]
 * Added id to field td. [Boy]
