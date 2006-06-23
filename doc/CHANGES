@@ -13,6 +13,8 @@ Backported
 
 Changes in ATK 5.2.0
 --------------------
++ Bugfix in atkBoolAttribute search functionality, so there can also be 
+  searched for No (0) values. [Nico]
 + Added getInstance() for the atkMlSplitter class. [Martin]
 + Added the SimpleTest testframework for unittesting, including a set of test
   utilities. [Ivo]
