@@ -264,8 +264,7 @@
       $vars = array_merge($params, $this->m_hidden_vars);
       
       if($file!="") $phpfile = $file;
-      elseif($this->m_php_file!="") $phpfile = $this->m_php_file;
-      else $phpfile = $_SERVER["PHP_SELF"];
+      else $phpfile = $this->getPhpFile();
       
       //$dispatch_url = dispatch_url(($atknodetype=="" ? $this->m_node->atkNodeType() : $atknodetype), $vars["atkaction"], $vars, $phpfile);
       //When $atknodetype is empty this means that we use the atknodetype from session
@@ -346,6 +345,27 @@
     function getHiddenVars()
     {
       return $this->m_hidden_vars;
+    }
+    
+    /**
+     * Set php_file member variable
+     *
+     * @param string $phpfile
+     */
+    function setPhpFile($phpfile)
+    {
+      $this->m_php_file = $phpfile;
+    }
+    
+    /**
+     * Return php_file if not set returns PHP_SELF
+     *
+     * @return string
+     */
+    function getPhpFile()
+    {
+      if ($this->m_php_file != "") return $this->m_php_file;
+      else return $_SERVER['PHP_SELF'];
     }
 
     /**

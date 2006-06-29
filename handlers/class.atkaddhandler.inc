@@ -56,10 +56,11 @@
       $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
 
       $node->addStyle("style.css");
+      $controller = &$node->getController();
 
       $params = $node->getDefaultActionParams();
 
-      $formstart ='<form name="entryform" enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?'.SID.'"'.
+      $formstart ='<form name="entryform" enctype="multipart/form-data" action="'.$controller->getPhpFile().'?'.SID.'"'.
                      ' method="post" onsubmit="return globalSubmit(this)">';
 
       /* if we are on an admin page we would like to stay on the admin page after adding a new record */

@@ -58,6 +58,7 @@
       $node = &$this->m_node;
 
       $node->addStyle("style.css");
+      $controller = &$node->getController();
 
       $page = &$this->getPage();
       $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");
@@ -66,7 +67,7 @@
       if (is_object($ui))
       {
         $params = array();
-        $params["formstart"] = '<form name="entryform" action="'.$_SERVER["PHP_SELF"].'?'.SID.'" method="post">';
+        $params["formstart"] = '<form name="entryform" action="'.$controller->getPhpFile().'?'.SID.'" method="post">';
 
         // usually, extended search is called from a page, and we go back to that page
         // when the user presses search.

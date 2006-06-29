@@ -185,6 +185,8 @@ Changed in ATK 5.5.1
   possible to override the atkWizardController. [Lineke]
 * Removed rawurlencode in createRedirectLocation in atksavehandler because the
   dispatchUrl function already encodes the variables. [Lineke]  
+* It is now possible to change the php_file to which is
+  posted in forms. [Lineke]
 
 
 Changes in ATK 5.5

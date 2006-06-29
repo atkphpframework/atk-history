@@ -76,8 +76,9 @@
       $node->addStyle("style.css");
 
       $params = $node->getDefaultActionParams($locked);
+      $controller = &$node->getController();
 
-      $formstart = '<form name="entryform" enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?'.SID.'"'.
+      $formstart = '<form name="entryform" enctype="multipart/form-data" action="'.$controller->getPhpFile().'?'.SID.'"'.
                                    ' method="post" onsubmit="return globalSubmit(this)">'.
                                    session_form();
 
