@@ -109,7 +109,7 @@ Changes in tomorrow branch
 * Fixed bug in atkThemeCompiler (non-array theme variables did not
   override default variable values). [Peter]
 * Statefulness of DHTML tabs is now configurable. [Peter]
-
+* Fixed no stat error in atkDirectoryTraverser. [Peter]
 
 Changed in ATK 5.6.1
 --------------------
