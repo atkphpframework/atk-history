@@ -70,6 +70,7 @@
              "&atkrecordlist=".$recordlistName.                                      
              "&atkpartial=recordlist".                                      
              "&atklimit=[LIMIT]".
+             "&atkstartat=0".
              (isset($ATK_VARS["atktarget"])?"&atktarget=".rawurlencode($ATK_VARS["atktarget"]):"");
       
       $url = session_url($url, SESSION_DEFAULT, $embedded);
@@ -117,7 +118,7 @@
       if (!($limit > 0 && $count > $limit && ceil($count / $limit) > 1)) return array();
 
       $pages = ceil($count / $limit);
-      $curr  = ($node->m_postvars['atkstartat'] / $limit) + 1;
+      $curr  = ceil($node->m_postvars['atkstartat'] / $limit) + 1;
       $begpg = $curr - floor(($max_bm-1) / 2);
       $endpg = $curr + ceil(($max_bm-1) / 2);
 
