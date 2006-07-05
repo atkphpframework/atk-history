@@ -695,7 +695,10 @@
       }
       else
       {
-        $id = "atksearch[".$fieldprefix.$this->fieldName()."]";
+        if (strstr($fieldprefix,"]["))
+          $id ='atksearch['.$fieldprefix.$this->fieldName().']';
+        else $id ='atksearch'.$fieldprefix.'['. $this->fieldName().']';        
+        
         $this->registerKeyListener($id, KB_CTRLCURSOR|KB_UPDOWN);
         $result = '<input type="text" id="'.$id.'" class="'.get_class($this).'" name="'.$id.'" value="'.$record[$this->fieldName()].'"'.
           ($this->m_searchsize > 0 ? ' size="'.$this->m_searchsize.'"' : '').
@@ -761,7 +764,9 @@
 
     function getSearchCondition(&$query, $table, $value, $searchmode)
     {
-    	if (!$this->hasFlag(AF_LARGE) || !$this->createDestination())
+      if (!$this->createDestination()) return;
+
+    	if (!$this->hasFlag(AF_LARGE))
     	{
     		// We only support 'exact' matches.
     		// But you can select more than one value, which we search using the IN() statement,
@@ -806,7 +811,7 @@
     			return $cond;
     		}
     	}
-    	else // in theory, this never happens.
+    	else
     	{
     		$descfields = array();
     		$descfields = $this->m_destInstance->descriptorFields();
@@ -835,9 +840,9 @@
           $p_attrib = &$this->m_destInstance->getAttribute($field);
           if (is_object($p_attrib))
           {
-            if ($query->m_joinaliases[$this->m_destInstance->m_table."*".$this->m_destInstance->primaryKeyField()])
+            if ($query->m_joinaliases[$this->fieldName().'*'.$this->m_destInstance->m_table."*".$this->m_destInstance->primaryKeyField()])
             {
-              $itsTable = $query->m_joinaliases[$this->m_destInstance->m_table."*".$this->m_destInstance->primaryKeyField()];
+              $itsTable = $query->m_joinaliases[$this->fieldName().'*'.$this->m_destInstance->m_table."*".$this->m_destInstance->primaryKeyField()];
             }
             else if ($p_attrib->m_destInstance)
             {
@@ -1068,10 +1073,10 @@
       else $realtablename = $this->m_ownerInstance->m_table;
       $joinconditions = array();
 
-      if ($fieldalias) $query->m_joinaliases[$this->m_destInstance->m_table."*".$this->m_destInstance->primaryKeyField()] = $fieldalias;
-      else $query->m_joinaliases[$this->m_destInstance->m_table."*".$this->m_destInstance->primaryKeyField()] = $this->m_destInstance->m_table;
+      if ($fieldalias) $query->m_joinaliases[$this->fieldName().'*'.$this->m_destInstance->m_table."*".$this->m_destInstance->primaryKeyField()] = $fieldalias;
+      else $query->m_joinaliases[$this->fieldName().'*'.$this->m_destInstance->m_table."*".$this->m_destInstance->primaryKeyField()] = $this->m_destInstance->m_table;
 
-      $alias = $query->m_joinaliases[$this->m_destInstance->m_table."*".$this->m_destInstance->primaryKeyField()];
+      $alias = $query->m_joinaliases[$this->fieldName().'*'.$this->m_destInstance->m_table."*".$this->m_destInstance->primaryKeyField()];
 
       for ($i=0, $_i=count($this->m_refKey); $i<$_i; $i++)
       {
