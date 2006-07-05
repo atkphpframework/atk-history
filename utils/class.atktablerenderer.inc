@@ -370,6 +370,8 @@
      */
     function _spanStr($span)
     {
+      if ($span["span"] == "") return '';
+      
       if($span["type"]=="row")
       {
         return 'rowspan="'.$span["span"].'"';
