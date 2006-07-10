@@ -259,7 +259,7 @@
       {
         if ($actiononly)
         {
-          return atktext($action, "atk");
+          return atktext($action, $module);
         }
         else
         {
@@ -268,7 +268,7 @@
           if ($label == "")
             $label = $node->text($nodetype);
           if ($action != NULL)
-            $label .= " - ".atktext($action, "atk");
+            $label .= " - ".atktext($action, $module);
         }
       }
       return $label;

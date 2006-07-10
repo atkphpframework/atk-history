@@ -615,7 +615,7 @@
      */
     function isEmpty($record)
     {
-      return (!isset($record[$this->fieldName()])||$record[$this->fieldName()]=="");
+      return (!isset($record[$this->fieldName()])||$record[$this->fieldName()]===""||$record[$this->fieldName()]===NULL);
     }
 
     /**
@@ -1940,8 +1940,11 @@
     function partial($mode, $options=array())
     {
       $record = $this->m_ownerInstance->updateRecord();
-      $fieldprefix = $this->m_ownerInstance->m_postvars['atkfieldprefix'];      
-      return $this->edit($record, $fieldprefix, $mode);
+      $fieldprefix = $this->m_ownerInstance->m_postvars['atkfieldprefix']; 
+      $method = $this->fieldName().'_edit';
+      if (method_exists($this->m_ownerInstance, $method))     
+        return $this->m_ownerInstance->$method($record, $fieldprefix, $mode);
+      else return $this->edit($record, $fieldprefix, $mode);
     }
 
     /**
