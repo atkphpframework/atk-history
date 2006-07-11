@@ -521,16 +521,19 @@
         $mod = getNodeModule($stack[$i]["atknodetype"]);
         $node = getNodeType($stack[$i]["atknodetype"]);
         $title = $ui->title($mod, $node, $stack[$i]["atkaction"]);
+        $descriptor = $stack[$i]["descriptor"];
         if ($i<count($stack)-1)
         {
           $res[]=array("url"=>session_url('dispatch.php?atklevel='.$i),
-                       "title"=>$title);
+                       "title"=>$title,
+                       "descriptor"=>$descriptor);
         }
         else
         {
-          $res[]=array("url"=>"", "title"=>$title);
+          $res[]=array("url"=>"", "title"=>$title, "descriptor"=>$descriptor);
         }
       }
+      
       return $res;
     }
 
