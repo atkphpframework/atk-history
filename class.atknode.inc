@@ -104,6 +104,7 @@
   // PHP_SELF with _SERVER["PHP_SELF"] eventually.
   $PHP_SELF = $_SERVER["PHP_SELF"];
 
+  require_once($config_atkroot."atk/modules/atkmoduletools.inc");
   require_once($config_atkroot."atk/atkconfigtools.inc");
   require_once($config_atkroot."atk/defaultconfig.inc.php");
 
@@ -124,12 +125,12 @@
   require_once($config_atkroot."atk/db/class.atkquery.inc");
   require_once($config_atkroot."atk/attributes/class.atkattribute.inc");
   require_once($config_atkroot."atk/relations/class.atkrelation.inc");
-  require_once($config_atkroot."atk/session/class.atksessionmanager.inc");
-  require_once($config_atkroot."atk/security/class.atksecuritymanager.inc");
   require_once($config_atkroot."atk/modules/atkmoduletools.inc");
   require_once($config_atkroot."atk/modules/class.atkmodule.inc");
   require_once($config_atkroot."atk/lock/class.atklock.inc");
-
+  require_once($config_atkroot."atk/session/class.atksessionmanager.inc");
+  require_once($config_atkroot."atk/security/class.atksecuritymanager.inc");
+  
   // Default language file
   require_once($config_atkroot."atk/languages/".$config_languagefile);
 
@@ -1033,7 +1034,10 @@
             if($attribname!="")
             {
               $p_attrib = &$this->m_attribList[$attribname];
-              if (!$p_attrib->hasFlag(AF_NO_FILTER)) $p_attrib->m_flags |= AF_READONLY|AF_HIDE_ADD;
+              if (is_object($p_attrib))
+              {
+                if (!$p_attrib->hasFlag(AF_NO_FILTER)) $p_attrib->m_flags |= AF_READONLY|AF_HIDE_ADD;
+              }
             }
           }
         }
