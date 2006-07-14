@@ -322,7 +322,7 @@
         {
 
           if ($this->createDestination())
-	  {
+	        {
             /* we first check if the record doesn't already exist */
             if ($defaults[$this->fieldName()] != NULL)
             {
@@ -365,7 +365,7 @@
             $a = $this->m_destInstance->editArray($mode, $myrecord, $forceList, array(), $this->fieldName()."_AE_");
 
             /* errors and hidden fields */
-            $error = array_merge($error, $a["error"]);
+            if (is_array($a["error"]) && !empty($a["error"])) $error = array_merge($error, $a["error"]);
             $arr["hide"] = array_merge($arr["hide"], $a["hide"]);
 
             /* editable fields, if AF_NOLABEL is specified or if there is just 1 field with the

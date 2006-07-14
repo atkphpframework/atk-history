@@ -63,6 +63,11 @@
        else if ($this->major >= 5)
        {
          $this->family = "ie5up";
+
+         if ($this->minor >= 5 || $this->major >= 6)
+         {
+           $this->family = "ie55up";
+         }
        }
        else
        {

@@ -214,7 +214,7 @@ define('ADODB_DATE_VERSION',0.06);
 /*
 	We check for Windows as only +ve ints are accepted as dates on Windows.
 */
-if (!defined('ADODB_WINDOWS') && strpos(PHP_OS,'WIN') !== false) define('ADODB_WINDOWS',1);
+/*if (!defined('ADODB_WINDOWS') && strpos(PHP_OS,'WIN') !== false)*/ define('ADODB_WINDOWS',1);
 
 function adodb_date_test_date($y1,$m)
 {
