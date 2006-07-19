@@ -139,7 +139,7 @@
         if(isset($this->m_node->m_postvars['atkfilter']))
           $vars['atkfilter'] = rawurlencode($this->m_node->m_postvars['atkfilter']);
           
-        $location = session_url($controller->dispatchUrl($vars), SESSION_REPLACE);              
+        $location = session_url($controller->dispatchUrl($vars), SESSION_DEFAULT);              
       }
       else
       {
@@ -148,8 +148,6 @@
       atkdebug($location);
       return $location;      
     }
-    
-
   }
 
 ?>

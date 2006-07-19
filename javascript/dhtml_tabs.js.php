@@ -17,7 +17,7 @@
 ?>
 
 /**
- * Sets the current tab 
+ * Sets the current tab
  */
 function showTab(tab)
 {
@@ -52,7 +52,7 @@ function showTab(tab)
 
 		if (id.substring(0,3)=="ar_")
 		{
-		  if (tabclass==tab||tabclass=="alltabs")
+		  if (tabclass.indexOf(tab) != -1 || tabclass=="alltabs")
 		  {
   		  tags.item(i).style.display="";
 		  }
@@ -78,6 +78,29 @@ function showTab(tab)
 		{
 		  document.getElementById('tab_'+tabs[j]).className = 'passivetab';
 		}
+	}	
+	
+	makeFCKEditable();
+	
+	// make tabs visible (to avoid reload quirks, they load invisible from the html
+	wrapper = document.getElementById('tabtable');
+	if (wrapper)
+	{
+	  wrapper.style.display='';
+	}
+}
+
+/**
+ * Because the FCK editor does not always agree with 
+ * tabbing and no longer becomes editable if you switch 
+ */
+function makeFCKEditable()
+{
+  iframes = document.getElementsByTagName("iframe");
+	for (i = 0; i < iframes.length; i++)
+	{
+	  obj = frames[iframes[i].id];
+	  if (obj && obj.FCK && obj.FCK.MakeEditable) obj.FCK.MakeEditable();
 	}
 }
 

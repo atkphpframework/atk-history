@@ -54,6 +54,7 @@
 
       $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");
       $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
+      $page->register_loadscript("placeFocus();");
 
       $node->addStyle("style.css");
       $controller = &$node->getController();
@@ -74,7 +75,7 @@
       {
         $formstart .= '<input type="hidden" name="atkfilter" value="'.$node->m_postvars['atkfilter'].'">';
       }
-      
+
       $params["formstart"] = $formstart;
 
       $ui = &$node->getUi();
@@ -90,7 +91,7 @@
         $params["content"] = $node->tabulate("add", $form);
 
 				$params["buttons"] = $this->m_node->getFormButtons("add", $record);
-        $params["formend"] = '</form><SCRIPT type="text/javascript" language="JavaScript">placeFocus()</SCRIPT>';
+        $params["formend"] = '</form>';
 
         $output = $ui->renderAction("add", $params);
 

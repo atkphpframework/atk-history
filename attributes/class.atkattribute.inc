@@ -443,6 +443,13 @@
     var $m_htmlid;
 
     /**
+     * The label of the attribute.
+     * @access private
+     * @var String
+     */
+    var $m_label = "";
+
+    /**
      * The searchmode for this attribute
      *
      * This var exists so that you can assign searchmodes to specific attributes
@@ -594,7 +601,7 @@
      */
     function isEmpty($record)
     {
-      return (!isset($record[$this->fieldName()])||$record[$this->fieldName()]=="");
+      return (!isset($record[$this->fieldName()])||(is_string($record[$this->fieldName()]) && $record[$this->fieldName()]===""));
     }
 
     /**
@@ -790,6 +797,7 @@
         /* when adding, there's nothing to hide... */
         if ($mode=="edit" || ($mode=="add" && !$this->isEmpty($defaults)))
           $arr["hide"][] = $this->hide($defaults, $fieldprefix, $mode);
+
       }
 
       /* edit */
@@ -935,7 +943,17 @@
         }
 
         if (!hasFlag($flags, RL_NO_SEARCH) && $this->hasFlag(AF_SEARCHABLE))
-          $arr["search"][$key] = $this->search($atksearch,null,$fieldprefix);
+        {
+          $fn = $this->fieldName()."_search";
+          if (method_exists($this->m_ownerInstance, $fn))
+          {
+            $arr["search"][$key] = $this->m_ownerInstance->$fn($atksearch, false, $fieldprefix);
+          }
+          else
+          {
+            $arr["search"][$key] = $this->search($atksearch, false, $fieldprefix);
+          }
+        }
       }
     }
 
@@ -1021,7 +1039,7 @@
     /**
      * Creates a smart search condition for a given search value, and adds it
      * to the query that will be used for performing the actual search.
-     * 
+     *
      * @param Integer  $id         The unique smart search criterium identifier.
      * @param Integer  $nr         The element number in the path.
      * @param Array    $path       The remaining attribute path.
@@ -1039,10 +1057,10 @@
         atk_var_dump($path, 'Invalid search path for '.$this->m_ownerInstance->atkNodeType().'#'.$this->fieldName().', ignoring criterium!');
         return;
       }
-      
+
       $this->searchCondition($query, $ownerAlias, $value, $mode);
     }
-    
+
     /**
      * Creates a search condition for a given search value, and adds it to the
      * query that will be used for performing the actual search.
@@ -1057,6 +1075,14 @@
      */
     function searchCondition(&$query, $table, $value, $searchmode)
     {
+      /** @todo Move this to a higher level */
+      if (strpos($value, "*")!==false && strlen($value)>1)
+      {
+      	// auto wildcard detection
+      	$searchmode = "wildcard";
+      }
+
+
       $searchCondition = &$this->getSearchCondition($query, $table, $value, $searchmode);
       if ($searchCondition)
       {
@@ -1245,7 +1271,7 @@
     function fetchMeta($metadata)
     {
 
-      $attribname = $this->fieldName();
+      $attribname = strtolower($this->fieldName());
       // Only use meta info if size is not already set manual. (constructor or setAttribSize)
       // If both are set, use the smallest value.
       if (isset($metadata[$attribname]))
@@ -1493,7 +1519,12 @@
      */
     function label($record = array())
     {
-      return $this->text($this->fieldName());
+      return ($this->m_label!=""?$this->m_label:$this->text($this->fieldName()));
+    }
+
+    function setLabel($label)
+    {
+      $this->m_label = $label;
     }
 
     /**
@@ -1737,12 +1768,12 @@
       $dbSearchModes = $db->getSearchModes();
       $attribSearchModes = $this->getSearchModes();
       $searchModes = array_values(array_intersect($attribSearchModes, $dbSearchModes));
-      
+
       // set "widget" value:
       $funcname = $this->m_name."_search";
 
       if (method_exists($node,$funcname))
-      $field["widget"] = $node->$funcname($defaults, $fieldprefix);
+      $field["widget"] = $node->$funcname($defaults, true, $fieldprefix);
       else
       {
         $field["widget"] = $this->search($defaults, true, $fieldprefix); // second param indicates extended search.
@@ -1793,13 +1824,8 @@
 
     function extendedSort(&$columnConfig)
     {
-      $specificOptions = $this->sortOptions($columnConfig);
-      if ($specificOptions!="")
-      {
-        $res.= $specificOptions;
-      }
-      $res.= ' '.$this->sortOrder($columnConfig);
-      return $res;
+      $result = $this->sortOptions($columnConfig).' '.$this->sortOrder($columnConfig);
+      return $result;
     }
 
     /**
@@ -1862,12 +1888,15 @@
       return $this->m_ownerInstance->m_table.".".$this->fieldName();
     }
 
- /**
+    /**
      * Translate using the owner instance's module and type.
      */
     function text($string)
     {
-      return $this->m_ownerInstance->text($string, $this->getModule());
+      if (is_object($this->m_ownerInstance))
+        return $this->m_ownerInstance->text($string, $this->getModule());
+      else
+        return atktext($string, $this->getModule());
     }
   }
 ?>

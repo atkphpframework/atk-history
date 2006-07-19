@@ -127,7 +127,7 @@
         $secMgr->logAction($this->m_node->m_type, $this->m_node->m_action);
         $this->m_node->callHandler($this->m_node->m_action);
 
-        list($selector,$id) = explode("=", $this->m_node->m_postvars["atkselector"]);
+        list($selector,$id) = explode("=", atkarraynvl($this->m_node->m_postvars, "atkselector", "="));
         $page->register_hiddenvars(array("atknodetype"=>$this->m_node->m_module.".".$this->m_node->m_type, "atkselector"=>str_replace("'", "", $id)));
       }
       else
@@ -136,34 +136,45 @@
       }
     }
 
-    /**
+  /**
      * Render a generic page, with a box, title, stacktrace etc.
-     * @param String $title The title of the page. Appears in the box title
-     *                      and in the page header.
-     * @param String $content The content to display in the box.
+     * @param String $title The pagetitle and if $content is a string, also
+     *                      the boxtitle.
+     * @param mixed $content The content to display on the page. This can be:
+     *                       - A string which will be the content of a single
+     *                         box on the page.
+     *                       - An associative array of $boxtitle=>$boxcontent
+     *                         pairs. Each pair will be rendered as a seperate
+     *                         box.
      * @return String A complete html page with the desired content.
      */
     function genericPage($title, $content)
     {
-       $ui = &$this->m_node->getUi();
-       $this->m_node->addStyle("style.css");
-       return $this->invoke("renderActionPage", $title, $ui->renderBox(array("title"=>$title,
-                                                                   "content"=>$content)));
+      $ui = &$this->getUi();
+      $this->addStyle("style.css");
+      if (!is_array($content)) $content = array($title=>$content);
+      $blocks = array();
+      foreach($content as $itemtitle => $itemcontent)
+        $blocks[] = $ui->renderBox(array("title"=>$itemtitle, "content"=>$itemcontent));
+      /**
+       * @todo Don't use renderActionPage here because it tries to determine
+       *       it's own title based on the title which is passed as action.
+       *       Instead use something like the commented line below:
+       */
+      //return $ui->render("actionpage.tpl", array("blocks"=>$blocks, "title"=>$title));
+      return $this->renderActionPage($title, $blocks);
     }
 
     /**
      * Render a generic action.
-     *  
-     * Renders actionpage.tpl for the desired action. This doesn't include a
-     * box. The output can be rendered in a box with atkUi's renderBox method
-     * if desired.
+     *
+     * Renders actionpage.tpl for the desired action. This includes the
+     * given block(s) and a pagetrial, but not a box.
      * @param String $action The action for which the page is rendered.
      * @param mixed $blocks Pieces of html content to be rendered. Can be a
      *                      single string with content, or an array with
      *                      multiple content blocks.
-     * @param String HTLM fragment for the action.
-     * @param String $content The content to display in the box.
-     * @return String A complete html page with the desired content.
+     * @return String Piece of HTML containing the given blocks and a pagetrail.
      */
     function renderActionPage($action, $blocks=array())
     {

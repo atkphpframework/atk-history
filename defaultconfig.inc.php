@@ -480,24 +480,6 @@
   $config_fullscreen = false;
 
   /**
-   * Whether the action links in a recordlist appear left or right
-   * @var String
-   */
-  $config_recordlist_orientation  = "left";
-
-  /**
-   *
-   * @var String
-   */
-  $config_recordlist_vorientation = "middle";
-
-  /**
-   * Use icons for action links or not
-   * @var String
-   */
-   $config_recordlist_icons = "true";
-
-  /**
    * Whatever tabs are enabled or not
    * @var boolean
    */
@@ -567,23 +549,6 @@
    * @var String
    */
   $config_atklangcheckmodule = 2;
-  
-  /**
-   * Where ATK should look for it's supported languages
-   * 
-   * In your own application you should probably make this the module
-   * with the most language translations.
-   * Leaving this empty will turn off functionality where we check
-   * for the user language in the browser or in the user session and will
-   * make sure the application is always presented in the default language.
-   * This config var also accepts 2 'special' modules:
-   * - atk (making it use the languages of ATK)
-   * - langoverrides (making it use the language overrides directory)
-   * 
-   * @var String
-   */
-   //$config_supported_languages_module = $config_atkroot.'atk/languages/';
-   $config_supported_languages_module = '';
 
   /**
    * Where ATK should look for it's supported languages
@@ -738,7 +703,7 @@
    * confirm box for deleting instead of a seperate page
    * @var boolean
    */
-  $config_javascript_confirmation = false;
+  $config_recordlist_javascript_delete = false;
 
   /**
    * This should be turned on when an application makes use

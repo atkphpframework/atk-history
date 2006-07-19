@@ -55,9 +55,9 @@
   define("SESSION_BACK",3);    // move one level down on stack
   define("SESSION_REPLACE",4); // replace current stacklevel
 
-  if (isset($_REQUEST["atklevel"])) 	 $atklevel 		= trim($_REQUEST["atklevel"]);
+  if (isset($_REQUEST["atklevel"]))    $atklevel    = trim($_REQUEST["atklevel"]);
   if (isset($_REQUEST["atkprevlevel"]))$atkprevlevel= trim($_REQUEST["atkprevlevel"]);
-  if (isset($_REQUEST["atkstackid"]))  $atkstackid 	= trim($_REQUEST["atkstackid"]);
+  if (isset($_REQUEST["atkstackid"]))  $atkstackid  = trim($_REQUEST["atkstackid"]);
 
   /**
    * The atk session manager.
@@ -173,13 +173,12 @@
     function getValue($var, $namespace="")
     {
       global $g_sessionData;
-      if ($namespace=="globals") return $g_sessionData["globals"][$var];
-      else if ($namespace!="") return $g_sessionData[$namespace]["globals"][$var];
-      if (isset($g_sessionData[$this->m_namespace]["globals"][$var]))
-      {
-        return $g_sessionData[$this->m_namespace]["globals"][$var];
-      }
-      return NULL;
+      if ($namespace=="globals")
+        return isset($g_sessionData["globals"][$var]) ? $g_sessionData["globals"][$var] : null;
+      else if ($namespace!="")
+        return isset($g_sessionData[$namespace]["globals"][$var]) ? $g_sessionData[$namespace]["globals"][$var] : null;
+      else
+        return isset($g_sessionData[$this->m_namespace]["globals"][$var]) ? $g_sessionData[$this->m_namespace]["globals"][$var] : null;
     }
 
     /**
@@ -234,7 +233,7 @@
         {
           if ($value=="")
           {
-            if ($_REQUEST[$var]!="")
+            if (atkarraynvl($_REQUEST, $var, "")!="")
             {
               $currentitem[$var] = $_REQUEST[$var];
             }
@@ -243,12 +242,12 @@
           {
             $currentitem[$var] = $value;
           }
-          if (!is_array($currentitem["defined_stackvars"])||!in_array($var, $currentitem["defined_stackvars"]))
+          if (!is_array(atkArrayNvl($currentitem, "defined_stackvars"))||!in_array($var, $currentitem["defined_stackvars"]))
           {
             $currentitem["defined_stackvars"][] = $var;
           }
           // We always return the current value..
-          return $currentitem[$var];
+          return atkarraynvl($currentitem, $var);
         }
       }
     }
@@ -367,6 +366,15 @@
       $stackid = atkStackID(($atklevel==-1));
 
       $stack = &$g_sessionData[$this->m_namespace]["stack"][$stackid];
+
+      // Prevent going more than 1 level above the current stack top which
+      // causes a new stackitem to be pushed onto the stack at the wrong
+      // location.
+      if ($atklevel > count($stack))
+      {
+        atkdebug("Requested ATKLevel (".$atklevel.") too high for stack, lowering to ".count($stack));
+        $atklevel = count($stack);
+      }
 
       if (isset($postvars["atkescape"]) && $postvars["atkescape"]!="")
       {
@@ -586,6 +594,7 @@
       {
         if (isset($stack[$i]["descriptor"]) || $i == ($stackcount-1))
         {
+
           if(isset($stack[$i]["atknodetype"]))
           {
             $node = &getNode($stack[$i]["atknodetype"]);
@@ -624,7 +633,7 @@
       $stack = "";
 
       if (isset($g_sessionData[$this->m_namespace]["stack"][atkStackID()]))
-      	$stack = $g_sessionData[$this->m_namespace]["stack"][atkStackID()];
+        $stack = $g_sessionData[$this->m_namespace]["stack"][atkStackID()];
       if (!is_array($stack)) $prevlevelfromstack = 0;
       else $prevlevelfromstack = count($stack)-1;
 
@@ -849,8 +858,8 @@
    */
   function isValidSessionId()
   {
-  	$name = atkconfig("identifier");
-  	$sessionid = "";
+    $name = atkconfig("identifier");
+    $sessionid = "";
     global ${$name};
 
     if (isset($_COOKIE[$name])&&$_COOKIE[$name])

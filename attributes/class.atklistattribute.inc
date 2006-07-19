@@ -33,6 +33,11 @@
    */
   define("AF_LIST_NO_NULL_ITEM", AF_SPECIFIC_3);
 
+  /**
+    * Add a default null option to obligatory items
+    */
+   define("AF_LIST_OBLIGATORY_NULL_ITEM", AF_SPECIFIC_4);
+
 
   /**
    * The atkListAttribute class represents an attribute of a node
@@ -141,7 +146,7 @@
       if(isset($this->m_lookup[$record[$this->fieldName()]]))
       {
         if($this->hasFlag(AF_NO_TRANSLATION)) $res = $this->m_lookup[$record[$this->fieldName()]];
-        else $res = atktext($this->m_lookup[$record[$this->fieldName()]],$this->m_ownerInstance->m_module, $this->m_owner);
+        else $res = $this->text($this->m_lookup[$record[$this->fieldName()]]);
 
         return $res;
       }
@@ -168,10 +173,8 @@
 
       $result = '<select id="'.$id.'" name="'.$id.'"  class="atklistattribute" '.$onchange.($this->m_width?" style='width: {$this->m_width}px'":"").'>';
 
-      if(!$this->hasFlag(AF_OBLIGATORY)&&!$this->hasFlag(AF_LIST_NO_NULL_ITEM)||(atkconfig("list_obligatory_null_item")&&$record[$this->fieldName()]==""&&!$this->hasFlag(AF_LIST_NO_OBLIGATORY_NULL_ITEM)))
-      {
-        $result.= '<option value="'.$this->m_emptyvalue.'">'.atktext('list_null_value', '', $this->m_ownerInstance->m_type);
-      }
+      $result.=$this->_addEmptyListOption();
+
       for ($i=0;$i<count($this->m_values);$i++)
       {
         // If the current value is selected or occurs in the record
@@ -185,12 +188,34 @@
           $sel = "";
         }
         if ($this->hasFlag(AF_NO_TRANSLATION)) $option=$this->m_options[$i];
-        else $option = atktext($this->m_options[$i],$this->m_ownerInstance->m_module, $this->m_owner);
+        else $option = $this->text($this->m_options[$i]);
 
         $result.= '<option value="'.$this->m_values[$i].'" '.$sel.'>'.$option.'</option>';
       }
       $result.='</select>';
       return $result;
+    }
+
+    /**
+     * If this attribute is NOT obligatory
+     * Or if the attribute is obligatory and we set a config saying all obligatory lists should have a null item
+     * and we didn't add the flag AF_LIST_NO_OBLIGATORY_NULL_ITEM
+     * Or if the AF_LIST_OBLIGATORY_NULL_ITEM is set
+     * ... we add an empty list option
+     * @return The empty list option or an empty string
+     */
+    function _addEmptyListOption()
+    {
+      $ret='';
+      if (!$this->hasFlag(AF_OBLIGATORY) ||
+           ($this->hasFlag(AF_OBLIGATORY) &&
+           // CONFIG IS DEPRECATED
+          ((atkconfig("list_obligatory_null_item")&&!$this->hasFlag(AF_LIST_NO_OBLIGATORY_NULL_ITEM))||
+           ($this->hasFlag(AF_LIST_OBLIGATORY_NULL_ITEM)))))
+      {
+        $ret = '<option value="'.$this->m_emptyvalue.'">'.$this->text("list_null_value");
+      }
+      return $ret;
     }
 
     /**
@@ -225,7 +250,7 @@
           $sel = "";
         }
         if($this->hasFlag(AF_NO_TRANSLATION)) $string = $this->m_options[$i];
-        else $string = atktext($this->m_options[$i], $this->m_ownerInstance->m_module);
+        else $string = $this->text($this->m_options[$i]);
 
         $result.= '<option value="'.$this->m_values[$i].'" '.$sel.'>'.$string;
       }
@@ -246,7 +271,7 @@
 
     function getSearchCondition(&$query, $table, $value, $searchmode)
     {
-    	// We only support 'exact' matches.
+      // We only support 'exact' matches.
       // But you can select more than one value, which we search using the IN() statement,
       // which should work in any ansi compatible database.
       if (is_array($value) && count($value)>0 && $value[0]!="") // This last condition is for when the user selected the 'search all' option, in which case, we don't add conditions at all.

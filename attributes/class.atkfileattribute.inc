@@ -203,8 +203,8 @@
         if(count($file_arr) > 0) $result .= "</select>";
       }
       if(!$this->hasFlag(AF_FILE_NO_DELETE)
-         && isset($record[$this->fieldname()]['filename'])
-         && $record[$this->fieldname()]['filename']!='')
+         && isset($record[$this->fieldname()]['orgfilename'])
+         && $record[$this->fieldname()]['orgfilename']!='')
       {
        $this->registerKeyListener($id.'_del', KB_CTRLCURSOR|KB_CURSOR);
        $result .= '<br><input id="'.$id.'_del" type="checkbox" name="del['.$fieldprefix.$this->fieldName().']">&nbsp;'.atktext("remove_current_file", "atk");
@@ -225,9 +225,8 @@
          && !$this->hasFlag(AF_FILE_NO_SELECT)
          && (!isset($del[$this->fieldName()]) || $del[$this->fieldName()]!="on"))
       {
-        return $rec[$this->fieldName()]["filename"];
+        return escapeSQL($rec[$this->fieldName()]["filename"]);
       }
-
       if($this->hasFlag(AF_FILE_NO_DELETE)) unset($del);  // Make sure if flag is set $del unset!
 
       if(isset($del[$this->fieldName()]) && $del[$this->fieldName()] == "on")
@@ -251,6 +250,7 @@
             unlink($this->m_dir.$file);
           }
         }
+//        echo ':::::return leeg::::';
         return '';
       }
       else
@@ -265,7 +265,7 @@
               if (@copy($rec[$this->fieldName()]["tmpfile"],$this->m_dir.$filename))
               {
                 $this->processFile($this->m_dir, $filename);
-                return $filename;
+                return escapeSQL($filename);
               }
               else
               {
@@ -274,7 +274,7 @@
               }
             }
         }
-        return $rec[$this->fieldName()]["orgfilename"];
+        return escapeSQL($rec[$this->fieldName()]["orgfilename"]);
       }
     }
 
@@ -299,7 +299,9 @@
      */
     function db2value($rec)
     {
-      return Array("tmpfile"=>$this->m_dir.$rec[$this->fieldName()],"orgfilename"=>$rec[$this->fieldName()],"filename"=>$rec[$this->fieldName()],"filesize"=>"?");
+      return Array("tmpfile"=>$this->m_dir.$rec[$this->fieldName()],
+                   "orgfilename"=>$rec[$this->fieldName()],
+                   "filename"=>$rec[$this->fieldName()],"filesize"=>"?");
     }
 
     function validate(&$record, $mode)
@@ -340,8 +342,9 @@
       if (is_array($_FILES)||($rec[$this->fieldName()]["select"] != "" && !$this->hasFlag(AF_FILE_NO_SELECT)) || ($rec[$this->fieldName()]["filename"]!="")) // php4
       {
         // if an error occured during the upload process
-        // and the error is not 'no file' while the field is obligatory
-        if ($_FILES[$postfiles_basename]['error'] > 0 && !(!$this->hasFlag(AF_OBLIGATORY) && $_FILES[$postfiles_basename]['error'] == UPLOAD_ERR_NO_FILE))
+        // and the error is not 'no file' while the field isn't obligatory or a file was already selected
+        $fileselected = isset($rec[$this->fieldName()]["select"]) && $rec[$this->fieldName()]["select"] != "" && !$this->hasFlag(AF_FILE_NO_SELECT);
+        if ($_FILES[$postfiles_basename]['error'] > 0 && !((!$this->hasFlag(AF_OBLIGATORY) || $fileselected) && $_FILES[$postfiles_basename]['error'] == UPLOAD_ERR_NO_FILE))
         {
           return array('error' => $_FILES[$postfiles_basename]['error']);
         }
@@ -350,8 +353,7 @@
         elseif (count($_FILES)==0||$_FILES[$postfiles_basename]["tmp_name"]=="none"||$_FILES[$postfiles_basename]["tmp_name"]=="")
         {
            // No file to upload, then check if the select box is filled
-          if(isset($rec[$this->fieldName()]["select"]) && $rec[$this->fieldName()]["select"] != ""
-             && !$this->hasFlag(AF_FILE_NO_SELECT))
+          if($fileselected)
           {
             atkdebug("file selected!");
             $filename=$rec[$this->fieldName()]["select"];
@@ -375,10 +377,17 @@
           }
           else
           {
-            $result = array("tmpfile"=>"",
-                          "filename"=>"",
-                          "filesize"=>0,
-                          "orgfilename"=>(isset($rec[$basename."_orgfilename"]))?$rec[$basename."_orgfilename"]:"");
+            $filename = (isset($rec[$basename."_orgfilename"]))?$rec[$basename."_orgfilename"]:"";
+            
+            if (isset($del[$this->fieldName()]) && $del[$this->fieldName()]=="on")
+            {
+              $filename = '';
+            }
+            
+            $result = array("tmpfile"=>$this->m_dir.$filename,
+                          "filename"=>$filename,
+                          "filesize"=>filesize($this->m_dir.$filename),
+                          "orgfilename"=>$filename);
           }
         }
         else
@@ -395,7 +404,6 @@
                           "filesize"=>$_FILES[$postfiles_basename]["size"],
                           "orgfilename"=>$realname);
         }
-
         return $result;
       }
     }
@@ -443,7 +451,11 @@
      */
     function display($record)
     {
-      $filename    = $record[$this->fieldName()]["orgfilename"];
+      // Get random number to use as param when displaying images
+      // while updating images was not allways visible due to caching
+      $randval = mt_rand();
+
+      $filename    = $record[$this->fieldName()]["filename"];
       atkdebug($this->fieldname()." - File: $filename");
       $prev_type     = Array("jpg","jpeg","gif","tif","png","bmp","htm","html","txt");  // file types for preview
       $imgtype_prev = Array("jpg","jpeg","gif","png");  // types whitch are supported by GetImageSize
@@ -470,7 +482,7 @@
             $page->register_script(atkconfig("atkroot")."atk/javascript/newwindow.js");
             return '<a href="'.$this->m_url.$filename.'" alt="'.$filename.'" onclick="NewWindow(this.href,\'name\',\''.($imagehw[0]+50).'\',\''.($imagehw[1]+50).'\',\'yes\');return false;">'.$filename.'</a>';
           }
-          return '<img src="'.$this->m_url.$filename.'" alt="'.$filename.'">';
+          return '<img src="'.$this->m_url.$filename.'?b='.$randval.'" alt="'.$filename.'">';
         }
         else
         {
@@ -506,9 +518,9 @@
       }
       else
       {
-        atkimport("atk.utils.stringparser");
+        atkimport("atk.utils.atkstringparser");
         $parser = new atkStringParser($this->m_filenameTpl);
-        $ext = strtolower(substr($default, strrpos($default,'.')+1));
+        $ext = $this->getFileExtension($default);
         $filename = $parser->parse($rec).".".$ext;
       }
       return str_replace(' ','_',$filename);

@@ -111,7 +111,23 @@
      */
     var $m_fieldquote;
 
+    /**
+     * Wether or not a field should be quoted in a query
+     *
+     * @var Array
+     * @access private
+     */
     var $m_quotedfields=array();
+    
+    /**
+     * Names reserved by the database, 
+     * if any of these are used ATK MUST quote the fieldname
+     * or the database engine will not be able to make any sense of the queries.
+     *
+     * @var Array
+     * @access private
+     */
+    var $m_reservedNames=array('from','select','order','group');
 
     /**
     * Initialize all variables
@@ -259,6 +275,7 @@
      */
     function buildSelect($distinct = FALSE)
     {
+      if (count($this->m_fields)<1) return false;
       $result = "SELECT ".($distinct||$this->m_distinct ? "DISTINCT ": "");
       for ($i=0;$i<count($this->m_fields);$i++)
       {
@@ -627,12 +644,14 @@
     /**
      * Static factory method. This method returns a new instance of a query
      * object for the current database.
+     * @param $basepath The basepath for the database object (defaults to 'atk.db')
+     * @return atkQuery A Query object for the appropriate database
      */
-    function &create()
+    function &create($basepath="atk.db.")
     {
       $dbconfig = atkconfig("db");
       $name = "atk" . $dbconfig["default"]["driver"] . "query";
-      return new $name();
+      return atknew(($basepath?$basepath.'.':'').$name);
     }
 
     /**
@@ -644,15 +663,23 @@
      */
     function quoteField($field)
     {
-      if ((in_array($field,$this->m_quotedfields) || in_array($field, $this->m_tables)) && preg_match('/(^[\w\.]+)/',$field)."'")
+      $quotefield=false;
+      if ((in_array($field,$this->m_quotedfields) || 
+           in_array($field, $this->m_tables)) && 
+           preg_match('/(^[\w\.]+)/',$field)."'") 
       {
-        $exploded = explode('.',$field);
-        foreach ($exploded as $identifier)
-        {
-          $quoted[] = $this->m_fieldquote.$identifier.$this->m_fieldquote;
-        }
-        $field = implode('.',$quoted);
+        $quotefield=true;
       }
+           
+      $exploded = explode('.',$field);
+      foreach ($exploded as $identifier)
+      {
+        if ($quotefield || in_array($identifier,$this->m_reservedNames))
+          $identifiers[] = $this->m_fieldquote.$identifier.$this->m_fieldquote;
+        else 
+          $identifiers[] = $identifier;
+      }
+      $field = implode('.',$identifiers);
       return $field;
     }
 

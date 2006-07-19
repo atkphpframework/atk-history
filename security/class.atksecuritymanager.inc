@@ -26,6 +26,8 @@
   define ("AUTH_SUCCESS", 1);
   define ("AUTH_LOCKED", 2);
   define ("AUTH_MISMATCH", 3);
+  define ("AUTH_PASSWORDSENT", 4);
+  define ("AUTH_MISSINGUSERNAME", 5);
   define ("AUTH_ERROR",-1);
 
   /**
@@ -103,6 +105,50 @@
     }
 
     /**
+     * Regenerates a user password and sends it to his e-mail address
+     *
+     * @param string $username User for which the password should be regenerated
+     */
+    function mailPassword($username)
+    {
+      // Query the database for user records having the given username and return if not found
+      $usernode = &atkGetNode(atkconfig("auth_usernode"));
+      $selector = sprintf("%s.%s = '%s'", atkconfig("auth_usertable"), atkconfig("auth_userfield"), $username);
+      $userrecords = $usernode->selectDb($selector, "", "", "", array(atkconfig("auth_userpk"), atkconfig("auth_emailfield"), atkconfig("auth_passwordfield")), "edit");
+      if (count($userrecords) != 1)
+      {
+        atkdebug("User '$username' not found.");
+        return false;
+      }
+
+      // Retrieve the email address
+      $email = $userrecords[0][atkconfig("auth_emailfield")];
+      if (empty($email))
+      {
+        atkdebug("Email address for '$username' not available.");
+        return false;
+      }
+
+      // Regenerate the password
+      $passwordattr = &$usernode->getAttribute(atkconfig("auth_passwordfield"));
+      $newpassword = $passwordattr->generatePassword();
+
+      // Update the record in the database
+      $userrecords[0][atkconfig("auth_passwordfield")]["hash"] = md5($newpassword);
+      $usernode->updateDb($userrecords[0], true, "", array(atkconfig("auth_passwordfield")));
+
+      // Send an email containing the new password to user
+      $subject = atktext("auth_passwordmail_subjectnew_password", "atk");
+      $body = atktext("auth_passwordmail_explanation", "atk") . "\n\n";
+      $body.= atktext(atkconfig("auth_userfield")) . ": " . $username . "\n";
+      $body.= atktext(atkconfig("auth_passwordfield")) . ": " . $newpassword . "\n";
+      mail($email, $subject, $body);
+
+      // Return true
+      return true;
+    }
+
+    /**
      * Perform user authentication.
      *
      * Called by the framework, it should not be necessary to call this method
@@ -174,7 +220,7 @@
           // Cookiename is based on the app_title, for there may be more than 1 atk app running,
           // each with their own cookie..
           $cookiename = $this->_getAuthCookieName();
-          list($enc, $user, $passwd) = split("\.",base64_decode($_COOKIE[$cookiename]));
+          list($enc, $user, $passwd) = explode(".",base64_decode(atkArrayNvl($_COOKIE,$cookiename,"Li4=")));
 
           // for security reasons administrator will never be cookied..
           if ($auth_user=="" && $user!="" && $user!="administrator")
@@ -188,8 +234,21 @@
 
         $authenticated = false;
 
+        // Check if a username was entered
+        if ((atkArrayNvl($ATK_VARS, "login", "") != "") && empty($auth_user))
+        {
+          $response = AUTH_MISSINGUSERNAME;
+        }
+
+        // Email password if password forgotten and passwordmailer enabled
+        else if ((!empty($auth_user)) && (atkconfig("auth_loginform")==true) && (atkconfig("auth_enablepasswordmailer", false)) && (atkArrayNvl($ATK_VARS, "login", "")==atktext('password_forgotten')))
+        {
+          $this->mailPassword($auth_user);
+          $response = AUTH_PASSWORDSENT;
+        }
+
         // check superuser
-        if (atkconfig("administratorpassword")!=""&&$auth_user=="administrator"&&$auth_pw==atkconfig("administratorpassword"))
+        else if (atkconfig("administratorpassword")!=""&&$auth_user=="administrator"&&$auth_pw==atkconfig("administratorpassword"))
         {
           $this->m_user = array("name"=>"administrator","level"=>-1, "access_level"=>9999999);
           // for convenience, we also store the user as a global variable.
@@ -399,13 +458,11 @@
       $page->register_style($ui->stylePath("style.css"));
 
       $page->register_script(atkConfig('atkroot')."atk/javascript/tools.js");
-      $page->register_script(atkConfig('atkroot')."atk/javascript/formfocus.js");
 
       $tplvars = Array();
-      $output = "";
-      $output.='<form action="'.$_SERVER["PHP_SELF"].'" method="post">';
+      $output ='<form action="'.$_SERVER["PHP_SELF"].'" method="post">';
       $output.=makeHiddenPostVars(array("atklogout", "loginattempts"));
-      $output.='<br><br><table border=0 cellspacing=2 cellpadding=0 align=center>';
+      $output.='<br><br><table border="0" cellspacing="2" cellpadding="0" align="center">';
 
       $tplvars["atksessionformvars"] = makeHiddenPostVars(array("atklogout", "loginattempts"));
       $tplvars["formurl"] = $_SERVER["PHP_SELF"];
@@ -418,6 +475,8 @@
       }
       else
       {
+        $page->register_loadscript("document.forms[0].auth_user.focus();");
+
         // generate the username input field
         // based upon the config_authdropdown and auth. method
         $userField = $this->auth_userField($defaultname);
@@ -438,18 +497,33 @@
           $output.='<tr><td colspan=3 class=error>'.atktext('auth_mismatch').'<br><br></td></tr>';
           $tplvars["auth_mismatch"] = atktext('auth_mismatch');
         }
+        else if ($lastresponse == AUTH_MISSINGUSERNAME)
+        {
+          $output.='<tr><td colspan="3" class=error>'.atktext('auth_missingusername').'<br /><br /></td></tr>';
+          $tplvars["auth_mismatch"] = atktext('auth_missingusername');
+        }
+        else if ($lastresponse == AUTH_PASSWORDSENT)
+        {
+          $output.='<tr><td colspan="3">'.atktext('auth_passwordmail_sent').'<br /><br /></td></tr>';
+          $tplvars["auth_mismatch"] = atktext('auth_passwordmail_sent');
+        }
 
         // generate the form
         $output.="<tr><td valign=top>".atktext('username')."</td><td>:</td><td>".$userField."</td></tr>";
         $output.="<tr><td colspan=3 height=6></td></tr>";
         $output.="<tr><td valign=top>".atktext('password')."</td><td>:</td><td><input type=password size=15 name=auth_pw value=''></td></tr>";
-        $output.="<tr><td colspan=3 align=center height=50 valign=middle><input class=button type=submit value=".atktext('login')."></td></tr>";
+        $output.='<tr><td colspan="3" align="center" height="50" valign="middle">';
+        $output.='<input name="login" class="button" type="submit" value="'.atktext('login').'">';
+        $tplvars["auth_enablepasswordmailer"] = atkconfig("auth_enablepasswordmailer", false);
+        if (atkconfig("auth_enablepasswordmailer", false))
+        {
+          $output.='&nbsp;&nbsp;<input name="login" class="button" type="submit" value="'.atktext('password_forgotten').'">';
+        }
+        $output.='</td></tr>';
 
       }
 
       $output.='</table></form>';
-
-      $output.='<SCRIPT type="text/javascript">placeFocus()</SCRIPT>';
 
       $tplvars["content"]=$output;
       $page->addContent($ui->render("login.tpl", $tplvars));

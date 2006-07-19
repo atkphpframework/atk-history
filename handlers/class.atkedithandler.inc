@@ -72,6 +72,7 @@
       $page = &$this->getPage();
       $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");
       $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
+      $page->register_loadscript("placeFocus();");
       $page->register_script(atkconfig("atkroot")."atk/javascript/dhtml_formtools.js");
       $node->addStyle("style.css");
 
@@ -210,7 +211,7 @@
 
         $tplfield = array();
 
-		    $tplfield["tab"] = ($field["tabs"][0]=="*"?"alltabs":$field["tabs"][0]); // $this->getTab($field_name);
+		    $tplfield["tab"] = ($field["tabs"][0]=="*"?"alltabs":implode("|", $field["tabs"]));
 
 		    // Todo fixme: initial_on_tab kan er uit, als er gewoon bij het opstarten al 1 keer showTab aangeroepen wordt (is netter dan aparte initial_on_tab check)
 		    // maar, let op, die showTab kan pas worden aangeroepen aan het begin.
@@ -319,6 +320,7 @@
 
     /**
      * Adds numbering to the label of a field
+     * @access private
      * @param array $field    the currently handled attribute
      * @param array $tplfield the template data for the current attribute
      * @param int $i          the counter being used to loop the node for each attribute

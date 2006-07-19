@@ -206,45 +206,37 @@
     function validateUniqueFieldSets(&$record)
     {	
       $db = &$this->m_nodeObj->getDb();
+      atkimport('atk.db.atkquery');
       foreach($this->m_nodeObj->m_uniqueFieldSets as $uniqueFieldSet)
       {
-        $whereStr = " WHERE 1 ";
+        $query = &atkQuery::create();
+        $query->addField('*');
+        $query->addTable($this->m_nodeObj->m_table);
         foreach($uniqueFieldSet as $field)
-        {
-
-          // manyToOneyRelations could contain multiple values. When calling fetchValue
-          // from this type of array, it will return an key-val array
-          $whereValueMixed = $this->m_nodeObj->m_attribList[$field]->fetchValue($this->m_nodeObj->m_postvars);
-
-          if(is_array($whereValueMixed))
-          {	
-            // add the current attribute itself to the string and remove it 
-            // from the array. 
-            $whereValueStr = "'".escapeSQL(array_shift($whereValueMixed))."'";
-
-            foreach($whereValueMixed as $name => $value)
-              $whereValueStr .= " and ".$name." = '".escapeSQL($value)."'";
-
+        { 
+          $attrib = &$this->m_nodeObj->m_attribList[$field];
+          if ($attrib)
+          {
+            if (strstr(strtolower(get_class($attrib)),'attribute'))
+            {
+              $query->addCondition($query->quoteField($field)." = '".$attrib->value2db($record)."'");
+            }
+            else if (strstr(strtolower(get_class($attrib)),'manytoonerelation') && $attrib->createDestination())
+            {
+              $query->addCondition($query->quoteField($field)." = '".escapeSQL($record[$attrib->fieldName()][$attrib->m_destInstance->primaryKeyField()])."'");
+            }
+            else $query->addCondition($query->quoteField($field)." = '".escapeSQL($record[$field])."'");
           }
-          else          
-            $whereValueStr = "'".escapeSQL($whereValueMixed)."'";
-
-          $whereStr .= "AND ".$field." = ".$whereValueStr." " ;
+          else 
+            atkerror("Field $field is mentioned in uniquefieldset but does not exist in ".$this->m_nodeObj->atknodetype());
         }
-        if(count($db->getRows("
-          SELECT 
-            1            
-          FROM
-            ".$this->m_nodeObj->m_table.
-            $whereStr."
-          AND NOT
-            (".$this->m_nodeObj->primaryKey($record).")")
-                )> 0
-          )        
+        $query->addCondition("NOT (".$this->m_nodeObj->primaryKey($record).")");
+        
+        if (count($db->getRows($query->buildSelect()))> 0)
         {	
           triggerError($record, $uniqueFieldSet, 'error_uniquefieldset', '', $this->m_nodeObj->m_type);
-        }// end if count(rows)
-      } // end foreach uniqueFieldSet
-    } // end function validate_uniqueFieldSets
-  } // end class validator
+        }
+      }
+    }
+  }
 ?>

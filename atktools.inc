@@ -74,8 +74,7 @@
     if ($errtype==E_NOTICE || error_reporting()==0)
     {
       // Just show notices in the debug log, but don't influence the program flow
-//      atkdebug("[$errortypestring] $errstr in $errfile (line $errline)");
-      //echo "[$errortypestring] $errstr in $errfile (line $errline)";
+      //atkdebug("[$errortypestring] $errstr in $errfile (line $errline)");
       return;
     }
     else if (($errtype & (E_WARNING|E_USER_WARNING)) > 0)
@@ -681,8 +680,8 @@
    */
   function stripQuotes($string)
   {
-    if ($string[0]=="'" && substr($string,-1)=="'") return substr($string,1,-1);
-    if ($string[0]=='"' && substr($string,-1)=='"') return substr($string,1,-1);
+    if (substr($string,0,1)=="'" && substr($string,-1)=="'") return substr($string,1,-1);
+    if (substr($string,0,1)=='"' && substr($string,-1)=='"') return substr($string,1,-1);
     return $string;
   }
 
@@ -699,6 +698,7 @@
 
   /**
    * Translates a string like id='3 AND name='joe'' into Array("id"=>3,"name"=>"joe")
+   * @todo we should also support <=>, >=, >, <=, <, <>
    * @param string $set the string to decode
    * @return array the decoded array
    */
@@ -708,19 +708,22 @@
     $items=split(" AND ",$set);
     for ($i=0;$i<count($items);$i++)
     {
-      if (strstr($items[$i], '=') !== false)
+      if (strstr($items[$i], '!=') !== false)
+      {
+        list($key,$value) = explode("!=",$items[$i]);
+        $result[trim($key)] = stripQuotes($value);
+      }
+      elseif (strstr($items[$i], '=') !== false)
       {
         list($key,$value) = explode("=",$items[$i]);
-        $result[$key] = stripQuotes($value);
+        $result[trim($key)] = stripQuotes($value);
       }
-
       elseif (stristr($items[$i], 'IS NULL') !== false)
       {
         list($key) = spliti('IS NULL', $items[$i]);
         $result[trim($key)] = NULL;
       }
     }
-
     return $result;
   }
 
@@ -939,7 +942,7 @@
    */
   function mailreport()
   {
-    global $g_error_msg, $g_debug_msg, $g_sessionManager, $g_sessionData, $g_user;
+    global $g_error_msg, $g_debug_msg, $g_sessionManager, $g_sessionData, $g_user, $g_modules;
     $config_mailreport = atkconfig("mailreport");
     $txt_app_title = atktext("app_title");
 
@@ -1010,6 +1013,13 @@
         {
           $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".var_export($value,1))."\n";
         }
+      }
+
+      $body.= "\n\nMODULE CONFIGURATION\n".str_repeat("-",70)."\n";
+      foreach ($g_modules as $modname => $modpath)
+      {
+        $modexists = file_exists($modpath) ? " (path exists)" : " (PATH DOES NOT EXIST!)";
+        $body.=_wordwrap($modname.":".str_repeat(" ",max(1,20-strlen($modname))).var_export($modpath,1).$modexists)."\n";
       }
 
       $body.= "\n\nCurrent User:\n".str_repeat("-",70)."\n";
@@ -1291,7 +1301,7 @@
    * @param string $mimetype the mimetype of the file
    * @return bool wether or not the export worked
    */
-  function exportFile($file, $filename,$mimetype="")
+  function exportFile($file, $filename,$mimetype="", $detectmime=true)
   {
     include_once(atkconfig("atkroot")."atk/atkbrowsertools.inc");
     $browser = getBrowserInfo();
@@ -1311,11 +1321,14 @@
       $disp = 'attachment';
     }
     if($mimetype!="") $mime=$mimetype;
-
+    else if ($mimetype=="" && $detectmime && function_exists('mime_content_type')) 
+      $mime = mime_content_type($file);
+    
     $fp = @fopen($file,"rb");
     if ($fp!=NULL)
     {
-      header('Content-Type: '. $mime);
+      header('Content-Type: '. $ctype);
+      header("Content-Length: ".filesize($file));
       header('Content-Disposition:  '.$disp.'; filename="'.$filename.'"');
       if(eregi("ie", $browser["browser"])) header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
       if ($_SERVER["SERVER_PORT"] == "443" AND eregi("msie", $_SERVER["HTTP_USER_AGENT"]))
@@ -1327,6 +1340,10 @@
         header('Pragma: no-cache');
       }
       header('Expires: 0');
+
+      header("Content-Description: File Transfer");
+      header("Content-Transfer-Encoding: binary");
+      
       fpassthru($fp);
       return true;
     }
@@ -1585,16 +1602,18 @@
    * @param var $sessionstatus the session flags
    *              (SESSION_DEFAULT (default)|SESSION_NEW|SESSION_REPLACE|
    *               SESSION_NESTED|SESSION_BACK)
+   * @param string $cssclass   the css class the button should get
    * @param bool $embeded      wether or not it's an embedded button
    */
-  function atkButton($text, $url="", $sessionstatus=SESSION_DEFAULT, $embedded=true)
+  function atkButton($text, $url="", $sessionstatus=SESSION_DEFAULT, $embedded=true, $cssclass="")
   {
     $page = &atkPage::getInstance();
     $page->register_script(atkconfig("atkroot")."atk/javascript/formsubmit.js");
     static $cnt=0;
 
+    if ($cssclass != "") $cssclass = ' class="'.$cssclass.'"';
     $script = 'atkSubmit("'.atkurlencode(session_url($url,$sessionstatus)).'")';
-    $button = '<input type="button" name="atkbtn'.(++$cnt).'" value="'.$text.'" onClick=\''.$script.'\'>';
+    $button = '<input type="button" name="atkbtn'.(++$cnt).'" value="'.$text.'" onClick=\''.$script.'\''.$cssclass.'>';
 
     if (!$embedded)
     {
@@ -1705,6 +1724,7 @@
    */
   function &atknew($fullclassname)
   {
+    $fullclassname = atkResolveClass($fullclassname);
     atkimport($fullclassname, true);
 
     $elems = explode(".", strtolower($fullclassname));
@@ -1724,6 +1744,22 @@
   }
 
   /**
+   * Resolve a classname to its final classname.
+   *
+   * An application can overload a class with a custom version. This
+   * method resolves the initial classname to its overloaded version
+   * (if any).
+   *
+   * @param String $class The name of the class to resolve
+   * @return String The resolved classname
+   */
+  function atkResolveClass($class)
+  {
+    global $g_overloaders;
+    if (isset($g_overloaders[$class])) return $g_overloaders[$class];
+    return $class;
+  }
+  /**
    * Return a singleton instance of the specified class.
    *
    * This works for all singletons that implement the getInstance() method.
@@ -1734,6 +1770,7 @@
   function &atkinstance($fullclassname, $reset=false)
   {
     static $s_instances = array();
+    $fullclassname = atkResolveClass($fullclassname);
     if (!isset($s_instances[$fullclassname]) || $reset)
     {
       atkimport($fullclassname);
@@ -1878,14 +1915,14 @@
   
   /**
    * ATK version of the PHP htmlentities function. Works just like PHP's
-   * htmlentities function, but falls back to the in the language file 
-   * configured charset instead of PHP's default charset, if no 
+   * htmlentities function, but falls back to the in the language file
+   * configured charset instead of PHP's default charset, if no
    * charset is given.
-   * 
+   *
    * @param String $string    string to convert
    * @param int $quote_style  quote style (defaults to ENT_COMPAT)
    * @param String $charset   character set to use (default to atktext('charset', 'atk'))
-   * 
+   *
    * @return String encoded string
    */
   function atk_htmlentities($string, $quote_style=null, $charset=null)
@@ -1894,8 +1931,74 @@
     {
       $charset = atktext('charset', 'atk');
     }
-    
+
     return htmlentities($string, $quote_style, $charset);
+  }
+
+  /**
+   * Looks up a value using the given key in the given array and returns
+   * the value if found or a default value if not found.
+   *
+   * @param array $array Array to be searched for key
+   * @param string $key Key for which we are looking in array
+   * @param mixed $defaultvalue Value we will return if key was not found in array
+   * @return mixed Value retrieved from array or default value if not found in array
+   */
+  function atkArrayNvl($array, $key, $defaultvalue=null)
+  {
+    return (isset($array[$key]) ? $array[$key] : $defaultvalue);
+  }
+  
+  /**
+   * Add a class overloader
+   *
+   * @param String $original
+   * @param String $overload
+   * @param bool $overwrite
+   * @return bool Wether or not we added the overloader
+   */
+  function addOverloader($original, $overload, $overwrite=true)
+  {
+    global $g_overloaders;
+    if (!array_key_exists($original, $g_overloaders) || $overwrite)
+    {
+      $g_overloaders[$original] = $overload;
+      return true;
+    }
+    return false;
+  }
+  
+  /**
+   * Remove a class overloader for a class
+   *
+   * @param String $original
+   * @return bool Wether or not we removed an overloader
+   */
+  function removeOverloader($original)
+  {
+    global $g_overloaders;
+    if (array_key_exists($original, $g_overloaders))
+    {
+      unset($g_overloaders[$original]);
+      return true;
+    }
+    return false;
+  }
+  
+  /**
+   * Checks wether or not a class has an overloader defined
+   *
+   * @param String $original The class to check for
+   * @return bool Wether or not the class has an overloader
+   */
+  function hasOverloader($original)
+  {
+    global $g_overloaders;
+    if (array_key_exists($original, $g_overloaders))
+    {
+      return true;
+    }
+    return false;
   }
   
   /*
@@ -1914,4 +2017,5 @@
       return "";
     }
   }
+  
 ?>

@@ -21,6 +21,16 @@
    */
   useattrib("atkattribute");
 
+  /**
+   * @internal baseclass include
+   */
+  useattrib("atkattribute");
+
+  /**
+   * @internal baseclass include
+   */
+  useattrib("atkattribute");
+
   /** flag(s) specific for atkDateAttribute */
   define("AF_DATE_STRING",              AF_SPECIFIC_1); // date must be entered as an english date string (strtotime)
   define("AF_DATE_EMPTYFIELD",          AF_SPECIFIC_2); // Fields have one empty option
@@ -32,7 +42,7 @@
   $config_atkroot = atkconfig("atkroot");
   require_once($config_atkroot."atk/utils/adodb-time.inc.php");
   // Include browsertools for PDA detection
-  include_once($config_atkroot."atk/atkbrowsertools.inc"); 
+  include_once($config_atkroot."atk/atkbrowsertools.inc");
 
   /**
    * The atkDateAttribute class offers a date widget for date fields.
@@ -65,9 +75,12 @@
       /* format month */
       $format = str_replace("M", "%-%",   $format);
       $format = str_replace("F", "%=%",   $format);
-
+      
       /* format day */
-      if ($weekday)
+      $format = str_replace("D", "%&%", $format);      
+      $format = str_replace("l", "%*%", $format);      
+      
+      if ($weekday && strpos($format, '%&%') === FALSE && strpos($format, '%*%') === FALSE)
       {
         $format = str_replace("d", "%*% d", $format);
         $format = str_replace("j", "%*% j", $format);
@@ -89,11 +102,12 @@
       {
         $langcache[$shortmonth] = atktext($shortmonth);
       }
-
+      
       /* replace month/week name */
       $str_date = str_replace("%-%", $langcache[$shortmonth], $str_date);
       $str_date = str_replace("%=%", $langcache[$month], $str_date);
-      if ($weekday) $str_date = str_replace("%*%", atktext(strtolower($date["weekday"]),"atk"), $str_date);
+      $str_date = str_replace("%*%", atktext(strtolower($date["weekday"]),"atk"), $str_date);
+      $str_date = str_replace("%&%", atktext(substr(strtolower($date["weekday"]), 0, 3),"atk"), $str_date);
 
       /* return string */
       return $str_date;
@@ -135,6 +149,16 @@
                    "month" => substr($date, 4, 2),
                    "year" => substr($date, 0, 4));
       }
+    }
+
+    /**
+     * Validates a given date array
+     * @param array Array with 3 fields (day, month, year)
+     * @return boolean True if valid, false if not.
+     */
+    function checkDateArray($datearray)
+    {
+      return checkdate((int)$datearray["month"], (int)$datearray["day"], (int)$datearray["year"]);
     }
 
     /**
@@ -181,9 +205,6 @@
      */
     function atkDateAttribute($name, $format_edit="", $format_view="", $min=0, $max=0, $flags=0)
     {
-      $txt_date_format_edit = atktext("date_format_edit","atk","","","",true);
-      $txt_date_format_view = atktext("date_format_view","atk","","","",true);
-
       /* *** API SUPPORT HACK ***
        * Because of backwards compatability and because of the number
        * of arguments this method has we also support the old API: ($name, $flags=0).
@@ -197,33 +218,85 @@
         $max = 0;
       }
 
-      /* edit date format */
-      if     (!empty($format_edit)) $this->m_date_format_edit = $format_edit;
-      elseif (!empty($txt_date_format_edit)) $this->m_date_format_edit = $txt_date_format_edit;
-      else   $this->m_date_format_edit = "F j Y";
-
-      /* display date format */
-      if     (!empty($format_view)) $this->m_date_format_view = $format_view;
-      elseif (!empty($txt_date_format_view)) $this->m_date_format_view = $txt_date_format_view;
-      else   $this->m_date_format_view = "F j Y";
+      /* edit and display date format */
+      $this->setFormatEdit($format_edit);
+      $this->setFormatView($format_view);
 
       /* max / min date */
-      if ($min === 0) $this->m_date_min = 0;
-      else if (is_array($min)) $this->m_date_min = $this->_arrayToTime($min);
-      else $this->m_date_min = strtotime($min);
-      if ($max === 0) $this->m_date_max = 0;
-      else if (is_array($max)) $this->m_date_max = $this->_arrayToTime($max);
-      else $this->m_date_max = strtotime($max);
+      $this->setDateMin($min);
+      $this->setDateMax($max);
 
       /* base class constructor */
       $this->atkAttribute($name, $flags);
+    }
+
+    /**
+     * Set the format for the boxes in edit mode.
+     *
+     * @param String $format_edit The format (see format for date() function)
+     */
+    function setFormatEdit($format_edit)
+    {
+      $txt_date_format_edit = atktext("date_format_edit","atk","","","",true);
+
+      if     (!empty($format_edit))           $this->m_date_format_edit = $format_edit;
+      elseif (!empty($txt_date_format_edit))  $this->m_date_format_edit = $txt_date_format_edit;
+      else                                    $this->m_date_format_edit = "F j Y";
+    }
+
+    /**
+     * Set the format for the boxes in view mode.
+     *
+     * @param String $format_view The format (see format for date() function)
+     */
+    function setFormatView()
+    {
+      $txt_date_format_view = atktext("date_format_view","atk","","","",true);
+
+      if     (!empty($format_view))           $this->m_date_format_view = $format_view;
+      elseif (!empty($txt_date_format_view))  $this->m_date_format_view = $txt_date_format_view;
+      else                                    $this->m_date_format_view = "F j Y";
+    }
+
+    /**
+     * Set the maximum date that may be select (0 means unlimited).
+     * It can be set in 3 formats:
+     * 1. Unix timestamp.
+     * 2. String (parsed by strtotime)
+     * 3. Array (with year,month,day,hour,min,sec)
+     *
+     * @param mixed $max The maximum date that may be selected.
+     */
+    function setDateMax($max=0)
+    {
+      if      ($max === 0)        $this->m_date_max = 0;
+      else if (is_array($max))    $this->m_date_max = $this->_arrayToTime($max);
+      else if (is_integer($max))  $this->m_date_max = $max;
+      else                        $this->m_date_max = strtotime($max);
+    }
+
+    /**
+     * Set the minimum date that may be select (0 means unlimited).
+     * It can be set in 3 formats:
+     * 1. Unix timestamp.
+     * 2. String (parsed by strtotime)
+     * 3. Array (with year,month,day,hour,min,sec)
+     *
+     * @param mixed $min The minimum date that may be selected.
+     */
+    function setDateMin($min=0)
+    {
+      if      ($min === 0)        $this->m_date_min = 0;
+      else if (is_array($min))    $this->m_date_min = $this->_arrayToTime($min);
+      else if (is_integer($min))  $this->m_date_min = $min;
+      else                        $this->m_date_min = strtotime($min);
     }
 
     function edit($record="", $fieldprefix="", $mode="")
     {
       return $this->draw($record, $fieldprefix, "", $mode, $this->hasFlag(AF_OBLIGATORY));
     }
-
+    
     /**
      * Returns a piece of html code that can be used in a form to edit this
      * attribute's value. (Month will be a dropdownbox, year and day text fields)
@@ -249,8 +322,7 @@
         $value = &$record[$this->fieldName()];
 
         if (is_array($value)) $value = adodb_date("Y-m-d", adodb_mktime(0, 0, 0, $value["month"], $value["day"], $value["year"]));
-        elseif ($obligatory) $value = adodb_date("Y-m-d");
-        else $value = "";
+        else $value = $obligatory ? adodb_date("Y-m-d") : "";
         $this->registerKeyListener($fieldname, KB_CTRLCURSOR|KB_UPDOWN);
         $result = '<input type="text" id="'.$fieldname.'" class="atkdateattribute" name="'.$fieldname.'" value="'.$value.'" size="10">';
 
@@ -262,32 +334,36 @@
       }
 
       /* this field */
-      $field = $record[$this->fieldName()];
+      $field = atkArrayNvl($record, $this->fieldName());
       $str_format = $this->m_date_format_edit;
 
       /* currently selected date */
-      if (isset($record[$this->fieldName()]))
+      if (is_array($field) && $field["year"] == 0 && $field["month"] == 0 && $field["day"] == 0)
+        $current = NULL; /* NULL date selected (normal date selection) */
+      elseif (!is_array($field) && empty($field))
+        $current = NULL; /* NULL date selected (NULL value in database) */
+      elseif (is_array($field))
       {
-        if (is_array($field) && $field["year"] == 0 && $field["month"] == 0 && $field["day"] == 0)
-          $current = NULL; /* NULL date selected (normal date selection) */
-        elseif (!is_array($field) && empty($field))
-          $current = NULL; /* NULL date selected (NULL value in database) */
-        elseif (is_array($field))
+        if ($this->checkDateArray($field))
         {
-          if (checkdate($field["month"], $field["day"], $field["year"]))
-          {
-            $current = adodb_mktime(0, 0, 0, $field["month"], $field["day"], $field["year"]);
-          }
-          else
-          {
-            triggerError($record, $this->fieldName(), "date_invalid");
-          }
+          $current = adodb_mktime(0, 0, 0, $field["month"], $field["day"], $field["year"]);
         }
         else
         {
-          $date = $this->dateArray($field);
-          if (checkdate($date["month"], $date["day"], $date["year"]))
-            $current = adodb_mktime(0, 0, 0, $date["month"], $date["day"], $date["year"]);
+          $current = NULL;
+          triggerError($record, $this->fieldName(), "error_date_invalid");
+        }
+      }
+      else
+      {
+        $date = $this->dateArray($field);
+        if ($this->checkDateArray($date))
+        {
+          $current = adodb_mktime(0, 0, 0, $date["month"], $date["day"], $date["year"]);
+        }
+        else
+        {
+          $current = NULL;
         }
       }
 
@@ -337,18 +413,27 @@
         return $result;
       }
 
-      if (!$pda) $result.='<script language="javascript"> var '.$fieldname.'_fmt = \''.$str_format.'\';</script>';
+      if ($this->hasFlag(AF_DATE_EMPTYFIELD))  $emptyfield=true;
+      else if (!$obligatory) $emptyfield=true;
+      else $emptyfield=false;      
+      
+      $info = array(
+        'format' => $str_format, 
+        'min' => $str_min, 
+        'max' => $str_max, 
+        'emptyfield' => $emptyfield,
+        'weekday' => !$this->hasFlag(AF_DATE_EDIT_NO_DAY)
+      );
+      
+      atkimport('atk.utils.atkjson');
+      if (!$pda) $result .= '<script language="javascript">var atkdateattribute_'.$fieldname.' = '.atkJSON::encode($info).';</script>';
 
       /* other date selections */
+      $weekdayFormat = NULL;
       for($i = 0; $i < strlen($str_format); $i++)
       {
-
-        if ($this->hasFlag(AF_DATE_EMPTYFIELD))  $emptyfield=true;
-        else if (!$obligatory) $emptyfield=true;
-        else $emptyfield=false;
-
         /* javascript method */
-        if (!$pda) $str_script = "AdjustDate(this, '".$fieldname."', '$str_format', $str_min, $str_max, ".($emptyfield==true ? "true" : "false").", ".($this->hasFlag(AF_DATE_EDIT_NO_DAY) ? "false" : "true").");";
+        if (!$pda) $str_script = "AdjustDate(this, '".$fieldname."');";
 
         if (count($this->m_onchangecode))
         {
@@ -385,6 +470,12 @@
             $result .= '<input type="text" id="'.$fieldname.'[year]" name="'.$fieldname.'[year]" class="atkdateattribute" size="4" maxlength="4" onChange="'.$str_script.'" value="'.(isset($current["year"])?$current["year"]:"").'">';
           }
         }
+        
+        /* weekday format */
+        elseif ($str_format[$i] == 'D' || $str_format[$i] == 'l')
+        {
+          $weekdayFormat = $str_format[$i];
+        }
 
         /* day input box */
         elseif ($str_format[$i] == "j" || $str_format[$i] == "d")
@@ -400,11 +491,11 @@
               $tmp_date = adodb_getdate(adodb_mktime(0,0,0, $current["mon"], $j, $current["year"]));
               if (($current['year']!="") && ($current['mon']!=""))
               {
-                $str_day = $this->formatDate($tmp_date, $str_format[$i], !$this->hasFlag(AF_DATE_EDIT_NO_DAY));
+                $str_day = $this->formatDate($tmp_date, (empty($weekdayFormat) ? $str_format[$i] : "$weekdayFormat {$str_format[$i]}"), !$this->hasFlag(AF_DATE_EDIT_NO_DAY));
               }
               else
               {
-                $str_day = $this->formatDate($tmp_date, $str_format[$i],0);
+                $str_day = $this->formatDate($tmp_date, (empty($weekdayFormat) ? $str_format[$i] : "$weekdayFormat {$str_format[$i]}"), 0);
               }
               $result .= '<option value="'.$j.'" '.($current !== NULL && $j == $current["mday"] ? "selected" : "").'>'.$str_day.'</option>';
             }
@@ -474,7 +565,7 @@
     */
     function _registerScripts()
     {
-      $page = &atkPage::getInstance();
+      $page = &atkinstance('atk.ui.atkpage');
 
       /* register javascript */
       atkimport("atk.atklanguage");
@@ -740,7 +831,7 @@
       if(!($value["year"]=='' || $value['month']==0 || $value['day']==0))
       {
         /* currently selected date */
-        if (checkdate($value["month"], $value["day"], $value["year"]))
+        if ($this->checkDateArray($value))
           $current = adodb_mktime(0, 0, 0, $value["month"], $value["day"], $value["year"]);
         else
         {
@@ -766,7 +857,7 @@
       if (strlen($str_min) == 8)
       {
         $date = $this->dateArray($str_min);
-        if (checkdate($date["month"], $date["day"], $date["year"]))
+        if ($this->checkDateArray($date))
           $minimum = adodb_mktime(0, 0, 0, $date["month"], $date["day"], $date["year"]);
         else $str_min = 0;
       }
@@ -777,7 +868,7 @@
       if (strlen($str_max) == 8)
       {
         $date = $this->dateArray($str_max);
-        if (checkdate($date["month"], $date["day"], $date["year"]))
+        if ($this->checkDateArray($date))
           $maximum = adodb_mktime(0, 0, 0, $date["month"], $date["day"], $date["year"]);
         else $str_max = 0;
       }

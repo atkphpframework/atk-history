@@ -636,6 +636,15 @@
     var $m_controller = NULL;
 
     /**
+     * Extended search action. The action which is called if the user
+     * wants to perform an extended search.
+     *
+     * @access private
+     * @var String
+     */
+    var $m_extended_search_action = NULL;
+
+    /**
      * Constructor.
      *
      * This initialises the node. Derived classes should always call their
@@ -856,6 +865,17 @@
     {
       if (isset($this->m_attribList[$name]))
         return $this->m_attribList[$name];
+      else return NULL;
+    }
+
+    /**
+     * Gets all the attributes.
+     * @return array Array with the attributes.
+     */
+    function &getAttributes()
+    {
+      if (isset($this->m_attribList))
+        return $this->m_attribList;
       else return NULL;
     }
 
@@ -1088,7 +1108,6 @@
         if(is_object($p_attrib))
         {
           $list = atk_array_merge($list, $p_attrib->getAdditionalTabs($action));
-
           // Keep track of the tabs that containg attribs
           // so we only display none-empty tabs
           $tabCode = $this->m_attributeTabs[$attribname][0];
@@ -1124,7 +1143,7 @@
         $secMgr = &atkGetSecurityManager();
 
         // load the $g_nodes array to find out what tabs are required
-        if (!is_array($g_nodes[$this->m_module][$this->m_type]))
+        if (!isset($g_nodes[$this->m_module][$this->m_type]))
         {
           include_once(atkconfig("atkroot") . "atk/atknodetools.inc");
           $module = &getModule($this->m_module);
@@ -1137,11 +1156,11 @@
           // authorisation is required
           if (!$secMgr->allowed($this->m_module.".".$this->m_type,"tab_" . $tablist[$i]))
           {
-            atkdebug("Removing TAB ". $tablist[$i] . " because access to this tab was denied</b>");
+            atkdebug("Removing TAB ". $tablist[$i] . " because access to this tab was denied");
             unset($tablist[$i]);
           }
         }
-        else atkdebug("TAB " . $tablist[$i] . " does not need authorisation",DEBUG_WARNING);
+        else atkdebug("TAB " . $tablist[$i] . " does not need authorisation");
       }
 
       if (is_array($tablist))
@@ -1288,7 +1307,6 @@
     {
       global $g_sessionManager;
       $ui = &$this->getUi();
-
       $res = "";
 
       if ($record!="")
@@ -1303,8 +1321,12 @@
       {
         $nomodule=true;
         $descrtrace = "";
-        foreach ($descriptortrace as $desc)
+        // only show the last 3 elems
+        $cnt = count($descriptortrace);
+        if ($cnt>3) $descrtrace = "... - ";
+        for ($i=max(0, $cnt-3), $_i=$cnt; $i<$_i; $i++)
         {
+          $desc = $descriptortrace[$i];
           $descrtrace.= htmlentities($desc, ENT_COMPAT,atktext('charset'))." - ";
         }
         $res= $descrtrace . $res;
@@ -1461,8 +1483,15 @@
 
             if($attribname!="")
             {
-              $p_attrib = &$this->m_attribList[$attribname];
-              if (is_object($p_attrib)&&(!$p_attrib->hasFlag(AF_NO_FILTER))) $p_attrib->m_flags |= AF_READONLY|AF_HIDE_ADD;
+              if(isset($this->m_attribList[$attribname]))
+              {
+                $p_attrib = &$this->m_attribList[$attribname];
+                if (is_object($p_attrib)&&(!$p_attrib->hasFlag(AF_NO_FILTER))) $p_attrib->m_flags |= AF_READONLY|AF_HIDE_ADD;
+              }
+              else
+              {
+                atkerror("Attribute '$attribname' doens't exist in the attributelist");
+              }
             }
           }
         }
@@ -1581,7 +1610,7 @@
         case "edit": return "editform.tpl";
         case "view": return "viewform.tpl";
         case "search": return "searchform.tpl";
-        case "smartsearch": return "smartsearchform.tpl";        
+        case "smartsearch": return "smartsearchform.tpl";
       }
     }
 
@@ -1850,7 +1879,7 @@
                                                 "formstart"=>$formstart,
                                                 "formend"=>'</form>',
                                                 "buttons"=>$buttons));
-      return $ui->renderBox(array("title"=>$this->actionTitle('delete', $record),
+      return $ui->renderBox(array("title"=>$this->actionTitle($action, $record),
                                   "content"=>$output));
     }
 
@@ -2041,9 +2070,14 @@
 
     /**
      * Render a generic page, with a box, title, stacktrace etc.
-     * @param String $title The title of the page. Appears in the box title
-     *                      and in the page header.
-     * @param String $content The content to display in the box.
+     * @param String $title The pagetitle and if $content is a string, also
+     *                      the boxtitle.
+     * @param mixed $content The content to display on the page. This can be:
+     *                       - A string which will be the content of a single
+     *                         box on the page.
+     *                       - An associative array of $boxtitle=>$boxcontent
+     *                         pairs. Each pair will be rendered as a seperate
+     *                         box.
      * @return String A complete html page with the desired content.
      */
     function genericPage($title, $content)
@@ -2054,17 +2088,14 @@
 
     /**
      * Render a generic action.
-     *  
-     * Renders actionpage.tpl for the desired action. This doesn't include a
-     * box. The output can be rendered in a box with atkUi's renderBox method
-     * if desired.
+     *
+     * Renders actionpage.tpl for the desired action. This includes the
+     * given block(s) and a pagetrial, but not a box.
      * @param String $action The action for which the page is rendered.
      * @param mixed $blocks Pieces of html content to be rendered. Can be a
      *                      single string with content, or an array with
      *                      multiple content blocks.
-     * @param String HTLM fragment for the action.
-     * @param String $content The content to display in the box.
-     * @return String A complete html page with the desired content.
+     * @return String Piece of HTML containing the given blocks and a pagetrail.
      */
     function renderActionPage($action, $blocks=array())
     {
@@ -2370,9 +2401,11 @@
      * fail.
      * @param array $record The record to update in the database.
      * @param bool wether to execute the pre/post update triggers
+     * @param array $excludes exclude list (these attribute will *not* be updated)
+     * @param array $includes include list (only these attributes will be updated)
      * @return boolean True if succesful, false if not.
      */
-    function updateDb(&$record,$exectrigger=true)
+	  function updateDb(&$record, $exectrigger=true, $excludes="", $includes="")
     {
       $db = &$this->getDb();
       $query = &$db->createQuery();
@@ -2396,7 +2429,7 @@
           //Need to restore the NO_FILTER bit back to its original value.
           $flags = $this->m_flags;
           $this->addFlag(NF_NO_FILTER);
-          $recordset = $this->selectDb($pk,"","","","","edit"); // we need the same record we got when editing.
+          $recordset = $this->selectDb($pk,"","",$excludes,$includes,"edit"); // we need the same record we got when editing.
           $this->m_flags = $flags;
           $record["atkorgrec"] = $recordset[0];
         }
@@ -2406,13 +2439,17 @@
 
         foreach (array_keys($this->m_attribList) as $attribname)
         {
-          $p_attrib = &$this->m_attribList[$attribname];
-          if ($p_attrib->needsUpdate($record))
-          {
-            $storemode = $p_attrib->storageType("update");
-            if (hasFlag($storemode, PRESTORE)) $storelist["pre"][]=$attribname;
-            if (hasFlag($storemode, POSTSTORE)) $storelist["post"][]=$attribname;
-            if (hasFlag($storemode, ADDTOQUERY)) $storelist["query"][]=$attribname;
+	        if ((!is_array($excludes) || !in_array($attribname, $excludes)) &&
+  	          (!is_array($includes) || in_array($attribname, $includes)))
+  	      {
+  	        $p_attrib = &$this->m_attribList[$attribname];
+            if ($p_attrib->needsUpdate($record))
+            {
+              $storemode = $p_attrib->storageType("update");
+              if (hasFlag($storemode, PRESTORE)) $storelist["pre"][]=$attribname;
+              if (hasFlag($storemode, POSTSTORE)) $storelist["post"][]=$attribname;
+              if (hasFlag($storemode, ADDTOQUERY)) $storelist["query"][]=$attribname;
+            }
           }
         }
 
@@ -2543,6 +2580,23 @@
         }
       }      
 
+      // First we check if we are about to search and set a few things
+      // if we are
+      if (!atkReadOptimizer())
+      {
+        /* there may be search criteria, which we also filter */
+        $searchArray = isset($this->m_postvars['atksearch']) ? $this->m_postvars['atksearch'] : null;
+        $smartSearchCriteria = isset($this->m_postvars['atksmartsearch']) ? $this->m_postvars['atksmartsearch'] : null;
+        if (is_array($searchArray) && count($searchArray)>0 || is_array($smartSearchCriteria) && count($smartSearchCriteria) > 0)
+        {
+          $searching = true;
+          //The searchmode of an index should be used only once, therefore it uses atksinglesearchmode instead of atksearchmode.
+          $searchmode = isset($this->m_postvars["atksinglesearchmode"]) ? $this->m_postvars["atksinglesearchmode"] : (isset($this->m_postvars["atksearchmode"]) ? $this->m_postvars["atksearchmode"] : "");
+
+          if ($searchmode=="") $searchmode = atkconfig("search_defaultmode");
+        }
+      }
+
       if(array_key_exists("atkfilter", $this->m_postvars))
        $query->addCondition($this->validateFilter($this->m_postvars["atkfilter"]));
 
@@ -2647,14 +2701,13 @@
     {
       // remove primarykey (copied record will get a new primary key)
       unset($record["atkprimkey"]);
-
       // remove trigger has been executed references
       foreach (array_keys($record) as $key)
       {
         if (preg_match('/^__executed.*$/', $key))
           unset($record[$key]);
-      }      
-      
+      }
+
       $this->preCopy($record);
       return $this->addDb($record, true, $mode);
     }
@@ -2685,9 +2738,11 @@
      * @param String $mode The action for which the selectDb is called.
      *                     This param is used to determine which attributes
      *                     to include in the query and which not to include.
+     * @param boolean $distinct Perform a distinct selection (no duplicate
+     *                          records). Defaults to true.
      * @return array Array containing the retrieved records
      */
-    function selectDb($selector="", $order="", $limit="", $excludeList="",$includeList="", $mode="")
+    function selectDb($selector="", $order="", $limit="", $excludeList="",$includeList="", $mode="", $distinct=true)
     {
       $searching=false;
       $selectlist = array();
@@ -2826,7 +2881,7 @@
             }
           }
         }
-        
+
         // there may be smart search criteria which we need to apply
         if (is_array($smartSearchCriteria) && count($smartSearchCriteria) > 0)
         {
@@ -2850,7 +2905,8 @@
         $query->setLimit(0, $limit);
       }
 
-      $querystring = $query->buildSelect();
+      $querystring = $query->buildSelect($distinct);
+      if (!$querystring) return array();
 
       $db = &$this->getDb();
       $dbrecords = $db->getrows($querystring);
@@ -3163,10 +3219,10 @@
       if($exectrigger)
       {
         for ($i = 0, $_i = count($recordset); $i < $_i; $i++)
-  	    {
-  	      $return = $this->executeTrigger("preDelete",$recordset[$i]);
-  	      if (!$return) return false;
-  	    }
+        {
+          $return = $this->executeTrigger("preDelete",$recordset[$i]);
+          if (!$return) return false;
+        }
       }
 
       if (count($this->m_cascadingAttribs)>0)
@@ -3682,7 +3738,11 @@
      * This function searches in all fields that are not AF_HIDE_SEARCH, for
      * a certain expression (substring match). The search performed is an
      * 'or' search. If any of the fields contains the expression, the record
-     * is added to the resultset.
+     * is added to the resultset.\
+     *
+     * Currently, searchDb only searches those attributes that are of type
+     * string or text.
+     *
      * @param String $epxression The keyword to search for.
      * @return array Set of records matching the keyword.
      */
@@ -3702,7 +3762,7 @@
       {
         $p_attrib = &$this->m_attribList[$attribname];
         // Only search in fields that aren't explicitly hidden from search
-        if (!$p_attrib->hasFlag(AF_HIDE_SEARCH))
+        if (!$p_attrib->hasFlag(AF_HIDE_SEARCH) && in_array($p_attrib->dbFieldType(), array("string", "text")))
         {
            $this->m_postvars['atksearch'][$attribname]=$expression;
         }

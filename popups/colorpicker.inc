@@ -36,7 +36,7 @@
   $matrix    = colorMatrix($colHeight,$colWidth,$formRef,0,$_GET["usercol"]);
   $prefix    = $config_atkroot."atk/images/";
 
-  $layout .= "<form name='entryform'>";
+  $layout  = "<form name='entryform'>";
   $layout .= "<table width='100%' border='0' cellpadding='1' cellspacing='0' style='border: 1px solid #000000;'>";
   $layout .= "<tr bgcolor='#FFFFFF'>";
   $layout .= " <td valign='top' align='left'>".$matrix[0]."</td>";
@@ -68,7 +68,7 @@
   $page->register_style($theme->stylePath("style.css"));
   $page->register_script(atkconfig("atkroot")."atk/javascript/colorpicker.js");
   $page->addContent($layout);
-  $output->output($page->render(atktext('colorpicker'), true));
+  $output->output($page->render(atktext("colorpicker_selectcolor", "atk"), true));
 
   $output->outputFlush();
 

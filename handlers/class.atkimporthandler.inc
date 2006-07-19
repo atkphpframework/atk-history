@@ -312,7 +312,7 @@
               if ($display) $sample.= $display;
               else $sample.= atktext($attr->m_name);
 
-              if ((string)$newval!==(string)$line[$j])
+              if ((string)$display!==(string)$line[$j])
               {
                 // Also display raw value so we can verify
                 $sample.= ' <i style="color: #777777">('.trim($line[$j]).")</i>";
@@ -361,7 +361,7 @@
       }
       else
       {
-        $atkval = array($attributename=>$attr->fetchValue(array($attributename=>$newval)));
+        $atkval = array($attributename=>$newval);
       }
       return $attr->display($atkval);
     }
@@ -623,7 +623,7 @@
     function _usableForImport($obligatoryOnly, &$attrib)
     {
       return ((!$obligatoryOnly || $this->isObligatory($attrib))
-              && $attrib->storageType("add")==ADDTOQUERY && !$attrib->hasFlag(AF_AUTOINCREMENT) && !$this->isHide($attrib));
+              && !$attrib->hasFlag(AF_AUTOINCREMENT) && !$this->isHide($attrib));
     }
 
     /**
@@ -754,30 +754,7 @@
           $record[$intattr] = array('mode'=>"add",'atkaction'=>"save");
       }
 
-      if(!$this->isRelationAttribute($attrname))
-      {
-        if(!$this->hasRelationAttribute($attrname))
-        {
-          if (!is_string($value))
-          {
-            $record[$attrname] = $value;
-          }
-          else
-          {
-            $record[$attrname] = $attr->parseStringValue($value);
-          }
-        }
-        else
-        {
-          $attr->createDestination();
-          $key = $attr->m_destInstance->m_primaryKey;
-          $record[$attrname] = array($key[0]=>$attr->parseStringValue($value));
-        }
-      }
-      else
-      {
-        $record[$this->isRelationAttribute($attrname)][$attrname] = $attr->parseStringValue($value);
-      }
+      $record[$attrname] = $value;
     }
 
     /**
@@ -966,6 +943,7 @@
         $data = $this->fgetcsvfromline($line, $columncount, $delimiter, $enclosure);
 
         $rec = $initial_values;
+        atkimport("atk.utils.atkstringparser");
 
         for ($i=0, $_i=count($col_map); $i<$_i; $i++)
         {
@@ -976,8 +954,14 @@
               $value = $this->_getAttributeValue($col_map[$i], $allField, $data[$i], $importerrors,$counter,$rec);
             }
             else //this is the allField
-            {
+            {                    
               $value = $allFieldValue;
+              if (strpos($value, "[")!==false)
+              { 
+                // USer can use [fieldname] template in the allfield value
+                $sp = &new atkStringParser($value); 
+                $value = $sp->parse($rec);
+              }
             }
 
             $this->addToRecord($rec,$col_map[$i],$value);
@@ -1024,17 +1008,9 @@
           }
         }
       }
-      else if (is_object($attr) && method_exists($attr,"fetchValue"))
+      else if (is_object($attr) && method_exists($attr,"parseStringValue"))
       {
-        $relation = $this->isRelationAttribute($attributename);
-        if ($relation)
-        {
-          $value = $attr->fetchValue(array($attributename=>$value));
-        }
-        else
-        {
-          $value = $attr->fetchValue(array($attributename=>$value));
-        }
+        $value = $attr->parseStringValue($value);
       }
       else
       {
@@ -1068,10 +1044,10 @@
 
     /**
      * Adds the validated records but checks for errors first
-     * @param Array  $importerrors    Errors that occurred during validation of importfile
+     * @param Array  $importerrors   Errors that occurred during validation of importfile
      * @param Array  $validatedrecs  Records that were validated
      * @param Object $fp             Pointer to the importfile
-     * @param String $file           Filenmae
+     * @param String $file           Filename
      */
     function addRecords($importerrors, $validatedrecs, $fp, $file)
     {
@@ -1339,7 +1315,8 @@
       $allFieldValue =  $this->m_postvars[$allField];
 
       $this->m_node->m_postvars["atksearchmode"] = "exact";
-      if (!in_array($allFieldValue)) $this->m_node->m_fuzzyFilters[] = $allFieldValue;
+      if (!in_array($allFieldValue,$this->m_node->m_fuzzyFilters)) 
+        $this->m_node->m_fuzzyFilters[] = $allFieldValue;
 
       $dbrec = $this->m_node->searchDb(array($updatekey1=>$updatekey1val));
 
