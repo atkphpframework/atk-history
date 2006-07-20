@@ -63,6 +63,32 @@
       $this->atkRelation($name, $destination, $flags|AF_CASCADE_DELETE);
     }
 
+
+    function _getSelectableRecords($record=array(), $mode="")
+    {
+      $method = $this->fieldName()."_selection";
+      if (method_exists($this->m_ownerInstance, $method))
+        return $this->m_ownerInstance->$method($record, $mode);
+      else return $this->getSelectableRecords($record, $mode);
+    }
+
+    function getSelectableRecords($record=array(), $mode="",$force=false)
+    {
+      if ($this->createDestination())
+      {
+        if ($this->m_destinationFilter!="")
+        {
+          $filter = $this->parseFilter($this->m_destinationFilter, $record);
+          $this->m_destInstance->addFilter($filter);
+        }
+
+        return $this->m_destInstance->selectDb("","","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
+      }
+
+      return array();
+    }
+
+
     /**
      * Create instance of the intermediairy link node.
      *
@@ -390,7 +416,7 @@
 
         if (count($value)==1) // exactly one value
         {
-          $query->addSearchCondition($query->exactCondition($this->fieldName().".".$this->getRemoteKey(),escapeSQL($value[0])));
+          $query->addSearchCondition($query->exactCondition($this->fieldName().".".$this->getRemoteKey(),$this->escapeSQL($value[0])));
         }
         else // search for more values using IN()
         {
@@ -398,7 +424,6 @@
         }
       }
     }
-
 
     /**
      * Checks if a key is not an array 
@@ -415,5 +440,3 @@
       return $key;
     }
   }
-
-?>

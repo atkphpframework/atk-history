@@ -69,7 +69,7 @@
      * @param $record Current record
      * @return String piece of html code
      */
-    function edit($record="", $fieldprefix="")
+    function edit($record="", $fieldprefix="", $mode="")
     {
       $cols = $this->m_cols;
       $modcols = $cols-1;
