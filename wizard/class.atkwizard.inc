@@ -140,10 +140,8 @@
      */
     function excecute()    
     {
-      atk_var_dump(atkGetPostVar(), "Postvars");
-      
       $atkwizardaction = AtkWizardActionLoader::getWizardAction(atkGetPostVar("atkwizardaction"));           
-      if(atkGetPostVar("atkaction") == 'save' || atkGetPostVar("atkaction") == "update")
+      if(atkGetPostVar("atkaction") == 'save' || atkGetPostVar("atkaction") == "update" || atkGetPostVar("atkaction") == "delete")
       {
         //save form
         return $this->save($atkwizardaction);               
@@ -168,16 +166,17 @@
     function wizardDispatch($atkWizardaction)
     {
       atkdebug("wizardDispatch");
+      
       if($atkWizardaction == 'next' || $atkWizardaction == 'saveandnext')
       {        
         $wizardPanel = $this->m_panelList[$this->m_currentPanelIndex+1];        
         $this->setHiddenParam("atkwizardpanelindex", $this->m_currentPanelIndex+1);         
       }
-      elseif($atkWizardaction == 'saveandaddnew')
+      elseif($atkWizardaction == 'saveandaddnew' || $atkWizardaction == 'delete')
       {        
         //We saved the panel but we want to show the same panel again.
         $wizardPanel = $this->m_panelList[$this->m_currentPanelIndex];        
-        $this->setHiddenParam("atkwizardpanelindex", $this->m_currentPanelIndex); 
+        $this->setHiddenParam("atkwizardpanelindex", $this->m_currentPanelIndex);
       }
       else 
       {
