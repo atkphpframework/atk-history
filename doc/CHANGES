@@ -243,8 +243,7 @@ sending
   dispatchUrl function already encodes the variables. [Lineke]  
 * It is now possible to change the php_file to which is
   posted in forms. [Lineke]
-* Members in memberpanel now also can be deleted, necessary for the 'site
-  for present' feature. [Nico]
+* Wizard stays on same panel on delete action. [Nico]
 -- End Saruman changes --
 
 
