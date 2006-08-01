@@ -869,6 +869,26 @@
     }
 
     /**
+     * Checks if the user has filled in something:
+     * return true if he has, otherwise return false
+     * 
+     * @param  -
+     * @return boolean.
+     */
+    function &filledInForm()
+    {
+      if (is_null($this->getAttributes())) return false;
+      
+      $postvars = atkGetPostVar();
+      foreach ($this->m_attribList AS $name => $value)
+        if (!$value->hasFlag(AF_HIDE_LIST))
+          if (!is_array($value->fetchValue($postvars)) && $value->fetchValue($postvars)!=="")
+            return true;
+
+      return false;
+    }
+
+    /**
      * Gets all the attributes.
      * @return array Array with the attributes.
      */
