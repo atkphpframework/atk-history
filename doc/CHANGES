@@ -244,6 +244,7 @@ sending
 * It is now possible to change the php_file to which is
   posted in forms. [Lineke]
 * Wizard stays on same panel on delete action. [Nico]
+* Wizard now determines to continue to next panel based on form. [Nico]
 -- End Saruman changes --
 
 

@@ -17,6 +17,7 @@
  */
   
  atkimport("atk.wizard.atkwizardactionloader");
+ atkimport("atk.atknodetools");
  
  define("WIZARD_MODE_ADD"     , 1);
  define("WIZARD_MODE_EDIT"    , 2);
@@ -113,7 +114,10 @@
     function atkWizard($mode = WIZARD_MODE_ADD, $returnOutput=false)
     {
       $this->m_mode = $mode;
-      $this->m_currentPanelIndex = atkGetPostVar("atkwizardpanelindex");      
+      if (atkGetPostVar("atkwizardpanelindex")!="")
+        $this->m_currentPanelIndex = atkGetPostVar("atkwizardpanelindex");
+      else 
+        $this->m_currentPanelIndex = 0;
       $this->m_returnOutput = $returnOutput;
       $this->m_self = &$this;
     }
@@ -136,22 +140,33 @@
      * Main execution function (start of the wizard). Every page load will go through
      * this function
      *
-     * @return Strig The html output
+     * @return String The html output
      */
     function excecute()    
     {
-      $atkwizardaction = AtkWizardActionLoader::getWizardAction(atkGetPostVar("atkwizardaction"));           
-      if(atkGetPostVar("atkaction") == 'save' || atkGetPostVar("atkaction") == "update" || atkGetPostVar("atkaction") == "delete")
+      $atkwizardaction = AtkWizardActionLoader::getWizardAction(atkGetPostVar("atkwizardaction"));
+      
+      // get our node
+      $currentWizardPanel = &$this->getCurrentPanel();
+      $node = $currentWizardPanel->getPanelNode();
+      
+      // check if user has filled in something
+      if ((atkGetPostVar("atkaction") == 'save' || atkGetPostVar("atkaction") == "update" || atkGetPostVar("atkaction") == "delete") && $node->filledInForm())
       {
         //save form
         return $this->save($atkwizardaction);               
       }
-      elseif($atkwizardaction == 'finish')
+      elseif ($atkwizardaction == 'finish')
       {
         return $this->finish();
       }
-      else 
+      else       
       {
+        if(!((atkGetPostVar("atkaction") == 'save' || atkGetPostVar("atkaction") == "update" || atkGetPostVar("atkaction") == "delete") && $node->filledInForm()))
+        {
+          global $ATK_VARS;
+          $ATK_VARS['atkaction'] = ""; 
+        }
         return $this->wizardDispatch($atkwizardaction);
       }  
     }        
@@ -230,15 +245,14 @@
       $this->m_redirectParams[$key] = $value;
     }
     
-    function getCurrentPanel()
+    function &getCurrentPanel()
     {
-      $currentWizardPanel = $this->m_panelList[$this->m_currentPanelIndex];      
-      if(!is_object($currentWizardPanel)) 
+      if(!is_object($this->m_panelList[$this->m_currentPanelIndex])) 
       {
         atkerror("Panel could not be crated. Non existing panel index: " . $this->m_currentPanelIndex);
         return NULL;
       }
-      return $currentWizardPanel;
+      return $this->m_panelList[$this->m_currentPanelIndex];
     }   
     
     /**
