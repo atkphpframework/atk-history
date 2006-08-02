@@ -245,6 +245,8 @@ sending
   posted in forms. [Lineke]
 * Wizard stays on same panel on delete action. [Nico]
 * Wizard now determines to continue to next panel based on form. [Nico]
+* Fixed bug in genericPage caused by saruman branche merge : getUi and 
+  addStyle were not called on node [Nico]
 -- End Saruman changes --
 
 

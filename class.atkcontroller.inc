@@ -150,8 +150,8 @@
      */
     function genericPage($title, $content)
     {
-      $ui = &$this->getUi();
-      $this->addStyle("style.css");
+      $ui = &$this->m_node->getUi();
+      $this->m_node->addStyle("style.css");
       if (!is_array($content)) $content = array($title=>$content);
       $blocks = array();
       foreach($content as $itemtitle => $itemcontent)
