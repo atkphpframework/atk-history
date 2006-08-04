@@ -166,7 +166,11 @@ sending
 [Maurice]
 * Removed unneeded function call from newNode function. [Maurice]
 * Removed unneeded global vars from atkModule::newNode and
-  atkModule::nodeOverloaders. [Maurice] 
+  atkModule::nodeOverloaders. [Maurice]
+* Added fieldprefix for javascript in atkmanyboolrelation. [Lineke]
+* Removed unused code in atkDataDecode function. [Lineke]
+* Atkmanyboolrelation does not use AMDAE anymore, php now supports multi-
+  dimensional arrays (might break in older php versions). [Lineke]
 + Added atkWizardController class which is responsable for typical
   control actions for nodes being used with atkWizard. [Maurice]
 + Added atkWizardActionLoader which convertes a atkwizardaction key array
@@ -247,6 +251,8 @@ sending
 * Wizard now determines to continue to next panel based on form. [Nico]
 * Fixed bug in genericPage caused by saruman branche merge : getUi and 
   addStyle were not called on node [Nico]
+* Atkshuttlerelation does not use AMDAE anymore, php now supports multi-
+  dimensional arrays (might break in older php versions). [Lineke]
 -- End Saruman changes --
 
 
