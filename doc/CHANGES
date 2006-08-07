@@ -144,7 +144,9 @@ Changed in ATK 5.6.1
 * Loading of tabs when the first tab is not the selected one is now smoother.
   [Jeroen, Ivo]
   
--- Begin Saruman changes --
+
+Changed in ATK 5.6.1: Saruman Branch
+------------------------------------
 
 + Added wizard functionality. A wizard can be constructed containing atkNode
   classes. Class atkWizard supports all atkActions but it is mainly tested
@@ -253,6 +255,7 @@ sending
   addStyle were not called on node [Nico]
 * Atkshuttlerelation does not use AMDAE anymore, php now supports multi-
   dimensional arrays (might break in older php versions). [Lineke]
++ Added style class for shuttlerelation [Angelo]
 -- End Saruman changes --
 
 
