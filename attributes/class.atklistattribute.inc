@@ -162,17 +162,17 @@
      * m_values and m_lookup.
      */
     function getOptions($rec=null) { 
-    	if(!isset($this->m_types["options"]) || $this->m_types["options"] == array())
+    	if(!isset($this->m_types["options"]) || count($this->m_types["options"]) == 0)
     		return $this->m_options;
     	return $this->_get("options",$rec); 
     }
     function getValues($rec=null) { 
-    	if(!isset($this->m_types["values"]) || $this->m_types["values"] == array())
+    	if(!isset($this->m_types["values"]) || count($this->m_types["values"]) == 0)
     		return $this->m_values;
     	return $this->_get("values",$rec); 
     }
     function getLookup($rec=null) { 
-    	if(!isset($this->m_types["lookup"]) || $this->m_types["lookup"] == array())
+    	if(!isset($this->m_types["lookup"]) || count($this->m_types["lookup"]) == 0)
     		return $this->m_lookup;
     	return $this->_get("lookup",$rec); 
     }

@@ -114,6 +114,8 @@ Changes in tomorrow branch
   override default variable values). [Peter]
 * Statefulness of DHTML tabs is now configurable. [Peter]
 * Fixed no stat error in atkDirectoryTraverser. [Peter]
+* atkListAttribute: check empty array with count instead of comparison
+  to an empty array. [Peter]
 
 Changed in ATK 5.6.1
 --------------------
