@@ -256,6 +256,8 @@ sending
 * Atkshuttlerelation does not use AMDAE anymore, php now supports multi-
   dimensional arrays (might break in older php versions). [Lineke]
 + Added style class for shuttlerelation [Angelo]
+* branche merge problem: $m_extended_search_action var was declared twice 
+  [Lineke,Nico]
 -- End Saruman changes --
 
 
