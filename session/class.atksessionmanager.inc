@@ -675,6 +675,8 @@
      */
     function &getSession()
     {
+      if (!isset($_SESSION[atkconfig("identifier")]) || !is_array($_SESSION[atkconfig("identifier")]))
+        $_SESSION[atkconfig("identifier")] = array();
       return $_SESSION[atkconfig("identifier")];
     }
 

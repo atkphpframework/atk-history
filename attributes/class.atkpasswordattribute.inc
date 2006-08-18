@@ -16,15 +16,25 @@
    * $Id$
    */
 
-  /** flag(s) specific for atkPasswordAttribute */
-  atkimport("atk.attributes.atkattribute");
+   atkimport("atk.attributes.atkattribute");
 
   /**
    * Flag(s) specific for atkPasswordAttribute
    */
-
   define("AF_PASSWORD_NOVALIDATE",      AF_SPECIFIC_1); // disables password check when editing password field
   define("AF_PASSWORD_NO_VALIDATE",     AF_SPECIFIC_1); // disables password check when editing password field
+  define("AF_PASSWORD_NO_ENCODE",       AF_SPECIFIC_2);
+
+  /**
+   * Categories of password character categories
+   */
+  define("UPPERCHARS", "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+  define("LOWERCHARS", "abcdefghijklmnopqrstuvwxyz");
+  define("ALPHABETICCHARS", UPPERCHARS.LOWERCHARS);
+  define("NUMBERS", "0123456789");
+  define("SPECIALCHARS", "!@#$%^&*()-+_=[]{}\|;:'\",.<>/?"); // <- only used when generating a password
+  define("EASYVOWELS", "bcdfghjkmnpqrstvwxz");
+  define("EASYCONSONANTS", "aeuy");
 
   /**
    * Categories of password character categories
@@ -86,6 +96,18 @@
 
       // Set the restrictions
       $this->setRestrictions($restrictions);
+    }
+    
+    /**
+     * Encodes the given value only if the 
+     * AF_PASSWORD_NO_ENCODE flag is not set.
+     *
+     * @param string $value
+     * @return string
+     */
+    function encode($value)
+    {
+      return $this->hasFlag(AF_PASSWORD_NO_ENCODE) ? $value : md5($value);
     }
 
     /**
@@ -506,16 +528,16 @@
     {
       if ($rec[$this->fieldName()]["current"])
       {
-        $rec[$this->fieldName()]["current"] = md5($rec[$this->fieldName()]["current"]);
+        $rec[$this->fieldName()]["current"] = $this->encode($rec[$this->fieldName()]["current"]);
       }
       if ($rec[$this->fieldName()]["new"])
       {
         $rec[$this->fieldName()]["newplain"] = $rec[$this->fieldName()]["new"];
-        $rec[$this->fieldName()]["new"] = md5($rec[$this->fieldName()]["new"]);
+        $rec[$this->fieldName()]["new"] = $this->encode($rec[$this->fieldName()]["new"]);
       }
       if ($rec[$this->fieldName()]["again"])
       {
-        $rec[$this->fieldName()]["again"] = md5($rec[$this->fieldName()]["again"]);
+        $rec[$this->fieldName()]["again"] = $this->encode($rec[$this->fieldName()]["again"]);
       }
       return $rec[$this->fieldName()];
     }

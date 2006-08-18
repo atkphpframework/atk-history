@@ -44,7 +44,7 @@
       /* check config */
       if (!is_array($languages) || sizeof($languages) == 0)
         return atktext("multilanguage_error_config",$this->m_ownerInstance->m_module,$this->m_ownerInstance->atknodetype());
-  
+
       /* first selected other language */
       //$formname = $prefix.'[multilanguage_current]';
       $result = '<input id="'.$prefix.'_current" type="hidden" name="'.$formname.'" value="'.($this->m_ownerInstance->m_postvars['atkeditlng']?$this->m_ownerInstance->m_postvars['atkeditlng']:$languages[1]).'">';
@@ -160,14 +160,12 @@
     {
       return "";
     }
-    
+
     function addToEditArray($mode, &$arr, &$defaults, &$error, $fieldprefix)
     {
       $lngs = $this->getLanguages();
-      if (count($lngs)<=1)
-      {
-        return parent::addToEditArray($mode, $arr, $defaults, $error, $fieldprefix);
-      }
+      if (count($lngs)<=2) $this->addFlag(AF_HIDE);
+      return parent::addToEditArray($mode, $arr, $defaults, $error, $fieldprefix);
     }
   }
 ?>

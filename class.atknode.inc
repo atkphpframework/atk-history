@@ -799,7 +799,7 @@
         $attribute->m_order = $order;
         $this->m_attribIndexList[$attrib_index]=array("name"=>$attribute->fieldName(),"tabs"=>$tab,"order"=>$attribute->m_order);
         $attribute->m_index = $attrib_index;
-        //$attribute->m_tabs = $tab;
+        $attribute->setTabs($tab);
         $this->m_attributeTabs[$attribute->fieldname()] = $tab;
         $attrib_index++;
       }
@@ -808,8 +808,7 @@
       {
         $this->m_relations[strtolower(get_class($attribute))][$attribute->fieldName()]=&$attribute;
       }
-
-
+atkdebug("Setting tabs for ".$attribute->fieldName());
       $attribute->setTabs($this->m_attributeTabs[$attribute->fieldName()]);
       return $attribute;
     }
@@ -1086,7 +1085,7 @@
     {
       $list = &$this->m_tabList[$action];
 
-      $this->checkTabRights($list);
+      $disable = $this->checkTabRights($list);
 
       $tabAttribSet = array();
       $tabCode = "";
@@ -1107,7 +1106,7 @@
         $hideme = true;
         for($i=0, $_i=sizeof($p_attrib->m_tabs); $i<$_i; $i++)
         {
-          if (is_array($list) && in_array($p_attrib->m_tabs[$i],$list))
+          if ((is_array($list) && in_array($p_attrib->m_tabs[$i],$list)) || (!is_array($disable) || !in_array($p_attrib->m_tabs[$i],$disable)))
           {
             $hideme = false;
             break;
@@ -1118,14 +1117,14 @@
 
         if(is_object($p_attrib))
         {
-          $list = atk_array_merge($list, $p_attrib->getAdditionalTabs($action));
+          $additional = $p_attrib->getAdditionalTabs($action);
+          $list = atk_array_merge($list, $additional);
+          
           // Keep track of the tabs that containg attribs
           // so we only display none-empty tabs
-          $tabCode = $this->m_attributeTabs[$attribname][0];
-          if (!isset($this->m_filledTabs[$tabCode]))
-          {
-            $this->m_filledTabs[$tabCode] = true;
-          }
+          $tabCode = $this->m_attributeTabs[$attribname][0];          
+          $this->m_filledTabs = atk_array_merge($this->m_filledTabs, array($tabCode));
+          $this->m_filledTabs = atk_array_merge($this->m_filledTabs, $additional);
         }
         else
         {
@@ -1144,10 +1143,13 @@
      * removes tabs from the list that may not be accessed
      *
      * @param array $tablist Array containing the current tablist
+     * @return array with disable tabs
      */
     function checkTabRights(&$tablist)
     {
       global $g_nodes;
+      $disable = array();
+
       for ($i=0, $_i=count($tablist); $i<$_i; $i++)
       {
         if ($tablist[$i] == "" || $tablist[$i] == "default") continue;
@@ -1168,6 +1170,7 @@
           if (!$secMgr->allowed($this->m_module.".".$this->m_type,"tab_" . $tablist[$i]))
           {
             atkdebug("Removing TAB ". $tablist[$i] . " because access to this tab was denied");
+            $disable[] = $tablist[$i];
             unset($tablist[$i]);
           }
         }
@@ -1185,6 +1188,8 @@
           $newarray[] = $tab;
         $tablist = $newarray;
       }
+
+      return $disable;
     }
 
     /**
@@ -1201,7 +1206,7 @@
       {
         foreach ($list AS $tabEntry)
         {
-          if (isset($this->m_filledTabs[$tabEntry]))
+          if (in_array($tabEntry, $this->m_filledTabs))
           {
             $tabList[] = $tabEntry;
           }
@@ -1501,7 +1506,7 @@
               }
               else
               {
-                atkerror("Attribute '$attribname' doens't exist in the attributelist");
+                atkerror("Attribute '$attribname' doesn't exist in the attributelist");
               }
             }
           }
@@ -1809,6 +1814,28 @@
     /**
      * Set extended search action.
      * 
+     * @param $action extended search action
+     */
+    function setExtendedSearchAction($action)
+    {
+      $this->m_extended_search_action = $action;
+    }
+
+    /**
+     * Get extended search action.
+     *
+     * @return extended search action
+     */
+    function getExtendedSearchAction()
+    {
+      if (empty($this->m_extended_search_action))
+        return atkconfig('extended_search_action');
+      else return $this->m_extended_search_action;
+    }
+
+    /**
+     * Set extended search action.
+     *
      * @param $action extended search action
      */
     function setExtendedSearchAction($action)
@@ -2220,14 +2247,18 @@
      * @param array $vars The request variables that were posted from a form.
      * @return array A valid record.
      */
-    function updateRecord($vars ="")
+    function updateRecord($vars ="", $includes=NULL, $excludes=NULL)
     {
       if ($vars=="") $vars = $this->m_postvars;
       $record = array();
       foreach (array_keys($this->m_attribList) as $attribname)
       {
-        $p_attrib = &$this->m_attribList[$attribname];
-        $record[$p_attrib->fieldName()]=$p_attrib->fetchValue($vars);
+        if ((!is_array($includes) || in_array($attribname, $includes)) &&
+            (!is_array($excludes) || !in_array($attribname, $excludes)))
+        {
+          $p_attrib = &$this->m_attribList[$attribname];
+          $record[$p_attrib->fieldName()]=$p_attrib->fetchValue($vars);
+        }
       }
       $record["atkprimkey"] = $vars["atkprimkey"];
       return $record;
@@ -2444,6 +2475,9 @@
           $this->m_flags = $flags;
           $record["atkorgrec"] = $recordset[0];
         }
+
+        if($exectrigger) $this->executeTrigger("preUpdate",$record);
+
         $query->addCondition($pk);
 
         $storelist = array("pre"=>array(), "post"=>array(), "query"=>array());
@@ -2563,7 +2597,6 @@
     {
       $searching = false;
       $loadlist = array();
-      $mltool = &atkinstance("atk.utils.atkmlsplitter");
       $db = &$this->getDb();
       $query = &$db->createQuery();
 
@@ -2608,6 +2641,15 @@
         }
       }
 
+      // First we check if we are about to search and set a few things
+      // if we are
+      if (!atkReadOptimizer())
+      {
+        /* there may be search criteria, which we also filter */
+        $searchArray = isset($this->m_postvars['atksearch']) ? $this->m_postvars['atksearch'] : null;
+        $smartSearchCriteria = isset($this->m_postvars['atksmartsearch']) ? $this->m_postvars['atksmartsearch'] : null;        
+      }
+
       if(array_key_exists("atkfilter", $this->m_postvars))
        $query->addCondition($this->validateFilter($this->m_postvars["atkfilter"]));
 
@@ -2643,7 +2685,7 @@
       }
 
       // there may be search criteria, which we also filter
-      if (is_array($searchArray) && count($searchArray)>0)
+      if (is_array($searchArray) && count($searchArray) > 0)
       {
         while (list($key,$value) = each($searchArray))
         {
@@ -2658,15 +2700,16 @@
                 $value = $value[$key];
               }
 
+              $searchmode = $this->getSearchMode();
               if(is_array($searchmode))
               {
                 $search = $searchmode[$key];
                 if ($search=="") $search = atkconfig("search_defaultmode");
-                $p_attrib->searchCondition($query, $this->m_table, $value, $search);
+                $p_attrib->searchCondition($query, $this->m_table, $value, $search, "");
               }
               else
               {
-                $p_attrib->searchCondition($query, $this->m_table, $value, $searchmode);
+                $p_attrib->searchCondition($query, $this->m_table, $value, $searchmode, "");
               }
             }
             else
@@ -2684,7 +2727,14 @@
         $this->applySmartSearchCriteria($query, $smartSearchCriteria);
       }     
 
-      $mltool->addMlCondition($query,$this,$mode,$excludeList,$includeList);
+      // there may be smart search criteria which we need to apply
+      if (is_array($smartSearchCriteria) && count($smartSearchCriteria) > 0)
+      {
+        $this->applySmartSearchCriteria($query, $smartSearchCriteria);
+      }
+
+      $mltool = &atkinstance("atk.utils.atkmlsplitter");
+      $mltool->addMlCondition($query,$this,$mode,$this->m_table);
 
       $querystring = $query->buildCount();
       $db = &$this->getDb();
@@ -2712,6 +2762,7 @@
     {
       // remove primarykey (copied record will get a new primary key)
       unset($record["atkprimkey"]);
+
       // remove trigger has been executed references
       foreach (array_keys($record) as $key)
       {
@@ -2721,6 +2772,28 @@
 
       $this->preCopy($record);
       return $this->addDb($record, true, $mode);
+    }
+    
+    /**
+     * Get the current searchmode. 
+     *
+     * @return mixed If there is one searchmode set for all attributes, this 
+     *               method returns a string. If there are searchmodes per
+     *               attribute, an array of strings is returned.
+     */
+    function getSearchMode()
+    {
+      //The searchmode of an index should be used only once, therefore it uses
+      // atksinglesearchmode instead of atksearchmode.
+      if (isset($this->m_postvars["atksinglesearchmode"]))
+      {
+        return $this->m_postvars["atksinglesearchmode"];
+      }
+      else if (isset($this->m_postvars["atksearchmode"]))
+      {
+        return $this->m_postvars["atksearchmode"];
+      }
+      return atkconfig("search_defaultmode");      
     }
 
     /**
@@ -2764,8 +2837,6 @@
       $db = &$this->getDb();
       $query = &$db->createQuery();
 
-      $mltool = &atkinstance("atk.utils.atkmlsplitter");
-
       $query->addTable($this->m_table);
       $query->addCondition($selector);
 
@@ -2781,10 +2852,6 @@
         if (is_array($searchArray) && count($searchArray)>0 || is_array($smartSearchCriteria) && count($smartSearchCriteria) > 0)
         {
           $searching = true;
-          //The searchmode of an index should be used only once, therefore it uses atksinglesearchmode instead of atksearchmode.
-          $searchmode = isset($this->m_postvars["atksinglesearchmode"]) ? $this->m_postvars["atksinglesearchmode"] : (isset($this->m_postvars["atksearchmode"]) ? $this->m_postvars["atksearchmode"] : "");
-
-          if ($searchmode=="") $searchmode = atkconfig("search_defaultmode");
         }
       }
 
@@ -2834,6 +2901,9 @@
           $cpylist[]=$attribname;
         }
       }
+      atk_var_dump($postloadlist,"postloadlist");
+      atk_var_dump($preloadlist,"preloadlist");
+      atk_var_dump($querylist,"querylist");
 
 
       $recordset = array();
@@ -2851,7 +2921,9 @@
       // Add attributes to query
       for ($i=0, $_i=count($querylist); $i<$_i; $i++)
       {
+        atkdebug("Attribute: ".$querylist[$i]);
         $p_attrib = &$this->m_attribList[$querylist[$i]];
+        atkdebug("Class $i : ".get_class($p_attrib));
         $p_attrib->addToQuery($query,$this->m_table,"",(isset($recordset[0])?$recordset[0]:array()),1,$mode); // start at level 1
       }
 
@@ -2873,15 +2945,16 @@
                   $value = $value[$key];
                 }
 
+                $searchmode = $this->getSearchMode();
                 if(is_array($searchmode))
                 {
                   $search = $searchmode[$key];
                   if ($search=="") $search = atkconfig("search_defaultmode");
-                  $p_attrib->searchCondition($query, $this->m_table, $value, $search);
+                  $p_attrib->searchCondition($query, $this->m_table, $value, $search, "");
                 }
                 else
                 {
-                  $p_attrib->searchCondition($query, $this->m_table, $value, $searchmode);
+                  $p_attrib->searchCondition($query, $this->m_table, $value, $searchmode, "");
                 }
               }
               else
@@ -2900,7 +2973,8 @@
         }
       }
 
-      $mltool->addMlCondition($query,$this,$mode,$excludeList,$includeList);
+      $mltool = &atkinstance("atk.utils.atkmlsplitter");
+      $mltool->addMlCondition($query,$this,$mode,$this->m_table);
 
       if ($order!="") $query->addOrderBy($order);
 
@@ -3005,10 +3079,54 @@
       return $recordset;
     }
     
+    
     /**
-     * Apply the given smart search criteria to the
-     * given query object.
-     * 
+     * Apply the given search criteria to the given query object.
+     *
+     * @param atkQuery $query    The query object.
+     * @param array    $searchArray The search criteria.
+     */
+    function applySearchCriteria(&$query, $searchArray)
+    {
+      $searchmode = $this->getSearchMode();
+      // there may be search criteria, which we also filter
+      
+      foreach ($searchArray as $key=>$value)
+      {
+        if( $value!="")
+        {
+          $p_attrib = &$this->getAttribute($key);
+
+          if (is_object($p_attrib))
+          {
+            if (is_array($value) && isset($value[$key]))
+            {
+              $value = $value[$key];
+            }
+
+            if(is_array($searchmode))
+            {
+              $search = $searchmode[$key];
+              if ($search=="") $search = atkconfig("search_defaultmode");
+              $p_attrib->searchCondition($query, $this->m_table, $value, $search);
+            }
+            else
+            {
+              $p_attrib->searchCondition($query, $this->m_table, $value, $searchmode);
+            }
+          }
+          else
+          {
+            $condition = "lower(".$this->m_table.".".$key.") LIKE lower('%".escapeSQL($value,true)."%')";
+            $query->addSearchCondition($condition);
+          }
+        }
+      }
+    }    
+
+    /**
+     * Apply the given smart search criteria to the given query object.
+     *
      * @param atkQuery $query    The query object.
      * @param Array    $criteria The smart search criteria.
      */
@@ -3019,13 +3137,13 @@
         $path = $criterium['attrs'];
         $value = $criterium['value'];
         $mode = $criterium['mode'];
-        
+
         $attrName = array_shift($path);
         $attr = &$this->getAttribute($attrName);
-        
+
         if (is_object($attr))
         {
-          $attr->smartSearchCondition($id, 0, $path, $query, $this->m_table, $value, $mode);
+          $attr->smartSearchCondition($id, 0, $path, $query, $this->m_table, $value, $mode, "");
         }
       }
     }
@@ -3046,8 +3164,10 @@
      *                           the primary key and fields from the desriptor
      *                           are added.
      */
-    function addToQuery(&$query, $alias="", $level=0, $allfields=false)
+    function addToQuery(&$query, $alias="", $level=0, $allfields=false, $mode="select")
     {
+      if ($level>=4) return;
+      
       $usefieldalias = false;
 
       if ($alias=="")
@@ -3086,10 +3206,79 @@
           {
             if ($usefieldalias) $fieldaliasprefix = $alias."_AE_";
 
-            $p_attrib->addToQuery($query,$alias, $fieldaliasprefix,"",$level+1, "select");
+            $p_attrib->addToQuery($query,$alias, $fieldaliasprefix,"",$level, $mode);
           }
         }
         else atkdebug("$attribname is not an object?! Check your descriptor_def for non-existant fields");
+      }
+
+      $mltool = &atkinstance("atk.utils.atkmlsplitter");
+      $mltool->addMlCondition($query,$this,$mode,$alias);
+    }
+
+    /**
+     * Get search condition for this node.
+     *
+     * @param atkQuery $query
+     * @param unknown_type $table
+     * @param unknown_type $alias
+     * @param unknown_type $value
+     * @param unknown_type $searchmode
+     * @return unknown
+     */
+    function getSearchCondition(&$query, $table, $alias, $value, $searchmode)
+    {
+      $usefieldalias = false;
+
+      if ($alias=="")
+      {
+        $alias = $this->m_table;
+      }
+      else
+      {
+        $usefieldalias = true;
+      }
+
+      $searchConditions = array();
+
+      $attribs = $this->descriptorFields();
+      array_unique($attribs);
+
+      foreach($attribs as $field)
+      {
+        $p_attrib = &$this->getAttribute($field);
+        if (!is_object($p_attrib)) continue;
+
+        if ($usefieldalias) $fieldaliasprefix = $alias."_AE_";
+
+        // checking for the getSearchCondition for backwards compatibility
+        if (method_exists($p_attrib, "getSearchCondition"))
+        {
+          $attribsearchmode = $searchmode;
+          if (is_array($searchmode))
+          {
+            $attribsearchmode = $attribsearchmode[$p_attrib->m_name];
+          }
+          atkdebug("getSearchCondition: $table - $fieldaliasprefix");
+          $searchCondition = $p_attrib->getSearchCondition($query,$table,$value,$searchmode,$fieldaliasprefix);
+          if ($searchCondition != "")
+            $searchConditions[] = $searchCondition;
+        }
+        else
+        {
+          // if the attrib can't return it's searchcondition, we'll just add it to the query
+          // and hope for the best
+          $p_attrib->searchCondition($query,$table,$value,$searchmode,$fieldaliasprefix);
+        }
+      }
+
+      if (count($searchConditions))
+      {
+        return "(".implode(" OR ",$searchConditions).")";
+      }
+      else
+      {
+        return "";
       }
     }
 

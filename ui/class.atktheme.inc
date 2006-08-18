@@ -129,25 +129,7 @@
     {
       if ($module!="" & isset($this->m_theme["modulefiles"][$module][$type][$name]))
       {
-/**
-        $attrib = $this->_getStackedItem($attribname,$attribvalue);
-        if ($attrib)
-        {
-          //Hack to prevent path having 2 atkroot's
-          $attribute = $attrib["dir"].$returnpath;
-          if(strpos($attribute, "./") === 0)
-            $attribute = substr_replace($attribute, "", 0, 2);
-          atkdebug("attribute". $attribute . " atkconfig('atkroot') " . atkconfig('atkroot'));
-          
-          if(strpos($attribute,  atkconfig('atkroot')) === 0)
-            return $attribute;
-          else
-            return atkconfig('atkroot').$attribute;
-        }
-        return atkconfig("atkroot")."atk/themes/default/".$defaultreturnpath;
-*/
         return moduleDir($module)."themes/".$this->m_theme["modulefiles"][$module][$type][$name];
-
       }
       if (isset($this->m_theme["files"][$type][$name]))
       {

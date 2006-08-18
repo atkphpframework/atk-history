@@ -130,7 +130,7 @@
 
     function value2db($rec)
     {
-      if($rec[$this->fieldName()]==""&&!$this->hasFlag(AF_OBLIGATORY))
+      if(($rec[$this->fieldName()]==="" || $rec[$this->fieldName()]===NULL) && !$this->hasFlag(AF_OBLIGATORY))
         return "NULL";
 
       if($this->m_decimals>0)
@@ -279,7 +279,8 @@
             // User entered fields in wrong order. Let's fix that.
             $tmp = $value["from"]; $value["from"] = $value["to"]; $value["to"] = $tmp;
           }
-          $searchcondition = $query->betweenCondition($fieldname,escapeSQL($value["from"]), escapeSQL($value["to"]));
+
+          $searchcondition = $query->betweenCondition($fieldname,$this->escapeSQL($value["from"]), $this->escapeSQL($value["to"]));
         }
         else if ($value["from"]!="" && $value["to"]=="")
         {

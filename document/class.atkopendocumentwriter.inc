@@ -82,8 +82,10 @@
       }
 
       // add own style to xml file (just before </office:automatic-styles>)
-      // and use it for text that applies
-      $this->m_tbsooo->Source = $this->addAndApplyStyles($this->m_tbsooo->Source);
+      // and use it for text that applies. This is only done on odt files
+      $filenameparts = explode(".", $tpl_file);
+      if ($filenameparts[count($filenameparts)-1] == "odt")
+        $this->m_tbsooo->Source = $this->addAndApplyStyles($this->m_tbsooo->Source);
 
 
       // Save the content.xml back to the copied document
@@ -179,7 +181,7 @@
       $inputString = $this->convertFirefoxHtmlToXML($inputString);
 
       $inputString = $this->convertIEHtmlToXML($inputString);
-      
+
       $inputString = $this->convertGeneralHtmlToXML($inputString);
 
       return $inputString;
@@ -193,7 +195,7 @@
       $xmlItalic     = '<style:style style:name="atkitalic" style:family="text"><style:text-properties fo:font-style="italic" style:font-style-asian="italic" style:font-style-complex="italic"/></style:style>';
       $xmlBoldItalic = '<style:style style:name="atkbolditalic" style:family="text"><style:text-properties fo:font-style="italic" fo:font-weight="bold" style:font-style-asian="italic" style:font-weight-asian="bold" style:font-style-complex="italic" style:font-weight-complex="bold"/></style:style>';
       $xmlUnderline  = '<style:style style:name="atkunderline" style:family="text"><style:text-properties style:text-underline-style="solid" style:text-underline-width="auto" style:text-underline-color="font-color"/></style:style>';
-      
+
       $inputString = str_replace($xmlAutomaticStyleTag , $xmlBold.$xmlItalic.$xmlBoldItalic.$xmlUnderline.$xmlAutomaticStyleTag, $inputString);
 
       return $inputString;
@@ -237,7 +239,7 @@
 
       // substitute html- by xml-'span' tags
       $inputString = str_replace('&lt;/span&gt;' , '</text:span>', $inputString);
-      
+
       // replace <br .*/> chars by xml-newline (also take font-styles in account)
       $inputString = preg_replace("/(<|&lt;)br.*\/(>|&gt;)/iU","<text:line-break/>", $inputString);
 
@@ -276,7 +278,7 @@
 
       return $inputString;
     }
-    
+
     function convertGeneralHtmlToXML($inputString)
     {
       /**************************************************************
@@ -290,8 +292,12 @@
       $inputString = str_replace('&lt;li&gt;'                                      , '<text:tab/> - ', $inputString);                      // use '-' as bullet
       $inputString = str_replace('&lt;/li&gt;<text:line-break/>'                   , '',               $inputString);                      // end bullet
       $inputString = str_replace('<text:line-break/>&lt;/ul&gt;<text:line-break/>' , '',               $inputString);                      // main closing </ul>
-      $inputString = str_replace('&lt;/ul&gt;<text:line-break/><text:line-break/>' , '',               $inputString);                      //  sub closing </ul>'s 
+      $inputString = str_replace('&lt;/ul&gt;<text:line-break/><text:line-break/>' , '',               $inputString);                      //  sub closing </ul>'s
+      $inputString = str_replace('&lt;/ul&gt;'                                     , '',               $inputString);                      // remove remaining </ul>'s
       
+      // tbsooo_class.php (LoadXmlFromDoc) converted apostrophe (&apos; -> \') from XML file for TBS functions
+      // causes corrupt document: convert it back to &apos;
+      $inputString = str_replace('\'', '&apos;', $inputString);
       return $inputString;
     }
   }

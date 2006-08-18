@@ -620,7 +620,15 @@
     {
       if (is_array($rec)&&isset($rec[$this->fieldName()]))
       {
-        return escapeSQL($rec[$this->fieldName()]);
+        if(is_object($this->m_ownerInstance))
+        {
+          $db = &$this->m_ownerInstance->getDb();
+          return $db->escapeSQL($rec[$this->fieldName()]);
+        }
+        else
+        {
+          return escapeSQL($rec[$this->fieldName()]);
+        }
       }
       return NULL;
     }
@@ -953,6 +961,7 @@
           {
             $arr["search"][$key] = $this->search($atksearch, false, $fieldprefix);
           }
+          $arr["search"][$key].='<input type="hidden" name="atksearchmode['.$this->formName().']" value="'.$this->getSearchMode(false).'">';
         }
       }
     }
@@ -1032,8 +1041,25 @@
       $result= '<input type="text" id="'.$id.'" class="'.get_class($this).'" name="'.$id.'" value="'.$value.'"'.
                 ($this->m_searchsize > 0 ? ' size="'.$this->m_searchsize.'"' : '').
                 ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>';
-
+                   
       return $result;
+    }
+           
+    /**
+     * Retrieve the default searchmode of an attribute
+     *
+     * @param boolean $extended Whether extended search is being used
+     * @return String the default searchmode for this attribute.
+     */
+    function getSearchMode($extended=false)
+    {
+      $searchmode = $this->m_ownerInstance->getSearchMode();
+      
+      if (is_array($searchmode))
+      {
+        return $searchmode[$this->fieldName()];
+      }
+      return $searchmode;
     }
 
     /**
@@ -1082,7 +1108,6 @@
       	$searchmode = "wildcard";
       }
 
-
       $searchCondition = &$this->getSearchCondition($query, $table, $value, $searchmode);
       if ($searchCondition)
       {
@@ -1118,7 +1143,7 @@
       $func = $searchmode."Condition";
       if (method_exists($query,$func) && $value)
       {
-        return $query->$func($table.".".$this->fieldName(),escapeSQL($value));
+        return $query->$func($table.".".$this->fieldName(),$this->escapeSQL($value));
       }
       else
       {
@@ -1897,6 +1922,32 @@
         return $this->m_ownerInstance->text($string, $this->getModule());
       else
         return atktext($string, $this->getModule());
+    }
+    
+    /**
+     * Get database instance for this attribute. Will return the owner
+     * instance database instance unless the owner instance is not set
+     * in which case the default instance will be returned.
+     * 
+     * @return atkDb database instance
+     */
+    function &getDb()
+    {
+      if (is_object($this->m_ownerInstance))
+        return $this->m_ownerInstance->getDb();
+      else return atkGetDb();
+    }
+    
+    /**
+     * Escape string for use in a query.
+     * 
+     * @param string value value to escape
+     * @param boolean escape wildcards too?
+     */
+    function escapeSQL($value, $wildcards=false)
+    {
+      $db = &$this->getDb();
+      return $db->escapeSQL($value, $wildcards);
     }
   }
 ?>

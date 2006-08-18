@@ -1138,8 +1138,9 @@
    */
   function atkPopup($target,$params,$winName,$width,$height,$scroll='no',$resize='no')
   {
-    $url ="javascript:NewWindow('include.php?file=".$target."&".$params."','".$winName."',".$height.",".$width.",'".$scroll."','".$resize."')";
-    return $url;
+    $url = session_url("include.php?file=".$target."&".$params, SESSION_NESTED);
+    $popupurl ="javascript:NewWindow('".$url."','".$winName."',".$height.",".$width.",'".$scroll."','".$resize."')";
+    return $popupurl;
   }
 
   /**
@@ -1547,17 +1548,9 @@
    */
   function dispatch_url($node, $action, $params=array(),$phpfile='dispatch.php')
   {
-    $url = $phpfile;
-    $atkparams = array();
-    if($node!="")
-      $atkparams["atknodetype"] = $node;
-    if($action!="") 
-      $atkparams["atkaction"] = $action;
-    $params = array_merge($atkparams, $params);
-    
+    $url = $phpfile."?atknodetype=".$node."&atkaction=".$action;
     if ($params != "" && is_array($params) && count($params) > 0)
-      $url .= '?'.buildQueryString($params);
-      
+      $url .= '&'.buildQueryString($params);
     return $url;
   }
 

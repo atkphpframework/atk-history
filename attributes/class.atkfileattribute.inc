@@ -202,6 +202,10 @@
         }
         if(count($file_arr) > 0) $result .= "</select>";
       }
+      else if (isset($record[$this->fieldName()]['filename']) && !empty($record[$this->fieldName()]['filename']))
+      {
+        $result .= '<input type="hidden" name="'.$id.'[select]" value="'.$record[$this->fieldName()]['filename'].'">';
+      }
       if(!$this->hasFlag(AF_FILE_NO_DELETE)
          && isset($record[$this->fieldname()]['orgfilename'])
          && $record[$this->fieldname()]['orgfilename']!='')
@@ -222,10 +226,9 @@
       if(isset($_REQUEST["del"])) $del = $_REQUEST["del"];
 
       if($rec[$this->fieldName()]["tmpfile"]=="" && $rec[$this->fieldName()]["filename"]!=""
-         && !$this->hasFlag(AF_FILE_NO_SELECT)
          && (!isset($del[$this->fieldName()]) || $del[$this->fieldName()]!="on"))
       {
-        return escapeSQL($rec[$this->fieldName()]["filename"]);
+        return $this->escapeSQL($rec[$this->fieldName()]["filename"]);
       }
       if($this->hasFlag(AF_FILE_NO_DELETE)) unset($del);  // Make sure if flag is set $del unset!
 
@@ -262,10 +265,17 @@
         {
             if ($filename!="")
             {
+              $dirname = dirname($this->m_dir.$filename);
+              if (!$this->mkdir($dirname))
+              {
+                atkerror("File could not be saved");
+                return "";                
+              }
+              
               if (@copy($rec[$this->fieldName()]["tmpfile"],$this->m_dir.$filename))
               {
                 $this->processFile($this->m_dir, $filename);
-                return escapeSQL($filename);
+                return $this->escapeSQL($filename);
               }
               else
               {
@@ -274,8 +284,33 @@
               }
             }
         }
-        return escapeSQL($rec[$this->fieldName()]["orgfilename"]);
+
+        return $this->escapeSQL($rec[$this->fieldName()]["orgfilename"]);
       }
+    }
+    
+    /**
+     * Recursive mdir.
+     * 
+     * @see http://nl2.php.net/mkdir
+     *
+     * @param string $path path to create
+     * @return success/failure
+     */
+    function mkdir($path)
+    {
+      $path = preg_replace('/(\/){2,}|(\\\){1,}/','/', $path); //only forward-slash
+      $dirs = explode("/", $path);
+      
+      $path = "";
+      foreach ($dirs as $element)
+      {
+        $path .= $element."/";
+        if(!is_dir($path) && !mkdir($path)) 
+          return false;
+      }
+      
+      return true;
     }
 
     /**
@@ -339,11 +374,11 @@
 
       $basename = $this->fieldName();
 
-      if (is_array($_FILES)||($rec[$this->fieldName()]["select"] != "" && !$this->hasFlag(AF_FILE_NO_SELECT)) || ($rec[$this->fieldName()]["filename"]!="")) // php4
+      if (is_array($_FILES)||($rec[$this->fieldName()]["select"] != "") || ($rec[$this->fieldName()]["filename"]!="")) // php4
       {
         // if an error occured during the upload process
         // and the error is not 'no file' while the field isn't obligatory or a file was already selected
-        $fileselected = isset($rec[$this->fieldName()]["select"]) && $rec[$this->fieldName()]["select"] != "" && !$this->hasFlag(AF_FILE_NO_SELECT);
+        $fileselected = isset($rec[$this->fieldName()]["select"]) && $rec[$this->fieldName()]["select"] != "";
         if ($_FILES[$postfiles_basename]['error'] > 0 && !((!$this->hasFlag(AF_OBLIGATORY) || $fileselected) && $_FILES[$postfiles_basename]['error'] == UPLOAD_ERR_NO_FILE))
         {
           return array('error' => $_FILES[$postfiles_basename]['error']);
@@ -436,7 +471,7 @@
     {
       if($this->hasFlag(AF_FILE_PHYSICAL_DELETE)&&($record[$this->fieldname()]["orgfilename"]!=""))
       {
-        if(!@unlink($this->m_dir.$record[$this->fieldName()]["orgfilename"]))
+        if(file_exists($this->m_dir.$record[$this->fieldName()]["orgfilename"]) && !@unlink($this->m_dir.$record[$this->fieldName()]["orgfilename"]))
         {
           return false;
         }
@@ -507,10 +542,36 @@
     }
 
     /**
-     * Determine the real filename of a file (based on m_filenameTpl).
+     * Set filename template.
+     */
+    function setFilenameTemplate($template)
+    {
+      $this->m_filenameTpl = $template;
+    }
+    
+    /**
+     * Determine the real filename of a file. 
+     * 
+     * If a method <fieldname>_filename exists in the owner instance this method 
+     * is called with the record and default filename to determine the filename. Else 
+     * if a file template is set this is used instead and otherwise the default
+     * filename is returned.
+     * 
      * @access private
      */
     function _filenameMangle($rec, $default)
+    {
+      $method = $this->fieldName().'_filename';
+      if (method_exists($this->m_ownerInstance, $method))
+        return $this->m_ownerInstance->$method($rec, $default);
+      else return $this->filenameMangle($rec, $default);
+    }
+
+    /**
+     * Determine the real filename of a file (based on m_filenameTpl).
+     * @access public
+     */
+    function filenameMangle($rec, $default)
     {
       if ($this->m_filenameTpl == "")
       {
@@ -518,10 +579,12 @@
       }
       else
       {
+        $record = $this->m_ownerInstance->updateRecord($rec, NULL, array($this->fieldName()));
+        $record[$this->fieldName()] = substr($default, 0, strrpos($default,'.'));
         atkimport("atk.utils.atkstringparser");
         $parser = new atkStringParser($this->m_filenameTpl);
         $ext = $this->getFileExtension($default);
-        $filename = $parser->parse($rec).".".$ext;
+        $filename = $parser->parse($record).".".$ext;
       }
       return str_replace(' ','_',$filename);
     }

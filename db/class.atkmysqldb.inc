@@ -73,6 +73,7 @@
       /* return link identifier */
       return DB_SUCCESS;
     }
+
     /**
      * Translates known database errors to developer-friendly messages
      *
@@ -111,7 +112,7 @@
         $this->m_error = mysql_error();
       }
     }
-   
+
     /**
      * Disconnect from database
      */

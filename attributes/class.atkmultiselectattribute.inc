@@ -86,14 +86,14 @@
       //atkdebug("multiselectattribute::value2db()");
       if(is_array($rec[$this->fieldName()]) && count($rec[$this->fieldName()]>=1))
       {
-        return escapeSQL(implode("|",$rec[$this->fieldName()]));
+        return $this->escapeSQL(implode("|",$rec[$this->fieldName()]));
       }
       else return "";
     }
 
     function db2value($rec)
     {
-      if (isset($rec[$this->fieldName()]))
+      if (isset($rec[$this->fieldName()]) && $rec[$this->fieldName()]!=='')
         return explode("|",$rec[$this->fieldName()]);
       else return array();
     }
@@ -128,6 +128,7 @@
       $page = &atkPage::getInstance();
       $page->register_script($config_atkroot."atk/javascript/class.atkprofileattribute.js.php");
 
+      $result = "";
       if (!$this->hasFlag(AF_LINKS_BOTTOM)) $result.=$this->_addLinks($fieldprefix);
 
       $result .="\n<table><tr>\n";
@@ -170,13 +171,13 @@
       {
         if (count($value)==1)
         {
-          $searchcondition = $query->substringCondition($table.".".$this->fieldName(),escapeSQL($value[0]));
+          $searchcondition = $query->substringCondition($table.".".$this->fieldName(),$this->escapeSQL($value[0]));
         }
         else
         {
           foreach($value as $str)
           {
-            $searchcondition = $query->substringCondition($table.".".$this->fieldName(),escapeSQL($str));
+            $searchcondition = $query->substringCondition($table.".".$this->fieldName(),$this->escapeSQL($str));
           }
         }
       }

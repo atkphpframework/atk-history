@@ -48,9 +48,6 @@
     var $m_action = "";
 
     /** @access private */
-    var $m_postvars = array();
-    
-    /** @access private */
     var $m_renderBoxVars = array();
 
     /**

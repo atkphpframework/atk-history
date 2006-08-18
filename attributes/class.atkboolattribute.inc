@@ -14,6 +14,8 @@
    * @version $Revision$
    * $Id$
    */
+  
+  define("AF_BOOL_OBLIGATORY", AF_SPECIFIC_1); // make bool attribute obligatory (normal AF_OBLIGATORY flag is always removed).
 
   /**
    * The atkBoolAttribute class represents an attribute of a node
@@ -38,8 +40,14 @@
 
      // Call base class constructor. Size of boolean value is always 1.
       $this->atkAttribute($name,$flags, 1);
+  atkdebug("CONSTRUCTOR $name / $flags");
+      if ($this->hasFlag(AF_BOOL_OBLIGATORY)) 
+      {
+        atkdebug("BOOL OBLIG $name");
+        $this->addFlag(AF_OBLIGATORY);
+      }
     }
-
+    
     /**
      * Returns a piece of html code that can be used in a form to edit this
      * attribute's value.
@@ -107,7 +115,7 @@
     function getSearchCondition(&$query, $table, $value, $searchmode)
     {
       if (is_array($value)) $value = $value[$this->fieldName()];
-      if (isset($value)) return $query->exactCondition($table.".".$this->fieldName(),escapeSQL($value));
+      if (isset($value)) return $query->exactCondition($table.".".$this->fieldName(),$this->escapeSQL($value));
     }
 
     /**

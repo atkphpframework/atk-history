@@ -77,7 +77,7 @@
       return $result;
     }
 
-    function store($db, $record, $mode)
+    function store(&$db, $record, $mode)
     {
       global $g_user;
 
@@ -115,7 +115,7 @@
           foreach ($validActions as $action)
           {
             $query = "INSERT INTO ".atkconfig("auth_accesstable")." (node, action, ".atkconfig("auth_levelfield").") ";
-            $query.= "VALUES ('".escapeSQL($node)."','".escapeSQL($action)."','".$record[$this->m_ownerInstance->primaryKeyField()]."')";
+            $query.= "VALUES ('".$db->escapeSQL($node)."','".$db->escapeSQL($action)."','".$record[$this->m_ownerInstance->primaryKeyField()]."')";
 
             if (!$db->query($query))
             {
@@ -128,7 +128,7 @@
           {
             $query = "DELETE FROM ".atkconfig("auth_accesstable")." ".
                      "WHERE ".atkconfig("auth_levelfield")." IN (".implode(",", $children).") ".
-                     "AND node = '".escapeSQL($node)."' ".
+                     "AND node = '".$db->escapeSQL($node)."' ".
                      "AND action NOT IN ('".implode("','", $validActions)."')";
 
             if (!$db->query($query))
@@ -225,12 +225,11 @@
      */
     function getEditableActions($record)
     {
-      global $g_user;
-
+      $user = getUser();
       $levels = "";
-      if (!is_array($g_user['level']))
-        $levels = "'".$g_user['level']."'";
-      else $levels = "'".implode("','",$g_user['level'])."'";
+      if (!is_array($user['level']))
+        $levels = "'".$user['level']."'";
+      else $levels = "'".implode("','",$user['level'])."'";
 
       // retrieve editable actions by user's levels
       $db = &atkGetDb();
@@ -268,8 +267,7 @@
 
     function edit($record)
     {
-      global $g_user;
-
+      $user = getUser();
       $page = &atkPage::getInstance();
       $page->register_script(atkconfig("atkroot")."atk/javascript/class.atkprofileattribute.js.php");
 
@@ -283,7 +281,7 @@
              '</a> <a href="javascript:profile_checkInvert(\''.$this->fieldName().'\')">'.
                     atktext("invert_selection").'</a>]</div>';
 
-      $isAdmin =  ($g_user['name']=='administrator' || $this->canGrantAll());
+      $isAdmin =  ($user['name']=='administrator' || $this->canGrantAll());
       $allActions = $this->getAllActions($record);
       $editableActions = $this->getEditableActions($record);
       $selectedActions = $this->getSelectedActions($record);

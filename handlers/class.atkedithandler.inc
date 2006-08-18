@@ -208,7 +208,6 @@
       for ($i = 0, $_i= count($data["fields"]); $i<$_i; $i++)
       {
         $field = &$data["fields"][$i];
-
         $tplfield = array();
 
 		    $tplfield["tab"] = ($field["tabs"][0]=="*"?"alltabs":implode("|", $field["tabs"]));
@@ -266,7 +265,7 @@
           /* obligatory indicator */
           if ($field["obligatory"])
           {
-            $tplfield["label"].="<span class='reqimg'>".$reqimg."</span>";
+            $tplfield["label"];
             $tplfield["obligatory"] = $reqimg;
           }
 

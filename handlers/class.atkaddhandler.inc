@@ -55,7 +55,6 @@
       $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");
       $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
       $page->register_loadscript("placeFocus();");
-
       $node->addStyle("style.css");
       $controller = &$node->getController();
 

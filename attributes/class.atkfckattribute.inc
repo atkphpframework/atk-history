@@ -80,6 +80,11 @@
       $this->fck_opt['ToolbarSet'] = $toolbarset;
     }
 
+    function display($record="", $mode="")
+    {
+      return atkArrayNvl($record, $this->fieldName(), "");
+    }
+
     /**
      * Returns a piece of html code that can be used in a form to edit this
      * attribute's value.
@@ -115,7 +120,7 @@
     {
       if (is_array($rec)&&isset($rec[$this->fieldName()]))
       {
-        $dbval = escapeSQL(preg_replace("/\&quot;/Ui","\"",$rec[$this->fieldName()]));
+        $dbval = $this->escapeSQL(preg_replace("/\&quot;/Ui","\"",$rec[$this->fieldName()]));
         return $dbval;
       }
       return NULL;

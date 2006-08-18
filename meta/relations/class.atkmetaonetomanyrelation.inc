@@ -58,7 +58,7 @@ class atkMetaOneToManyRelation extends atkOneToManyRelation
 
     $policy = &$this->m_ownerInstance->getMetaPolicy();
 
-    $this->m_destination = $policy->findDestination($this);
+    $this->m_destination = $policy->findDestination($this->m_accessor, true);
     atkdebug("atkMetaOneToManyRelation: {$this->m_accessor} destination {$this->m_destination}");
     if ($this->m_destination == NULL) return FALSE;
     else if (!parent::createDestination()) return FALSE;

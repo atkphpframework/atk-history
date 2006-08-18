@@ -118,7 +118,10 @@
         }
         
         if (!hasFlag($flags, RL_NO_SEARCH) && $this->hasFlag(AF_SEARCHABLE))
+        {
           $arr["search"][$fieldprefix.$this->fieldName()] = $this->search($atksearch);
+          $arr["search"][$fieldprefix.$this->fieldName()].='<input type="hidden" name="atksearchmode['.$this->formName().']" value="'.$this->getSearchMode(false).'">';
+        }
       }
     }
   
@@ -161,7 +164,7 @@
         foreach ($this->m_searchfields as $field)
         {
           $p_attrib = $this->m_ownerInstance->m_attribList[$field];
-          $searchconditions[] = $query->$func($table.".".$p_attrib->fieldName(),escapeSQL($value));
+          $searchconditions[] = $query->$func($table.".".$p_attrib->fieldName(),$this->escapeSQL($value));
         }
         return "(".implode(" OR ",$searchconditions).")";
       }
