@@ -1822,28 +1822,6 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
     }
 
     /**
-     * Get extended search action.
-     *
-     * @return extended search action
-     */
-    function getExtendedSearchAction()
-    {
-      if (empty($this->m_extended_search_action))
-        return atkconfig('extended_search_action');
-      else return $this->m_extended_search_action;
-    }
-
-    /**
-     * Set extended search action.
-     *
-     * @param $action extended search action
-     */
-    function setExtendedSearchAction($action)
-    {
-      $this->m_extended_search_action = $action;
-    }
-
-    /**
      * Function returns a page in which the user is asked if he really wants
      * to perform a certain action.
      * @param mixed $atkselector Selector of current record on which the
