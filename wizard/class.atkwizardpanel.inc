@@ -132,8 +132,8 @@ define(FINISH_BUTTON_DONT_SHOW, 3);
 
         //Set wizard specific controller
         atkdebug("atkWizardPanel::getPanelNode() Register controller for. Node: " . getNodeType($this->m_nodeName));
-        $wizardcontrollerclass = $this->m_wizard->m_wizardcontroller;
-        registerNodeController(getNodeType($this->m_nodeName), new $wizardcontrollerclass($this->m_node, $this));
+        //$wizardcontrollerclass = $this->m_wizard->m_wizardcontroller;
+        //registerNodeController(getNodeType($this->m_nodeName), new $wizardcontrollerclass($this->m_node, $this));
 
         //Add listeners to node
         for($i=0, $_i=count($this->m_listeners); $i<$_i; $i++)
@@ -158,13 +158,15 @@ define(FINISH_BUTTON_DONT_SHOW, 3);
         //$this->m_node->m_postvars = atkGetPostVar();
                 
         //All nodes should return the output and not try to fill the screen themselves
-        $controller = &$this->m_node->getController();
+        $controller = &atkController::getInstance();
+        $controller->setNode(&$this->m_node);
         $controller->setReturnOutput(true);
         $controller->setPhpFile("index.php");
-        
         //We set how we want the atk page to be returned
-        atkdebug("getPanelNode flags" . $this->m_wizard->m_page_flags);
-        $controller->setPageFlags($this->m_wizard->m_page_flags);
+        atkdebug("getPanelNode flags" . $this->m_wizard->m_page_flags . " controller ".$controller->m_page_flags);
+        $controller->setPageFlags(HTML_ALL);
+        atkdebug("getPanelNode flags" . $this->m_wizard->m_page_flags . " controller ".$controller->m_page_flags);
+        //$controller->setPageFlags($this->m_wizard->m_page_flags);
 
       }
       return $this->m_node;  
@@ -204,11 +206,11 @@ define(FINISH_BUTTON_DONT_SHOW, 3);
    
     function dispatchForm($params)
     {    	
-      atkdebug("atkWizardPanel::getAddForm() panel=".$this->getPanelName() . " atknode=".$this->m_nodeName);
+      atkdebug("atkWizardPanel::dispatchForm() panel=".$this->getPanelName() . " atknode=".$this->m_nodeName);
       $node = &$this->getPanelNode();         
       if(!is_object($node)) return;
       
-      $controller = &$node->getController();                
+      $controller = &atkController::getInstance();
       
       if(count($params))
       {
@@ -252,7 +254,7 @@ define(FINISH_BUTTON_DONT_SHOW, 3);
       $node = &$this->getPanelNode();         
       if(!is_object($node)) return;
       
-      $controller = &$node->getController();
+      $controller = &atkController::getInstance();
       
       $hiddenVars = $this->m_wizard->m_redirectParams;
       if(count($hiddenVars))

@@ -377,7 +377,7 @@
      * @return String The HTML body, including <body> and </body> tags.
      */
     function body($extraprops="")
-    {
+    {      
       global $ATK_VARS;
 
       $res = '<body ';
@@ -415,6 +415,7 @@
       $page = '';
       if(hasFlag($flags,HTML_DOCTYPE)) $page.=atkconfig("doctype");
       $page.= "\n<html>\n";
+      
       if(hasFlag($flags,HTML_HEADER)) $page.= $this->head($title, $extra_header);
       if (hasFlag($flags,HTML_BODY)) $page.= $this->body($extrabodyprops);
       $page.= $this->m_content."\n";

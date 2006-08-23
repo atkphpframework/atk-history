@@ -20,9 +20,15 @@
    * @package atk
    */
   class atkController
-  {
-    
+  {   
+    /**
+     * Reference to the instance of currently selected atkNode
+     *
+     * @var unknown_type
+     */
     var $m_node = NULL;
+    
+    var $m_postvars = NULL;
     
     var $m_php_file = "";
     
@@ -44,10 +50,105 @@
     var $m_hidden_vars = array();
 
     
-    function atkController(&$node)
+    function atkController()
     {
-      $this->m_node = &$node;      
     }
+        
+    function &_instance($class="", $replace=false)
+    {
+      static $s_object=NULL;
+      if(!is_object($s_object) || $replace)
+      {
+        if (empty($class))
+          $class = $_REQUEST['atkcontroller'];
+        if (empty($class))
+          $class = "atk.atkcontroller";
+        atkdebug("atkcontroller::_instance() make new one ".$class); 
+        
+        $s_object = atknew($class);
+      }      
+      return $s_object;
+    }
+    
+   /**
+    * Return the one and only instance of the class
+    *
+    * @return unknown
+    */
+    function &getInstance()
+    { 
+      atkdebug("atkcontroller::getInstance()");     
+      $object = &atkcontroller::_instance();
+      atkdebug("atkcontroller::getInstance() return ".get_class($object)); 
+      return $object;
+    }
+    
+    
+   /**
+    * Return the one and only instance of the class
+    *
+    * @return unknown
+    */
+    function &createInstance($controller)
+    {  
+      atkdebug("atkcontroller::createInstance() ".$controller); 
+      $controller = &atkController::_instance($controller, true);    
+      return $controller;
+    }
+
+    
+   /**
+    * handle HTTP requests
+    * 
+    * TODO fixme Do we need this function?
+    *
+    * @param array $postvars
+    */
+    function handleRequest($postvars)
+    {
+      $this->m_postvars = $postvars;
+            
+      $this->invoke("dispatch", $postvars);     
+      //$this->dispatch($postvars);
+    }
+    
+    function setNode(&$node)
+    {
+      $this->m_node = &$node;
+    }
+    
+    /**
+     * Make instance of atkNode class
+     *
+     * @return reference to atknode
+     */
+    function &getNode()
+    {      
+      if(is_object($this->m_node))
+      {
+        atkdebug("atkcontroller::getNode() <b>" . ($this->m_postvars["atknodetype"] != $this->m_node->m_module.".".$this->m_node->m_type ? 
+                                                   "poststvars[atknodetype] not equal to the current node. postvar: ". $this->m_postvars["atknodetype"] . " current: ". $this->m_node->m_module.".".$this->m_node->m_type : "Returning node ".$this->m_node->m_module.".".$this->m_node->m_type )."</b>");
+        return $this->m_node;
+      }
+      else
+      {
+        //if the object not yet exists, try to create it
+        $fullclassname = $this->m_postvars["atknodetype"];
+        if(isset($fullclassname) && $fullclassname != null)
+        {
+          $this->m_node = &getNode($fullclassname);
+          if (is_object($this->m_node))
+          {            
+            return $this->m_node;
+          }
+          else
+          { 
+            atkError("No object '".$ATK_VARS["atknodetype"]."' created!!?!");
+          }
+        }
+      }
+    }
+    
         
     /**
      * This is the wrapper method for all http requests on a node.
@@ -68,14 +169,28 @@
      */
     function dispatch($postvars, $fullpage=true)
     {
+      atkdebug("atkcontroller::dispatch()");
+      atk_var_dump($postvars, "postvars");
       // Use invoke to be backwards compatible with overrides 
       // of loadDispatchPage in atknode.
       $this->invoke("loadDispatchPage", $postvars);
       //$this->loadDispatchPage($postvars);
-
-      $ui = &$this->m_node->getUi();
-      $page = &$this->m_node->getPage();
-      $screen = $page->render(atktext('app_shorttitle')." - ".$ui->title($this->m_node->m_module, $this->m_node->m_type, $this->m_node->m_postvars['atkaction']), $fullpage);
+      $this->m_postvars = $postvars;
+      $node = &$this->getNode();
+      if(!is_object($node)) return;
+      
+      $ui = $node->getUi();
+      $page = &$node->getPage();
+      atkdebug("atkcontroller::dispatch() call page->render");
+      //TODO FIXME: This is een weird hack??
+      if($fullpage)
+      {
+        atkdebug("atkcontroller::dispatch() fullpage = true");
+        $fullHtmlPage = true;
+      } 
+      else 
+        $fullHtmlPage = false;
+      $screen = $page->render(atktext('app_shorttitle')." - ".$ui->title($node->m_module, $node->m_type, $node->m_postvars['atkaction']), $fullHtmlPage);
 
       if(!$this->m_return_output)
       {
@@ -85,7 +200,8 @@
 
       // This is the end of all things for this page..
       // so we clean up some resources..
-      $db = &$this->m_node->getDb();
+      $node = $this->getNode();
+      $db = &$node->getDb();
       if (is_object($db)) $db->disconnect();
       atkdebug("disconnected from the database");
       
@@ -103,36 +219,41 @@
      */
     function loadDispatchPage($postvars)
     {
-      $this->m_node->m_postvars = $postvars;
+      atkdebug("atkcontroller::loaddispatchpage ");
+      $this->m_postvars = $postvars;
+      $node = $this->getNode();
+      if(!is_object($node)) return;
+      
+      $node->m_postvars = $postvars;
 
-      $this->m_node->m_action = $postvars['atkaction'];
+      $node->m_action = $postvars['atkaction'];
 
-      atkdebug("loaddispatchpage " . $this->m_node->m_action);
+      atkdebug("atkcontroller::loaddispatchpage " . $node->m_action);
       
       /** DIRTY HACK
           if action is something else than edit, we clear the atkformdata sessionstuff **/
-      if ($this->m_node->m_action!="edit"&&$this->m_node->m_action!="add"&&$this->m_node->m_action!="admin")
+      if ($node->m_action!="edit"&&$node->m_action!="add"&&$node->m_action!="admin")
       {
         atkdebug("Clearing stored formdata");
-        $this->m_node->m_postvars["atkformdata"]="";
+        $node->m_postvars["atkformdata"]="";
       }
 
-      $page = &$this->m_node->getPage();
+      $page = &$node->getPage();
       
-      atkdebug("loaddispatchpage. action:" .$this->m_node->m_action) ;
+      atkdebug("loaddispatchpage. action:" .$node->m_action) ;
       
-      if ($this->m_node->allowed($this->m_node->m_action))
+      if ($node->allowed($node->m_action))
       {
         $secMgr = &atkGetSecurityManager();
-        $secMgr->logAction($this->m_node->m_type, $this->m_node->m_action);
-        $this->m_node->callHandler($this->m_node->m_action);
+        $secMgr->logAction($node->m_type, $node->m_action);
+        $node->callHandler($node->m_action);
 
-        list($selector,$id) = explode("=", atkarraynvl($this->m_node->m_postvars, "atkselector", "="));
-        $page->register_hiddenvars(array("atknodetype"=>$this->m_node->m_module.".".$this->m_node->m_type, "atkselector"=>str_replace("'", "", $id)));
+        list($selector,$id) = explode("=", atkarraynvl($node->m_postvars, "atkselector", "="));
+        $page->register_hiddenvars(array("atknodetype"=>$node->m_module.".".$node->m_type, "atkselector"=>str_replace("'", "", $id)));
       }
       else
       {
-        $page->addContent($this->genericPage(atktext('access_denied'), "<br><br>".atktext("error_node_action_access_denied", "", $this->m_node->m_type)."<br><br><br>"));
+        $page->addContent($this->genericPage(atktext('access_denied'), "<br><br>".atktext("error_node_action_access_denied", "", $node->m_type)."<br><br><br>"));
       }
     }
 
@@ -150,8 +271,9 @@
      */
     function genericPage($title, $content)
     {
-      $ui = &$this->m_node->getUi();
-      $this->m_node->addStyle("style.css");
+      $node = $this->getNode();
+      $ui = &$node->getUi();
+      $node->addStyle("style.css");
       if (!is_array($content)) $content = array($title=>$content);
       $blocks = array();
       foreach($content as $itemtitle => $itemcontent)
@@ -182,12 +304,13 @@
       {
         $blocks = ($blocks==""?array():array($blocks));
       }
-
-      $ui = &$this->m_node->getUi();
+      
+      $node = $this->getNode();
+      $ui = &$node->getUi();
 
       // todo: overridable action templates
       return $ui->render("actionpage.tpl", array("blocks"=>$blocks,
-                                                 "title"=>$ui->title($this->m_node->m_module, $this->m_node->m_type, $action)));
+                                                 "title"=>$ui->title($node->m_module, $node->m_type, $action)));
     }
 
     /**
@@ -248,7 +371,8 @@
       if((isset($this->m_feedback[$action]) && hasFlag($this->m_feedback[$action], $status)) || $status==ACTION_FAILED)
       {
         $vars = array("atkaction"=>"feedback", "atkfbaction"=>$action, "atkactionstatus"=>$status,"atkfbmessage"=>$message);
-        $atkNodeType = $this->m_node->atkNodeType();
+        $node = $this->getNode();
+        $atkNodeType = $node->atkNodeType();
         $sessionStatus = SESSION_REPLACE;
       }
       else
@@ -277,7 +401,7 @@
       if($file!="") $phpfile = $file;
       else $phpfile = $this->getPhpFile();
       
-      //$dispatch_url = dispatch_url(($atknodetype=="" ? $this->m_node->atkNodeType() : $atknodetype), $vars["atkaction"], $vars, $phpfile);
+      //$dispatch_url = dispatch_url(($atknodetype=="" ? $node->atkNodeType() : $atknodetype), $vars["atkaction"], $vars, $phpfile);
       //When $atknodetype is empty this means that we use the atknodetype from session
       $dispatch_url = dispatch_url($atknodetype, $vars["atkaction"], $vars, $phpfile);
       
@@ -314,21 +438,23 @@
       }
       elseif ($mode == "add")
       {
+        $node = $this->getNode();
         $result[] = '<input type="submit" class="btn_save" value="'.atktext("save", "atk").'">';
         // if action is admin, we don't show the cancelbutton or the add next button
-        if ($this->m_node->hasFlag(NF_ADDAFTERADD) && !$this->m_node->hasFlag(NF_EDITAFTERADD))
+        if ($node->hasFlag(NF_ADDAFTERADD) && !$node->hasFlag(NF_EDITAFTERADD))
           $result[] = '<input type="submit" class="btn_saveandnext" name="atksaveandnext" value="'.atktext("saveandnext", "atk").'">';
         $result[] = '<input type="submit" class="btn_cancel" name="atkcancel" value="'.atktext("cancel", "atk").'">';
       }
       elseif ($mode == "view")
       {
+        $node = $this->getNode();
         if(atkLevel() > 0)
           $result[] = '<input type="submit" class="btn_cancel" name="atkback" value="&lt;&lt; '.atktext('back').'">';
         // if appropriate, display an edit button.
-        if (!$this->m_node->hasFlag(NF_NO_EDIT)&&$this->m_node->allowed("edit", $record))
+        if (!$node->hasFlag(NF_NO_EDIT)&&$node->allowed("edit", $record))
         {
           $result[] = '<input type="hidden" name="atkaction" value="edit">'.
-                      '<input type="hidden" name="atknodetype" value="'.$this->m_node->atkNodeType().'">'.
+                      '<input type="hidden" name="atknodetype" value="'.$node->atkNodeType().'">'.
                       '&nbsp;<input type="submit" class="btn_save" value="'.atktext('edit').'">&nbsp;';
         }
       }
@@ -397,9 +523,16 @@
     
     function setReturnOutput($returnOutput)
     {
+      atkdebug("atkcontroller::setReturnOutput() Setting return output to ". ($returnOutput ? "true":"false"));
       $this->m_return_output = $returnOutput;
     }
+
     
+    function getReturnOutput()
+    {
+      return $this->m_return_output;           
+    }   
+     
     /**
      * Return a reference to the atkPage object. This object
      * is used to render output as an html page.
@@ -408,7 +541,20 @@
      */
     function &getPage()
     {
-      return $this->m_node->getPage();
+      $page = &atkinstance("atk.ui.atkpage");
+      return $page;
+    }
+    
+    
+    /**
+     * Get the ui instance for drawing and templating purposes.
+     *
+     * @return atkUi An atkUi instance for drawing and templating.
+     */
+    function &getUi()
+    {
+      $ui = &atkinstance("atk.ui.atkui");
+      return $ui;
     }
     
     /**
@@ -449,20 +595,20 @@
       $arguments = func_get_args(); // Put arguments in a variable (php won't let us pass func_get_args() to other functions directly.      
       // the first argument is $methodname, which we already defined by name.      
       array_shift($arguments);
-      
-      if ($this->m_node!==NULL && method_exists($this->m_node, $methodname)) 
+      $node = $this->getNode();
+      if ($node!==NULL && method_exists($node, $methodname)) 
       {
-        atkdebug("Invoking '$methodname' override on node");
+        atkdebug("atkcontroller::invoke() Invoking '$methodname' override on node");
         // We pass the original object as last parameter to the override. 
         array_push($arguments, $this);
-        return call_user_func_array(array(&$this->m_node, $methodname), $arguments);
+        return call_user_func_array(array(&$node, $methodname), $arguments);
       }
       else if (method_exists($this, $methodname)) 
       {
-        atkdebug("Invoking '$methodname' on controller");
+        atkdebug("atkcontroller::invoke() Invoking '$methodname' on controller");
         return call_user_func_array(array(&$this, $methodname), $arguments);
       }
-      atkerror("Undefined method '$methodname' in atkController");
+      atkerror("atkcontroller::invoke() Undefined method '$methodname' in atkController");
     }
     
   }

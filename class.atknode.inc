@@ -20,6 +20,7 @@
    * some includes
    */
   atkimport("atk.attributes.atkattribute");
+  atkimport("atk.atkcontroller");
 
   /**
    * Define some flags for nodes. Use the constructor of the atkNode
@@ -619,13 +620,6 @@
      */
     var $m_modifier = "";
     
-    /**
-     * Object containing instance of atkController class
-     * @access private
-     * @var Object
-     */
-    var $m_controller = NULL;
-
     /**
      * Extended search action. The action which is called if the user
      * wants to perform an extended search.
@@ -1272,7 +1266,8 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
      */
     function getFormButtons($mode, $record)
     {
-      $controller = &$this->getController();
+      $controller = &atkcontroller::getInstance();
+      $controller->setNode(&$this);
       return $controller->getFormButtons($mode, $record);
     }
 
@@ -2069,7 +2064,9 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
      */
     function dispatch($postvars, $fullpage=true)
     {
-      $controller = &$this->getController();
+      atkdebug("atkNode::dispatch()");
+      $controller = &atkcontroller::getInstance();
+      $controller->setNode(&$this);
       return $controller->dispatch($postvars, $fullpage);
     }
 
@@ -2080,7 +2077,8 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
      */
     function loadDispatchPage($postvars)
     {
-      $controller = &$this->getController();
+      $controller = &atkcontroller::getInstance();
+      $controller->setNode(&$this);
       $controller->loadDispatchPage($postvars);
     }
 
@@ -2098,7 +2096,8 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
      */
     function genericPage($title, $content)
     {
-      $controller = &$this->getController();
+      $controller = &atkcontroller::getInstance();
+      $controller->setNode(&$this);
       return $controller->genericPage($title, $content);
     }
 
@@ -2115,7 +2114,8 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
      */
     function renderActionPage($action, $blocks=array())
     {
-      $controller = &$this->getController();
+      $controller = &atkcontroller::getInstance();
+      $controller->setNode(&$this);
       return $controller->renderActionPage($action, $blocks);
     }
 
@@ -2136,7 +2136,8 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
      */
     function setFeedback($action, $statusmask)
     {
-      $controller = &$this->getController();
+      $controller = &atkController::getInstance();
+      $controller->setNode(&$this);
       return $controller->setFeedback($action, $statusmask);
     }
 
@@ -3653,7 +3654,6 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
      */
     function allowed($action, $record="")
     {
-      atkdebug("atknode.allowed action:" .$action) ;
       $secMgr = &atkGetSecurityManager();
       if (empty($this->m_securityAlias))
       {
@@ -3819,6 +3819,7 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
      */
     function callHandler($action)
     {
+      atkdebug("atkNode::callHandler(); action: ".$action);
       //todo: should the module be taken into account
       $handler = &getNodeHandler($this->m_type, $action);
 
@@ -3855,6 +3856,7 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
      */
     function &getHandler($action)
     {
+      atkdebug("atkNode::getHandler(); action: ".$action);
       //todo: should the module be taken into account
       $handler = &getNodeHandler($this->m_type, $action);
       
@@ -3976,7 +3978,8 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
      */
     function feedbackUrl($action, $status, $record="", $message="")
     {
-      $controller = &$this->getController();
+      $controller = &atkcontroller::getInstance();
+      $controller->setNode(&$this);
       return $controller->feedbackUrl($action, $status, $record, $message);
     }
 
@@ -4161,7 +4164,10 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
     function &getController()
     {
       atkdebug("Load controller");
+      $controller = &atkcontroller::getInstance();
+      $controller->setNode(&$this);
       
+      /*
       if(!is_object($this->m_controller))
       {
         atkdebug("Create new controller for type: ".$this->m_type);  
@@ -4186,7 +4192,9 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
           }
         }
       }
-      return $this->m_controller;      
+      */
+      return $controller;      
     }
+    
   }
 ?>

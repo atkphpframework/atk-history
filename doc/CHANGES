@@ -258,6 +258,11 @@ sending
 + Added style class for shuttlerelation [Angelo]
 * branche merge problem: $m_extended_search_action var was declared twice 
   [Lineke,Nico]
+* AtkController is now a singleton class and has become reponsible for
+  loading atknodes and dispatching actions. AtkWizard now extends 
+  AtkController. [Maurice]
++ Added AtkWizardBase class which contains wizard specific controller 
+  functionality. [Maurice]
 -- End Saruman changes --
 
 

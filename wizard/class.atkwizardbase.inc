@@ -28,20 +28,17 @@ atkimport("atk.atkcontroller");
  * @package atk
  *
  */
-  class atkWizardController extends atkController
+  class atkWizardBase extends atkController
   {
-    var $m_wizardPanel = null;
+    //var $m_page_flags = HTML_ALL;
     
-    var $m_page_flags = HTML_ALL;
-    
-    function atkWizardController(&$node, &$wizardPanel)
+    /*
+    function atkWizardBase()
     {
-      atkdebug("atkWizardController::constructor() PanelName: " .$wizardPanel->getPanelName()) ;
+      atkdebug("atkWizardBase::constructor()") ;
       // Call base constructor
-      $this->atkController(&$node);
-      
-      $this->m_wizardPanel = &$wizardPanel;      
-    }
+      $this->atkController();
+    }*/
 
     /**
      * This is the wrapper method for all http requests on a node.
@@ -64,12 +61,15 @@ atkimport("atk.atkcontroller");
     {
       // Use invoke to be backwards compatible with overrides 
       // of loadDispatchPage in atknode.
+      atkdebug("atkWizardBase::dispatch");
       $this->invoke("loadDispatchPage", $postvars);
-
-      $ui = &$this->m_node->getUi();
-      $page = &$this->m_node->getPage();
-      $screen = $page->render(atktext('app_shorttitle')." - ".$ui->title($this->m_node->m_module, $this->m_node->m_type, $this->m_node->m_postvars['atkaction'], true), $this->m_page_flags);
-
+      $panel = &$this->getCurrentPanel();
+      $node = &$panel->getPanelNode();
+      $ui = &$this->getUi();
+      $page = &$this->getPage();
+      atkdebug("atkWizardBase::dispatch page->render flags: " . $this->m_page_flags);
+      $screen = $page->render(atktext('app_shorttitle')." - ".$ui->title($node->m_module, $node->m_type, $node->m_postvars['atkaction'], true), $this->m_page_flags);
+atkdebug("screen $screen return output ". ($this->m_return_output ? "true":"false"));
       if(!$this->m_return_output)
       {
         $output = &atkOutput::getInstance();
@@ -78,7 +78,7 @@ atkimport("atk.atkcontroller");
 
       // This is the end of all things for this page..
       // so we clean up some resources..
-      $db = &$this->m_node->getDb();
+      $db = &$node->getDb();
       if (is_object($db)) $db->disconnect();
       atkdebug("disconnected from the database");
       
@@ -102,15 +102,16 @@ atkimport("atk.atkcontroller");
     {
       $result = array();
       
-      if ($this->m_wizardPanel->m_wizard->m_mode == WIZARD_MODE_ADD)
+      if ($this->m_mode == WIZARD_MODE_ADD)
       {
-        
+        $currentPanel = $this->getCurrentPanel();
         // We post the action as key value in de atkwizardaction var. Therefor
         // we have to convert the atkwizardaction value in atkWizard::start().                
-        if($this->m_node->m_action != 'admin')
+        $node = &$this->getNode();
+        if($node->m_action != 'admin')
         {
-          //if we explicitly don't want the finish button we set a hidden var to post the atkwizardaction
-          if(($this->m_wizardPanel->showFinishButton() == FINISH_BUTTON_DONT_SHOW) && $this->m_wizardPanel->isFinishPanel())
+          //if we explicitly don't want the finish button we set a hidden var to post the atkwizardaction          
+          if(($currentPanel->showFinishButton() == FINISH_BUTTON_DONT_SHOW) && $currentPanel->isFinishPanel())
             $atkwizardaction = "finish";
           else 
             $atkwizardaction = "next";
@@ -123,7 +124,7 @@ atkimport("atk.atkcontroller");
         else 
         {
           //if we explicitly don't want the finish button we set a hidden var to post the atkwizardaction
-          if($this->m_wizardPanel->showFinishButton() == FINISH_BUTTON_DONT_SHOW && $this->m_wizardPanel->isFinishPanel())
+          if($currentPanel->showFinishButton() == FINISH_BUTTON_DONT_SHOW && $currentPanel->isFinishPanel())
             $atkwizardaction = "finish";
           else 
             $atkwizardaction = "saveandnext";
@@ -137,7 +138,7 @@ atkimport("atk.atkcontroller");
         
         $result[] = '<input type="submit" class="btn_cancel" name="atkwizardcancel" value="'.atktext("cancel", "atk").'">';
       }
-      elseif ($this->m_wizardPanel->m_wizard->m_mode == WIZARD_MODE_EDIT)
+      elseif ($this->m_mode == WIZARD_MODE_EDIT)
       {
         // We post the action as key value in de atkwizardaction var. Therefor
         // we have to convert the atkwizardaction value in atkWizard::start().        
@@ -153,19 +154,22 @@ atkimport("atk.atkcontroller");
 
       return $result;
     }    
-    
+
+    /*
     function setPageFlags($flag)
     {
       $this->m_page_flags = $flag;
     }
+    */
 
     /**
      * Determine if this panel should show a finish button
      */
     function showFinishButton()
     {
-      return (($this->m_wizardPanel->showFinishButton() == FINISH_BUTTON_SHOW) ||
-               ($this->m_wizardPanel->showFinishButton() == FINISH_BUTTON_DEFAULT && $this->m_wizardPanel->isFinishPanel()));
+      $currentPanel = $this->getCurrentPanel();
+      return (($currentPanel->showFinishButton() == FINISH_BUTTON_SHOW) ||
+               ($currentPanel->showFinishButton() == FINISH_BUTTON_DEFAULT && $currentPanel->isFinishPanel()));
     }    
     
   }

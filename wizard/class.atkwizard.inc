@@ -15,8 +15,10 @@
  * @version $Revision$
  * $Id$
  */
-  
+
+ atkimport("atk.wizard.atkwizardbase"); 
  atkimport("atk.wizard.atkwizardactionloader");
+ 
  atkimport("atk.atknodetools");
  
  define("WIZARD_MODE_ADD"     , 1);
@@ -32,7 +34,7 @@
  * @package atk
  *
  */
-  class atkWizard
+  class atkWizard extends atkWizardBase
   {
     /**
      * Array of panels 
@@ -83,7 +85,7 @@
      * @access public
      * @var boolean
      */
-    var $m_returnOutput;
+    //var $m_returnOutput;
     
     
     var $m_page_flags = HTML_ALL;
@@ -95,15 +97,7 @@
      * @access private
      * @var object
      */
-    var $m_self;
-    
-    /**
-     * Name of the wizardcontroller (for overriding for example getFormButtons)
-     *
-     * @access public
-     * @var string
-     */
-    var $m_wizardcontroller = "atkWizardController";
+    var $m_self;    
     
     /**
      * Constructor
@@ -111,16 +105,40 @@
      * @param boolean $returnOutput Indicate if this wizard should return output or not
      * @return atkWizard
      */    
-    function atkWizard($mode = WIZARD_MODE_ADD, $returnOutput=false)
-    {
-      $this->m_mode = $mode;
+    function atkWizard()
+    {      
+      atkdebug("atkWizard::constructor");
+      $this->atkWizardBase();
       if (atkGetPostVar("atkwizardpanelindex")!="")
         $this->m_currentPanelIndex = atkGetPostVar("atkwizardpanelindex");
       else 
         $this->m_currentPanelIndex = 0;
-      $this->m_returnOutput = $returnOutput;
+      
       $this->m_self = &$this;
     }
+        
+    function setMode($mode = WIZARD_MODE_ADD)
+    {
+      $this->m_mode = $mode;
+    }
+    
+    function getMode()
+    {
+      return $this->m_mode;
+    }
+    
+    /*
+    function setReturnOutput($returnOutput=false)
+    {
+      $this->m_returnOutput = $returnOutput;           
+    }
+    
+    
+    function getReturnOutput()
+    {
+      return $this->m_returnOutput;           
+    }   
+    */
     
     /**
      * Add wizardpanel to the wizard. Only objects of type
@@ -142,7 +160,7 @@
      *
      * @return String The html output
      */
-    function excecute()    
+    function execute()    
     {
       $atkwizardaction = AtkWizardActionLoader::getWizardAction(atkGetPostVar("atkwizardaction"));
       
@@ -270,5 +288,9 @@
     }
 
     
+    function setPageFlags($flag)
+    {
+      $this->m_page_flags = $flag;
+    }
   }
 ?>
