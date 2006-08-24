@@ -2180,7 +2180,7 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
       atkdebug("atknode::redirect()");
 
       if ($g_returnurl!="") $location = $g_returnurl;
-
+      
       if ($location=="")
       {
         $location = session_url($_SERVER["PHP_SELF"],SESSION_BACK,1);
@@ -4151,50 +4151,5 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
       if ($module==NULL) $module = $this->m_module;
       return atktext($string, $module, $this->m_type, $lng, $firstfallback, $nodefaulttext);
     }
-
-    /**
-     * Return the controller for this node
-     * 
-     * The controller can be overriden. Use registerNodeController
-     * to do so. When node controller is registered the default
-     * atkController is created.
-     *
-     * @return object atkController
-     */
-    function &getController()
-    {
-      atkdebug("Load controller");
-      $controller = &atkcontroller::getInstance();
-      $controller->setNode(&$this);
-      
-      /*
-      if(!is_object($this->m_controller))
-      {
-        atkdebug("Create new controller for type: ".$this->m_type);  
-        $controller = getNodeController($this->m_type);
-        if($controller == NULL)
-        {          
-          atkimport("atk.atkcontroller");
-          $this->m_controller = new atkController(&$this);
-        }
-        else
-        {
-          if(is_object($controller))
-          {
-            atkdebug("Using override controller ");  
-            $this->m_controller = $controller;
-          }
-          else
-          {
-            atkdebug("Create override controller " . $controller);  
-            atkimport($controller);
-            $this->m_controller = atknew($controller);
-          }
-        }
-      }
-      */
-      return $controller;      
-    }
-    
   }
 ?>

@@ -30,16 +30,6 @@ atkimport("atk.atkcontroller");
  */
   class atkWizardBase extends atkController
   {
-    //var $m_page_flags = HTML_ALL;
-    
-    /*
-    function atkWizardBase()
-    {
-      atkdebug("atkWizardBase::constructor()") ;
-      // Call base constructor
-      $this->atkController();
-    }*/
-
     /**
      * This is the wrapper method for all http requests on a node.
      *
@@ -100,6 +90,7 @@ atkdebug("screen $screen return output ". ($this->m_return_output ? "true":"fals
      */
     function getFormButtons($action, $record)
     {
+      atk_var_dump("GETFORM BUTTONS");
       $result = array();
       
       if ($this->m_mode == WIZARD_MODE_ADD)
@@ -143,7 +134,6 @@ atkdebug("screen $screen return output ". ($this->m_return_output ? "true":"fals
         // We post the action as key value in de atkwizardaction var. Therefor
         // we have to convert the atkwizardaction value in atkWizard::start().        
         $result[] = '<input type="submit" class="btn_save" name="atknoclose" value="'.atktext("save", "atk").'">';
-        //$result[] = '<input type="submit" class="btn_next" name="atkwizardaction[saveandnext]" value="'.atktext("saveandnext", "atk").'">';                //$result[] = '<input type="submit" class="btn_save" name="atknoclose" value="'.atktext("save", "atk").'">';        
         $result[] = '<input type="submit" class="btn_next" name="atkwizardaction[finish]" value="'.atktext("finish", "atk").'">';          
         $result[] = '<input type="submit" class="btn_cancel" name="atkcancel" value="'.atktext("cancel", "atk").'">';
       }
@@ -155,13 +145,6 @@ atkdebug("screen $screen return output ". ($this->m_return_output ? "true":"fals
       return $result;
     }    
 
-    /*
-    function setPageFlags($flag)
-    {
-      $this->m_page_flags = $flag;
-    }
-    */
-
     /**
      * Determine if this panel should show a finish button
      */
@@ -171,9 +154,5 @@ atkdebug("screen $screen return output ". ($this->m_return_output ? "true":"fals
       return (($currentPanel->showFinishButton() == FINISH_BUTTON_SHOW) ||
                ($currentPanel->showFinishButton() == FINISH_BUTTON_DEFAULT && $currentPanel->isFinishPanel()));
     }    
-    
   }
-  
-  
-
 ?>

@@ -127,7 +127,7 @@
       if(is_object($this->m_node))
       {
         atkdebug("atkcontroller::getNode() <b>" . ($this->m_postvars["atknodetype"] != $this->m_node->m_module.".".$this->m_node->m_type ? 
-                                                   "poststvars[atknodetype] not equal to the current node. postvar: ". $this->m_postvars["atknodetype"] . " current: ". $this->m_node->m_module.".".$this->m_node->m_type : "Returning node ".$this->m_node->m_module.".".$this->m_node->m_type )."</b>");
+                                                   "postvars[atknodetype] not equal to the current node. postvar: ". $this->m_postvars["atknodetype"] . " current: ". $this->m_node->m_module.".".$this->m_node->m_type : "Returning node ".$this->m_node->m_module.".".$this->m_node->m_type )."</b>");
         return $this->m_node;
       }
       else
@@ -372,18 +372,13 @@
       {
         $vars = array("atkaction"=>"feedback", "atkfbaction"=>$action, "atkactionstatus"=>$status,"atkfbmessage"=>$message);
         $node = $this->getNode();
-        $atkNodeType = $node->atkNodeType();
         $sessionStatus = SESSION_REPLACE;
+        $atkNodeType = $node->atkNodeType();
       }
-      else
-        $sessionStatus = SESSION_BACK;
-        
-      $dispatch_url = $this->dispatchUrl($vars, $atkNodeType);
+      else $sessionStatus = SESSION_BACK;
       
-      return (session_url($dispatch_url, $sessionStatus));
+      return (session_url($this->dispatchUrl($vars, $atkNodeType), $sessionStatus));
     }
-    
-    
     
     /**
      * Generate a dispatch menu URL for use with nodes

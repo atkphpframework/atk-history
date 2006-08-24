@@ -263,6 +263,7 @@ sending
   AtkController. [Maurice]
 + Added AtkWizardBase class which contains wizard specific controller 
   functionality. [Maurice]
+* Removed getController function from atknode. [Lineke]
 -- End Saruman changes --
 
 

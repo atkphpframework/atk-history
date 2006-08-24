@@ -56,7 +56,8 @@
       $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
       $page->register_loadscript("placeFocus();");
       $node->addStyle("style.css");
-      $controller = &$node->getController();
+      $controller = &atkcontroller::getInstance();
+      $controller->setNode(&$this->m_node);
 
       $params = $node->getDefaultActionParams();
 
@@ -67,7 +68,6 @@
       if ($node->m_action == "admin" && count($record['atkerror']) == 0) $formstart.=session_form(SESSION_NESTED);
       else $formstart.=session_form();
             
-      $controller = &$node->getController();
       $formstart .= $controller->getHiddenVarsString();
 
       if (isset($node->m_postvars['atkfilter']))

@@ -127,19 +127,6 @@
       return $this->m_mode;
     }
     
-    /*
-    function setReturnOutput($returnOutput=false)
-    {
-      $this->m_returnOutput = $returnOutput;           
-    }
-    
-    
-    function getReturnOutput()
-    {
-      return $this->m_returnOutput;           
-    }   
-    */
-    
     /**
      * Add wizardpanel to the wizard. Only objects of type
      * atkWizardPanel can be added. The order of additions

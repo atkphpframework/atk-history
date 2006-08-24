@@ -127,7 +127,8 @@
     {      
       atkdebug("atkSaveHandler::createRedirectLocation()");
       $location="";
-      $controller = &$this->m_node->getController();
+      $controller = &atkcontroller::getInstance();
+      $controller->setNode(&$this->m_node);
       if ($this->m_node->hasFlag(NF_EDITAFTERADD))
       {
         $vars = array('atknodetype'=>$this->m_node->atknodetype(), 'atkaction'=>'edit', 'atkselector' => $this->m_node->primaryKey($record));

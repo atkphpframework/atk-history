@@ -164,9 +164,8 @@ define(FINISH_BUTTON_DONT_SHOW, 3);
         $controller->setPhpFile("index.php");
         //We set how we want the atk page to be returned
         atkdebug("getPanelNode flags" . $this->m_wizard->m_page_flags . " controller ".$controller->m_page_flags);
-        $controller->setPageFlags(HTML_ALL);
+        $this->m_wizard->setPageFlags(HTML_ALL);
         atkdebug("getPanelNode flags" . $this->m_wizard->m_page_flags . " controller ".$controller->m_page_flags);
-        //$controller->setPageFlags($this->m_wizard->m_page_flags);
 
       }
       return $this->m_node;  

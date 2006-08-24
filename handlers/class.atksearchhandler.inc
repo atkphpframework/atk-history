@@ -58,7 +58,8 @@
       $node = &$this->m_node;
 
       $node->addStyle("style.css");
-      $controller = &$node->getController();
+      $controller = &atkcontroller::getInstance();
+      $controller->setNode(&$this->m_node);
 
       $page = &$this->getPage();
       $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");

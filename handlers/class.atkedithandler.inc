@@ -77,13 +77,13 @@
       $node->addStyle("style.css");
 
       $params = $node->getDefaultActionParams($locked);
-      $controller = &$node->getController();
-
+      $controller = &atkcontroller::getInstance();
+      $controller->setNode(&$this->m_node);
+      
       $formstart = '<form name="entryform" enctype="multipart/form-data" action="'.$controller->getPhpFile().'?'.SID.'"'.
                                    ' method="post" onsubmit="return globalSubmit(this)">'.
                                    session_form();
 
-      $controller = $node->getController();
       $formstart .= $controller->getHiddenVarsString();
                    
       $params["formstart"] = $formstart;
