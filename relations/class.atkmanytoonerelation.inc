@@ -375,7 +375,7 @@
         $id = $fieldprefix.$this->fieldName();
         $url = partial_url($this->m_ownerInstance->atkNodeType(), 'edit', 'attribute.'.$this->fieldName().'.auto_complete');
         $value = $record[$this->fieldName()] == NULL ? '' : $this->m_destInstance->primaryKey($record[$this->fieldName()]);
-        $code = "new Ajax.AdvancedAutocompleter('${id}_search', '{$id}_result', '{$id}_selection', '$id', '$url', { paramName: 'value', minChars: 2, frequency: 0.5 });";    
+        $code = "new Ajax.AdvancedAutocompleter('{$id}_search', '{$id}_result', '{$id}_selection', '$id', '$url', { paramName: 'value', minChars: 2, frequency: 0.5 });";    
         
         $page->register_script(atkconfig("atkroot").'atk/javascript/prototype/prototype.js');
         $page->register_script(atkconfig("atkroot").'atk/javascript/scriptaculous/scriptaculous.js');
@@ -412,7 +412,7 @@
         return 
           '<input type="text" id="'.$id.'_search" class="'.$id.'_search" size="40" />
            <div id="'.$id.'_result" class="'.$id.'_result"></div>      
-           <input type="hidden" name="'.$id.'" value="'.$value.'"/><br />
+           <input type="hidden" id="'.$id.'" name="'.$id.'" value="'.$value.'"/><br />
            <span id="'.$id.'_selection" class"'.$id.'_selection">'.$this->display($record).'</span>';            
       }      
 
@@ -1317,5 +1317,30 @@
         $node = &$this->m_ownerInstance;
       return session_url($_SERVER["PHP_SELF"].'?atknodetype='.$node->atkNodeType().'&atkaction='.$node->m_action.'&atkorderby='.rawurlencode($order));
     }    
+
+    /**
+     * Override partial to add auto-completion support.
+     */
+    function partial($mode, $options=array()) 	 
+    { 	 
+      if ($options['partial'] == 'auto_complete')
+      {
+        $result = '';
+        foreach (array('aap', 'noot', 'mies') as $key => $value)
+        {
+          $result .= '
+            <li>
+              '."$value ($key)".'
+              <span class="selection" style="visibility: hidden">'."$key, $value".'</span>
+              <span class="value" style="visibility: hidden">'.$value.'</span>
+            </li>';
+        }
+
+       
+        return "<ul>$result</ul>";
+      }
+
+      return parent::partial($mode, $options); 	 
+    }
   }
 ?>
