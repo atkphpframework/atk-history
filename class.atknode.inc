@@ -2767,7 +2767,7 @@
       foreach (array_keys($this->m_attribList) as $attribname)
       {
         $p_attrib = &$this->m_attribList[$attribname];
-        if (!atk_in_array($attribname, $excludelist) && ($mode != "add" || $p_attrib->needsInsert($record)))
+        if (is_object($p_attrib) && !atk_in_array($attribname, $excludelist) && ($mode != "add" || $p_attrib->needsInsert($record)))
         {
           $storemode = $p_attrib->storageType($mode);
           if (hasFlag($storemode, PRESTORE)) $storelist["pre"][]=$attribname;
