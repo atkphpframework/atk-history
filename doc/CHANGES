@@ -48,6 +48,7 @@ Changes in ATK 5.2.0
   a value [Boy]
 + Added executeDelete() and executeSelect() to atkQuery. (bug #381) [Arnold]
 + Added atkAggregatedColumn for grouping columns in lists. (bug #426) [Yury]
+* Check if p_attrib is an object (just in case) to prevent crash. [Ivo]
 * atkmlsplitter::addmlcondition() is now recursive to support relations
   with multiple mlnodes. [Martin]
 * Fixed typo in php version check. [Ivo]
