@@ -365,7 +365,7 @@
       // Two variances.. one with a dropdownbox containing all records,
       // and one with a dropdownbox that contains the last 10 used records,
       // with a link to a selector with all records. This second one is for
-      // relations with large tables, so is only used when AF_LARGE is set.
+      // relations with large tables, so is only used when AF_LARGE is set.      
       if ($this->hasFlag(AF_RELATION_AUTOCOMPLETE))
       {
         $this->createDestination();
@@ -1322,25 +1322,55 @@
      * Override partial to add auto-completion support.
      */
     function partial($mode, $options=array()) 	 
-    { 	 
+    { 
       if ($options['partial'] == 'auto_complete')
       {
+        $postvars = $this->m_ownerInstance->m_postvars;
+        $searchvalue = escapeSQL($postvars['value']);
+        $descriptor_fields = $this->m_destInstance->descriptorFields();
+                
+        $filter = $this->createSearchFilter($searchvalue,$descriptor_fields);        
+        $records = $this->m_destInstance->selectDb($filter,"","","",$descriptor_fields, $mode);
+   
         $result = '';
-        foreach (array('aap', 'noot', 'mies') as $key => $value)
+        $pk_field = $this->m_destInstance->primaryKeyField();
+        
+        foreach ($records as $rec)
         {
+          $option = $this->m_destInstance->descriptor($rec);
+          //the format of the value field must be: table.fieldname='value'
+          $value = "{$this->m_destInstance->m_table}.$pk_field='{$rec[$pk_field]}'";          
+          
           $result .= '
             <li>
-              '."$value ($key)".'
-              <span class="selection" style="visibility: hidden">'."$key, $value".'</span>
-              <span class="value" style="visibility: hidden">'.$value.'</span>
+              '.$option.'
+              <span class="selection" style="visibility: hidden">'."$option".'</span>
+              <span id="'.$this->m_name.'" class="value" style="visibility: hidden">'.$value.'</span>
             </li>';
         }
-
        
         return "<ul>$result</ul>";
-      }
+      }      
 
       return parent::partial($mode, $options); 	 
+    }
+    
+    /**
+     * Creates a search filter with the given search value on the given
+     * descriptor fields
+     *
+     * @param String $searchvalue A searchstring
+     * @return String a search string (WHERE clause)
+     */
+    function createSearchFilter($searchvalue, $descriptor_fields)
+    {             
+      $filter = array();
+      foreach($descriptor_fields as $attribname)
+      {
+        $filter[] = $this->m_destInstance->m_table.".".$attribname." LIKE ('%$searchvalue%')";
+      }
+      
+      return implode(" OR ",$filter);
     }
   }
 ?>
