@@ -413,7 +413,7 @@
           '<input type="text" id="'.$id.'_search" class="'.$id.'_search" size="40" />
            <div id="'.$id.'_result" class="'.$id.'_result"></div>      
            <input type="hidden" id="'.$id.'" name="'.$id.'" value="'.$value.'"/><br />
-           <span id="'.$id.'_selection" class"'.$id.'_selection">'.$this->display($record).'</span>';            
+           <span id="'.$id.'_selection" class="'.$id.'_selection">'.$this->display($record).'</span>';            
       }      
 
       if ($this->createDestination())
