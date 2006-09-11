@@ -1367,7 +1367,7 @@
       $filter = array();
       foreach($descriptor_fields as $attribname)
       {
-        $filter[] = $this->m_destInstance->m_table.".".$attribname." LIKE ('%$searchvalue%')";
+        $filter[] = "lower(".$this->m_destInstance->m_table.".".$attribname.") LIKE lower('%$searchvalue%')";
       }
       
       return implode(" OR ",$filter);
