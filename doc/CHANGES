@@ -120,6 +120,7 @@ Changes in tomorrow branch
   function of the atkmanytomanyrelation. [Dennis]
 * Added support for autocompletion in atkmanytoonerelation. [Dennis]
 * Autocompletion search is now case insensitive. [Dennis]
+* atkTableRenderer supports adding an id field to a TD. [Dennis]
 
 Changed in ATK 5.6.1
 --------------------
