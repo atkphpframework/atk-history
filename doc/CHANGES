@@ -123,6 +123,8 @@ Changes in tomorrow branch
 * atkTableRenderer supports adding an id field to a TD. [Dennis]
 * The atkManyToOneRelation can be configured to always have an 
   AF_RELATION_AUTOCOMPLETE flag. [Dennis]
+* The atkManyToOneRelation ignores the AF_RELATION_AUTOCOMPLETE flag 
+  if the owner instance is not an object. [Dennis]
 
 Changed in ATK 5.6.1
 --------------------
