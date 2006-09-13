@@ -123,6 +123,9 @@
      */
     function atkManyToOneRelation($name, $destination, $flags=0)
     {
+      if(atkconfig("manytoone_defaultautocomplete",false))
+        $flags |= AF_RELATION_AUTOCOMPLETE;      
+      
       if (is_array($name))
       {
         $this->m_refKey = $name;
@@ -419,7 +422,6 @@
       if ($this->createDestination())
       {
         $id = $fieldprefix.$this->fieldName();
-
         $filter=$this->parseFilter($this->m_destinationFilter,$record);
         $autolink = $this->getRelationAutolink($id, $filter);
         $editflag = true;
