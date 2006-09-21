@@ -1548,9 +1548,17 @@
    */
   function dispatch_url($node, $action, $params=array(),$phpfile='dispatch.php')
   {
-    $url = $phpfile."?atknodetype=".$node."&atkaction=".$action;
+    $url = $phpfile;
+    $atkparams = array();
+    if($node!="")
+      $atkparams["atknodetype"] = $node;
+    if($action!="") 
+      $atkparams["atkaction"] = $action;
+    $params = array_merge($atkparams, $params);
+    
     if ($params != "" && is_array($params) && count($params) > 0)
-      $url .= '&'.buildQueryString($params);
+      $url .= '?'.buildQueryString($params);
+      
     return $url;
   }
 
