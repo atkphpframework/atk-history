@@ -16,14 +16,13 @@
    * @version $Revision$
    * $Id$
    */
-
-  /**
+/**
    * flag(s) specific for atkManyToOneRelation
    */
   define("AF_RELATION_AUTOLINK", AF_SPECIFIC_1); // create edit/view links for the items in
                                                  // a manytoonerelation dropdown.
   define("AF_RELATION_NO_NULL_ITEM", AF_SPECIFIC_2);// Do not add null option ever
-  
+
   define("AF_MANYTOONE_LAZY", AF_SPECIFIC_3); // lazy load
 
   /**
@@ -119,7 +118,7 @@
         $this->m_refKey[] = $name;
         $this->atkRelation($name, $destination, $flags);
       }
-      
+
       if ($this->hasFlag(AF_MANYTOONE_LAZY) && (count($this->m_refKey) > 1 || $this->m_refKey[0] != $this->fieldName()))
       {
         atkerror("AF_MANYTOONE_LAZY flag is not supported for multi-column reference key or a reference key that uses another column.");
@@ -551,7 +550,7 @@
         return $result;
       }
     }
-    
+
     /**
      * Retrieve the default searchmode of an attribute
      *
@@ -566,7 +565,7 @@
       }
       return "exact"; // only support exact search when searching with dropdowns
     }
-    
+
     /**
      * Creates a smart search condition for a given search value, and adds it
      * to the query that will be used for performing the actual search.
@@ -615,7 +614,7 @@
      * @param  string   $searchmode the searchmode for the search (e.g. substring)
      * @return string          a piece of the SQL where clause
      */
-    function searchCondition(&$query, $table, $value, $searchmode, $fieldaliasprefix)
+    function searchCondition(&$query, $table, $value, $searchmode, $fieldaliasprefix='')
     {
       $searchcondition = $this->getSearchCondition($query, $table, $fieldaliasprefix, $value, $searchmode);
       $query->addSearchCondition($searchcondition);
@@ -673,7 +672,7 @@
         parent::addToQuery($query, $tablename, $fieldaliasprefix, $rec, $level, $mode);
         return;
       }
-      
+
       if ($this->createDestination())
       {
         if ($mode != "update" && $mode != "add")
@@ -683,7 +682,7 @@
                           $alias,
                           $this->getJoinCondition($query, $tablename, $alias),
                           $this->m_leftjoin);
-          $this->m_destInstance->addToQuery($query, $alias, $level+1, $mode);
+          $this->m_destInstance->addToQuery($query, $alias, $level+1, false, $mode);
         }
         else
         {
@@ -702,7 +701,7 @@
         }
       }
     }
-    
+
 
     /**
      * Retrieve detail records from the database.
@@ -728,8 +727,8 @@
         list($record) = $this->m_destInstance->selectDb($condition, "", "", "", "", $mode);
         return $record;
       }
-    }    
-    
+    }
+
     /**
      * Determine the load type of this attribute.
      *
@@ -758,7 +757,7 @@
       {
         return ADDTOQUERY;
       }
-    }    
+    }
 
     /**
      * Dummy function
@@ -914,7 +913,14 @@
             }
           }
         }
+        if (strpos($order, ".")!==false)
+        {
+          // realias if destination order contains a tablename.
+          $order = substr($order, strpos($order, ".")+1);
+        }
+
         return $this->fieldName().".".$order;
+
       }
       return parent::getOrderByStatement();
     }

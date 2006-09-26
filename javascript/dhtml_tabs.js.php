@@ -21,9 +21,6 @@
  */
 function showTab(tab)
 {
-	// First, get the class names of all elements
-	var tags = document.getElementsByTagName("tr");
-
 	// If we are called without a name, we check if the parent has a stored tab for our page
 	// If so, then we go there, else we go to the first tab (most of the time the 'default' tab)
 	if (!tab)

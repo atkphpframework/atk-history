@@ -8,8 +8,8 @@
    *
    * @package atk
    *
-   * @copyright (c)2000-2004 Ivo Jansch
-   * @copyright (c)2000-2004 Ibuildings.nl BV
+   * @copyright (c)2000-2006 Ivo Jansch
+   * @copyright (c)2000-2006 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
    * @version $Revision$
@@ -630,6 +630,15 @@
     var $m_extended_search_action = NULL;
 
     /**
+     * Extended search action. The action which is called if the user
+     * wants to perform an extended search.
+     *
+     * @access private
+     * @var String
+     */
+    var $m_extended_search_action = NULL;
+
+    /**
      * Constructor.
      *
      * This initialises the node. Derived classes should always call their
@@ -802,7 +811,6 @@
       {
         $this->m_relations[strtolower(get_class($attribute))][$attribute->fieldName()]=&$attribute;
       }
-atkdebug("Setting tabs for ".$attribute->fieldName());
       $attribute->setTabs($this->m_attributeTabs[$attribute->fieldName()]);
       return $attribute;
     }
@@ -838,6 +846,15 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
 
         unset($this->m_attribIndexList[$listindex]);
       }
+    }
+
+    /**
+     * Returns the table name for this node.
+     * @return string table name
+     */
+    function getTable()
+    {
+      return $this->m_table;
     }
 
     /**
@@ -1113,10 +1130,10 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
         {
           $additional = $p_attrib->getAdditionalTabs($action);
           $list = atk_array_merge($list, $additional);
-          
+
           // Keep track of the tabs that containg attribs
           // so we only display none-empty tabs
-          $tabCode = $this->m_attributeTabs[$attribname][0];          
+          $tabCode = $this->m_attributeTabs[$attribname][0];
           $this->m_filledTabs = atk_array_merge($this->m_filledTabs, array($tabCode));
           $this->m_filledTabs = atk_array_merge($this->m_filledTabs, $additional);
         }
@@ -1817,6 +1834,28 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
     }
 
     /**
+     * Get extended search action.
+     *
+     * @return extended search action
+     */
+    function getExtendedSearchAction()
+    {
+      if (empty($this->m_extended_search_action))
+        return atkconfig('extended_search_action');
+      else return $this->m_extended_search_action;
+    }
+
+    /**
+     * Set extended search action.
+     *
+     * @param $action extended search action
+     */
+    function setExtendedSearchAction($action)
+    {
+      $this->m_extended_search_action = $action;
+    }
+
+    /**
      * Function returns a page in which the user is asked if he really wants
      * to perform a certain action.
      * @param mixed $atkselector Selector of current record on which the
@@ -2068,6 +2107,24 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
       $controller = &atkcontroller::getInstance();
       $controller->setNode(&$this);
       return $controller->dispatch($postvars, $fullpage);
+      
+      $this->loadDispatchPage($postvars);
+
+      $ui = &$this->getUi();
+      $page = &$this->getPage();
+      if (!$page->isEmpty()) // Only output an html output if there is anything to output.
+      {
+        $screen = $page->render(atktext('app_shorttitle')." - ".$ui->title($this->m_module, $this->m_type,$this->m_postvars['atkaction']), $fullpage);
+
+        $output = &atkOutput::getInstance();
+        $output->output($screen);
+      }
+
+      // This is the end of all things for this page..
+      // so we clean up some resources..
+      $db = &$this->getDb();
+      if (is_object($db)) $db->disconnect();
+      atkdebug("disconnected from the database");
     }
 
     /**
@@ -2080,6 +2137,34 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
       $controller = &atkcontroller::getInstance();
       $controller->setNode(&$this);
       $controller->loadDispatchPage($postvars);
+
+      $this->m_postvars = $postvars;
+
+      $this->m_action = $postvars['atkaction'];
+
+      /** DIRTY HACK
+          if action is something else than edit, we clear the atkformdata sessionstuff **/
+      if ($this->m_action!="edit"&&$this->m_action!="add"&&$this->m_action!="admin")
+      {
+        atkdebug("Clearing stored formdata");
+        $this->m_postvars["atkformdata"]="";
+      }
+
+      $page = &$this->getPage();
+
+      if ($this->allowed($this->m_action))
+      {
+        $secMgr = &atkGetSecurityManager();
+        $secMgr->logAction($this->m_type, $this->m_action);
+        $this->callHandler($this->m_action);
+
+        list($selector,$id) = explode("=", atkarraynvl($this->m_postvars, "atkselector", "="));
+        $page->register_hiddenvars(array("atknodetype"=>$this->m_module.".".$this->m_type, "atkselector"=>str_replace("'", "", $id)));
+      }
+      else
+      {
+        $page->addContent($this->genericPage(atktext('access_denied'), "<br><br>".atktext("error_node_action_access_denied", "", $this->m_type)."<br><br><br>"));
+      }
     }
 
     /**
@@ -2099,6 +2184,20 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
       $controller = &atkcontroller::getInstance();
       $controller->setNode(&$this);
       return $controller->genericPage($title, $content);
+
+      $ui = &$this->getUi();
+      $this->addStyle("style.css");
+      if (!is_array($content)) $content = array($title=>$content);
+      $blocks = array();
+      foreach($content as $itemtitle => $itemcontent)
+        $blocks[] = $ui->renderBox(array("title"=>$itemtitle, "content"=>$itemcontent));
+      /**
+       * @todo Don't use renderActionPage here because it tries to determine
+       *       it's own title based on the title which is passed as action.
+       *       Instead use something like the commented line below:
+       */
+      //return $ui->render("actionpage.tpl", array("blocks"=>$blocks, "title"=>$title));
+      return $this->renderActionPage($title, $blocks);
     }
 
     /**
@@ -2576,6 +2675,7 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
     {
       $searching = false;
       $loadlist = array();
+
       $db = &$this->getDb();
       $query = &$db->createQuery();
 
@@ -2627,6 +2727,15 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
         /* there may be search criteria, which we also filter */
         $searchArray = isset($this->m_postvars['atksearch']) ? $this->m_postvars['atksearch'] : null;
         $smartSearchCriteria = isset($this->m_postvars['atksmartsearch']) ? $this->m_postvars['atksmartsearch'] : null;        
+      }
+
+      // First we check if we are about to search and set a few things
+      // if we are
+      if (!atkReadOptimizer())
+      {
+        /* there may be search criteria, which we also filter */
+        $searchArray = isset($this->m_postvars['atksearch']) ? $this->m_postvars['atksearch'] : null;
+        $smartSearchCriteria = isset($this->m_postvars['atksmartsearch']) ? $this->m_postvars['atksmartsearch'] : null;
       }
 
       if(array_key_exists("atkfilter", $this->m_postvars))
@@ -2712,6 +2821,12 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
         $this->applySmartSearchCriteria($query, $smartSearchCriteria);
       }
 
+      // there may be smart search criteria which we need to apply
+      if (is_array($smartSearchCriteria) && count($smartSearchCriteria) > 0)
+      {
+        $this->applySmartSearchCriteria($query, $smartSearchCriteria);
+      }
+
       $mltool = &atkinstance("atk.utils.atkmlsplitter");
       $mltool->addMlCondition($query,$this,$mode,$this->m_table);
 
@@ -2739,6 +2854,9 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
      */
     function copyDb(&$record, $mode="copy")
     {
+      //notify precopy listeners
+      $this->preNotify("precopy", $record);
+
       // remove primarykey (copied record will get a new primary key)
       unset($record["atkprimkey"]);
 
@@ -2754,9 +2872,9 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
     }
     
     /**
-     * Get the current searchmode. 
+     * Get the current searchmode.
      *
-     * @return mixed If there is one searchmode set for all attributes, this 
+     * @return mixed If there is one searchmode set for all attributes, this
      *               method returns a string. If there are searchmodes per
      *               attribute, an array of strings is returned.
      */
@@ -2772,7 +2890,7 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
       {
         return $this->m_postvars["atksearchmode"];
       }
-      return atkconfig("search_defaultmode");      
+      return atkconfig("search_defaultmode");
     }
 
     /**
@@ -2883,7 +3001,6 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
       atk_var_dump($postloadlist,"postloadlist");
       atk_var_dump($preloadlist,"preloadlist");
       atk_var_dump($querylist,"querylist");
-
 
       $recordset = array();
       // First load PRELOAD attribs
@@ -3127,6 +3244,75 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
       }
     }
 
+
+    /**
+     * Apply the given search criteria to the given query object.
+     *
+     * @param atkQuery $query    The query object.
+     * @param array    $searchArray The search criteria.
+     */
+    function applySearchCriteria(&$query, $searchArray)
+    {
+      $searchmode = $this->getSearchMode();
+      // there may be search criteria, which we also filter
+
+      foreach ($searchArray as $key=>$value)
+      {
+        if( $value!="")
+        {
+          $p_attrib = &$this->getAttribute($key);
+
+          if (is_object($p_attrib))
+          {
+            if (is_array($value) && isset($value[$key]))
+            {
+              $value = $value[$key];
+            }
+
+            if(is_array($searchmode))
+            {
+              $search = $searchmode[$key];
+              if ($search=="") $search = atkconfig("search_defaultmode");
+              $p_attrib->searchCondition($query, $this->m_table, $value, $search);
+            }
+            else
+            {
+              $p_attrib->searchCondition($query, $this->m_table, $value, $searchmode);
+            }
+          }
+          else
+          {
+            $condition = "lower(".$this->m_table.".".$key.") LIKE lower('%".escapeSQL($value,true)."%')";
+            $query->addSearchCondition($condition);
+          }
+        }
+      }
+    }
+
+    /**
+     * Apply the given smart search criteria to the given query object.
+     *
+     * @param atkQuery $query    The query object.
+     * @param Array    $criteria The smart search criteria.
+     */
+    function applySmartSearchCriteria(&$query, $criteria)
+    {
+      foreach ($criteria as $id => $criterium)
+      {
+        $path = $criterium['attrs'];
+        $value = $criterium['value'];
+        $mode = $criterium['mode'];
+
+        $attrName = array_shift($path);
+        $attr = &$this->getAttribute($attrName);
+
+        if (is_object($attr))
+        {
+          $attr->smartSearchCondition($id, 0, $path, $query, $this->m_table, $value, $mode, "");
+        }
+      }
+    }
+
     /**
      * Add this node to an existing query.
      *
@@ -3146,7 +3332,7 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
     function addToQuery(&$query, $alias="", $level=0, $allfields=false, $mode="select")
     {
       if ($level>=4) return;
-      
+
       $usefieldalias = false;
 
       if ($alias=="")
@@ -3161,7 +3347,7 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
       // If allfields is set, we load the entire record.. otherwise, we only
       // load the important fields (descriptor and primary key fields)
       // this is mainly used by onetoonerelation.
-      if ($allfields)
+      if ($allfields || $mode=="copy")
       {
         $usedFields = array_keys($this->m_attribList);
       }
@@ -3667,13 +3853,22 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
       // Resolve action
       $action = $this->securityKey($action);
 
-      // If action contains a dot, it's a complete nodename.action alias.
+      // If action contains a dot, it's a complete nodename.action or modulename.nodename.action alias.
       // Else, it's only an action alias, and we use the default node.
-      // (TODO: make it possible to use modulename.nodename.action aliases)
+
       if (strpos($action, ".")!==false)
       {
-        list($node, $action) = explode(".", $action);
-        $alias = $this->m_module.".".$node;
+        $complete = explode(".", $action);
+        if(count($complete) == 3)
+        {
+          $alias = $complete[0].".".$complete[1];
+          $action = $complete[2];
+        }
+        else
+        {
+          $alias = $this->m_module.".".$complete[0];
+          $action = $complete[1];
+        }
       }
     
       return ($this->hasFlag(NF_NO_SECURITY)
@@ -3874,11 +4069,14 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
         atkimport("atk.handlers.atkactionhandler");
         $handler = &atkActionHandler::getDefaultHandler($action);
         $handler->setNode($this);        
+        $handler->setPostvars($this->m_postvars);
+        
         //If we use a default handler we need to register it to this node
         //because we might call it a second time.
         atkdebug("atkNode::getHandler: Register default atkActionHandler for ".$this->m_type." action: '".$action."'");
         registerNodeHandler($this->m_type, $action, &$handler);
       }
+
       return $handler;
     }
 
@@ -4128,6 +4326,20 @@ atkdebug("Setting tabs for ".$attribute->fieldName());
       for($i=0, $_i=count($this->m_listeners); $i<$_i; $i++)
       {
         $this->m_listeners[$i]->notify($action, $record);
+      }
+    }
+
+    /**
+     * Notify all listeners in advance of the occurance of a certain action.
+     *
+     * @param String $action The action that will occur
+     * @param array $record The record on which the action will be performed
+     */
+    function preNotify($action, &$record)
+    {
+      for($i=0, $_i=count($this->m_listeners); $i<$_i; $i++)
+      {
+        $this->m_listeners[$i]->preNotify($action, $record);
       }
     }
 

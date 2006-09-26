@@ -41,6 +41,7 @@
     var $m_node=NULL;
     var $m_flags=0;
     var $m_actionloader;
+    var $m_masternode=NULL;
 
     /**
      * @access private
@@ -48,6 +49,14 @@
     function setNode(&$node)
     {
       $this->m_node = &$node;
+    }
+
+    /**
+     * Make the recordlist use a different masternode than the node than it is rendering.
+     */
+    function setMasterNode(&$masternode)
+    {
+      $this->m_masternode = &$masternode;
     }
 
     /**
@@ -85,7 +94,7 @@
 
       $theme = &atkinstance("atk.ui.atktheme");
       $page = &atkPage::getInstance();
-      $page->register_style($theme->stylePath("recordlist.css"));
+      $page->register_style($theme->stylePath("recordlist.css",$this->m_node->m_module));
 
       $listName = "rl_".getUniqueId("normalRecordList");
       $page->register_script(atkconfig("atkroot")."atk/javascript/recordlist.js");
@@ -121,8 +130,13 @@
         $headercols = array();
 
         if (!hasFlag($flags, RL_NO_SEARCH) && count($list["rows"]) == 0)
-        {          
-          $headercols[] = array("content"=>"&nbsp;"); // empty cell above search button, if zero rows
+        {
+          if ($orientation == "left" || $orientation == "both")
+          {
+            // empty cell above search button, if zero rows
+            // if $orientation is empty, no search button is shown, so no empty cell is needed
+            $headercols[] = array("content"=>"&nbsp;");
+          }
         }
         if (hasFlag($flags, RL_MRA) || hasFlag($flags, RL_MRPA))
         {
@@ -154,12 +168,21 @@
           }
         }
 
-        if (($orientation == "right" || $orientation == "both")&& $this->hasActionsinList($list))
+        if (($orientation == "right" || $orientation == "both") && $this->hasActionsinList($list))
         {
           $headercols[] = array("content"=>"");
         }
 
-        
+        if (!hasFlag($flags, RL_NO_SEARCH) && count($list["rows"]) == 0)
+        {
+          if ($orientation == "right" || $orientation == "both")
+          {
+            // empty cell above search button, if zero rows
+            // if $orientation is empty, no search button is shown, so no empty cell is needed
+            $headercols[] = array("content"=>"&nbsp;");
+          }
+        }
+
         /**************/
         /* SORT   ROW */
         /**************/
@@ -195,7 +218,7 @@
 
           if ($orientation == "right" || $orientation == "both")
           {
-            $headercols[] = array("content"=>$button);
+            $sortcols[] = array("content"=>$button);
           }
         }
 
@@ -210,14 +233,14 @@
           $button = '<input type="submit" class="btn_search" value="'.atktext("search").'">';
           if (!hasFlag($flags, RL_NO_EXTENDED_SEARCH)&&!$this->m_node->hasFlag(NF_NO_EXTENDED_SEARCH))
           {
-            $button .= '<br>'.href($_SERVER["PHP_SELF"]."?atknodetype=".$this->m_node->atkNodeType()."&atkaction=".$node->getExtendedSearchAction(),"(".atktext("search_extended").")",SESSION_NESTED);
+            $button .= '<br>'.href($_SERVER["PHP_SELF"]."?atknodetype=".$this->getMasterNodeType()."&atkaction=".$node->getExtendedSearchAction(),"(".atktext("search_extended").")",SESSION_NESTED);
           }
 
           $searchstart = '<a name="searchform"></a>';
           if (!hasFlag($this->m_flags, RL_EMBED))
           {
             $searchstart.='<form action="'.$_SERVER["PHP_SELF"].'?'.SID.'" method="get">'.session_form();
-            $searchstart.= '<input type="hidden" name="atknodetype" value="'.$this->m_node->atkNodeType().'">'.
+            $searchstart.= '<input type="hidden" name="atknodetype" value="'.$this->getMasterNodeType().'">'.
                            '<input type="hidden" name="atkaction" value="'.$this->m_node->m_action.'">'.                                   '<input type="hidden" name="atksmartsearch" value="clear">'.
                            '<input type="hidden" name="atkstartat" value="0">'; // reset atkstartat to first page after a new search;
           }
@@ -269,7 +292,7 @@
             if (empty($formName)) $formName = $listName;
             $liststart = '<form name="'.$formName.'" method="post">'.
                        session_form(SESSION_DEFAULT).
-                       '<input type="hidden" name="atknodetype" value="'.$this->m_node->atkNodeType().'">'.
+                       '<input type="hidden" name="atknodetype" value="'.$this->getMasterNodeType().'">'.
                        '<input type="hidden" name="atkaction" value="'.$this->m_node->m_action.'">';
             $listend = '</form>';
           }
@@ -394,8 +417,7 @@
             {
               $record["cols"][] = array("content"=>$str_actions);
             }
-//            else  $record["cols"][] = array("content"=>"");
-
+            //else  $record["cols"][] = array("content"=>"");
           }
 
           /* columns */
@@ -406,7 +428,7 @@
           if ($orientation=="right"||$orientation=="both")
           {
             if (!empty($list["rows"][$i]["actions"])) $record["cols"][] = array("content"=>$str_actions);
-            else $record["cols"][] = array("content"=>"");
+            //else $record["cols"][] = array("content"=>"");
           }
 
           $records[] = $record;
@@ -432,7 +454,8 @@
             $totalcols[] = array("content"=>(isset($list["total"][$key])?$list["total"][$key]:""));
           }
 
-          if ($orientation == "right" || $orientation == "both") $totalcols[] = array("content"=>"");
+          if (($orientation == "right" || $orientation == "both") && $this->hasActionsinList($list))
+           $totalcols[] = array("content"=>"");
         }
 
         /*************************************************/
@@ -441,7 +464,7 @@
         $mra = "";
         if (hasFlag($flags, RL_MRPA))
         {
-          $target = session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->m_node->atkNodeType(), SESSION_NESTED);
+          $target = session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->getMasterNodeType(), SESSION_NESTED);
 
           /* multiple actions -> dropdown */
           if (count($this->m_node->m_priority_actions) > 1)
@@ -474,7 +497,7 @@
           $mra = (count($list["rows"]) > 1 ?
                       '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'all\')">'.atktext("select_all").'</a> / '.
                       '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'none\')">'.atktext("deselect_all").'</a> / '.
-                      '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'invert\')">'.atktext("select_invert").'</a>'
+                      '<a href="javascript:updateSelection(\''.$listName.'\', document.forms[\''.$formName.'\'], \'invert\')">'.atktext("select_invert").'</a> '
                      :
                       '');
 
@@ -527,11 +550,26 @@
                                                    "liststart"=>$liststart,
                                                    "listend"=>$listend,
                                                    "listid"=>$listName,
-                                                   "mra"=>$mra));
+                                                   "mra"=>$mra),$this->m_node->m_module);
         return $res;
       }
     }
     
+    /**
+     * Checks wether there are any actions in the recordlist data
+     *
+     * @param Array $list The recordlist data
+     * @return bool Wether the list has actions
+     */
+    function hasActionsInList($list)
+    {
+      foreach ($list["rows"] as $record)
+      {
+        if (!empty($record['actions'])) return true;
+      }
+      return false;
+    }
+
     /**
      * Checks wether there are any actions in the recordlist data
      *
@@ -682,6 +720,18 @@
         $result["mra"] = array_values(array_unique($result["mra"]));
 
       return $result;
+    }
+
+    function getMasterNode()
+    {
+      if (is_object($this->m_masternode)) return $this->m_masternode;
+      return $this->m_node; // treat rendered node as master
+    }
+
+    function getMasterNodeType()
+    {
+      $node = &$this->getMasterNode();
+      return $node->atkNodeType();
     }
   }
 

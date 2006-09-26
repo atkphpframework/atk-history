@@ -14,8 +14,7 @@
    * @version $Revision$
    * $Id$
    */
-
-  /** @internal include baseclass. */
+/** @internal include baseclass. */
   userelation("atkmanytomanyrelation");
 
 
@@ -39,31 +38,6 @@
   {
     var $m_cols=3;
 
-    function _getSelectableRecords($record=array(), $mode="") 	 
-    { 	 
-      $method = $this->fieldName()."_selection"; 	 
-      if (method_exists($this->m_ownerInstance, $method)) 	 
-       return $this->m_ownerInstance->$method($record, $mode); 	 
-      else return $this->getSelectableRecords($record, $mode); 	 
-    } 	 
-    
-    function getSelectableRecords($record=array(), $mode="",$force=false) 	 
-    { 	 
-      if ($this->createDestination()) 	 
-      { 	 
-        if ($this->m_destinationFilter!="") 	 
-        { 	 
-         atkimport("atk.utils.atkstringparser"); 	 
-         $parser = new atkStringParser($this->m_destinationFilter); 	 
-         $filter = $parser->parse($record); 	 
-         $this->m_destInstance->addFilter($filter); 	 
-        } 	 
-        
-        return $this->m_destInstance->selectDb("","","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey)); 	 
-      } 	     
-      return array(); 	 
-    }
-    
     /**
      * Return a piece of html code to edit the attribute
      * @param $record Current record
@@ -96,11 +70,11 @@
       $page->register_script(atkconfig("atkroot")."atk/javascript/class.atkprofileattribute.js.php");
 
       $result ='<div align="left"><font size="-2">
-                [<a href="javascript:profile_checkAll(\''.$fieldprefix.$this->fieldName().'\')">'.
+                [<a href="javascript:profile_checkAll(\''.$this->fieldName().'\')">'.
                      atktext("check_all", "atk").
-                '</a> <a href="javascript:profile_checkNone(\''.$fieldprefix.$this->fieldName().'\')">'.
+                '</a> <a href="javascript:profile_checkNone(\''.$this->fieldName().'\')">'.
                      atktext("check_none", "atk").
-                '</a> <a href="javascript:profile_checkInvert(\''.$fieldprefix.$this->fieldName().'\')">'.
+                '</a> <a href="javascript:profile_checkInvert(\''.$this->fieldName().'\')">'.
                      atktext("invert_selection", "atk").'</a>]</font></div>';
 
       $result.= '<table border="0"><tr>';
@@ -130,8 +104,8 @@
         }
         $result.= '<td class="table"><input type="checkbox" name="'.
                        $fieldprefix.$this->fieldName().
-                       '[]['.$this->getRemoteKey().
-                       ']" value="'.
+                       '_AMDAE_'.$this->getRemoteKey().
+                       '[]" value="'.
                        $recordset[$i][$this->m_destInstance->primaryKeyField()].
                        '" '.$sel.'></td><td class="table">'.
                        $this->m_destInstance->descriptor($recordset[$i]).

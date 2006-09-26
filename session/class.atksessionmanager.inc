@@ -173,34 +173,13 @@
     function getValue($var, $namespace="")
     {
       global $g_sessionData;
+
       if ($namespace=="globals")
         return isset($g_sessionData["globals"][$var]) ? $g_sessionData["globals"][$var] : null;
       else if ($namespace!="")
         return isset($g_sessionData[$namespace]["globals"][$var]) ? $g_sessionData[$namespace]["globals"][$var] : null;
       else
         return isset($g_sessionData[$this->m_namespace]["globals"][$var]) ? $g_sessionData[$this->m_namespace]["globals"][$var] : null;
-    }
-
-    /**
-     * Retrieve the value of a session variable from stack.
-     *
-     * @param String $var The name of the variable to retrieve.
-     * @param int $atklevel The atklevel from which the value te retrieve from.
-     * @param String $namespace The namespace from which to retrieve the
-     *                          variable
-     * @return mixed The retrieved value.
-     */
-    function getStackValue($var, $atklevel="", $namespace="")
-    {
-      global $g_sessionData;
-      
-      $level = ($atklevel != "" ? $atklevel : atklevel());
-      if ($namespace!="") return $g_sessionData[$namespace]["stack"][atkStackID()][$level][$var];
-      if (isset($g_sessionData[$this->m_namespace]["stack"][atkStackID()][$level][$var]))
-      {
-        return $g_sessionData[$this->m_namespace]["stack"][atkStackID()][$level][$var];
-      }
-      return NULL;
     }
     
     /**
@@ -409,6 +388,11 @@
           }
         }
 
+        // finally, reset atkescape to prevent atk from keeping escaping upon return
+        unset($currentitem['atkescape']);
+
+        atk_var_dump($currentitem, "Current item in escape mode");
+
       }
       else
       {
@@ -594,14 +578,10 @@
       {
         if (isset($stack[$i]["descriptor"]) || $i == ($stackcount-1))
         {
+          $node = &getNode($stack[$i]["atknodetype"]);
+          $module = getNodeModule($stack[$i]["atknodetype"]);
+          $nodename = getNodeType($stack[$i]["atknodetype"]);
 
-          if(isset($stack[$i]["atknodetype"]))
-          {
-            $node = &getNode($stack[$i]["atknodetype"]);
-            $module = getNodeModule($stack[$i]["atknodetype"]);
-            $nodename = getNodeType($stack[$i]["atknodetype"]);  
-          }
-                    
           if (is_object($node))
           {
             $ui = &atkinstance("atk.ui.atkui");

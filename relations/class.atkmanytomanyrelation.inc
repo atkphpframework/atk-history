@@ -283,7 +283,6 @@
           $checked[] = $record[$this->fieldName()][$i][$this->getRemoteKey()][$this->m_destInstance->primaryKeyField()];
         else
           $checked[] = $record[$this->fieldName()][$i][$this->getRemoteKey()];
-
       }
 
       $filter="";
@@ -295,9 +294,9 @@
         for ($i=0;$i<count($record[$this->fieldName()]);$i++)
         {
           // magical stuff..
-          $remKey    = $this->checkKeyDimension($record[$this->fieldName()][$i][$this->getRemoteKey()]);
+          $remKey    = $this->checkKeyDimension($record[$this->fieldName()][$i][$this->getRemoteKey()], $this->m_destInstance->primaryKeyField());
           $locKey    = $this->checkKeyDimension($record[$this->m_ownerInstance->primaryKeyField()]);
-          $newrecord = $this->m_destInstance->initial_values();
+          $newrecord = $rel->initial_values();
           $newrecord[$this->getRemoteKey()][$this->m_destInstance->primaryKeyField()] = $remKey; // $record[$this->fieldName()][$i][$this->getRemoteKey()];
           $newrecord[$this->getLocalKey()][$this->m_ownerInstance->primaryKeyField()] = $locKey; // $record[$this->m_ownerInstance->primaryKeyField()];
 
@@ -306,7 +305,7 @@
           $where = $this->m_linkInstance->m_table.'.'.$this->getLocalKey()."='".
                      $record[$this->m_ownerInstance->primaryKeyField()]."'".
                      " AND ".$this->m_linkInstance->m_table.'.'.$this->getRemoteKey()."='".
-                     $record[$this->fieldName()][$i][$this->getRemoteKey()]."'";
+                     $remKey."'";
 
           $existing = $rel->selectDb($where, "", "", "", $rel->m_primaryKey);
           if (!count($existing))
@@ -345,15 +344,21 @@
     function hide($record="", $fieldprefix="")
     {
       $result = "";
-      if(is_array(atkArrayNvl($record,$this->fieldName())))
+      if(is_array(atkArrayNvl($record,$this->fieldName())) && $this->createDestination())
       {
         for($i=0,$_i=count($record[$this->fieldName()]);$i<$_i;$i++)
         {
           if(atkArrayNvl($record[$this->fieldName()][$i],$this->getLocalKey()))
-            $result .= '<input type="hidden" name="'.$fieldprefix.$this->formName().'['.$i.']['.$this->getLocalKey().']" value="'.$record[$this->fieldName()][$i][$this->getLocalKey()].'">';
+            $result .= '<input type="hidden" name="'.$fieldprefix.$this->formName().
+                       '['.$i.']['.$this->getLocalKey().']" value="'.
+                       $this->checkKeyDimension($record[$this->fieldName()][$i][$this->getLocalKey()],
+                         $this->m_ownerInstance->primaryKeyField()).'">';
 
           if(atkArrayNvl($record[$this->fieldName()][$i],$this->getRemoteKey()))
-            $result .= '<input type="hidden" name="'.$fieldprefix.$this->formName().'['.$i.']['.$this->getRemoteKey().']" value="'.$record[$this->fieldName()][$i][$this->getRemoteKey()].'">';
+            $result .= '<input type="hidden" name="'.$fieldprefix.$this->formName().
+                       '['.$i.']['.$this->getRemoteKey().']" value="'.
+                       $this->checkKeyDimension($record[$this->fieldName()][$i][$this->getRemoteKey()],
+                         $this->m_destInstance->primaryKeyField()).'">';
         }
       }
       return $result;
@@ -426,7 +431,7 @@
     }
 
     /**
-     * Checks if a key is not an array 
+     * Checks if a key is not an array
      * @param $key   field containing the key values
      * @param $field field to return if an array
      * @return value of $field

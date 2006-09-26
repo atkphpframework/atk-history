@@ -82,9 +82,22 @@
             $db->commit();
             $this->notify("save", $record);
             $this->clearCache();
-          
-            $location = $this->createRedirectLocation($record);
-            $this->m_node->redirect($location);
+
+            $location="";
+            if ($this->m_node->hasFlag(NF_EDITAFTERADD))
+            {
+              $location = session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->m_node->atknodetype().'&atkaction=edit&atkselector='.rawurlencode($this->m_node->primaryKey($record)), SESSION_REPLACE);
+            }
+            else if ($this->m_node->hasFlag(NF_ADDAFTERADD) && isset($this->m_postvars['atksaveandnext']))
+            {
+              $filter = isset($this->m_node->m_postvars['atkfilter']) ? "&atkfilter=".rawurlencode($this->m_node->m_postvars['atkfilter']) : "";
+              $location = session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->m_node->atknodetype().'&atkaction=add'.$filter, SESSION_DEFAULT);
+            }
+            else
+            {
+              $location = $this->m_node->feedbackUrl("save", ACTION_SUCCESS, $record);
+            }
+            $this->m_node->redirect($location, $record);
           }
         }
       }

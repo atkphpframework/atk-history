@@ -1328,7 +1328,7 @@
     $fp = @fopen($file,"rb");
     if ($fp!=NULL)
     {
-      header('Content-Type: '. $ctype);
+      header('Content-Type: '. $mime);
       header("Content-Length: ".filesize($file));
       header('Content-Disposition:  '.$disp.'; filename="'.$filename.'"');
       if(eregi("ie", $browser["browser"])) header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
@@ -1485,7 +1485,7 @@
       foreach ($ATK_VARS as $key => $val)
       {
         if (!in_array($key, $excludes))
-          $str .= "<input type='hidden' name=\"$key\" value=\"".$val."\">\n";
+          $str .= "<input type='hidden' name=\"$key\" value=\"".htmlentities($val)."\">\n";
       }
       return $str;
     }
@@ -1558,7 +1558,7 @@
     
     if ($params != "" && is_array($params) && count($params) > 0)
       $url .= '?'.buildQueryString($params);
-      
+
     return $url;
   }
 
@@ -2019,4 +2019,26 @@
     }
   }
   
+  /**
+   * Returns the IP of the remote client.
+   *
+   * @return string ip address
+   */
+  function atkGetClientIp()
+  {
+    static $s_ip = NULL;
+    
+    if ($s_ip === NULL)
+    {
+      if (getenv("HTTP_CLIENT_IP"))
+        $s_ip = getenv("HTTP_CLIENT_IP");
+      elseif (getenv("HTTP_X_FORWARDED_FOR"))
+        $s_ip = getenv("HTTP_X_FORWARDED_FOR");
+      elseif (getenv("REMOTE_ADDR"))
+        $s_ip = getenv("REMOTE_ADDR");    
+      else $s_ip = 'x.x.x.x';
+    }
+    
+    return $s_ip;
+  }
 ?>

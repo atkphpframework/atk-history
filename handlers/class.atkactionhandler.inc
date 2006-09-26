@@ -87,6 +87,16 @@
     }
 
     /**
+     * Set postvars of the the calling node of the current action.
+     * @param array $postvars Postvars of the node on which the action should be performed.
+     */
+    function setPostvars(&$postvars)
+    {
+      $this->m_postvars = &$postvars;
+    }
+    
+
+    /**
      * Get the page instance for generating output.
      *
      * @return atkPage The active page instance.

@@ -104,6 +104,16 @@
       $this->atkAttribute($name,$flags); // base class constructor
     }
 
+    function setDateMin($min=0)
+    {
+      $this->m_date->setDateMin($min);
+    }
+
+    function setDateMax($max=0)
+    {
+      $this->m_date->setDateMax($max);
+    }    
+    
     function validate(&$record, $mode)
     {
       $this->m_date->validate($record,$mode);
@@ -229,7 +239,7 @@
         if ($result_time == NULL)
           $result_time = array('hours' => 0, 'minutes' => 0, 'seconds' => 0);
 
-        return array_merge($result_date,$result_time);
+        return array_merge((array)$result_date,(array)$result_time);
       }
       else return NULL;
     }
