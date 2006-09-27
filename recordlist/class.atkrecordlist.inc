@@ -378,7 +378,7 @@
               switch($mraSelectionMode)
               {
                 case MRA_SINGLE_SELECT:
-                  $inputHTML = '<input type="radio" name="'.$listName.'_atkselector['.$i.']" value="'.$list["rows"][$i]["selector"].'" onclick="if (this.disabled) this.checked = false">';                
+                  $inputHTML = '<input type="radio" name="'.$listName.'_atkselector" value="'.$list["rows"][$i]["selector"].'" onclick="if (this.disabled) this.checked = false">';                
                   break;
                 case MRA_NO_SELECT:
                   $inputHTML = 

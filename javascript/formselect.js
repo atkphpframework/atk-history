@@ -114,6 +114,11 @@ function atkSubmitMRA(name, form, target, embedded)
       var key = list[i].name.substring(name.length + 1);
       var value = list[i].value;
       
+      // For single selects, we need to add the record number
+      // after the user is done selecting, otherwise the singleselect
+      // will act like a multi-select
+      if (list[i].type == 'radio') key+='['+i+']';
+      
       if (embedded)
       {
         target += '&' + key + '=' + value;
