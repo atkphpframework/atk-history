@@ -82,6 +82,13 @@
      * @var String
      */
     var $m_password = "";
+    
+    /**
+     * The character set.
+     * @access private
+     * @var String
+     */
+    var $m_charset = "";
 
     /**
      * Contains the current record from the result set.
@@ -740,7 +747,10 @@
           $g_dbinstances[$conn]->m_password = $dbconfig[$conn]["password"];
           $g_dbinstances[$conn]->m_host     = $dbconfig[$conn]["host"];
           if (isset($dbconfig[$conn]["port"]))
-            $g_dbinstances[$conn]->m_port     = $dbconfig[$conn]["port"];
+            $g_dbinstances[$conn]->m_port = $dbconfig[$conn]["port"];
+          if (isset($dbconfig[$conn]["charset"]))
+            $g_dbinstances[$conn]->m_charset = $dbconfig[$conn]["charset"];
+            
         }
       }
       return $g_dbinstances[$conn];

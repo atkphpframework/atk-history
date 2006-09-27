@@ -55,16 +55,23 @@
        {
          $this->halt($this->getErrorMsg());
        }
-     }
-
-     /* Set AutoCommit to Off */
-     mysqli_autocommit($this->m_link_id, FALSE);
-
-     /* select database */
-     if (!@mysqli_select_db( $this->m_link_id, $this->m_database))
-     {
-       $this->halt($this->getErrorMsg());
-       return $this->_translateError();
+       
+       /* Set character set */
+       if (!empty($this->m_charset))
+       {
+         atkdebug("Set database character set to: {$this->m_charset}");
+         @mysqli_query($this->m_link_id, "SET NAMES '{$this->m_charset}'");
+       }
+       
+       /* Set AutoCommit to Off */
+       mysqli_autocommit($this->m_link_id, FALSE);
+  
+       /* select database */
+       if (!@mysqli_select_db( $this->m_link_id, $this->m_database))
+       {
+         $this->halt($this->getErrorMsg());
+         return $this->_translateError();
+       }
      }
 
      /* return link identifier */

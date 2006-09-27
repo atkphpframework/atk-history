@@ -61,6 +61,13 @@
         {
           $this->halt($this->getErrorMsg());
         }
+        
+        /* Set character set */
+        if (!empty($this->m_charset))
+        {
+          atkdebug("Set database character set to: {$this->m_charset}");
+          @mysql_query($this->m_link_id, "SET NAMES '{$this->m_charset}'");
+        }
       }
 
       /* select database */
