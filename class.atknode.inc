@@ -2085,24 +2085,6 @@
       $controller = &atkcontroller::getInstance();
       $controller->setNode(&$this);
       return $controller->dispatch($postvars, $fullpage);
-      
-      $this->loadDispatchPage($postvars);
-
-      $ui = &$this->getUi();
-      $page = &$this->getPage();
-      if (!$page->isEmpty()) // Only output an html output if there is anything to output.
-      {
-        $screen = $page->render(atktext('app_shorttitle')." - ".$ui->title($this->m_module, $this->m_type,$this->m_postvars['atkaction']), $fullpage);
-
-        $output = &atkOutput::getInstance();
-        $output->output($screen);
-      }
-
-      // This is the end of all things for this page..
-      // so we clean up some resources..
-      $db = &$this->getDb();
-      if (is_object($db)) $db->disconnect();
-      atkdebug("disconnected from the database");
     }
 
     /**
@@ -2115,34 +2097,6 @@
       $controller = &atkcontroller::getInstance();
       $controller->setNode(&$this);
       $controller->loadDispatchPage($postvars);
-
-      $this->m_postvars = $postvars;
-
-      $this->m_action = $postvars['atkaction'];
-
-      /** DIRTY HACK
-          if action is something else than edit, we clear the atkformdata sessionstuff **/
-      if ($this->m_action!="edit"&&$this->m_action!="add"&&$this->m_action!="admin")
-      {
-        atkdebug("Clearing stored formdata");
-        $this->m_postvars["atkformdata"]="";
-      }
-
-      $page = &$this->getPage();
-
-      if ($this->allowed($this->m_action))
-      {
-        $secMgr = &atkGetSecurityManager();
-        $secMgr->logAction($this->m_type, $this->m_action);
-        $this->callHandler($this->m_action);
-
-        list($selector,$id) = explode("=", atkarraynvl($this->m_postvars, "atkselector", "="));
-        $page->register_hiddenvars(array("atknodetype"=>$this->m_module.".".$this->m_type, "atkselector"=>str_replace("'", "", $id)));
-      }
-      else
-      {
-        $page->addContent($this->genericPage(atktext('access_denied'), "<br><br>".atktext("error_node_action_access_denied", "", $this->m_type)."<br><br><br>"));
-      }
     }
 
     /**
@@ -2162,20 +2116,6 @@
       $controller = &atkcontroller::getInstance();
       $controller->setNode(&$this);
       return $controller->genericPage($title, $content);
-
-      $ui = &$this->getUi();
-      $this->addStyle("style.css");
-      if (!is_array($content)) $content = array($title=>$content);
-      $blocks = array();
-      foreach($content as $itemtitle => $itemcontent)
-        $blocks[] = $ui->renderBox(array("title"=>$itemtitle, "content"=>$itemcontent));
-      /**
-       * @todo Don't use renderActionPage here because it tries to determine
-       *       it's own title based on the title which is passed as action.
-       *       Instead use something like the commented line below:
-       */
-      //return $ui->render("actionpage.tpl", array("blocks"=>$blocks, "title"=>$title));
-      return $this->renderActionPage($title, $blocks);
     }
 
     /**

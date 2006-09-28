@@ -391,8 +391,10 @@
      */
     function dispatchUrl($params=array(), $atknodetype="", $file="")
     {      
-      $vars = array_merge($params, $this->m_hidden_vars);
+      //atkdebug("atkcontroller::dispatchurl");
       
+      $vars = array_merge($params, $this->m_hidden_vars);
+      //atk_var_dump($vars, "atkcontroller::dispatchurl");
       if($file!="") $phpfile = $file;
       else $phpfile = $this->getPhpFile();
       

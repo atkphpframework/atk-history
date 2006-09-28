@@ -149,6 +149,7 @@
      */
     function execute()    
     {
+      atkdebug("atkwizard::execute()");
       $atkwizardaction = AtkWizardActionLoader::getWizardAction(atkGetPostVar("atkwizardaction"));
       
       // get our node
@@ -188,7 +189,8 @@
       atkdebug("wizardDispatch");
       
       if($atkWizardaction == 'next' || $atkWizardaction == 'saveandnext')
-      {        
+      {                
+        atkdebug("wizardDispatch next");
         $wizardPanel = $this->m_panelList[$this->m_currentPanelIndex+1];        
         $this->setHiddenParam("atkwizardpanelindex", $this->m_currentPanelIndex+1);         
       }
@@ -211,10 +213,10 @@
     //Rename to more generic name
     function save($atkwizardaction)
     {
-      // We use a reference to ourselfs because we pass data to the wizardpanel
-      // which has a reference to its wizard parent.
-      $this->m_self->setRedirectParam("atkwizardpanelindex", $this->m_currentPanelIndex);
-      $this->m_self->setRedirectParam("atkwizardaction", $atkwizardaction);
+      atkdebug("atkwizard::save()");
+           
+      $this->setRedirectParam("atkwizardpanelindex", $this->m_currentPanelIndex);
+      $this->setRedirectParam("atkwizardaction", $atkwizardaction);
       
       $currentWizardPanel = $this->getCurrentPanel();
       return $currentWizardPanel->save();

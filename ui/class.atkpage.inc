@@ -275,14 +275,6 @@
       $this->addScripts($res);
       $this->addStyles($res);
 
-      foreach ($this->m_stylesheets as $file => $media)
-      {
-        $res.='  <link href="'.$file.'" rel="stylesheet" type="text/css" media="'.$media.'">'."\n";
-      }
-
-      for ($i = 0; $i < count($this->m_stylecode); $i++)
-        $res.= '  <style type="text/css"> '.$this->m_stylecode[$i].' </style>'."\n";
-
       $favico = atkconfig("defaultfavico");
       if ($favico!="")
       {
@@ -307,10 +299,10 @@
         $res.='  <script type="text/javascript" language="JavaScript" src="'.$this->m_scriptfiles[$i].'"></script>'."\n";
       }
 
-      $res.="  <script type=\"text/javascript\">
-  function globalSubmit(form)
-  {
-    var retval = true;\n";
+      $res.="  <script type=\"text/javascript\">";
+      
+      $res.= $this->_getGlobalSubmitScriptCode();
+      $res.= $this->_getGlobalLoadScriptCode();
 
       // javascript code.
       for ($i=0, $_i=count($this->m_scriptcode); $i<$_i; $i++)     
@@ -318,9 +310,12 @@
         $res.= $this->m_scriptcode[$i]."\n";
       }
 
-      $res.="    return retval;
-  }\n";
-
+      $res.= "  </script>\n\n";
+    }
+    
+    function _getGlobalLoadScriptCode()
+    {
+      $res = "";
       if (count($this->m_loadscripts))
       {
         $res.="  function globalLoad()

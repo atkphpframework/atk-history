@@ -59,7 +59,7 @@ atkimport("atk.atkcontroller");
       $page = &$this->getPage();
       atkdebug("atkWizardBase::dispatch page->render flags: " . $this->m_page_flags);
       $screen = $page->render(atktext('app_shorttitle')." - ".$ui->title($node->m_module, $node->m_type, $node->m_postvars['atkaction'], true), $this->m_page_flags);
-atkdebug("screen $screen return output ". ($this->m_return_output ? "true":"false"));
+      //atkdebug("screen $screen return output ". ($this->m_return_output ? "true":"false"));
       if(!$this->m_return_output)
       {
         $output = &atkOutput::getInstance();

@@ -97,8 +97,7 @@
         $this->addRenderBoxVar("title", $node->actionTitle('add'));
         $this->addRenderBoxVar("content", $output);
         $total = $ui->renderBox($this->m_renderBoxVars);
-        atk_var_dump(array_keys($this->m_renderBoxVars), "addPage renderboxvars");
-
+        
         return $total;
       }
       else

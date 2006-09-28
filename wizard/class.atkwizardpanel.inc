@@ -250,12 +250,13 @@ define(FINISH_BUTTON_DONT_SHOW, 3);
     function save()
     {
       atkdebug("atkWizardPanel::save node: " . $this->m_nodeName);
+      atk_var_dump(atkGetPostVar(), "atkgetpostvar");
       $node = &$this->getPanelNode();         
       if(!is_object($node)) return;
       
-      $controller = &atkController::getInstance();
-      
-      $hiddenVars = $this->m_wizard->m_redirectParams;
+      $controller = &atkController::getInstance();      
+      $hiddenVars = $controller->m_redirectParams;
+      atk_var_dump($hiddenVars, "atkWizardPanel::save");
       if(count($hiddenVars))
       {
         foreach($hiddenVars as $hiddenVarName => $hiddenVarValue)
@@ -270,6 +271,7 @@ define(FINISH_BUTTON_DONT_SHOW, 3);
       
       //Save, on succes dispatch() will redirect
       //else it will return an 'add form' with error messages
+      atkdebug("atkwizardpanel::save call controller_dispatch()");
       return $controller->dispatch(atkGetPostVar(), false);
     }
 
