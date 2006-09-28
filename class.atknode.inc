@@ -1834,28 +1834,6 @@
     }
 
     /**
-     * Get extended search action.
-     *
-     * @return extended search action
-     */
-    function getExtendedSearchAction()
-    {
-      if (empty($this->m_extended_search_action))
-        return atkconfig('extended_search_action');
-      else return $this->m_extended_search_action;
-    }
-
-    /**
-     * Set extended search action.
-     *
-     * @param $action extended search action
-     */
-    function setExtendedSearchAction($action)
-    {
-      $this->m_extended_search_action = $action;
-    }
-
-    /**
      * Function returns a page in which the user is asked if he really wants
      * to perform a certain action.
      * @param mixed $atkselector Selector of current record on which the
@@ -3219,75 +3197,6 @@
         }
       }
     }    
-
-    /**
-     * Apply the given smart search criteria to the given query object.
-     *
-     * @param atkQuery $query    The query object.
-     * @param Array    $criteria The smart search criteria.
-     */
-    function applySmartSearchCriteria(&$query, $criteria)
-    {
-      foreach ($criteria as $id => $criterium)
-      {
-        $path = $criterium['attrs'];
-        $value = $criterium['value'];
-        $mode = $criterium['mode'];
-
-        $attrName = array_shift($path);
-        $attr = &$this->getAttribute($attrName);
-
-        if (is_object($attr))
-        {
-          $attr->smartSearchCondition($id, 0, $path, $query, $this->m_table, $value, $mode, "");
-        }
-      }
-    }
-
-
-    /**
-     * Apply the given search criteria to the given query object.
-     *
-     * @param atkQuery $query    The query object.
-     * @param array    $searchArray The search criteria.
-     */
-    function applySearchCriteria(&$query, $searchArray)
-    {
-      $searchmode = $this->getSearchMode();
-      // there may be search criteria, which we also filter
-
-      foreach ($searchArray as $key=>$value)
-      {
-        if( $value!="")
-        {
-          $p_attrib = &$this->getAttribute($key);
-
-          if (is_object($p_attrib))
-          {
-            if (is_array($value) && isset($value[$key]))
-            {
-              $value = $value[$key];
-            }
-
-            if(is_array($searchmode))
-            {
-              $search = $searchmode[$key];
-              if ($search=="") $search = atkconfig("search_defaultmode");
-              $p_attrib->searchCondition($query, $this->m_table, $value, $search);
-            }
-            else
-            {
-              $p_attrib->searchCondition($query, $this->m_table, $value, $searchmode);
-            }
-          }
-          else
-          {
-            $condition = "lower(".$this->m_table.".".$key.") LIKE lower('%".escapeSQL($value,true)."%')";
-            $query->addSearchCondition($condition);
-          }
-        }
-      }
-    }
 
     /**
      * Apply the given smart search criteria to the given query object.
