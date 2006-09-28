@@ -570,21 +570,6 @@
       return false;
     }
 
-    /**
-     * Checks wether there are any actions in the recordlist data
-     *
-     * @param Array $list The recordlist data
-     * @return bool Wether the list has actions
-     */
-    function hasActionsInList($list)
-    {
-      foreach ($list["rows"] as $record)
-      {
-        if (!empty($record['actions'])) return true;
-      }
-      return false;
-    }
-
     function getCustomMraHtml()
     {
       if (method_exists($this->m_node, "getcustommrahtml"))
