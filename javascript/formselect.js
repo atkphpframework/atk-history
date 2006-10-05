@@ -13,6 +13,22 @@
    * @version $Revision$
    * $Id$
    */
+  
+function getATKSelectors(name, form)
+{
+  var list = new Array();
+  var prefix = name + '_atkselector';
+
+  for (var i = 0; i < form.elements.length; i++)
+  {
+    if (form.elements[i].name != null && form.elements[i].name.substring(0, prefix.length) == prefix)
+    {
+      list[list.length] = form.elements[i];
+    }
+  }
+
+  return list;
+}
 
 /**
  * Updates the selection of select boxes for the record list form.
@@ -23,13 +39,9 @@
 function updateSelection(name, form, type)
 {
   /* get selectors */
-  var list = form.elements[name + '_atkselector[]'];
-
-  /* no selectors?! impossible situation, bail out! */
-  if (typeof(list) == 'undefined') return;
+  var list = getATKSelectors(name, form);
 
   /* walk through list */
-  if (typeof(list.length) == 'undefined') list = new Array(list);
   for (var i = 0; i < list.length; i++)
   {
     if      ("all"    == type && !list[i].disabled)	list[i].checked = true;
@@ -47,17 +59,13 @@ function updateSelection(name, form, type)
 function updateSelectable(name, form)
 {
   /* get selectors */
-  var list = form.elements[name + '_atkselector[]'];
-
-  /* no selectors?! impossible situation, bail out! */
-  if (typeof(list) == 'undefined') return;
+  var list = getATKSelectors(name, form);
 
   /* some stuff we need to know */
   var index  = form.elements[name + '_atkaction'].selectedIndex;
   var action = form.elements[name + '_atkaction'][index].value;
 
   /* walk through list */
-  if (typeof(list.length) == 'undefined') list = new Array(list);
   for (var i = 0; i < list.length; i++)
   {
     /* supported actions */
@@ -84,45 +92,113 @@ function updateSelectable(name, form)
  * @param form reference to the form object
  * @param target where do we escape to?
  */
-function atkSubmitMRA(name, form, target)
+function atkSubmitMRA(name, form, target, embedded)
 {
   /* some stuff we need to know */
-  var index  = form.elements[name + '_atkaction'].selectedIndex;
+  var index = form.elements[name + '_atkaction'].selectedIndex;
   if (typeof(index) == 'undefined') var atkaction = form.elements[name + '_atkaction'].value;
   else var atkaction = form.elements[name + '_atkaction'][index].value;
-
-  /* initial target URL */
-  target += '&atkaction=' + atkaction;
+  
+  if (atkaction == '') return;
 
   /* get selectors */
-  var list = form.elements[name + '_atkselector[]'];
-
-  /* no selectors?! impossible situation, bail out! */
-  if (typeof(list) == 'undefined') return;
-
-  /* add the selectors to the target URL */
+  var list = getATKSelectors(name, form);
+  
+  /* count selected selectors */
   var selectorLength = 0;
-  if (typeof(list.length) == 'undefined') list = new Array(list);
+  
   for (var i = 0; i < list.length; i++)
-    if (!list[i].disabled && list[i].checked)
+  {
+    if (list[i].type == 'hidden' || (!list[i].disabled && list[i].checked))
     {
-      target += '&atkselector[]=' + list[i].value;
+      var key = list[i].name.substring(name.length + 1);
+      var value = list[i].value;
+      
+      // For radio button based selections, we need to add the record 
+      // index after the user is done selecting. Otherwise the single 
+      // select will act like a multi-select.
+      if (list[i].type == 'radio') 
+      {
+        key += '[' + i + ']';      
+      }
+      
+      if (embedded)
+      {
+        target += '&' + key + '=' + value;
+      }
+      else
+      {
+        var input = document.createElement('input');
+        input.setAttribute('type', 'hidden');
+        input.setAttribute('name', key);
+        input.setAttribute('value', value);
+        form.appendChild(input);    
+      }
+      
       selectorLength++;
     }
-    
-   // custom list
-   for (var i=0; i< form.elements.length; i++)
-   {    
-    if (form.elements[i].name.substring(0,7)=="custom_")
-    {
-       target += "&"+form.elements[i].name+'='+form.elements[i].value; 
-     }
-   }
+  }
 
-  /* change atkescape value and submit form */
+  /* change atkaction and atkrecordlist values and submit form */
   if (selectorLength > 0)
   {
-    form.atkescape.value = target;
+    if (embedded)
+    {
+      target += '&atkaction=' + atkaction;      
+    }
+    else if (form.atkaction == null)
+    {
+      var input = document.createElement('input');
+      input.setAttribute('type', 'hidden');
+      input.setAttribute('name', 'atkaction');      
+      input.setAttribute('value', atkaction);
+      form.appendChild(input);    
+    }
+    else 
+    {
+      form.atkaction.value = atkaction;
+    }
+
+    if (embedded)
+    {
+      target += '&atkrecordlist=' + name;
+    }
+    else if (form.atkrecordlist == null)
+    {
+      var input = document.createElement('input');
+      input.setAttribute('type', 'hidden');
+      input.setAttribute('name', 'atkrecordlist');      
+      input.setAttribute('value', name);
+      form.appendChild(input);    
+    }
+    else 
+    {
+      form.atkrecordlist.value = name;
+    }
+    
+    // default the form is build using SESSION_DEFAULT,
+    // but if we submit a multi-record-action we should
+    // use SESSION_NESTED instead, the difference is that
+    // SESSION_NESTED increases the session level by 1, so
+    // let's do so manually
+    if (form.atklevel == null)
+    {
+      var input = document.createElement('input');
+      input.setAttribute('type', 'hidden');
+      input.setAttribute('name', 'atklevel');      
+      input.setAttribute('value', 1);
+      form.appendChild(input);    
+    }
+    else 
+    {
+      form.atklevel.value = parseInt(form.atklevel.value) + 1;
+    } 
+    
+    if (embedded)
+    {
+      form.atkescape.value = target;
+    }
+    
     globalSubmit(form);
     form.submit();
   }
@@ -140,30 +216,31 @@ function atkSubmitMRA(name, form, target)
 function atkSubmitMRPA(name, form, target)
 {
   /* some stuff we need to know */
-  var index  = form.elements[name + '_atkaction'].selectedIndex;
+  var index = form.elements[name + '_atkaction'].selectedIndex;
   if (typeof(index) == 'undefined') var atkaction = form.elements[name + '_atkaction'].value;
   else var atkaction = form.elements[name + '_atkaction'][index].value;
-
+  
+  if (atkaction == '') return;
+  
   /* initial target URL */
   target += 'atkaction=' + atkaction;
 
   /* get selectors */
-  var list = form.elements[name + '_atkselector[]'];
-
-  /* no selectors?! impossible situation, bail out! */
-  if (index == 0 || typeof(list) == 'undefined') return;
+  var list = getATKSelectors(name, form);
 
   /* add the selectors to the target URL */
   var selectorLength = 0;
-  if (typeof(list.selectedIndex) != 'undefined') list = new Array(list);
+  
   for (var i = 0; i < list.length; i++)
+  {
     if (list[i].selectedIndex != 0)
     {
       var priority = list[i][list[i].selectedIndex].value;
       target += '&atkselector[' + list[i][0].value + ']=' + priority;
       selectorLength++;
     }
-
+  }
+  
   /* change atkescape value and submit form */
   if (selectorLength > 0)
   {

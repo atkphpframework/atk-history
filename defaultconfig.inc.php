@@ -472,6 +472,13 @@
    * @var String
    */
   $config_menu_align = "center";
+  
+  /**
+   * Auto-include logout link in menu?
+   * 
+   * @var Boolean
+   */
+  $config_menu_logout_link = true;
 
   /**
    * 0 = no   - 1 = yes
@@ -496,6 +503,13 @@
    * @var boolean
    */
   $config_tabs = true;
+  
+  /**
+   * Whatever DHTML tabs should be stateful or not
+   * (E.g. the current tab is saved for the current node/selector combination)
+   * @var boolean
+   */
+  $config_dhtml_tabs_stateful = true;
 
   /**
    * The number of records to display on a single page

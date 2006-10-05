@@ -4,6 +4,119 @@
 Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 [names] are references to people in the AUTHORS file.
 
+Changes in (almost) tomorrow branch
+-----------------------------------
++ Support for custom authentication types. [Martin]
++ Added support for setting the security alias using var $securityAlias = ...
+  in the meta node or specifying it in the arguments array. [Peter]
++ Added addListColumn method to atkManyToOneRelation for adding
+  multiple list columns to the recordlist based on an n:1 relation. [Peter]
++ Added getAttributeOrder method to atkNode. [Peter]
++ Added support for editable attributes in recordlists. [Peter]
++ Added support for setting a multi-record-action selection mode
+  (MRA_MULTI_SELECT(default), MRA_SINGLE_SELECT, MRA_NO_SELECT) [Peter]
++ Added NF_NO_SORT flag for nodes (to disable sorting). [Peter]
++ Added new CSS dropdown menu. [Boy]
++ Added none option to search field of non-obligatory 
+  atkManyToOneRelation. [Peter]
++ Added static dateArrayToDateTime method to atkDateTimeAttribute. [Peter]
++ Added overlib javascript library. [Peter]
++ Added support for setting a security map in the meta node. [Peter]
++ Added partial_url method for creating partial dispatch URL's. [Peter]
++ Added support for partials to atkAttribute, atkManyToOneRelation, 
+  atkAddHandler and atkEditHandler. [Peter]
++ Added force update support to atkMetaPolicy. [Peter]
++ Added support for adding any attribute using the meta policy. [Peter]
++ Added selectable records override to atkManyToOneRelation. Usage:
+  create a function named <attribname>_selection($record, $mode) in
+  your node and return the selectable records. [Peter]
++ Added selectable records override to atkManyBoolRelation. Usage:
+  create a function named <attribname>_selection($record, $mode) in
+  your node and return the selectable records. [Peter]
++ Added (Ajax based) dependency mechanism between attributes. [Peter]
++ Added show ... results drop-down to recordlist navigation. [Peter]
++ Added populate function to atkManyToOneRelation to populate the record 
+  with the descriptor field values or all data if only the primary key 
+  is available. [Peter]
++ Added descriptor handler support to atkNode and atkRelation. [Peter]
++ Added setForceInsert method to atkAttribute (works just the same as  
+  setForceUpdate, only then for inserts). [Peter]
++ Added $excludes / $includes parameters to updateDb. [Peter]
++ Added mock function for selectDb in atMockNode. [Dennis]
++ Added onchange handler for atkNumberAttribute. [Dennis]
++ Added busy with Ajax request indicator (theme can add element with id 
+  'atkbusy' somewhere to indicate an Ajax request is being performed. [Peter]
++ Added descriptor to stacktrace array. [Peter]
++ Added charset option to database configuration. [Peter]
+* Changed functionality for 'count distinct' in atkMysqlQuery (count
+  did not count correctly when some of the fields where NULL) [Peter]
+* Improvements to error reporting of importing and added ability 
+  to add multiple fields for the entire import ('allfields'). [Boy]
+* Added id to field td. [Boy]
+* atk_array_merge now supports 'unlimited' arrays. [Peter]
+* Moved traces to debug level 3. [Peter]
+* Added helper method to atkTmpFile class for reading the complete
+  file in a string. [Peter]
+* Added ability to add flags to hasMany(). [Boy]
+* Fixed handling of record in embeded one-to-many relation. [Peter]
+* Fixed handling of NULL values of atkNumberAttribute (and
+  other attributes which specify AF_NO_QUOTES). [Peter]
+* Now using the edit format for date attributes if 
+  AF_DATE_STRING flag is set. [Peter]
+* Added column type to recordlist columns and search button
+  is now of type submit instead of button. [Peter]
+* Added setNoneLabel method to atkManyToOneRelation for specifying
+  the label to use for the empty selection (for cases where you
+  can't use the default translation). [Peter]
+* Admin handler now uses action of node (instead of simply 
+  assuming action 'admin'). [Peter]
+* Fixed handling of null values in db2value method of 
+  atkDateTimeAttribute [Peter]
+* Don't display duplicate descriptors in title session backtrace. [Peter]
+* Drop-down menu now checks all rights of underlying menuitems. [Peter]
+* dispatch_url now also supports multi-level arrays as parameters. [Peter]
+* Fixed / improved searching for atkDateAttribute. [Peter]
+* Added search support to atkDateTimeAttribute (only atkDateAttribute 
+  based at this time). [Peter]
+* Show large textarea on editing of an in-list textattribute. [Peter]
+* Fixed title retrieval for node UI. [Peter]
+* Fixed Internet Explorer support in drop-down menu. [Peter]
+* Fixed handling of initial_values (where applied a second time
+  if an error occured in the addition form). [Peter]
+* Fixed fetchValue method of atkDateTimeAttribute. [Peter]
+* Deprecated atkMail class (atk/utils). [Peter]
+* Added proper ordering support to atkManyToOneRelation (depending
+  on the order of the destination node). [Peter]
+* Fixed that selectDb always loads the primary key fields even if they are 
+  not part of the includes list (or are part of the excludes list). [Peter]
+* Fixed that actionhandler always takes the postvars and the partial values 
+  of the node (in the setNode) call, because most of the times handlers 
+  are called using their action_... function instead of handle. [Peter]
+* Fixed db2value method of atkManyToOneRelation (now calls db2value on
+  destination attributes). Warning: this change might give you
+  problems if you depend on the old (incorrect) behaviour! [Peter]
+* Check if a certain multi-record-action is allowed on a record. [Peter]
+* Added excludes/includes option to atkNode::updateRecord function. [Peter]
+* atkFileAttribute now uses more complete record for filename mangling. [Peter]
+* atkManyBoolRelation does not require atkManyToOneRelations in the 
+  intermediate node anymore. [Peter]
+* Logout link in menu is now configurable. [Peter]
+* Fixed bug in atkThemeCompiler (non-array theme variables did not
+  override default variable values). [Peter]
+* Statefulness of DHTML tabs is now configurable. [Peter]
+* Fixed no stat error in atkDirectoryTraverser. [Peter]
+* atkListAttribute: check empty array with count instead of comparison
+  to an empty array. [Peter]
+* Added possibility for adding an additional deletion filter for the store() 
+  function of the atkmanytomanyrelation. [Dennis]
+* Added support for autocompletion in atkmanytoonerelation. [Dennis]
+* Autocompletion search is now case insensitive. [Dennis]
+* atkTableRenderer supports adding an id field to a TD. [Dennis]
+* The atkManyToOneRelation can be configured to always have an 
+  AF_RELATION_AUTOCOMPLETE flag. [Dennis]
+* The atkManyToOneRelation ignores the AF_RELATION_AUTOCOMPLETE flag 
+  if the owner instance is not an object. [Dennis]
+
 Changed in ATK 5.7
 ------------------
 + Added pre-action support in atkNode and atkActionListener classes. [patrick]

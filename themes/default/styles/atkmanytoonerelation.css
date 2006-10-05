@@ -1,0 +1,35 @@
+div.atkmanytoonerelation_selection {
+  position: absolute;
+  width: 250px;
+  background-color: white;
+  border: 1px solid #888;
+  margin: 0px;
+  padding: 0px;
+  visibility: hidden;
+}
+div.atkmanytoonerelation_result {
+  background-color: white;
+  border: 1px solid #888;
+  margin: 0px;
+  padding: 0px;
+  z-index: 1000;
+  overflow: auto;
+  height: 60px;
+}
+
+div.atkmanytoonerelation_result ul  {
+  background-color: white;
+  list-style-type: none;
+  margin:0px;
+  padding:0px;
+  z-index: 100;
+}
+
+div.atkmanytoonerelation_result li.selected { background-color: #ffb; }
+div.atkmanytoonerelation_result li {
+  list-style-type: none;
+  display: block;
+  margin: 0;
+  height: 15px;
+  padding: 2px;
+}  
