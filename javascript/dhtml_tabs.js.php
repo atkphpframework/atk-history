@@ -40,29 +40,7 @@ function showTab(tab)
   // Then we store what tab we are going to visit in the parent
 	setCurrentTab(tab);
 
-	// Every element that does not have the current tab as class or 'alltabs'
-	// is set to display: none
-	for (i = 0; i < tags.length; i++)
-	{
-		var tabclass = tags.item(i).className;
-		var id = tags.item(i).id;
-
-		if (id.substring(0,3)=="ar_")
-		{
-		  if (tabclass.indexOf(tab) != -1 || tabclass=="alltabs")
-		  {
-  		  tags.item(i).style.display="";
-		  }
-		  else
-		  {
-  		  tags.item(i).style.display="none";
-		  }
-		}
-		else
-		{
-		  // Don't touch any element that is not an attribute row
-		}
-	}
+  showTr(tab);
 
 	// Then when set the colors or the tabs, the active tab gets a different color
 	for(j = 0; j < tabs.length; j++)
@@ -86,6 +64,7 @@ function showTab(tab)
 	  wrapper.style.display='';
 	}
 }
+
 
 /**
  * Because the FCK editor does not always agree with 
