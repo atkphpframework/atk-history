@@ -125,6 +125,8 @@ Changes in tomorrow branch
   AF_RELATION_AUTOCOMPLETE flag. [Dennis]
 * The atkManyToOneRelation ignores the AF_RELATION_AUTOCOMPLETE flag 
   if the owner instance is not an object. [Dennis]
+* In advanced search labels are always shown (before AF_NO_LABEL was used to
+  determine if a label should be shown). [Lineke]
 
 Changed in ATK 5.6.1
 --------------------
