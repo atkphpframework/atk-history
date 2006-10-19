@@ -986,6 +986,8 @@
         //loop of the for-loop an maximum execution time
         set_time_limit(60);
         atkdebug('set_time_limit(60)');
+        
+        if (atktext('charset') != '') $line = mb_convert_encoding($line, atktext('charset'));
 
         $data = $this->fgetcsvfromline($line, $columncount, $delimiter, $enclosure);
 

@@ -127,6 +127,8 @@ Changes in tomorrow branch
   if the owner instance is not an object. [Dennis]
 * In advanced search labels are always shown (before AF_NO_LABEL was used to
   determine if a label should be shown). [Lineke]
+* Importhandler now uses charset from languagefiles to convert the importedfile
+  to the correct charset. [Lineke]
 
 Changed in ATK 5.6.1
 --------------------
