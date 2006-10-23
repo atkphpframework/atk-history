@@ -80,7 +80,7 @@
     else if (($errtype & (E_WARNING|E_USER_WARNING)) > 0)
     {
       // This is something we should pay attention to, but we don't need to die.
-      atkerror("[$errortypestring] $errstr in $errfile (line $errline)");
+//      atkerror("[$errortypestring] $errstr in $errfile (line $errline)");
       return;
     }
     else
@@ -410,7 +410,9 @@
   function atktext($string, $module="",$node="", $lng="", $firstfallback="", $nodefaulttext=false, $modulefallback=false)
   {
     atkimport("atk.atklanguage");
-    return atkLanguage::text($string, $module, $node, $lng, $firstfallback, $nodefaulttext,$modulefallback);
+    $text = atkLanguage::text($string, $module, $node, $lng, $firstfallback, $nodefaulttext,$modulefallback);
+    if (strstr($string,"artikel")) halt($text);
+    return $text;
   }
 
   /**
@@ -1341,9 +1343,9 @@
       $disp = 'attachment';
     }
     if($mimetype!="") $mime=$mimetype;
-    else if ($mimetype=="" && $detectmime && function_exists('mime_content_type')) 
+    else if ($mimetype=="" && $detectmime && function_exists('mime_content_type'))
       $mime = mime_content_type($file);
-    
+
     $fp = @fopen($file,"rb");
     if ($fp!=NULL)
     {
@@ -1363,7 +1365,7 @@
 
       header("Content-Description: File Transfer");
       header("Content-Transfer-Encoding: binary");
-      
+
       fpassthru($fp);
       return true;
     }
@@ -1996,7 +1998,7 @@
     }
     return false;
   }
-  
+
   /**
    * Remove a class overloader for a class
    *
@@ -2013,7 +2015,7 @@
     }
     return false;
   }
-  
+
   /**
    * Checks wether or not a class has an overloader defined
    *
@@ -2029,7 +2031,7 @@
     }
     return false;
   }
-  
+
   /**
    * Returns the IP of the remote client.
    *
@@ -2038,7 +2040,7 @@
   function atkGetClientIp()
   {
     static $s_ip = NULL;
-    
+
     if ($s_ip === NULL)
     {
       if (getenv("HTTP_CLIENT_IP"))
@@ -2046,10 +2048,10 @@
       elseif (getenv("HTTP_X_FORWARDED_FOR"))
         $s_ip = getenv("HTTP_X_FORWARDED_FOR");
       elseif (getenv("REMOTE_ADDR"))
-        $s_ip = getenv("REMOTE_ADDR");    
+        $s_ip = getenv("REMOTE_ADDR");
       else $s_ip = 'x.x.x.x';
     }
-    
+
     return $s_ip;
   }
 ?>
