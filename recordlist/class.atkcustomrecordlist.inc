@@ -139,7 +139,7 @@
               // is called.            
               $value=$p_attrib->display($recordset[$i], $mode);
             }
-            if (atktext("charset") != "") $value = html_entity_decode(htmlentities($value, ENT_NOQUOTES, atktext("charset")));
+            if (atktext("charset") != "" && $decode) $value = html_entity_decode(htmlentities($value, ENT_NOQUOTES, atktext("charset")));
             $output.=$sof.($value==""?$empty:$value).$eof;
 
             // Calculate totals..
