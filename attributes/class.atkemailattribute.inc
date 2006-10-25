@@ -61,12 +61,13 @@
      * @param array $record The record to display
      * @return String
      */
-    function display($record)
+    function display($record, $mode)
     {
-      if ($record[$this->fieldName()]!="")
+      if ($record[$this->fieldName()]!="" && $mode != 'csv')
       {
         return '<a href="mailto:'.$record[$this->fieldName()].'">'.$record[$this->fieldName()].'</a>';
       }
+      elseif ($record[$this->fieldName()]!="") return $record[$this->fieldName()];
       return '';
     }
 
