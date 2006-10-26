@@ -45,15 +45,17 @@
     * Connect to the database
     * @return connection status
     */
-   function doConnect($host,$user,$password,$charset)
+   function doConnect($host,$user,$password,$database,$port,$charset)
    {
      /* establish connection */
      if (empty($this->m_link_id))
      {
-       $this->m_link_id = @mysqli_connect($host, $user, $password);
+       if (empty($port)) $port = NULL;
+       $this->m_link_id = @mysqli_connect($host, $user, $password, $database, $port);
        if (!$this->m_link_id)
        {
          $this->halt($this->getErrorMsg());
+         return $this->_translateError();         
        }
        
        /* set character set */
@@ -65,13 +67,6 @@
        
        /* set autoCommit to off */
        mysqli_autocommit($this->m_link_id, FALSE);
-  
-       /* select database */
-       if (!@mysqli_select_db( $this->m_link_id, $this->m_database))
-       {
-         $this->halt($this->getErrorMsg());
-         return $this->_translateError();
-       }       
      }
 
 

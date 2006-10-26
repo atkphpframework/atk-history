@@ -167,13 +167,19 @@ Changed in ATK 5.7
 + Added setTabIndex function to atkNode for changing 
   the tab order. [Sandy]
 + Added overlibmws JavaScript library. [Peter]
-+ Added setAutoCompleteMinChars function for 
-  atkManyToOneRelations. [Peter,Dennis]
++ Added 'web20' theme, the first theme without frames, with Web 2.0 colors,
+  rounded corners and partial XHTML 1.0 Strict compliance. [Boy]
++ Added support for port-specification for the mysql41 driver. [Peter,Dennis]
++ Added DEBUG_NOTICE flag which only gets shown 
+  in debug level 3 or higher and made PHP notices use it. [Boy]
 * Security: Fixed cross-site scripting (xss) vulnerability in Login screen and 
   any other screen that made use of the makeHiddenPostvars method. (bug #697) 
   [Ivo]
 + Added {atkloadscript} Smarty plug-in (can be used to register javascript
   code to run at the body onLoad event). [Boy]
++ Added parts of Zend Framwork to atk/ext. Used for processing RSS feeds 
+  [Jeroen]  
+* When updateDb fails it has to return false in stead of true. [dennisjan]
 * Bugfix in atknode, atkmlsplitter and atkManyToOneRelation
   (m_joinaliases removed from the code) [Sandy, Peter]
 * Bugfix in atkImportHandler (in_array takes 2 params, not 1). [Harrie]
@@ -473,8 +479,6 @@ Changed in ATK 5.7
 * The atkManyToOneRelation is now configured to always use auto-completion
   support if the AF_LARGE flag is set. This can be overriden (application-wide)
   setting $config_manytoone_autocomplete_large to false. [Peter]
-* The atkManyToOneRelation ignores the AF_RELATION_AUTOCOMPLETE flag 
-  if the owner instance is not an object. [Dennis]
 * Improved placeFocus() JavaScript method (now focuses the real first
   form element, instead of a somewhat guess). [Peter]
 * Fixed support for returning the newly created record for a many-to-one
@@ -484,8 +488,6 @@ Changed in ATK 5.7
 * Use select mode for retrieval of records for atkManyToOneRelation. [Peter]
 * Fetch descriptor fields early for atkManyToOneRelation so that they can
   be displayed in the title bar etc. [Dennis,Peter]
-* Autocompletion results of manytoonerelation are not wrapped anymore, each
-  entry is now 1 line. Also added a title to the listitems. [Peter, Dennis]
 * A table cell can now have a Row and Col Span in the 
   atkTableRenderer. [Sandy]
 * Bug fix, if going from edit mode to view for the same record the current tab
@@ -510,15 +512,42 @@ Changed in ATK 5.7
   to the correct charset. [Lineke]
 * Fixed some tests. [Sandy]
 * Tests are only harvested in the testcases directory. [Sandy] 
-* Moved atkselector from the default sessionmembers to the pagevars.
-  Because it caused problems when editing an user and selecting a topic.
-  [dennisjan]
+* Moved atkselector from the default sessionmembers to the pagevars as it 
+  should not be propagated to deeper session levels. [dennisjan]
 * Added ability to pass default to getAttribute method of atkTheme and made
   atkTheme search for icons with extension .png and .jpeg too, preferring
   png over gif and gif over jpeg. [Boy]
 * Made atkPage output XHTML valid, made ATK support themes defining the doctype
   as a theme attribute, made ATK support a page.tpl, which is a general template
   to render a page in. [Boy]
+* Made login page use login.css if available and made login form more 
+  XHTML compliant. [Boy]
+* Added loadDispatch method to atkNode, which loads the output in atkOutput
+  but doesn't actually flush anything and make it support a dispatch.tpl
+  template if available. [Boy]
+* Made index.php support themes with 'useframes' attribute (defaults to true), 
+  loading themes with this attribute set to false without frames. [Boy]
+* atkPlainMenu now supports themes and configurations which set a different
+  'menufile' (defaults to menu.php) and different 'menu_params' 
+  (defaults to 'target="main"'). [Boy]
+* atkPlainMenu now has getMenu member function which returns the menu without
+  sending it to the output stream. [Boy]
+* Made url functions session_vars and session_url output &amp; instead of &
+  to ensure XHTML compliance. [Boy]
+* Added atkGetModules() function. [Jeroen,Boy]
+* Exporthandler now decodes export to charset in languagefile. Added parameter
+  to customrecordlist to set decoding on or off. [Lineke]
+* Showtitlerow checkbox is now taken into account in customrecordlist. Added
+  parameter to customrecordlist to set showtitlerow. [Lineke]
+* Changed display function of onetomanyrelation and manytomanyrelation to 
+  correctly show data in csv export (without html). [Lineke]
+* Use assignExportData function in your node to add extra data to the export.
+  This makes it possible to do your own query and add extra info to the export.
+  [Lineke]
+* Made testreporter recognize if 'include' URL variable contains a complete
+  path relative from the atkroot 
+  (example: modules/testcases/class.test_mytest.inc) if so, don't traverse
+  the entire application, just load that testcase up. [Boy]
 - Temporarily removed the 'generate title row' checkbox in atkExportHandler as
   it isn't yet implemented. [Guido]
 - Removed default theme's action_view.tpl as it basically is no difference 

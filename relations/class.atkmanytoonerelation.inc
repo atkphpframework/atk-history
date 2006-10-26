@@ -114,6 +114,30 @@
      */
     var $m_autocomplete_minchars = 2;
 
+    /**
+     * An array with the fieldnames of the destination node in which the autocompletion must search 
+     * for results.
+     *
+     * @access private
+     * @var array
+     */
+    var $m_autocomplete_searchfields = "";
+    
+    /**
+     * The search mode of the autocomplete fields. Can be 'startswith', 'exact' or 'contains'.
+     *
+     * @access private
+     * @var String
+     */
+    var $m_autocomplete_searchmode = "contains";
+    
+    /**
+     * Value determines wether the search of the autocompletion is case-sensitive.
+     *
+     * @var boolean
+     */
+    var $m_autocomplete_search_case_sensitive = false;
+    
     // override onchangehandler init
     var $m_onchangehandler_init = "newvalue = el.options[el.selectedIndex].value;\n";
 
@@ -139,7 +163,9 @@
         $flags |= AF_RELATION_AUTOCOMPLETE;
 
       $this->m_autocomplete_minchars = atkconfig("manytoone_autocomplete_minchars", 2);
-
+      $this->m_autocomplete_searchmode = atkconfig("manytoone_autocomplete_searchmode", "contains");
+      $this->m_autocomplete_search_case_sensitive = atkconfig("manytoone_autocomplete_search_case_sensitive", false);  
+  
       if (is_array($name))
       {
         $this->m_refKey = $name;
@@ -161,6 +187,37 @@
       {
         atkerror("AF_MANYTOONE_LAZY flag is not supported for multi-column reference key or a reference key that uses another column.");
       }
+    }
+    
+    /**
+     * Set the searchfields for the autocompletion.
+     *
+     * @param array $searchfields
+     */
+    function setAutoCompleteSearchFields($searchfields)
+    {
+      $this->m_autocomplete_searchfields = $searchfields;
+    }
+    
+    /**
+     * Set the searchmode for the autocompletion:
+     * exact, startswith(default) or contains.
+     *
+     * @param array $searchmode
+     */
+    function setAutoCompleteSearchMode($mode)
+    {
+      $this->m_autocomplete_searchmode = $mode;
+    }
+    
+    /**
+     * Set the case-sensitivity for the autocompletion search (true or false).
+     *
+     * @param array $case_sensitive
+     */
+    function setAutoCompleteCaseSensitive($case_sensitive)
+    {
+      $this->m_autocomplete_search_case_sensitive = $case_sensitive;
     }
     
     /**
@@ -1476,23 +1533,26 @@
       {
         return '<ul><li class="minimum_chars">'.sprintf($this->text('autocomplete_minimum_chars'), $this->m_autocomplete_minchars).'</li></ul>';        
       }
-      
+            
       $this->createDestination();
 
       $fieldprefix = $this->m_ownerInstance->m_postvars['atkfieldprefix'];
       $searchvalue = $this->escapeSQL($searchvalue);
       $record = $this->m_ownerInstance->updateRecord();
 
-      $descriptor_fields = $this->m_destInstance->descriptorFields();
-
-      $filter = $this->createSearchFilter($searchvalue,$descriptor_fields);
+      $filter = $this->createSearchFilter($searchvalue);
       $this->addDestinationFilter($filter);
 
       $records = $this->_getSelectableRecords($record, 'select');
 
       if (count($records) == 0)
       {
-        return '<ul><li class="no_results">'.$this->text('autocomplete_no_results').'</li></ul>';
+        if(in_array($this->m_autocomplete_searchmode,array("exact","startswith","contains")))
+          $str = $this->text('autocomplete_no_results_'.$this->m_autocomplete_searchmode);
+        else 
+          $str = $this->text('autocomplete_no_results');
+       
+        return '<ul><li class="no_results">'.$str.'</li></ul>';
       }
       
       $result = '';
@@ -1518,16 +1578,59 @@
      * @param String $searchvalue A searchstring
      * @return String a search string (WHERE clause)
      */
-    function createSearchFilter($searchvalue, $descriptor_fields)
+    function createSearchFilter($searchvalue)
     {
-      $filter = array();
-      foreach($descriptor_fields as $attribname)
+      if($this->m_autocomplete_searchfields=="")
+        $searchfields = $this->m_destInstance->descriptorFields();
+      else 
+        $searchfields = $this->m_autocomplete_searchfields;
+        
+      $parts = preg_split('/\s+/', $searchvalue);
+      
+      $mainFilter = array();
+      foreach ($parts as $part)
       {
-        $filter[] = "LOWER(".$this->m_destInstance->m_table.".".$attribname.") LIKE LOWER('{$searchvalue}%')";
+        $filter = array();
+        foreach($searchfields as $attribname)
+        {        
+          if(!$this->m_autocomplete_search_case_sensitive)
+            $tmp = "LOWER(".$this->m_destInstance->m_table.".".$attribname.")";
+          else 
+            $tmp = $this->m_destInstance->m_table.".".$attribname;
+          
+          switch($this->m_autocomplete_searchmode)    
+          {           
+            case "exact":            
+              if(!$this->m_autocomplete_search_case_sensitive)
+                $tmp.= " = LOWER('{$part}')";
+              else 
+                $tmp.= " = '{$part}'";
+              break;
+            case "startswith":
+              if(!$this->m_autocomplete_search_case_sensitive)
+                $tmp.= " LIKE LOWER('{$part}%')";
+              else 
+                $tmp.= " LIKE '{$part}%'";
+              break;
+            case "contains":
+              if(!$this->m_autocomplete_search_case_sensitive)
+                $tmp.= " LIKE LOWER('%{$part}%')";
+              else 
+                $tmp.= " LIKE '%{$part}%'";
+              break;
+            default:            
+              $tmp.= " = LOWER('{$part}')";          
+          }
+  
+          $filter[] = $tmp;
+        }
+        
+        if (count($filter) > 0)
+          $mainFilter[] = "(".implode(") OR (", $filter).")";
       }
-
-      if (count($filter) > 0)
-        return "(".implode(" OR ", $filter).")";
+      
+      if (count($mainFilter) > 0)
+        return "(".implode(") AND (", $mainFilter).")";
       else return "";
     }
   }

@@ -31,6 +31,13 @@
    * clearly visible.
    */
   define("DEBUG_WARNING", 2);
+  
+  /**
+   * Hides the debug unless in level 2.
+   * This should be used for debug you only really want to see if you
+   * are developping (like deprecated warnings).
+   */
+  define("DEBUG_NOTICE", 4);
 
   /**
    * Function atkErrorHandler
@@ -74,7 +81,7 @@
     if ($errtype==E_NOTICE || error_reporting()==0)
     {
       // Just show notices in the debug log, but don't influence the program flow
-      //atkdebug("[$errortypestring] $errstr in $errfile (line $errline)");
+      atkdebug("[$errortypestring] $errstr in $errfile (line $errline)",DEBUG_NOTICE);
       return;
     }
     else if (($errtype & (E_WARNING|E_USER_WARNING)) > 0)
@@ -118,7 +125,7 @@
       $output=atkOutput::getInstance();
       $res ="<html>";
       $res.='<body bgcolor="#ffffff" color="#000000">';
-      $res.="<font color=\"$level_color\"><b>".atktext($level,"atk")."</b></font>: $msg.<br>\n";
+      $res.="<font color=\"$level_color\"><b>".atktext($level,"atk")."</b></font>: $msg.<br />\n";
       $res.="<b>Halted</b>";
       $output->output($res);
       $output->outputFlush();
@@ -201,7 +208,7 @@
           $g_debug_msg[]=$line;
         }
       }
-      else
+      else if (!hasFlag($flags,DEBUG_NOTICE))
       {
         $g_debug_msg[]=$line;
       }
@@ -599,10 +606,6 @@
   {
     if ($saveform)
     {
-      //$str = "javascript:atkSubmit('".session_url($url,$sessionstatus)."')";
-    //echo $url."-".base64_encode(session_url($url,$sessionstatus))."<br>";
-      //$str = 'javascript:atkSubmit("'.session_url($url,$sessionstatus).'")';
-    //echo $url."-<br>";
       $str = 'javascript:atkSubmit("'.atkurlencode(session_url($url,$sessionstatus)).'")';
     }
     else
@@ -613,7 +616,6 @@
     // note, we use single quotes instead of doublequotes in the href='',
     // because we otherwise have a problem with internet explorers buggy
     // javascript parser..
-  //echo $str;
     return "<a href='".$str."' ".$extraprops.">".$name."</a>";
   }
 
@@ -1567,8 +1569,10 @@
    * @param string $phpfile The php file to use for dispatching, defaults to dispatch.php
    * @return string url for the node with the action
    */
-  function dispatch_url($node, $action, $params="",$phpfile='dispatch.php')
+  function dispatch_url($node, $action, $params="",$phpfile='')
   {
+    $theme = &atkinstance('atk.ui.atktheme');
+    if (!$phpfile) $phpfile =  $theme->getAttribute('dispatcher',atkconfig("dispatcher",'dispatch.php'));
     $url = $phpfile."?atknodetype=".$node."&atkaction=".$action;
     if ($params != "" && is_array($params) && count($params) > 0)
       $url .= '&'.buildQueryString($params);
@@ -1686,6 +1690,25 @@
     }
     else
       return false;
+  }
+
+  /**
+   * Imports a zend-file
+   * @param string $classname Name of class in zend-format (starting with a Capital)
+   */  
+  function zendimport($classname)
+  {        
+    $current_path = getcwd();
+    chdir(atkConfig('atkroot')."atk/ext/zend/");
+    
+    $filename = 'Zend/'.$classname.'.php';
+    
+    if (file_exists($filename))
+    {
+      require_once $filename;
+    }
+    
+    chdir($current_path);    
   }
 
   /**

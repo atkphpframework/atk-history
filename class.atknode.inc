@@ -2237,14 +2237,6 @@
      */
     function dispatch($postvars, $flags=NULL)
     {
-      $page = &$this->getPage();
-
-      $page->register_script(atkconfig("atkroot")."atk/javascript/prototype/prototype.js");
-      $page->register_script(atkconfig("atkroot")."atk/javascript/scriptaculous/scriptaculous.js");
-      $page->register_script(atkconfig("atkroot")."atk/javascript/atkbusy.js");
-
-      $this->loadDispatchPage($postvars);
-
       // backwards compatibility mode
       if ($flags == NULL)
       {
@@ -2262,11 +2254,14 @@
       }
 
       $ui = &$this->getUi();
+      $page = &$this->getPage();
 
+      $this->loadDispatchPage($postvars);
+      
       if (!$page->isEmpty()) // Only output an html output if there is anything to output.
       {
         $screen = $page->render(atktext('app_shorttitle')." - ".$ui->title($this->m_module, $this->m_type,$this->m_postvars['atkaction']), $flags);
-        $output = &atkOutput::getInstance();
+        $output = &atkinstance('atk.ui.atkoutput');
         $output->output($screen);
       }
 
@@ -2289,6 +2284,10 @@
       $this->m_partial = $postvars["atkpartial"];
 
       $page = &$this->getPage();
+
+      $page->register_script(atkconfig("atkroot")."atk/javascript/prototype/prototype.js");
+      $page->register_script(atkconfig("atkroot")."atk/javascript/scriptaculous/scriptaculous.js");
+      $page->register_script(atkconfig("atkroot")."atk/javascript/atkbusy.js");
 
       if ($this->allowed($this->m_action))
       {
@@ -2324,7 +2323,7 @@
       if (!is_array($content)) $content = array($title=>$content);
       $blocks = array();
       foreach($content as $itemtitle => $itemcontent)
-        $blocks[] = $ui->renderBox(array("title"=>$itemtitle, "content"=>$itemcontent));
+        $blocks[] = $ui->renderBox(array("title"=>$itemtitle, "content"=>$itemcontent),'dispatch');
       /**
        * @todo Don't use renderActionPage here because it tries to determine
        *       it's own title based on the title which is passed as action.
@@ -2783,6 +2782,7 @@
       else
       {
         atkdebug("NOT UPDATING! NO SELECTOR SET!");
+        return false;
       }
       return true;
     }
