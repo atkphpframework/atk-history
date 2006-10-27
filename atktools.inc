@@ -418,7 +418,6 @@
   {
     atkimport("atk.atklanguage");
     $text = atkLanguage::text($string, $module, $node, $lng, $firstfallback, $nodefaulttext,$modulefallback);
-    if (strstr($string,"artikel")) halt($text);
     return $text;
   }
 
