@@ -111,16 +111,17 @@
         /* free old results */
         if (!empty($this->m_query_id))
         {
-          @pg_freeresult($this->m_query_id);
+          @pg_free_result($this->m_query_id);
           $this->m_query_id = 0;
         }
 
         /* query database */
-        $this->m_query_id = @pg_exec($this->m_link_id, $query) or $error = true;
+        $error=false;
+        $this->m_query_id = @pg_query($this->m_link_id, $query) or $error = true;
 
         $this->m_row = 0;
 
-        $this->m_error = pg_errormessage();
+        $this->m_error = pg_last_error();
         if ($error) $this->halt("Invalid SQL query: $query");
 
         if ($this->m_query_id)
@@ -139,7 +140,7 @@
     function next_record()
     {
       /* goto next record */
-      $this->m_record = @pg_fetch_array($this->m_query_id, $this->m_row);
+      $this->m_record = @pg_fetch_array($this->m_query_id, $this->m_row, PGSQL_ASSOC|atkconfig("pgsqlfetchmode"));
       $this->m_row++;
 
       /* are we there? */
@@ -178,7 +179,7 @@
       {
         /* lock */
         if ($mode == "write")
-          $result = @pg_exec($this->m_link_id, "lock table $table") or $this->halt("cannot lock table $table");
+          $result = @pg_query($this->m_link_id, "lock table $table") or $this->halt("cannot lock table $table");
         else $result = 1;
 
         /* return result */
@@ -197,7 +198,7 @@
       if ($this->connect()==DB_SUCCESS)
       {
         /* unlock */
-        $result = @pg_exec($this->m_link_id, "commit") or $this->halt("cannot unlock tables");
+        $result = @pg_query($this->m_link_id, "commit") or $this->halt("cannot unlock tables");
 
         /* return result */
         return $result;
@@ -212,7 +213,7 @@
      */
     function affected_rows()
     {
-      return @pg_cmdtuples($this->m_link_id);
+      return @pg_affected_rows($this->m_link_id);
     }
 
     /**
@@ -222,7 +223,7 @@
      */
     function num_rows()
     {
-      return @pg_numrows($this->m_query_id);
+      return @pg_num_fields($this->m_query_id);
     }
 
     /**
@@ -251,7 +252,7 @@
         $query = "SELECT nextval('$sequencename') AS nextid";
 
         /* execute query */
-        $id = @pg_exec($this->m_link_id, $query);
+        $id = @pg_query($this->m_link_id, $query);
 
         // maybe the name should not have the default seq_ prefix.
         // this is here for backwardscompatibility. $config_database_sequenceprefix
@@ -262,26 +263,27 @@
           $query = "SELECT nextval('".$sequence."') AS nextid";
 
           /* execute query */
-          $id = @pg_exec($this->m_link_id, $query);
+          $id = @pg_query($this->m_link_id, $query);
         }
 
         /* error? */
         if (empty($id))
         {
           /* create sequence */
-          $query = "CREATE SEQUENCE '".$sequencename."'";
-          $id = @pg_exec($this->m_link_id, $query);
+          $query = "CREATE SEQUENCE ".$sequencename;
+          $id = @pg_query($this->m_link_id, $query);
 
           /* try again */
           $query = "SELECT nextval('".$sequencename."') AS nextid";
-          $id = @pg_exec($this->m_link_id, $query) or $this->halt("cannot get nextval() of sequence '$sequencename'");
+
+          $id = @pg_query($this->m_link_id, $query) or $this->halt("cannot get nextval() of sequence '$sequencename'");
 
           /* empty? */
           if (empty($id)) return 0;
         }
 
         /* get nextid */
-        $result = @pg_result($id, 0, "nextid");
+        $result = @pg_fetch_result($id, 0, "nextid");
 
         /* return id */
         return $result;

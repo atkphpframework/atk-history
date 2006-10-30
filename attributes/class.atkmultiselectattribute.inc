@@ -15,13 +15,13 @@
    * $Id$
    */
 
+  /** @internal Include base class */
+  useattrib("atklistattribute");
+
   /** Defines */
   define("AF_NO_TOGGLELINKS", AF_SPECIFIC_2);
   define("AF_CHECK_ALL", AF_SPECIFIC_3);
   define("AF_LINKS_BOTTOM", AF_SPECIFIC_4);
-
-  /** @internal Include base class */
-  useattrib("atklistattribute");
 
   /**
    * The atkMultiboolAttribute class represents an attribute of a node
@@ -86,14 +86,14 @@
       //atkdebug("multiselectattribute::value2db()");
       if(is_array($rec[$this->fieldName()]) && count($rec[$this->fieldName()]>=1))
       {
-        return escapeSQL(implode("|",$rec[$this->fieldName()]));
+        return $this->escapeSQL(implode("|",$rec[$this->fieldName()]));
       }
       else return "";
     }
 
     function db2value($rec)
     {
-      if($rec[$this->fieldName()]!="")
+      if (isset($rec[$this->fieldName()]) && $rec[$this->fieldName()]!=='')
         return explode("|",$rec[$this->fieldName()]);
       else return array();
     }
@@ -128,6 +128,7 @@
       $page = &atkPage::getInstance();
       $page->register_script($config_atkroot."atk/javascript/class.atkprofileattribute.js.php");
 
+      $result = "";
       if (!$this->hasFlag(AF_LINKS_BOTTOM)) $result.=$this->_addLinks($fieldprefix);
 
       $result .="\n<table><tr>\n";
@@ -142,7 +143,7 @@
         {
           $sel = "checked";
         }
-        
+
         if($this->hasFlag(AF_NO_TRANSLATION)) $string = $this->m_options[$i];
         else $string = atktext($this->m_options[$i],$this->m_ownerInstance->m_module);
 
@@ -164,19 +165,19 @@
 
     function getSearchCondition(&$query, $table, $value, $searchmode)
     {
-    	// Multiselect attribute has only 1 searchmode, and that is substring.
+      // Multiselect attribute has only 1 searchmode, and that is substring.
 
       if(is_array($value) && $value[0]!="" && count($value)>0)
       {
         if (count($value)==1)
         {
-          $searchcondition = $query->substringCondition($table.".".$this->fieldName(),escapeSQL($value[0]));
+          $searchcondition = $query->substringCondition($table.".".$this->fieldName(),$this->escapeSQL($value[0]));
         }
         else
         {
           foreach($value as $str)
           {
-            $searchcondition = $query->substringCondition($table.".".$this->fieldName(),escapeSQL($str));
+            $searchcondition = $query->substringCondition($table.".".$this->fieldName(),$this->escapeSQL($str));
           }
         }
       }

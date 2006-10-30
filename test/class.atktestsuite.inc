@@ -16,7 +16,7 @@
    */
 
   /**
-   * Includes
+   * @internal Includes
    */
   require_once(atkconfig("atkroot")."atk/atktools.inc");
   require_once(atkconfig("atkroot")."atk/test/simpletest/unit_tester.php");
@@ -97,33 +97,27 @@
      */
     function run($reporttype="html", $module="")
     {
-      global $g_modules, $config_module_path;
-
       $test = &new GroupTest("Full ATK test");
 
       $traverser = &atknew("atk.utils.atkdirectorytraverser");
       $traverser->addCallbackObject(new atkTestCaseCollector($test));
-      
+
       if ($module!="")
-      {        
+      {
         if ($module=="atk") // make it possible to only test atk.
         {
           $dir = atkconfig("atkroot")."atk/";
         }
-        else 
+        else
         {
           $dir = moduleDir($module);
         }
         $traverser->traverse($dir);
       }
-      else 
+      else
       {
         $traverser->traverse(".");
-        foreach ($g_modules as $name => $path) {
-          if (strpos($path, $config_module_path . "/") !== 0) {
-            $traverser->traverse($path);
-          }
-        }
+        $this->_traverseExtraModules($traverser);
       }
       if($reporttype=="html")
       {
@@ -132,6 +126,42 @@
       else
       {
         $test->run(new TextReporter());
+      }
+    }
+
+    /**
+     * Traverse modules that are outside the root
+     *
+     * Here we actually change directories to all the module directories
+     * then check if the directory is inside the application root.
+     * If it is, we leave it alone, otherwise we traverse that too.
+     *
+     * @param object $traverser Object of the Traverser
+     */
+    function _traverseExtraModules(&$traverser)
+    {
+      global $g_modules;
+      $curdir = getcwd();
+      if (chdir(atkconfig('modulepath')))
+      {
+        $modulepath = getcwd();
+        if (chdir($curdir))
+        {
+          foreach ($g_modules as $name => $path)
+          {
+            if (chdir($path))
+            {
+              $fullpath = getcwd();
+              if (chdir($curdir))
+              {
+                if (substr($fullpath,0,strlen($curdir))!==$curdir)
+                {
+                  $traverser->traverse($path);
+                }
+              }
+            }
+          }
+        }
       }
     }
   }

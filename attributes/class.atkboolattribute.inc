@@ -14,6 +14,8 @@
    * @version $Revision$
    * $Id$
    */
+  
+  define("AF_BOOL_OBLIGATORY", AF_SPECIFIC_1); // make bool attribute obligatory (normal AF_OBLIGATORY flag is always removed).
 
   /**
    * The atkBoolAttribute class represents an attribute of a node
@@ -38,8 +40,29 @@
 
      // Call base class constructor. Size of boolean value is always 1.
       $this->atkAttribute($name,$flags, 1);
+      if ($this->hasFlag(AF_BOOL_OBLIGATORY)) 
+      {
+        $this->addFlag(AF_OBLIGATORY);
+      }
     }
-
+    
+    /**
+     * Is empty?
+     *
+     * @param array $record
+     * @return boolean empty?
+     */
+    function isEmpty($record)
+    {
+      $empty = parent::isEmpty($record);
+      
+      // if bool_obligatory flag is set the value must be true else we treat this record as empty
+      if ($this->hasFlag(AF_BOOL_OBLIGATORY) && !$record[$this->fieldName()])
+        $empty = true;
+        
+      return $empty;
+    }
+    
     /**
      * Returns a piece of html code that can be used in a form to edit this
      * attribute's value.
@@ -48,11 +71,17 @@
      */
     function edit($record="", $fieldprefix="")
     {
+      $id = $this->getHtmlId($fieldprefix);
+      $onchange='';
+      if (count($this->m_onchangecode))
+      {
+        $onchange = 'onChange="'.$id.'_onChange(this);" ';
+        $this->_renderChangeHandler($fieldprefix);
+      }
       $checked = "";
       if (isset($record[$this->fieldName()]) && $record[$this->fieldName()]>0) $checked="checked";
-      $id = $fieldprefix.$this->fieldName();
       $this->registerKeyListener($id, KB_CTRLCURSOR|KB_CURSOR);
-      return '<input type="checkbox" id="'.$id.'" name="'.$id.'" value="1" '.$checked.'>';
+      return '<input type="checkbox" id="'.$id.'" name="'.$id.'" value="1" '.$onchange.$checked.' />';
     }
 
 
@@ -73,9 +102,9 @@
      * @param $record Array with fields
      * @return piece of html code with a checkbox
      */
-    function search($record="")
+    function search($record="", $extended=false, $fieldprefix="")
     {
-      $result = '<select name="atksearch['.$this->formName().']">';
+      $result = '<select name="atksearch'.$fieldprefix.'['.$this->formName().']">';
       $result.= '<option value="">'.atktext("search_all", "atk");
       $result.= '<option value="0" ';
       if($record[$this->fieldName()]==='0' && !empty($record)) $result.="selected";
@@ -101,7 +130,7 @@
     function getSearchCondition(&$query, $table, $value, $searchmode)
     {
       if (is_array($value)) $value = $value[$this->fieldName()];
-      if (isset($value)) return $query->exactCondition($table.".".$this->fieldName(),escapeSQL($value));
+      if (isset($value)) return $query->exactCondition($table.".".$this->fieldName(),$this->escapeSQL($value));
     }
 
     /**
@@ -114,6 +143,18 @@
 	    // We display true (1) as 'Yes' and false as 'No'
 	    if ($record[$this->fieldName()]>0) return atktext("yes", "atk");
 	    return atktext("no", "atk");
+    }
+
+    function fetchValue($postvars)
+    {
+      if (is_array($postvars)&&isset($postvars[$this->fieldName()]))
+      {
+        return $postvars[$this->fieldName()];
+      }
+      else
+      {
+        return 0;
+      }
     }
 
     function getSearchModes()

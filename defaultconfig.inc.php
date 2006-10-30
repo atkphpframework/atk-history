@@ -137,7 +137,14 @@
    * software relies on numerical indexes (WHICH IS A BAD IDEA!!)
    * @var int
    */
-  $config_mysqlfetchmode = MYSQL_ASSOC;
+  $config_mysqlfetchmode = defined("MYSQL_ASSOC") ? MYSQL_ASSOC : 0;
+
+  /**
+   * Backwardscompatibility setting. Set this to PGSQL_BOTH if your
+   * software relies on numerical indexes (WHICH IS A BAD IDEA!!)
+   * @var int
+   */
+  $config_pgsqlfetchmode = defined("PGSQL_ASSOC") ? PGSQL_ASSOC : 0;
 
   /********************************** SECURITY *******************************/
 
@@ -258,6 +265,12 @@
    * @var String
    */
   $config_auth_passwordfield = "password";
+
+  /**
+   *
+   * @var String
+   */
+  $config_auth_languagefield   = "lng";
 
   /**
    *
@@ -414,6 +427,12 @@
    * @var String
    */
   $config_mailreport = "";
+  
+  /**
+   * Output missing translation "errors".
+   * @var String
+   */
+  $config_debug_translations = false;
 
   /************************************ LAYOUT *******************************/
 
@@ -465,24 +484,6 @@
    * @var String
    */
   $config_fullscreen = false;
-
-  /**
-   * Whether the action links in a recordlist appear left or right
-   * @var String
-   */
-  $config_recordlist_orientation  = "left";
-
-  /**
-   *
-   * @var String
-   */
-  $config_recordlist_vorientation = "middle";
-
-  /**
-   * Use icons for action links or not
-   * @var String
-   */
-   $config_recordlist_icons = "true";
 
   /**
    * Whatever tabs are enabled or not
@@ -554,6 +555,23 @@
    * @var String
    */
   $config_atklangcheckmodule = 2;
+
+  /**
+   * Where ATK should look for it's supported languages
+   *
+   * In your own application you should probably make this the module
+   * with the most language translations.
+   * Leaving this empty will turn off functionality where we check
+   * for the user language in the browser or in the user session and will
+   * make sure the application is always presented in the default language.
+   * This config var also accepts 2 'special' modules:
+   * - atk (making it use the languages of ATK)
+   * - langoverrides (making it use the language overrides directory)
+   *
+   * @var String
+   */
+   //$config_supported_languages_module = $config_atkroot.'atk/languages/';
+   $config_supported_languages_module = '';
 
   /********************* TEMPLATE ENGINE CONFIGURATION ***********************/
 
@@ -691,7 +709,7 @@
    * confirm box for deleting instead of a seperate page
    * @var boolean
    */
-  $config_javascript_confirmation = false;
+  $config_recordlist_javascript_delete = false;
 
   /**
    * This should be turned on when an application makes use
@@ -708,4 +726,13 @@
    * @var boolean
    */
   $config_mail_enabled = true;
+  
+  /**
+   * Default extended search action. This action can always be overriden
+   * in the node by using $node->setExtendedSearchAction. At this time
+   * (by default) the following values are supported: 'search' or 'smartsearch'
+   * 
+   * @var string
+   */
+  $config_extended_search_action = 'search';
 ?>

@@ -74,7 +74,7 @@
     if ($errtype==E_NOTICE || error_reporting()==0)
     {
       // Just show notices in the debug log, but don't influence the program flow
-      atkdebug("[$errortypestring] $errstr in $errfile (line $errline)");
+      //atkdebug("[$errortypestring] $errstr in $errfile (line $errline)");
       return;
     }
     else if (($errtype & (E_WARNING|E_USER_WARNING)) > 0)
@@ -183,7 +183,7 @@
   {
     global $g_debug_msg;
     $level = atkconfig("debug");
-    if ($level>0)
+    if ($level>=0)
     {
       if (hasFlag($flags, DEBUG_HTML))
         $txt = htmlentities($txt);
@@ -215,7 +215,7 @@
 
   function atkGetTimingInfo()
   {
-    return "[".elapsed().(function_exists("memory_get_usage")?" / ".sprintf("%02.02f", (memory_get_usage()/1024/1024))."MB":"")."] ";
+    return "[".elapsed().(atkconfig('debug')>0 && function_exists("memory_get_usage")?" / ".sprintf("%02.02f", (memory_get_usage()/1024/1024))."MB":"")."] ";
   }
 
   /**
@@ -426,7 +426,7 @@
   function session_level($sessionstatus=SESSION_DEFAULT, $levelskip=1)
   {
     $currentlevel = atkLevel();
-
+    
     $newlevel = -1;
 
     switch ($sessionstatus)
@@ -515,6 +515,7 @@
     global $g_stickyurl;
 
     $newlevel = session_level($sessionstatus, $levelskip);
+    atkdebug("newlevel ". $newlevel. " atklevel() ". atklevel(). " status ".$sessionstatus);
     $vars="";
    // atklevel is already set manually, we don't append it..
     if ($newlevel!=0 && !strpos($url,"atklevel=")>0)
@@ -679,8 +680,8 @@
    */
   function stripQuotes($string)
   {
-    if ($string[0]=="'" && substr($string,-1)=="'") return substr($string,1,-1);
-    if ($string[0]=='"' && substr($string,-1)=='"') return substr($string,1,-1);
+    if (substr($string,0,1)=="'" && substr($string,-1)=="'") return substr($string,1,-1);
+    if (substr($string,0,1)=='"' && substr($string,-1)=='"') return substr($string,1,-1);
     return $string;
   }
 
@@ -697,6 +698,7 @@
 
   /**
    * Translates a string like id='3 AND name='joe'' into Array("id"=>3,"name"=>"joe")
+   * @todo we should also support <=>, >=, >, <=, <, <>
    * @param string $set the string to decode
    * @return array the decoded array
    */
@@ -706,19 +708,22 @@
     $items=split(" AND ",$set);
     for ($i=0;$i<count($items);$i++)
     {
-      if (strstr($items[$i], '=') !== false)
+      if (strstr($items[$i], '!=') !== false)
+      {
+        list($key,$value) = explode("!=",$items[$i]);
+        $result[trim($key)] = stripQuotes($value);
+      }
+      elseif (strstr($items[$i], '=') !== false)
       {
         list($key,$value) = explode("=",$items[$i]);
-        $result[$key] = stripQuotes($value);
+        $result[trim($key)] = stripQuotes($value);
       }
-
       elseif (stristr($items[$i], 'IS NULL') !== false)
       {
         list($key) = spliti('IS NULL', $items[$i]);
         $result[trim($key)] = NULL;
       }
     }
-
     return $result;
   }
 
@@ -797,19 +802,6 @@
           $vars[strtolower($dimension1)][strtolower($dimension2)] = $value;
         }
       }
-
-/*    elseif (strpos(strtoupper($varname),'_BMDAE_')>0) // Now I *know* that strpos could return 0 if _AMDAE_ *is* found
-                                    // at the beginning of the string.. but since that's not a valid
-                                    // encoded var, we do nothing with it.
-      {
-        // This string is encoded.
-        list($dimension1,$dimension2) = split("_BMDAE_",strtoupper($varname));
-        // Multidimensional thing
-        while (list($key,$val) = each($value))
-        {
-          $vars[strtolower($dimension1)][strtolower($dimension2)][$key] = $val;
-        }
-      }*/
     }
   }
 
@@ -950,7 +942,7 @@
    */
   function mailreport()
   {
-    global $g_error_msg, $g_debug_msg, $g_sessionManager, $g_sessionData, $g_user;
+    global $g_error_msg, $g_debug_msg, $g_sessionManager, $g_sessionData, $g_user, $g_modules;
     $config_mailreport = atkconfig("mailreport");
     $txt_app_title = atktext("app_title");
 
@@ -1023,6 +1015,13 @@
         }
       }
 
+      $body.= "\n\nMODULE CONFIGURATION\n".str_repeat("-",70)."\n";
+      foreach ($g_modules as $modname => $modpath)
+      {
+        $modexists = file_exists($modpath) ? " (path exists)" : " (PATH DOES NOT EXIST!)";
+        $body.=_wordwrap($modname.":".str_repeat(" ",max(1,20-strlen($modname))).var_export($modpath,1).$modexists)."\n";
+      }
+
       $body.= "\n\nCurrent User:\n".str_repeat("-",70)."\n";
       if (is_array($g_user) && count($g_user))
       {
@@ -1037,35 +1036,44 @@
       {
         $body.= "\n\nATK SESSION\n".str_repeat("-",70);
         $body.= "\nNamespace: ".$g_sessionManager->m_namespace."\n";
-        $stack = $g_sessionData[$g_sessionManager->m_namespace]["stack"];
-        for($i=0;$i<count($stack);$i++)
+        if (isset($g_sessionData[$g_sessionManager->m_namespace]["stack"]))
         {
-          $body.="\nStack level $i:\n";
-          $item = isset($stack[$i]) ? $stack[$i] : null;
-          if (is_array($item))
+          $stack = $g_sessionData[$g_sessionManager->m_namespace]["stack"];
+          for($i=0;$i<count($stack);$i++)
           {
-            foreach ($item as $key=>$value)
+            $body.="\nStack level $i:\n";
+            $item = isset($stack[$i]) ? $stack[$i] : null;
+            if (is_array($item))
+            {
+              foreach ($item as $key=>$value)
+              {
+                $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".var_export($value,1))."\n";
+              }
+            }
+          }
+        }
+        if (isset($g_sessionData[$g_sessionManager->m_namespace]["globals"]))
+        {
+          $ns_globals = $g_sessionData[$g_sessionManager->m_namespace]["globals"];
+          if(count($ns_globals)>0)
+          {
+            $body.="\nNamespace globals:\n";
+            foreach ($ns_globals as $key=>$value)
             {
               $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".var_export($value,1))."\n";
             }
           }
         }
-        $ns_globals = $g_sessionData[$g_sessionManager->m_namespace]["globals"];
-        if(count($ns_globals)>0)
+        if (isset($g_sessionData["globals"]))
         {
-          $body.="\nNamespace globals:\n";
-          foreach ($ns_globals as $key=>$value)
+          $globals = $g_sessionData["globals"];
+          if (count($globals)>0)
           {
-            $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".var_export($value,1))."\n";
-          }
-        }
-        $globals = $g_sessionData["globals"];
-        if (count($globals)>0)
-        {
-          $body.="\nGlobals:\n";
-          foreach ($globals as $key=>$value)
-          {
-            $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".var_export($value,1))."\n";
+            $body.="\nGlobals:\n";
+            foreach ($globals as $key=>$value)
+            {
+              $body.=_wordwrap($key.str_repeat(" ",max(1,30-strlen($key)))." = ".var_export($value,1))."\n";
+            }
           }
         }
       }
@@ -1130,8 +1138,9 @@
    */
   function atkPopup($target,$params,$winName,$width,$height,$scroll='no',$resize='no')
   {
-    $url ="javascript:NewWindow('include.php?file=".$target."&".$params."','".$winName."',".$height.",".$width.",'".$scroll."','".$resize."')";
-    return $url;
+    $url = session_url("include.php?file=".$target."&".$params, SESSION_NESTED);
+    $popupurl ="javascript:NewWindow('".$url."','".$winName."',".$height.",".$width.",'".$scroll."','".$resize."')";
+    return $popupurl;
   }
 
   /**
@@ -1144,7 +1153,7 @@
    */
   function triggerError(&$rec, $attrib, $err, $msg="", $tab="")
   {
-    if($msg=="")  $msg = atktext($err,"atk","",atkLanguage::getLanguage());
+    if($msg=="")  $msg = atktext($err, "atk");
 
     $rec['atkerror'][] = array( "attrib_name"=> $attrib, "err" => $err, "msg" => $msg, "tab"=>$tab);
   }
@@ -1293,7 +1302,7 @@
    * @param string $mimetype the mimetype of the file
    * @return bool wether or not the export worked
    */
-  function exportFile($file, $filename,$mimetype="")
+  function exportFile($file, $filename,$mimetype="", $detectmime=true)
   {
     include_once(atkconfig("atkroot")."atk/atkbrowsertools.inc");
     $browser = getBrowserInfo();
@@ -1313,11 +1322,14 @@
       $disp = 'attachment';
     }
     if($mimetype!="") $mime=$mimetype;
-
+    else if ($mimetype=="" && $detectmime && function_exists('mime_content_type')) 
+      $mime = mime_content_type($file);
+    
     $fp = @fopen($file,"rb");
     if ($fp!=NULL)
     {
       header('Content-Type: '. $mime);
+      header("Content-Length: ".filesize($file));
       header('Content-Disposition:  '.$disp.'; filename="'.$filename.'"');
       if(eregi("ie", $browser["browser"])) header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
       if ($_SERVER["SERVER_PORT"] == "443" AND eregi("msie", $_SERVER["HTTP_USER_AGENT"]))
@@ -1329,6 +1341,10 @@
         header('Pragma: no-cache');
       }
       header('Expires: 0');
+
+      header("Content-Description: File Transfer");
+      header("Content-Transfer-Encoding: binary");
+      
       fpassthru($fp);
       return true;
     }
@@ -1469,7 +1485,7 @@
       foreach ($ATK_VARS as $key => $val)
       {
         if (!in_array($key, $excludes))
-          $str .= "<input type='hidden' name=\"$key\" value=\"".$val."\">\n";
+          $str .= "<input type='hidden' name=\"$key\" value=\"".htmlentities($val)."\">\n";
       }
       return $str;
     }
@@ -1492,6 +1508,36 @@
   }
 
   /**
+   * Build query string based on an array of parameters.
+   *
+   * @param array $params array of parameters
+   */
+  function buildQueryString($params, $parent="")
+  {
+    $query = "";
+
+    foreach ($params as $key => $value)
+    {
+      if (!empty($query))
+        $query .= '&';
+
+      if (!empty($parent))
+        $key = "{$parent}[{$key}]";
+
+      if (!is_array($value))
+      {
+        $query .= "$key=".rawurlencode($value);
+      }
+      else
+      {
+        $query .= buildQueryString($value, $key);
+      }
+    }
+
+    return $query;
+  }
+
+  /**
    * Generate a dispatch menu URL for use with nodes
    * and their specific actions.
    * @param string $node the (module.)node name
@@ -1500,19 +1546,19 @@
    * @param string $phpfile The php file to use for dispatching, defaults to dispatch.php
    * @return string url for the node with the action
    */
-  function dispatch_url($node, $action, $params="",$phpfile='dispatch.php')
+  function dispatch_url($node, $action, $params=array(),$phpfile='dispatch.php')
   {
-    /* create url */
-    $url = $phpfile."?atknodetype=".$node."&atkaction=".$action;
-    if ($params!=""&&is_array($params))
-    {
-      foreach ($params as $key => $value)
-      {
-        $url .= "&$key=".rawurlencode($value);
-      }
-    }
+    $url = $phpfile;
+    $atkparams = array();
+    if($node!="")
+      $atkparams["atknodetype"] = $node;
+    if($action!="") 
+      $atkparams["atkaction"] = $action;
+    $params = array_merge($atkparams, $params);
+    
+    if ($params != "" && is_array($params) && count($params) > 0)
+      $url .= '?'.buildQueryString($params);
 
-    /* return url */
     return $url;
   }
 
@@ -1557,16 +1603,18 @@
    * @param var $sessionstatus the session flags
    *              (SESSION_DEFAULT (default)|SESSION_NEW|SESSION_REPLACE|
    *               SESSION_NESTED|SESSION_BACK)
+   * @param string $cssclass   the css class the button should get
    * @param bool $embeded      wether or not it's an embedded button
    */
-  function atkButton($text, $url="", $sessionstatus=SESSION_DEFAULT, $embedded=true)
+  function atkButton($text, $url="", $sessionstatus=SESSION_DEFAULT, $embedded=true, $cssclass="")
   {
     $page = &atkPage::getInstance();
     $page->register_script(atkconfig("atkroot")."atk/javascript/formsubmit.js");
     static $cnt=0;
 
+    if ($cssclass != "") $cssclass = ' class="'.$cssclass.'"';
     $script = 'atkSubmit("'.atkurlencode(session_url($url,$sessionstatus)).'")';
-    $button = '<input type="button" name="atkbtn'.(++$cnt).'" value="'.$text.'" onClick=\''.$script.'\'>';
+    $button = '<input type="button" name="atkbtn'.(++$cnt).'" value="'.$text.'" onClick=\''.$script.'\''.$cssclass.'>';
 
     if (!$embedded)
     {
@@ -1597,6 +1645,7 @@
       $filename = getClassPath($fullclassname);
     else
       $filename = $fullclassname;
+    
     if (file_exists($filename))
     {
       if ($failsafe)
@@ -1676,6 +1725,7 @@
    */
   function &atknew($fullclassname)
   {
+    $fullclassname = atkResolveClass($fullclassname);
     atkimport($fullclassname, true);
 
     $elems = explode(".", strtolower($fullclassname));
@@ -1683,15 +1733,33 @@
 
     if (class_exists($classname))
     {
-      return new $classname;
+      $tmp = new $classname;
+      return $tmp;
     }
     else
     {
       atkerror("Class $fullclassname not found.");
-      return NULL;
+      $tmp = NULL;
+      return $tmp;
     }
   }
 
+  /**
+   * Resolve a classname to its final classname.
+   *
+   * An application can overload a class with a custom version. This
+   * method resolves the initial classname to its overloaded version
+   * (if any).
+   *
+   * @param String $class The name of the class to resolve
+   * @return String The resolved classname
+   */
+  function atkResolveClass($class)
+  {
+    global $g_overloaders;
+    if (isset($g_overloaders[$class])) return $g_overloaders[$class];
+    return $class;
+  }
   /**
    * Return a singleton instance of the specified class.
    *
@@ -1703,6 +1771,7 @@
   function &atkinstance($fullclassname, $reset=false)
   {
     static $s_instances = array();
+    $fullclassname = atkResolveClass($fullclassname);
     if (!isset($s_instances[$fullclassname]) || $reset)
     {
       atkimport($fullclassname);
@@ -1844,5 +1913,132 @@
       return strtr($str, $trans_table);
     }
   }
+  
+  /**
+   * ATK version of the PHP htmlentities function. Works just like PHP's
+   * htmlentities function, but falls back to the in the language file
+   * configured charset instead of PHP's default charset, if no
+   * charset is given.
+   *
+   * @param String $string    string to convert
+   * @param int $quote_style  quote style (defaults to ENT_COMPAT)
+   * @param String $charset   character set to use (default to atktext('charset', 'atk'))
+   *
+   * @return String encoded string
+   */
+  function atk_htmlentities($string, $quote_style=null, $charset=null)
+  {
+    if (empty($charset))
+    {
+      $charset = atktext('charset', 'atk');
+    }
 
+    return htmlentities($string, $quote_style, $charset);
+  }
+
+  /**
+   * Looks up a value using the given key in the given array and returns
+   * the value if found or a default value if not found.
+   *
+   * @param array $array Array to be searched for key
+   * @param string $key Key for which we are looking in array
+   * @param mixed $defaultvalue Value we will return if key was not found in array
+   * @return mixed Value retrieved from array or default value if not found in array
+   */
+  function atkArrayNvl($array, $key, $defaultvalue=null)
+  {
+    return (isset($array[$key]) ? $array[$key] : $defaultvalue);
+  }
+  
+  /**
+   * Add a class overloader
+   *
+   * @param String $original
+   * @param String $overload
+   * @param bool $overwrite
+   * @return bool Wether or not we added the overloader
+   */
+  function addOverloader($original, $overload, $overwrite=true)
+  {
+    global $g_overloaders;
+    if (!array_key_exists($original, $g_overloaders) || $overwrite)
+    {
+      $g_overloaders[$original] = $overload;
+      return true;
+    }
+    return false;
+  }
+  
+  /**
+   * Remove a class overloader for a class
+   *
+   * @param String $original
+   * @return bool Wether or not we removed an overloader
+   */
+  function removeOverloader($original)
+  {
+    global $g_overloaders;
+    if (array_key_exists($original, $g_overloaders))
+    {
+      unset($g_overloaders[$original]);
+      return true;
+    }
+    return false;
+  }
+  
+  /**
+   * Checks wether or not a class has an overloader defined
+   *
+   * @param String $original The class to check for
+   * @return bool Wether or not the class has an overloader
+   */
+  function hasOverloader($original)
+  {
+    global $g_overloaders;
+    if (array_key_exists($original, $g_overloaders))
+    {
+      return true;
+    }
+    return false;
+  }
+  
+  /*
+   * Returns the postvars
+   * Returns a value or an array with all values
+   */
+  function atkGetPostVar($key="")
+  {
+    if(empty($key) || $key=="")
+    {
+      return $_REQUEST;
+    }
+    else
+    {
+      if (array_key_exists($key,$_REQUEST) && $_REQUEST[$key]!="") return $_REQUEST[$key];
+      return "";
+    }
+  }
+  
+  /**
+   * Returns the IP of the remote client.
+   *
+   * @return string ip address
+   */
+  function atkGetClientIp()
+  {
+    static $s_ip = NULL;
+    
+    if ($s_ip === NULL)
+    {
+      if (getenv("HTTP_CLIENT_IP"))
+        $s_ip = getenv("HTTP_CLIENT_IP");
+      elseif (getenv("HTTP_X_FORWARDED_FOR"))
+        $s_ip = getenv("HTTP_X_FORWARDED_FOR");
+      elseif (getenv("REMOTE_ADDR"))
+        $s_ip = getenv("REMOTE_ADDR");    
+      else $s_ip = 'x.x.x.x';
+    }
+    
+    return $s_ip;
+  }
 ?>

@@ -15,13 +15,39 @@
    * $Id$
    */
 
+  useattrib("atkattribute");
+
   /** flag(s) specific for the atkFileAttribute */
-  define("AF_FILE_NO_UPLOAD",           AF_SPECIFIC_1); // unable to upload files
-  define("AF_FILE_NO_SELECT",           AF_SPECIFIC_2); // unable to select files
-  define("AF_FILE_NO_DELETE",           AF_SPECIFIC_3); // unable to delete files
-  define("AF_FILE_NO_AUTOPREVIEW",      AF_SPECIFIC_4); // don't try to detect the file type (shows only filename)
-  define("AF_FILE_PHYSICAL_DELETE",     AF_SPECIFIC_5); // removes the file physically
-  define("AF_FILE_POPUP",                    AF_POPUP); // show preview in popup instead of inline
+
+  /**
+   * Disable uploading of files
+   */
+  define("AF_FILE_NO_UPLOAD",           AF_SPECIFIC_1);
+
+  /**
+   * Disable selecting of files
+   */
+  define("AF_FILE_NO_SELECT",           AF_SPECIFIC_2);
+
+  /**
+   * Disable deleting of files
+   */
+  define("AF_FILE_NO_DELETE",           AF_SPECIFIC_3);
+
+  /**
+   * Don't try to detect the file type (shows only filename)
+   */
+  define("AF_FILE_NO_AUTOPREVIEW",      AF_SPECIFIC_4);
+
+  /**
+   * Removed the files physically
+   */
+  define("AF_FILE_PHYSICAL_DELETE",     AF_SPECIFIC_5);
+
+  /**
+   * Show preview in popup instead of inline
+   */
+  define("AF_FILE_POPUP",                    AF_POPUP);
 
   /**
    * With this you can upload, select and remove files in a given directory.
@@ -61,6 +87,14 @@
     var $m_filenameTpl = "";
 
     /**
+     * When set to true, a file is auto-renumbered if another record exists with the
+     * same filename.
+     *
+     * @var boolean
+     */
+    var $m_autonumbering = false;
+
+    /**
      * Constructor
      * @param string $name Name of the attribute
      * @param array $dir Can be a string with the Directory with images/files or an array with a Directory and a Display Url
@@ -84,6 +118,20 @@
         $this->m_dir = $this->AddSlash($dir);
 	      $this->m_url = $this->AddSlash($dir);
       }
+    }
+
+    /**
+     * Turn auto-numbering of filenames on/off.
+     *
+     * When autonumbering is turned on, uploading a file with the same name as
+     * the file of another record, will result in the file getting a unique
+     * sequence number.
+     *
+     * @param unknown_type $autonumbering
+     */
+    function setAutonumbering($autonumbering=true)
+    {
+      $this->m_autonumbering = $autonumbering;
     }
 
 
@@ -154,9 +202,13 @@
         }
         if(count($file_arr) > 0) $result .= "</select>";
       }
+      else if (isset($record[$this->fieldName()]['filename']) && !empty($record[$this->fieldName()]['filename']))
+      {
+        $result .= '<input type="hidden" name="'.$id.'[select]" value="'.$record[$this->fieldName()]['filename'].'">';
+      }
       if(!$this->hasFlag(AF_FILE_NO_DELETE)
-         && isset($record[$this->fieldname()]['filename'])
-         && $record[$this->fieldname()]['filename']!='')
+         && isset($record[$this->fieldname()]['orgfilename'])
+         && $record[$this->fieldname()]['orgfilename']!='')
       {
        $this->registerKeyListener($id.'_del', KB_CTRLCURSOR|KB_CURSOR);
        $result .= '<br><input id="'.$id.'_del" type="checkbox" name="del['.$fieldprefix.$this->fieldName().']">&nbsp;'.atktext("remove_current_file", "atk");
@@ -174,20 +226,34 @@
       if(isset($_REQUEST["del"])) $del = $_REQUEST["del"];
 
       if($rec[$this->fieldName()]["tmpfile"]=="" && $rec[$this->fieldName()]["filename"]!=""
-         && !$this->hasFlag(AF_FILE_NO_SELECT)
          && (!isset($del[$this->fieldName()]) || $del[$this->fieldName()]!="on"))
       {
-        return $rec[$this->fieldName()]["filename"];
+        return $this->escapeSQL($rec[$this->fieldName()]["filename"]);
       }
-
       if($this->hasFlag(AF_FILE_NO_DELETE)) unset($del);  // Make sure if flag is set $del unset!
 
       if(isset($del[$this->fieldName()]) && $del[$this->fieldName()] == "on")
       {
         if($this->hasFlag(AF_FILE_PHYSICAL_DELETE))
         {
-          unlink($this->m_dir.$rec[$this->fieldName()]["orgfilename"]);
+          $file = "";
+          if (isset($rec[$this->fieldName()]["postdel"]) && $rec[$this->fieldName()]["postdel"]!="")
+          {
+            atkdebug("postdel set");
+            $file = $rec[$this->fieldName()]["postdel"];
+          }
+          else if ( isset($rec[$this->fieldName()]["orgfilename"]))
+          {
+            atkdebug("postdel not set");
+            $file = $rec[$this->fieldName()]["orgfilename"];
+          }
+          atkdebug("file is now ".$file);
+          if ($file!="")
+          {
+            unlink($this->m_dir.$file);
+          }
         }
+//        echo ':::::return leeg::::';
         return '';
       }
       else
@@ -199,21 +265,66 @@
         {
             if ($filename!="")
             {
+              $dirname = dirname($this->m_dir.$filename);
+              if (!$this->mkdir($dirname))
+              {
+                atkerror("File could not be saved");
+                return "";                
+              }
+              
               if (@copy($rec[$this->fieldName()]["tmpfile"],$this->m_dir.$filename))
               {
-                atkdebug("COPY: ".$rec[$this->fieldName()]["tmpfile"]." -> ".$this->m_dir.$filename);
-                return $filename;
+                $this->processFile($this->m_dir, $filename);
+                return $this->escapeSQL($filename);
               }
               else
               {
-                atkdebug("tmp file ".$rec[$this->fieldName()]["tmpfile"]." dir ".$this->m_dir.$filename);
                 atkerror("File could not be saved");
                 return "";
               }
             }
         }
-        return $rec[$this->fieldName()]["orgfilename"];
+
+        return $this->escapeSQL($rec[$this->fieldName()]["orgfilename"]);
       }
+    }
+    
+    /**
+     * Recursive mdir.
+     * 
+     * @see http://nl2.php.net/mkdir
+     *
+     * @param string $path path to create
+     * @return success/failure
+     */
+    function mkdir($path)
+    {
+      $path = preg_replace('/(\/){2,}|(\\\){1,}/','/', $path); //only forward-slash
+      $dirs = explode("/", $path);
+      
+      $path = "";
+      foreach ($dirs as $element)
+      {
+        $path .= $element."/";
+        if(!is_dir($path) && !mkdir($path)) 
+          return false;
+      }
+      
+      return true;
+    }
+
+    /**
+     * Perform processing on an image right after it is uploaded.
+     *
+     * If you need any resizing or other postprocessing to be done on a file
+     * after it is uploaded, you can create a derived attribute that
+     * implements the processFile($filepath) method.
+     * The default implementation does not do any processing.
+     * @param String $filepath The path of the uploaded file.
+     * @param String $filename The name of the uploaded file.
+     */
+    function processFile($filepath, $filename)
+    {
     }
 
     /**
@@ -223,7 +334,9 @@
      */
     function db2value($rec)
     {
-      return Array("tmpfile"=>$this->m_dir.$rec[$this->fieldName()],"orgfilename"=>$rec[$this->fieldName()],"filename"=>$rec[$this->fieldName()],"filesize"=>"?");
+      return Array("tmpfile"=>$this->m_dir.$rec[$this->fieldName()],
+                   "orgfilename"=>$rec[$this->fieldName()],
+                   "filename"=>$rec[$this->fieldName()],"filesize"=>"?");
     }
 
     function validate(&$record, $mode)
@@ -260,11 +373,13 @@
       $postfiles_basename = $rec[$this->fieldName()."_postfileskey"];
 
       $basename = $this->fieldName();
-      if (is_array($_FILES)||($rec[$this->fieldName()]["select"] != "" && !$this->hasFlag(AF_FILE_NO_SELECT)) || ($rec[$this->fieldName()]["filename"]!="")) // php4
+
+      if (is_array($_FILES)||($rec[$this->fieldName()]["select"] != "") || ($rec[$this->fieldName()]["filename"]!="")) // php4
       {
         // if an error occured during the upload process
-        // and the error is not 'no file' while the field is obligatory
-        if ($_FILES[$postfiles_basename]['error'] > 0 && !(!$this->hasFlag(AF_OBLIGATORY) && $_FILES[$postfiles_basename]['error'] == UPLOAD_ERR_NO_FILE))
+        // and the error is not 'no file' while the field isn't obligatory or a file was already selected
+        $fileselected = isset($rec[$this->fieldName()]["select"]) && $rec[$this->fieldName()]["select"] != "";
+        if ($_FILES[$postfiles_basename]['error'] > 0 && !((!$this->hasFlag(AF_OBLIGATORY) || $fileselected) && $_FILES[$postfiles_basename]['error'] == UPLOAD_ERR_NO_FILE))
         {
           return array('error' => $_FILES[$postfiles_basename]['error']);
         }
@@ -273,16 +388,23 @@
         elseif (count($_FILES)==0||$_FILES[$postfiles_basename]["tmp_name"]=="none"||$_FILES[$postfiles_basename]["tmp_name"]=="")
         {
            // No file to upload, then check if the select box is filled
-          if(isset($rec[$this->fieldName()]["select"]) && $rec[$this->fieldName()]["select"] != ""
-             && !$this->hasFlag(AF_FILE_NO_SELECT))
+          if($fileselected)
           {
             atkdebug("file selected!");
-            (isset($del[$this->fieldName()]) && $del[$this->fieldName()]=="on") ? $filename='' : $filename=$rec[$this->fieldName()]["select"];
+            $filename=$rec[$this->fieldName()]["select"];
+            $orgfilename = $filename;
+            $postdel = '';
+            if (isset($del[$this->fieldName()]) && $del[$this->fieldName()]=="on")
+            {
+              $filename = '';
+              $orgfilename='';
+              $postdel = $rec[$this->fieldName()]["select"];
+            }
             $result = array("tmpfile"=>"",
-
                           "filename"=>$filename,
                           "filesize"=>0,
-                          "orgfilename"=>$filename);
+                          "orgfilename"=>$orgfilename,
+                          "postdel"=>$postdel);
           }  // maybe we atk restored data from session
           elseif(isset($rec[$this->fieldName()]["filename"]) && $rec[$this->fieldName()]["filename"]!="")
           {
@@ -290,21 +412,33 @@
           }
           else
           {
-            $result = array("tmpfile"=>"",
-                          "filename"=>"",
-                          "filesize"=>0,
-                          "orgfilename"=>(isset($rec[$basename."_orgfilename"]))?$rec[$basename."_orgfilename"]:"");
+            $filename = (isset($rec[$basename."_orgfilename"]))?$rec[$basename."_orgfilename"]:"";
+            
+            if (isset($del[$this->fieldName()]) && $del[$this->fieldName()]=="on")
+            {
+              $filename = '';
+            }
+            
+            $result = array("tmpfile"=>$this->m_dir.$filename,
+                          "filename"=>$filename,
+                          "filesize"=>filesize($this->m_dir.$filename),
+                          "orgfilename"=>$filename);
           }
         }
         else
         {
           $realname = $this->_filenameMangle($rec, $_FILES[$postfiles_basename]["name"]);
+
+          if ($this->m_autonumbering)
+          {
+            $realname = $this->_filenameUnique($rec, $realname);
+          }
+
           $result = array("tmpfile"=>$_FILES[$postfiles_basename]["tmp_name"],
                           "filename"=>$realname,
                           "filesize"=>$_FILES[$postfiles_basename]["size"],
                           "orgfilename"=>$realname);
         }
-
         return $result;
       }
     }
@@ -337,7 +471,7 @@
     {
       if($this->hasFlag(AF_FILE_PHYSICAL_DELETE)&&($record[$this->fieldname()]["orgfilename"]!=""))
       {
-        if(!@unlink($this->m_dir.$record[$this->fieldName()]["orgfilename"]))
+        if(file_exists($this->m_dir.$record[$this->fieldName()]["orgfilename"]) && !@unlink($this->m_dir.$record[$this->fieldName()]["orgfilename"]))
         {
           return false;
         }
@@ -352,8 +486,11 @@
      */
     function display($record)
     {
+      // Get random number to use as param when displaying images
+      // while updating images was not allways visible due to caching
+      $randval = mt_rand();
 
-      $filename    = $record[$this->fieldName()]["orgfilename"];
+      $filename    = $record[$this->fieldName()]["filename"];
       atkdebug($this->fieldname()." - File: $filename");
       $prev_type     = Array("jpg","jpeg","gif","tif","png","bmp","htm","html","txt");  // file types for preview
       $imgtype_prev = Array("jpg","jpeg","gif","png");  // types whitch are supported by GetImageSize
@@ -361,7 +498,7 @@
       {
         if(is_file($this->m_dir.$filename))
         {
-          $ext = strtolower(substr($filename, strrpos($filename,'.')+1,strlen($filename)));
+          $ext = $this->getFileExtension($filename);
           if((in_array($ext, $prev_type) && $this->hasFlag(AF_FILE_NO_AUTOPREVIEW))||(!in_array($ext, $prev_type)))
           {
             return "<a href=\"".$this->m_url."$filename\" target=\"_blank\">$filename</a>";
@@ -380,13 +517,18 @@
             $page->register_script(atkconfig("atkroot")."atk/javascript/newwindow.js");
             return '<a href="'.$this->m_url.$filename.'" alt="'.$filename.'" onclick="NewWindow(this.href,\'name\',\''.($imagehw[0]+50).'\',\''.($imagehw[1]+50).'\',\'yes\');return false;">'.$filename.'</a>';
           }
-          return '<img src="'.$this->m_url.$filename.'" alt="'.$filename.'">';
+          return '<img src="'.$this->m_url.$filename.'?b='.$randval.'" alt="'.$filename.'">';
         }
         else
         {
           return $filename."(<font color=\"#ff0000\">".atktext("file_not_exist", "atk")."</font>)";
         }
       }
+    }
+
+    function getFileExtension($filename)
+    {
+      return strtolower(substr($filename, strrpos($filename,'.')+1,strlen($filename)));
     }
 
     function getSearchModes()
@@ -400,9 +542,36 @@
     }
 
     /**
-     * Determine the real filename of a file (based on m_filenameTpl).
+     * Set filename template.
+     */
+    function setFilenameTemplate($template)
+    {
+      $this->m_filenameTpl = $template;
+    }
+    
+    /**
+     * Determine the real filename of a file. 
+     * 
+     * If a method <fieldname>_filename exists in the owner instance this method 
+     * is called with the record and default filename to determine the filename. Else 
+     * if a file template is set this is used instead and otherwise the default
+     * filename is returned.
+     * 
+     * @access private
      */
     function _filenameMangle($rec, $default)
+    {
+      $method = $this->fieldName().'_filename';
+      if (method_exists($this->m_ownerInstance, $method))
+        return $this->m_ownerInstance->$method($rec, $default);
+      else return $this->filenameMangle($rec, $default);
+    }
+
+    /**
+     * Determine the real filename of a file (based on m_filenameTpl).
+     * @access public
+     */
+    function filenameMangle($rec, $default)
     {
       if ($this->m_filenameTpl == "")
       {
@@ -410,10 +579,49 @@
       }
       else
       {
-        $ext = strtolower(substr($default, strrpos($default,'.')+1));
-        $filename = stringparse($this->m_filenameTpl, $rec).".".$ext;
+        $record = $this->m_ownerInstance->updateRecord($rec, NULL, array($this->fieldName()));
+        $record[$this->fieldName()] = substr($default, 0, strrpos($default,'.'));
+        atkimport("atk.utils.atkstringparser");
+        $parser = new atkStringParser($this->m_filenameTpl);
+        $ext = $this->getFileExtension($default);
+        $filename = $parser->parse($record).".".$ext;
       }
       return str_replace(' ','_',$filename);
+    }
+
+    /**
+     * Give the file a uniquely numbered filename.
+     *
+     * @access private
+     * @param array $rec The record for thish the file was uploaded
+     * @param String $filename The name of the uploaded file
+     * @return String The name of the uploaded file, renumbered if necessary
+     */
+    function _filenameUnique($rec, $filename)
+    {
+      // check if there's another record using this same name. If so, (re)number the filename.
+      atkdebug("unique check");
+
+      $name = substr($filename, 0, strrpos($filename,'.'));
+      $ext = substr($filename, strrpos($filename,'.')+1);
+
+      $selector = "(".$this->fieldName()."='$filename' OR ".$this->fieldName()." LIKE '$name-_.$ext')";
+      if ($rec[$this->m_ownerInstance->primaryKeyField()]!="")
+      {
+        $selector.= " AND NOT (".$this->m_ownerInstance->primaryKey($rec).")";
+      }
+
+      $count = $this->m_ownerInstance->countDb("($selector)", "", array($this->fieldName()));
+
+      atkdebug("count ".$count);
+
+      if ($count>0)
+      {
+        // file name exists, so mangle it with a number.
+        $filename = $name."-".$count.".".$ext;
+      }
+
+      return $filename;
     }
 
     /**

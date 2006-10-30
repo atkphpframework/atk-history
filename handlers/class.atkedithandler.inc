@@ -34,8 +34,8 @@
      */
     function action_edit()
     {
+      //atk_var_dump($this->m_renderBoxVars, "m_renderBoxVars action_edit 1");
       $page = &$this->getPage();
-
       $recordset = $this->m_node->selectDb($this->m_postvars['atkselector'],"","","","","edit");
       if ($this->m_node->hasFlag(NF_LOCK))
       {
@@ -50,6 +50,8 @@
       }
       else
       {
+        atkdebug("invoke editpage");
+        //atk_var_dump($this->m_renderBoxVars, "m_renderBoxVars action_edit 2");
         $res = $this->invoke("editPage", $recordset[0], false);
       }
 
@@ -70,15 +72,22 @@
       $page = &$this->getPage();
       $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");
       $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
+      $page->register_loadscript("placeFocus();");
       $page->register_script(atkconfig("atkroot")."atk/javascript/dhtml_formtools.js");
       $node->addStyle("style.css");
 
       $params = $node->getDefaultActionParams($locked);
-
-      $params["formstart"] = '<form name="entryform" enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?'.SID.'"'.
+      $controller = &atkcontroller::getInstance();
+      $controller->setNode(&$this->m_node);
+      
+      $formstart = '<form name="entryform" enctype="multipart/form-data" action="'.$controller->getPhpFile().'?'.SID.'"'.
                                    ' method="post" onsubmit="return globalSubmit(this)">'.
                                    session_form();
 
+      $formstart .= $controller->getHiddenVarsString();
+                   
+      $params["formstart"] = $formstart;
+                      
       $ui = &$node->getUi();
 
       if (is_object($ui))
@@ -101,8 +110,10 @@
 
         $output = $ui->renderAction("edit", $params);
 
-        return $ui->renderBox(array("title"=>$node->actionTitle('edit', $record),
-                                      "content"=>$output));
+        $this->addRenderBoxVar("title", $node->actionTitle('edit', $record));
+        $this->addRenderBoxVar("content", $output);
+        //atk_var_dump($this->m_renderBoxVars, "m_renderBoxVars");
+        return $ui->renderBox($this->m_renderBoxVars);
       }
       else
       {
@@ -197,10 +208,9 @@
       for ($i = 0, $_i= count($data["fields"]); $i<$_i; $i++)
       {
         $field = &$data["fields"][$i];
-
         $tplfield = array();
 
-		    $tplfield["tab"] = ($field["tabs"][0]=="*"?"alltabs":$field["tabs"][0]); // $this->getTab($field_name);
+		    $tplfield["tab"] = ($field["tabs"][0]=="*"?"alltabs":implode("|", $field["tabs"]));
 
 		    // Todo fixme: initial_on_tab kan er uit, als er gewoon bij het opstarten al 1 keer showTab aangeroepen wordt (is netter dan aparte initial_on_tab check)
 		    // maar, let op, die showTab kan pas worden aangeroepen aan het begin.
@@ -255,7 +265,7 @@
           /* obligatory indicator */
           if ($field["obligatory"])
           {
-            $tplfield["label"].="<span class='reqimg'>".$reqimg."</span>";
+            $tplfield["label"];
             $tplfield["obligatory"] = $reqimg;
           }
 
@@ -304,11 +314,12 @@
       if (!$template) $template = $node->getTemplate($mode, $record, $tab);
       $result.= $ui->render($template, $params);
 
-	  return $result;
+	    return $result;
     }
 
     /**
      * Adds numbering to the label of a field
+     * @access private
      * @param array $field    the currently handled attribute
      * @param array $tplfield the template data for the current attribute
      * @param int $i          the counter being used to loop the node for each attribute

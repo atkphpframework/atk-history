@@ -55,9 +55,9 @@
   define("SESSION_BACK",3);    // move one level down on stack
   define("SESSION_REPLACE",4); // replace current stacklevel
 
-  if (isset($_REQUEST["atklevel"])) 	 $atklevel 		= trim($_REQUEST["atklevel"]);
+  if (isset($_REQUEST["atklevel"]))    $atklevel    = trim($_REQUEST["atklevel"]);
   if (isset($_REQUEST["atkprevlevel"]))$atkprevlevel= trim($_REQUEST["atkprevlevel"]);
-  if (isset($_REQUEST["atkstackid"]))  $atkstackid 	= trim($_REQUEST["atkstackid"]);
+  if (isset($_REQUEST["atkstackid"]))  $atkstackid  = trim($_REQUEST["atkstackid"]);
 
   /**
    * The atk session manager.
@@ -173,15 +173,15 @@
     function getValue($var, $namespace="")
     {
       global $g_sessionData;
-      if ($namespace=="globals") return $g_sessionData["globals"][$var];
-      else if ($namespace!="") return $g_sessionData[$namespace]["globals"][$var];
-      if (isset($g_sessionData[$this->m_namespace]["globals"][$var]))
-      {
-        return $g_sessionData[$this->m_namespace]["globals"][$var];
-      }
-      return NULL;
-    }
 
+      if ($namespace=="globals")
+        return isset($g_sessionData["globals"][$var]) ? $g_sessionData["globals"][$var] : null;
+      else if ($namespace!="")
+        return isset($g_sessionData[$namespace]["globals"][$var]) ? $g_sessionData[$namespace]["globals"][$var] : null;
+      else
+        return isset($g_sessionData[$this->m_namespace]["globals"][$var]) ? $g_sessionData[$this->m_namespace]["globals"][$var] : null;
+    }
+    
     /**
      * Store a variable in the session stack. The variable is available in the
      * current page (even after reload), and any screen that is deeper on the
@@ -212,7 +212,7 @@
         {
           if ($value=="")
           {
-            if ($_REQUEST[$var]!="")
+            if (atkarraynvl($_REQUEST, $var, "")!="")
             {
               $currentitem[$var] = $_REQUEST[$var];
             }
@@ -221,12 +221,12 @@
           {
             $currentitem[$var] = $value;
           }
-          if (!is_array($currentitem["defined_stackvars"])||!in_array($var, $currentitem["defined_stackvars"]))
+          if (!is_array(atkArrayNvl($currentitem, "defined_stackvars"))||!in_array($var, $currentitem["defined_stackvars"]))
           {
             $currentitem["defined_stackvars"][] = $var;
           }
           // We always return the current value..
-          return $currentitem[$var];
+          return atkarraynvl($currentitem, $var);
         }
       }
     }
@@ -329,7 +329,7 @@
 
       // pagevars are valid on a page. if you go a session level higher, the pagevars are no longer
       // visible until you return.
-      $pageVars = array("atksearch","atksearchmode","atkorderby","atkstartat","atktarget","atkformdata","atktree","atksuppress","atktab");
+      $pageVars = array("atksearch","atksearchmode","atkorderby","atkstartat","atktarget","atkformdata","atktree","atksuppress","atktab","atksmartsearch");
 
       // Mental note: We have an atkLevel() function for retrieving the atklevel,
       // but we use the global var itself here, because it gets modified in
@@ -345,6 +345,15 @@
       $stackid = atkStackID(($atklevel==-1));
 
       $stack = &$g_sessionData[$this->m_namespace]["stack"][$stackid];
+
+      // Prevent going more than 1 level above the current stack top which
+      // causes a new stackitem to be pushed onto the stack at the wrong
+      // location.
+      if ($atklevel > count($stack))
+      {
+        atkdebug("Requested ATKLevel (".$atklevel.") too high for stack, lowering to ".count($stack));
+        $atklevel = count($stack);
+      }
 
       if (isset($postvars["atkescape"]) && $postvars["atkescape"]!="")
       {
@@ -378,6 +387,11 @@
             $currentitem[$var] = $postvars[$var];
           }
         }
+
+        // finally, reset atkescape to prevent atk from keeping escaping upon return
+        unset($currentitem['atkescape']);
+
+        atk_var_dump($currentitem, "Current item in escape mode");
 
       }
       else
@@ -517,17 +531,27 @@
 
       for ($i=0;$i<count($stack);$i++)
       {
-        $mod = getNodeModule($stack[$i]["atknodetype"]);
-        $node = getNodeType($stack[$i]["atknodetype"]);
-        $title = $ui->title($mod, $node, $stack[$i]["atkaction"]);
-        if ($i<count($stack)-1)
+        if(isset($stack[$i]["atknodetype"]))
         {
-          $res[]=array("url"=>session_url('dispatch.php?atklevel='.$i),
-                       "title"=>$title);
+          $mod = getNodeModule($stack[$i]["atknodetype"]);
+          $node = getNodeType($stack[$i]["atknodetype"]);
+          $title = $ui->title($mod, $node, $stack[$i]["atkaction"]);
+          if ($i<count($stack)-1)
+          {
+            $res[]=array("url"=>session_url('dispatch.php?atklevel='.$i),
+                         "title"=>$title);
+          }
+          else
+          {
+            $res[]=array("url"=>"", "title"=>$title);
+          }
         }
-        else
+        else 
         {
-          $res[]=array("url"=>"", "title"=>$title);
+          if ($i<count($stack)-1)
+          {
+            $res[]=array("url"=>session_url('dispatch.php?atklevel='.$i));
+          }
         }
       }
       return $res;
@@ -548,17 +572,23 @@
 
       $stack = $g_sessionData[$this->m_namespace]["stack"][atkStackID()];
       $res = array();
-
+      
       $stackcount = count($stack);
       for ($i=0;$i<$stackcount;$i++)
       {
         if (isset($stack[$i]["descriptor"]) || $i == ($stackcount-1))
         {
-          $node = &getNode($stack[$i]["atknodetype"]);
-          list($module, $nodename) = explode(".",$stack[$i]["atknodetype"]);
+          if($stack[$i]["atknodetype"] != "")
+          {
+            $node = &getNode($stack[$i]["atknodetype"]);
+            $module = getNodeModule($stack[$i]["atknodetype"]);
+            $nodename = getNodeType($stack[$i]["atknodetype"]);
+          }
+
           if (is_object($node))
           {
-            $txt = $node->text($nodename);
+            $ui = &atkinstance("atk.ui.atkui");
+            $txt = $ui->title($module, $nodename);
           }
           else
           {
@@ -586,7 +616,7 @@
       $stack = "";
 
       if (isset($g_sessionData[$this->m_namespace]["stack"][atkStackID()]))
-      	$stack = $g_sessionData[$this->m_namespace]["stack"][atkStackID()];
+        $stack = $g_sessionData[$this->m_namespace]["stack"][atkStackID()];
       if (!is_array($stack)) $prevlevelfromstack = 0;
       else $prevlevelfromstack = count($stack)-1;
 
@@ -628,6 +658,8 @@
      */
     function &getSession()
     {
+      if (!isset($_SESSION[atkconfig("identifier")]) || !is_array($_SESSION[atkconfig("identifier")]))
+        $_SESSION[atkconfig("identifier")] = array();
       return $_SESSION[atkconfig("identifier")];
     }
 
@@ -811,8 +843,8 @@
    */
   function isValidSessionId()
   {
-  	$name = atkconfig("identifier");
-  	$sessionid = "";
+    $name = atkconfig("identifier");
+    $sessionid = "";
     global ${$name};
 
     if (isset($_COOKIE[$name])&&$_COOKIE[$name])

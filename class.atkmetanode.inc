@@ -47,13 +47,14 @@ class atkMetaNode extends atkNode
    * - type        node type
    * - table       table name
    * - sequence    sequence name
-   * - db          database instance
+   * - db/database database name or instance
    * - policy      meta policy, the meta policy to use ((sub-)class atkMetaPolicy instance)
    * - handler     meta handler, the meta handler to use ((sub-)class atkMetaPolicy instance)   
    * - grammar     meta grammar, the meta grammar to use ((sub-)class atkMetaGrammar instance)
    * - flags       node flags
    * - descriptor  descriptor template for this node
    * - order       (default) order to sort fields
+   * - filter      filter
    * 
    * All of these variables can also be specified by creating a class variable with
    * the same name. If you do so for flags, and have to use multiple flags, use
@@ -83,6 +84,23 @@ class atkMetaNode extends atkNode
       $flags = $args["flags"]; 
 
     $this->atkNode($type, $flags);
+    
+    if (isset($this->db) && is_string($this->db))
+      $this->m_db = $this->db;
+    else if (isset($this->db) && is_object($this->db))
+      $this->m_db = &$this->db;
+    else if (array_key_exists("db", $args) && is_string($args["db"]))
+      $this->m_db = $args["db"];
+    else if (array_key_exists("db", $args) && is_object($args["db"]))
+      $this->m_db = &$args["db"];
+    else if (isset($this->database) && is_string($this->database))
+      $this->m_db = $this->database;
+    else if (isset($this->database) && is_object($this->database))
+      $this->m_db = &$this->database;
+    else if (array_key_exists("database", $args) && is_string($args["database"]))
+      $this->m_db = $args["database"];
+    else if (array_key_exists("database", $args) && is_object($args["database"]))
+      $this->m_db = &$args["database"];     
     
     if (isset($this->meta_policy))
       $policy = &$this->meta_policy;
@@ -120,12 +138,6 @@ class atkMetaNode extends atkNode
     else if (array_key_exists("sequence", $args)) 
       $this->m_seq = $args["sequence"];
     else $this->m_seq = $policy->getSequence();
-        
-    if (isset($this->db))
-      $this->m_db = &$this->db;
-    else if (array_key_exists("db", $args))
-      $this->m_db = &$args["db"];
-    else $this->m_db = &atkGetDb();  
     
     if (isset($this->descriptor))
       $this->setDescriptorTemplate($this->descriptor);
@@ -135,7 +147,12 @@ class atkMetaNode extends atkNode
     if (isset($this->order))
       $this->setOrder($this->order);
     else if (array_key_exists("order", $args))
-      $this->setOrder($args["order"]);      
+      $this->setOrder($args["order"]); 
+    
+    if (isset($this->filter))
+      $this->addFilter($this->filter);
+    else if (array_key_exists("filter", $args))
+      $this->addFilter($args["filter"]);       
 
     $this->applyMetaPolicy($this->m_metaPolicy);
   }
@@ -164,14 +181,6 @@ class atkMetaNode extends atkNode
     return atkMetaGrammar::defaultInstance($this);  
   }  
   
-  /**
-   * Returns the table.
-   */
-  function getTable()
-  {
-    return $this->m_table;
-  }
-
   /**
    * Returns the meta policy.
    */

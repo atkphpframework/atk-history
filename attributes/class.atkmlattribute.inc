@@ -130,10 +130,19 @@
      * @param $record array with values
      * @return piece of htmlcode
      */
-    function search($record="")
+    function search($record="", $extended=false, $fieldprefix="")
     {
+      // Evil bit to get searching in one-to-manys to work alongside
+      // searching on normal recordlists.
+      if (strstr($fieldprefix, "]["))
+        $id = "atksearch[".$fieldprefix.$this->formName();
+      else
+        $id = "atksearch$fieldprefix"."[".$this->formName();
+        
+      $id .= (!$this->isMlNode()?'_'.$languages[0]:'')."]";
+      
       $languages = $this->getLanguages();
-      $result= '<input type="text" name="atksearch['.$this->formName().(!$this->isMlNode()?'_'.$languages[0]:'').']"'.
+      $result= '<input type="text" name="'.$id.'"'.
                ' value="'.$record[$this->fieldName().(!$this->isMlNode()?'_'.$languages[0]:'')].'"'.
                ($this->m_searchsize > 0 ? ' size="'.$this->m_searchsize.'"' : '').
                ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>';
@@ -274,7 +283,7 @@
         {
           for ($i=0,$_i=count($languages);$i<$_i;$i++)
           {
-            $query->addField($this->fieldName().'_'.$languages[$i],escapeSQL($rec[$this->fieldName()][$languages[$i]]),"","",!$this->hasFlag(AF_NO_QUOTES));
+            $query->addField($this->fieldName().'_'.$languages[$i],$this->escapeSQL($rec[$this->fieldName()][$languages[$i]]),"","",!$this->hasFlag(AF_NO_QUOTES));
           }   
         }
         else
@@ -322,7 +331,7 @@
       $func = $searchmode."Condition";
       if (method_exists($query,$func))
       {
-        $searchcondition = $query->$func($table.".".$this->fieldName().(!$this->isMlNode()?'_'.$languages[0]:''),escapeSQL($value));
+        $searchcondition = $query->$func($table.".".$this->fieldName().(!$this->isMlNode()?'_'.$languages[0]:''),$this->escapeSQL($value));
       }
       else
       {

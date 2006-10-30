@@ -33,7 +33,10 @@
   
   // registered node listeners
   $g_nodeListeners = array();
-
+  
+  // registered node controllers
+  $g_nodeControllers = array();
+  
   /**
    * Gets the node type of a node string
    * @param $node the node string
@@ -173,7 +176,7 @@
     $module = getNodeModule($node);
     $type = getNodeType($node);
     $file = "class.$type.inc";
-
+    
     /* filename */
     if (empty($module))
     {
@@ -204,6 +207,7 @@
   function &newNode($node, $init=TRUE)
   {
     $module = getNodeModule($node);
+    
     if ($module=="")
     {
       // No module, use the default instance.
@@ -211,14 +215,19 @@
     }
     else
     {
-      $module_inst = &getModule(getNodeModule($node));
+      $module_inst = &getModule($module);
     }
-    if (is_object($module_inst) && method_exists($module_inst,'newNode'))
+    if (is_object($module_inst))
     {
-      $node = &$module_inst->newNode($node);
-      if ($init && $node != NULL) $node->init();
-      return $node;
+      if (method_exists($module_inst,'newNode'))
+      {
+        $node = &$module_inst->newNode($node);
+        if ($init && $node != NULL) $node->init();
+        return $node;
+      }
+      else atkerror("Module $module does not have newNode function (does it extend from atkModule?)");
     }
+    else atkerror("Module $module could not be instantiated.");
     return NULL;
   }
 
@@ -279,14 +288,14 @@
    * Returns a registered node action handler.
    * @param $node the name of the node
    * @param $action the node action
-   * @return handler functionname or
+   * @return handler functionname or object (is_subclass_of atkActionHandler) or
    *         NULL if no handler exists for the specified action
    */
   function getNodeHandler($node, $action)
   {
-    global $g_nodeHandler;
-    if (isset($g_nodeHandler[$node][$action])) return $g_nodeHandler[$node][$action];
-    elseif (isset($g_nodeHandler["*"][$action])) return $g_nodeHandler["*"][$action];
+    global $g_nodeHandlers;
+    if (isset($g_nodeHandlers[$node][$action])) return $g_nodeHandlers[$node][$action];
+    elseif (isset($g_nodeHandlers["*"][$action])) return $g_nodeHandlers["*"][$action];
     else return NULL;
   }
 
@@ -294,17 +303,46 @@
    * Registers a new node action handler.
    * @param $node the name of the node (* matches all)
    * @param $action the node action
-   * @param $handler handler functionname
+   * @param $handler handler functionname or object (is_subclass_of atkActionHandler)
    * @return true if there is no known handler
    */
   function registerNodeHandler($node, $action, $handler)
   {
-    global $g_nodeHandler;
-    if (isset($g_nodeHandler[$node][$action])) return FALSE;
-    else $g_nodeHandler[$node][$action] = $handler;
+    global $g_nodeHandlers;
+    if (isset($g_nodeHandlers[$node][$action])) return FALSE;
+    else $g_nodeHandlers[$node][$action] = &$handler;
     return TRUE;
   }
 
+  
+  /**
+   * Returns a registered node controller.
+   * @param $node the name of the node
+   * @return object (is_subclass_of atkController)
+   *         NULL if no handler exists for the specified action
+   */
+  function getNodeController($node)
+  {
+    global $g_nodeControllers;
+    if (isset($g_nodeControllers[$node])) return $g_nodeControllers[$node];
+    elseif (isset($g_nodeControllers["*"])) return $g_nodeControllers["*"];
+    else return NULL;
+  }
+
+  /**
+   * Registers a new node controller.
+   * @param $node the name of the node (* matches all)
+   * @param $handler handler objectname (is_subclass_of atkController)
+   * @return true if there is no known handler
+   */
+  function registerNodeController($node, $handler)
+  {
+    global $g_nodeControllers;
+    if (isset($g_nodeControllers[$node])) return FALSE;
+    else $g_nodeControllers[$node] = $handler;
+    return TRUE;
+  }
+  
   /**
    * Perform a member function on all active modules, and return the
    * collective result.

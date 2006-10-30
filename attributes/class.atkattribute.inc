@@ -300,6 +300,14 @@
   define("NOSTORE"   ,0);
 
   /**
+   * Do not load this attribute
+   *
+   * Storage type flag, used by the storageType() and related methods
+   */
+  define("NOLOAD"   ,0);
+
+
+  /**
    * Store before all other ('normal') attributes (?)
    *
    * Storage type flag, used by the storageType() and related methods
@@ -433,6 +441,13 @@
      * @var String
      */
     var $m_htmlid;
+
+    /**
+     * The label of the attribute.
+     * @access private
+     * @var String
+     */
+    var $m_label = "";
 
     /**
      * The searchmode for this attribute
@@ -586,7 +601,7 @@
      */
     function isEmpty($record)
     {
-      return (!isset($record[$this->fieldName()])||$record[$this->fieldName()]=="");
+      return (!isset($record[$this->fieldName()])||(is_string($record[$this->fieldName()]) && $record[$this->fieldName()]===""));
     }
 
     /**
@@ -605,7 +620,15 @@
     {
       if (is_array($rec)&&isset($rec[$this->fieldName()]))
       {
-        return escapeSQL($rec[$this->fieldName()]);
+        if(is_object($this->m_ownerInstance))
+        {
+          $db = &$this->m_ownerInstance->getDb();
+          return $db->escapeSQL($rec[$this->fieldName()]);
+        }
+        else
+        {
+          return escapeSQL($rec[$this->fieldName()]);
+        }
       }
       return NULL;
     }
@@ -676,7 +699,7 @@
       }
 
       $result = '<input type="text" id="'.$id.'" name="'.$id.'" class="atkattribute"'.
-                '" value="'.(isset($record[$this->fieldName()])?htmlspecialchars($record[$this->fieldName()]):"").'"'.
+                ' value="'.(isset($record[$this->fieldName()])?htmlspecialchars($record[$this->fieldName()]):"").'"'.
                 ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').
                 ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').' '.$onchange.' />';
 
@@ -782,6 +805,7 @@
         /* when adding, there's nothing to hide... */
         if ($mode=="edit" || ($mode=="add" && !$this->isEmpty($defaults)))
           $arr["hide"][] = $this->hide($defaults, $fieldprefix, $mode);
+
       }
 
       /* edit */
@@ -927,7 +951,18 @@
         }
 
         if (!hasFlag($flags, RL_NO_SEARCH) && $this->hasFlag(AF_SEARCHABLE))
-          $arr["search"][$key] = $this->search($atksearch,null,$fieldprefix);
+        {
+          $fn = $this->fieldName()."_search";
+          if (method_exists($this->m_ownerInstance, $fn))
+          {
+            $arr["search"][$key] = $this->m_ownerInstance->$fn($atksearch, false, $fieldprefix);
+          }
+          else
+          {
+            $arr["search"][$key] = $this->search($atksearch, false, $fieldprefix);
+          }
+          $arr["search"][$key].='<input type="hidden" name="atksearchmode['.$this->formName().']" value="'.$this->getSearchMode(false).'">';
+        }
       }
     }
 
@@ -1006,8 +1041,50 @@
       $result= '<input type="text" id="'.$id.'" class="'.get_class($this).'" name="'.$id.'" value="'.$value.'"'.
                 ($this->m_searchsize > 0 ? ' size="'.$this->m_searchsize.'"' : '').
                 ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>';
-
+                   
       return $result;
+    }
+           
+    /**
+     * Retrieve the default searchmode of an attribute
+     *
+     * @param boolean $extended Whether extended search is being used
+     * @return String the default searchmode for this attribute.
+     */
+    function getSearchMode($extended=false)
+    {
+      $searchmode = $this->m_ownerInstance->getSearchMode();
+      
+      if (is_array($searchmode))
+      {
+        return $searchmode[$this->fieldName()];
+      }
+      return $searchmode;
+    }
+
+    /**
+     * Creates a smart search condition for a given search value, and adds it
+     * to the query that will be used for performing the actual search.
+     *
+     * @param Integer  $id         The unique smart search criterium identifier.
+     * @param Integer  $nr         The element number in the path.
+     * @param Array    $path       The remaining attribute path.
+     * @param atkQuery $query      The query to which the condition will be added.
+     * @param String   $ownerAlias The owner table alias to use.
+     * @param Mixed    $value      The value the user has entered in the searchbox.
+     * @param String   $mode       The searchmode to use.
+     */
+    function smartSearchCondition($id, $nr, $path, &$query, $ownerAlias, $value, $mode)
+    {
+      // default implementation doesn't supported nested paths, this method
+      // should be overriden by relations etc. if they want to support this
+      if (count($path) > 0)
+      {
+        atk_var_dump($path, 'Invalid search path for '.$this->m_ownerInstance->atkNodeType().'#'.$this->fieldName().', ignoring criterium!');
+        return;
+      }
+
+      $this->searchCondition($query, $ownerAlias, $value, $mode);
     }
 
     /**
@@ -1024,6 +1101,13 @@
      */
     function searchCondition(&$query, $table, $value, $searchmode)
     {
+      /** @todo Move this to a higher level */
+      if (strpos($value, "*")!==false && strlen($value)>1)
+      {
+      	// auto wildcard detection
+      	$searchmode = "wildcard";
+      }
+
       $searchCondition = &$this->getSearchCondition($query, $table, $value, $searchmode);
       if ($searchCondition)
       {
@@ -1059,7 +1143,7 @@
       $func = $searchmode."Condition";
       if (method_exists($query,$func) && $value)
       {
-        return $query->$func($table.".".$this->fieldName(),escapeSQL($value));
+        return $query->$func($table.".".$this->fieldName(),$this->escapeSQL($value));
       }
       else
       {
@@ -1212,7 +1296,7 @@
     function fetchMeta($metadata)
     {
 
-      $attribname = $this->fieldName();
+      $attribname = strtolower($this->fieldName());
       // Only use meta info if size is not already set manual. (constructor or setAttribSize)
       // If both are set, use the smallest value.
       if (isset($metadata[$attribname]))
@@ -1460,7 +1544,12 @@
      */
     function label($record = array())
     {
-      return $this->text($this->fieldName());
+      return ($this->m_label!=""?$this->m_label:$this->text($this->fieldName()));
+    }
+
+    function setLabel($label)
+    {
+      $this->m_label = $label;
     }
 
     /**
@@ -1578,6 +1667,9 @@
      *                          record is loaded.
      *             ADDTOQUERY - addtoquery() must be called, so the attribute
      *                          can nest itself in the master query.
+     *             NOLOAD     - nor load(), nor addtoquery() should be
+     *                          called (attribute can not be loaded from the
+     *                          database)
      */
     function loadType($mode, $searching=false)
     {
@@ -1684,13 +1776,15 @@
     * Adds the needed searchbox(es) for this attribute to the fields array. This
     * method should only be called by the atkSearchHandler.
     *
-    * @param array     $fields   The array containing fields to use in the
-    *                            extended search
-    * @param atkNode   $node     The node where the field is in
-    * @param array     $record   A record containing default values to put
-    *                            into the search fields.
+    * @param array   $fields            The array containing fields to use in the
+    *                                   extended search
+    * @param atkNode $node              The node where the field is in
+    * @param array   $record            A record containing default values to put
+    *                                   into the search fields.
+    * @param array   $fieldprefix       search / mode field prefix
+    * @param array   $currentSearchMode current search mode
     */
-    function addToSearchformFields(&$fields, &$node, &$record, $fieldprefix = "")
+    function addToSearchformFields(&$fields, &$node, &$record, $fieldprefix = "", $currentSearchMode=array())
     {
       $field = array();
       $defaults = $record;
@@ -1700,12 +1794,11 @@
       $attribSearchModes = $this->getSearchModes();
       $searchModes = array_values(array_intersect($attribSearchModes, $dbSearchModes));
 
-
       // set "widget" value:
       $funcname = $this->m_name."_search";
 
       if (method_exists($node,$funcname))
-      $field["widget"] = $node->$funcname($defaults, $fieldprefix);
+      $field["widget"] = $node->$funcname($defaults, true, $fieldprefix);
       else
       {
         $field["widget"] = $this->search($defaults, true, $fieldprefix); // second param indicates extended search.
@@ -1718,17 +1811,17 @@
       // set "searchmode" value:
       if(count($searchModes)==1)
       {
-        $field["searchmode"] = '<input type="hidden" name="atksearchmode['.$this->m_name.']" value="'.$searchModes[0].'">'.atktext("search_".$searchModes[0]);
+        $field["searchmode"] = '<input type="hidden" name="atksearchmode'.$fieldprefix.'['.$this->m_name.']" value="'.$searchModes[0].'">'.atktext("search_".$searchModes[0]);
       }
       else if (count($searchModes)>1)
       {
-        $sel = '<select name="atksearchmode['.$this->m_name.']">';
+        $sel = '<select name="atksearchmode'.$fieldprefix.'['.$this->m_name.']">';
         foreach (array_values($searchModes) as $searchMode)
         {
           // if supported, we select the 'like' searchmode by default
           $selected="";
-          if ($node->m_postvars["atksearchmode"][$this->m_name]==$searchMode||
-          ((!is_array($node->m_postvars["atksearchmode"]) || $node->m_postvars["atksearchmode"][$this->m_name]=="")&&
+          if ($currentSearchMode[$this->m_name]==$searchMode||
+          ((!is_array($currentSearchMode) || $currentSearchMode[$this->m_name]=="")&&
           $searchMode=="substring")) $selected="selected";
           $sel.= '<option value="'.$searchMode.'" '.$selected.'>'.atktext("search_".$searchMode);
         }
@@ -1756,13 +1849,8 @@
 
     function extendedSort(&$columnConfig)
     {
-      $specificOptions = $this->sortOptions($columnConfig);
-      if ($specificOptions!="")
-      {
-        $res.= $specificOptions;
-      }
-      $res.= ' '.$this->sortOrder($columnConfig);
-      return $res;
+      $result = $this->sortOptions($columnConfig).' '.$this->sortOrder($columnConfig);
+      return $result;
     }
 
     /**
@@ -1825,12 +1913,41 @@
       return $this->m_ownerInstance->m_table.".".$this->fieldName();
     }
 
- /**
+    /**
      * Translate using the owner instance's module and type.
      */
     function text($string)
     {
-      return $this->m_ownerInstance->text($string, $this->getModule());
+      if (is_object($this->m_ownerInstance))
+        return $this->m_ownerInstance->text($string, $this->getModule());
+      else
+        return atktext($string, $this->getModule());
+    }
+    
+    /**
+     * Get database instance for this attribute. Will return the owner
+     * instance database instance unless the owner instance is not set
+     * in which case the default instance will be returned.
+     * 
+     * @return atkDb database instance
+     */
+    function &getDb()
+    {
+      if (is_object($this->m_ownerInstance))
+        return $this->m_ownerInstance->getDb();
+      else return atkGetDb();
+    }
+    
+    /**
+     * Escape string for use in a query.
+     * 
+     * @param string value value to escape
+     * @param boolean escape wildcards too?
+     */
+    function escapeSQL($value, $wildcards=false)
+    {
+      $db = &$this->getDb();
+      return $db->escapeSQL($value, $wildcards);
     }
   }
 ?>

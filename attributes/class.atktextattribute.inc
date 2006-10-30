@@ -139,16 +139,9 @@
      */
     function value2db($rec)
     {
-      if (is_object($this->m_ownerInstance))
-      {
-        $db = &$this->m_ownerInstance->getDb();
-      }
-      else
-      {
-        $db = &atkGetDb();
-      }
+      $db = &$this->getDb();
       if ($db->getType() != "oci9")
-        return escapeSQL($rec[$this->fieldName()]);
+        return $db->escapeSQL($rec[$this->fieldName()]);
       else
         return $rec[$this->fieldName()]; //CLOB in oci9 don't need quotes to be escaped EVIL HACK! THIS IS NOT ATKTEXTATTRIBUTE's PROBLEM!
     }

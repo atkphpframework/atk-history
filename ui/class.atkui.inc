@@ -75,13 +75,10 @@
     function renderAction($action, $vars)
     {
       // todo.. action specific templates
-      switch($action)
+      $tpl = "action_$action.tpl";
+      if ($this->m_theme->tplPath($tpl)=="") // no specific theme for this action
       {
-        case "view":
-          $tpl = "action_view.tpl";
-          break;
-        default:
-          $tpl = "action.tpl";
+        $tpl = "action.tpl";
       }
       return $this->render($tpl, $vars);
     }
@@ -98,7 +95,7 @@
 
     /**
      * Renders top template
-     * Deprecated, use renderBox($vars, "top")
+     * @deprecated Use renderBox($vars, "top") instead
      * @param array $vars the variables for the template
      */
     function renderTop($vars)
@@ -154,8 +151,10 @@
      * Uses smarty to render a template.
      * @param String $tplname the name of the template to render
      * @param array $vars     the variables with which to render the template
+     * @param String $module  the name of the module requesting to render a template
+     * @return String rendered template
      */
-    function render($tplname, $vars=array())
+    function render($tplname, $vars=array(), $module="")
     {
       // First clear any existing smarty var.
       $this->m_smarty->clear_all_assign();
@@ -167,15 +166,7 @@
 
       $this->m_smarty->assign($vars);
 
-      // if $tplname contains a full pathname, the template
-      // is rendered as is.
-      // If it's just a filename, we lookup the template in
-      // the theme directory.
-      if (strpos($tplname, "/")===false)
-      {
-        // lookup template in theme.
-        $tplname = $this->m_theme->tplPath($tplname);
-      }
+      $tplname = $this->templatePath($tplname, $module);
 
       // Smarty fetches templates relative from the template_dir setting.
       // Since that is an application directory, and themes reside in
@@ -195,17 +186,41 @@
     }
 
     /**
+     * This function returns a complete themed path for a given template.
+     * This is a convenience method, which calls the tplPath method on
+     * the theme instance. However, if the template name contains a '/',
+     * we assume the full template path is already given and we simply
+     * return it.
+     *
+     * @param String $template  The filename (without path) of the template
+     *                          for which you want to complete the path.
+     * @param String $module    The name of the module requesting to render a template
+     * @return String the template path
+     */
+    function templatePath($template, $module="")
+    {
+      if (strpos($template, "/")===false)
+      {
+        // lookup template in theme.
+        $template = $this->m_theme->tplPath($template, $module);
+      }
+
+      return $template;
+    }
+
+    /**
      * This function returns a complete themed path for a given stylesheet.
      * This is a convenience method, which calls the stylePath method on
      * the theme instance.
      *
      * @param String $style The filename (without path) of the stylesheet for
      *                      which you want to complete the path.
+     * @param String $module  the name of the module requesting the style path
      * @return String the path of the style
      */
-    function stylePath($style)
+    function stylePath($style, $module="")
     {
-      return $this->m_theme->stylePath($style);
+      return $this->m_theme->stylePath($style, $module);
     }
 
     /**
@@ -219,14 +234,24 @@
      *                          if we couldn't find a specific title
      * @return String the title for the action
      */
-    function title($module, $nodetype, $action, $actiononly=false)
+    function title($module, $nodetype, $action=NULL, $actiononly=false)
     {
-      $keys = array('title_'.$module.'_'.$nodetype.'_'.$action,
-                    'title_'.$nodetype.'_'.$action);
-
+      if ($module == NULL || $nodetype == NULL) return "";
       $node = &atkGetNode($module.'.'.$nodetype);
+      if ($node == NULL) return "";
 
-      $label = $node->text($keys, NULL, "", "", true);
+      if ($action != NULL)
+      {
+        $keys = array('title_'.$module.'_'.$nodetype.'_'.$action,
+                      'title_'.$nodetype.'_'.$action);
+
+        $label = $node->text($keys, NULL, "", "", true);
+      }
+      else
+      {
+        $label = "";
+      }
+
       if ($label=="")
       {
         if ($actiononly)
@@ -235,7 +260,12 @@
         }
         else
         {
-          $label = $node->text($nodetype)." - ".atktext($action, "atk");
+          $keys = array('title_'.$module.'_'.$nodetype, 'title_'.$nodetype);
+          $label = $node->text($keys, NULL, "", "", true);
+          if ($label == "")
+            $label = $node->text($nodetype);
+          if ($action != NULL)
+            $label .= " - ".atktext($action, "atk");
         }
       }
       return $label;

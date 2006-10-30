@@ -61,8 +61,11 @@
      * @param array $record The record to display
      * @return String
      */
-    function display($record)
+    function display($record, $mode="")
     {
+      if ($mode == "csv")
+        return parent::display($record, $mode);
+      
       if ($record[$this->fieldName()]!="")
       {
         return '<a href="mailto:'.$record[$this->fieldName()].'">'.$record[$this->fieldName()].'</a>';
@@ -124,8 +127,8 @@
       if(!empty($hostName))
       {
         $recType = escapeshellarg($recType);
-        $hostName = escapeshellarg($hostName);
-        exec("nslookup -type=$recType $hostName", $result);
+        $hostNameArg = escapeshellarg($hostName);
+        exec("nslookup -type=$recType $hostNameArg", $result);
         // check each line to find the one that starts with the host
         // name. If it exists then the function succeeded.
         foreach ($result as $line)

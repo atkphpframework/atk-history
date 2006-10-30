@@ -34,8 +34,8 @@
     /**
      * The action method
      */
-    function action_admin()
-    {
+    function action_admin($record=NULL)
+    {      
       $page = &$this->getPage();
 
       $res = array();
@@ -43,7 +43,7 @@
       {
         if (!$this->m_node->hasFlag(NF_ADD_LINK)) // otherwise, in adminPage, an add link will be added.
         {
-          $res[]=$this->invoke("addPage");
+          $res[]=$this->invoke("addPage", $record);
         }
       }
       $res[] = $this->invoke("adminPage");
@@ -58,12 +58,12 @@
      *
      * @return String A box containing the add page.
      */
-    function addPage()
+    function addPage($record=NULL)
     {
       // Reuse the atkAddHandler for the addPage.
-      $handler = atknew("atk.handlers.atkaddhandler");
+      $handler = $this->m_node->getHandler("add");
       $handler->setNode($this->m_node);
-      return $handler->invoke("addPage");
+      return $handler->invoke("addPage", $record);
     }
 
     /**
@@ -78,6 +78,32 @@
      *                which is added later.
      */
     function adminPage($actions="")
+    {
+      $ui = &$this->getUi();
+      if (is_object($ui))
+      {
+        $output = $ui->renderBox(array("title"=>$this->m_node->actionTitle('admin'),
+                                    "content"=>$this->renderAdminList()));
+        if ($this->m_node->hasFlag(NF_CACHE_RECORDLIST))
+        {
+          $recordlistcache = $this->getRecordlistCache();
+          $recordlistcache->writeCache($output, $recordlist->m_actionloader);
+        }
+      }
+      else
+      {
+        atkerror("Failed to create ui object");
+      }
+      return $output;
+    }
+
+    /**
+     * Renders the recordlist for the admin mode
+     *
+     * @param Array $actions An array with the actions for the admin mode
+     * @return String The HTML for the admin recordlist
+     */
+    function renderAdminList($actions="")
     {
       $node = &$this->m_node;
       $node->addStyle("style.css");
@@ -96,6 +122,7 @@
       }
 
       $ui = &$this->getUi();
+      $output = "";
       if (is_object($ui))
       {
         $params = array();
@@ -107,7 +134,8 @@
 
         $columnConfig = &$node->getColumnConfig();
 
-        $recordset = $node->selectDb(@$node->m_postvars['atkfilter'],
+        $atkfilter = atkArrayNvl($node->m_postvars, 'atkfilter', "");
+        $recordset = $node->selectDb($atkfilter,
                                      $columnConfig->getOrderByStatement(),
                                      array("offset" => $node->m_postvars['atkstartat'], "limit" => $node->m_postvars['atklimit']),
                                      $node->m_listExcludes,
@@ -118,7 +146,7 @@
         if(count($recordset) == 0 && $node->m_postvars['atkstartat'] != 0)
         {
           $node->m_postvars['atkstartat'] = 0;
-          $recordset = $node->selectDb($node->m_postvars['atkfilter'],
+          $recordset = $node->selectDb($atkfilter,
                                      $node->m_postvars['atkorderby'],
                                      array("offset" => $node->m_postvars['atkstartat'], "limit" => $node->m_postvars['atklimit']),
                                      $node->m_listExcludes,
@@ -171,15 +199,7 @@
 
         $params["footer"] = $this->invoke("adminFooter");
 
-        $output = $ui->renderList("admin", $params);
-
-        $output = $ui->renderBox(array("title"=>$node->actionTitle('admin'),
-                                    "content"=>$output));
-        if ($this->m_node->hasFlag(NF_CACHE_RECORDLIST)) $recordlistcache->writeCache($output, $recordlist->m_actionloader);
-      }
-      else
-      {
-        atkerror("Failed to create ui object");
+        $output.= $ui->renderList("admin", $params);
       }
       return $output;
     }
@@ -237,13 +257,8 @@
       if ($this->m_node->hasFlag(NF_ADD_LINK) && !$this->m_node->hasFlag(NF_NO_ADD) && $this->m_node->allowed("add"))
       {
         $addurl = $_SERVER["PHP_SELF"].'?atknodetype='.$this->m_node->atknodetype().'&atkaction=add';
-        $lngkey = "txt_link_".getNodeType($this->m_node->m_type)."_add";
-        if (isset($GLOBALS[$lngkey]))
-        {
-          // specific text
-          $label = atktext("link_".getNodeType($this->m_node->m_type)."_add");
-        }
-        else
+        $label = atktext("link_".$this->m_node->m_type."_add", $this->m_node->m_module, "", "", "", true);
+        if (empty($label))
         {
           // generic text
           $label = atktext(getNodeType($this->m_node->m_type),$this->m_node->m_module,$this->m_node->m_type)." ".atktext("add","atk","");

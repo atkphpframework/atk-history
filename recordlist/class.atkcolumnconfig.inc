@@ -47,7 +47,7 @@
 
     function setNode(&$node)
     {
-      $this->m_node = $node;
+      $this->m_node = &$node;
     }
 
     function &getConfig(&$node)
@@ -111,14 +111,13 @@
     {
       foreach (array_keys($this->m_node->m_attribIndexList) as $i)
       {
-        if (isset($this->m_attribIndexList[$i]["name"]) && ($this->m_attribIndexList[$i]["name"]!=""))
+        if (isset($this->m_node->m_attribIndexList[$i]["name"]) && ($this->m_node->m_attribIndexList[$i]["name"]!=""))
         {
-          $this->m_colcfg[$this->m_attribIndexList[$i]["name"]] = array();
+          $this->m_colcfg[$this->m_node->m_attribIndexList[$i]["name"]] = array();
         }
       }
+      if($this->m_node->getOrder()<>"") $this->_addOrderByStatement($this->m_node->getOrder());
     }
-
-
 
     function hideCol($attribute)
     {
@@ -153,9 +152,8 @@
       {
         foreach($this->m_colcfg as $fld=>$config)
         {
-          if ($config["sortorder"]>0)
+          if (atkArrayNvl($config, "sortorder") > 0)
           {
-            //var_dump($this->m_colcfg[$fld]["sortorder"]);
             $this->m_colcfg[$fld]["sortorder"] = (int)($this->m_colcfg[$fld]["sortorder"])+1;
           }
         }
@@ -172,7 +170,7 @@
       $i=1;
       foreach ($this->m_colcfg as $field=>$config)
       {
-        if ($this->m_colcfg[$field]["sortorder"]>0)
+        if (array_key_exists("sortorder", $this->m_colcfg[$field]) && ($this->m_colcfg[$field]["sortorder"]>0))
         {
           $this->m_colcfg[$field]["sortorder"] = $i;
           $i++;
@@ -185,7 +183,7 @@
       $min = 999;
       foreach ($this->m_colcfg as $field=>$config)
       {
-        if ($config["sortorder"]>0)
+        if (atkArrayNvl($config, "sortorder")>0)
         {
           $min = min($min, $config["sortorder"]);
         }
@@ -201,7 +199,7 @@
 
       foreach($this->m_colcfg as $field=>$config)
       {
-        if ($config["sortorder"]>0 && is_object($this->m_node->m_attribList[$field]))
+        if (atkArrayNvl($config, "sortorder", 0)>0 && is_object($this->m_node->m_attribList[$field]))
         {
           $direction = ($config["direction"]=="desc"?" DESC":"");
           $res = $this->m_node->m_attribList[$field]->getOrderByStatement().$direction;
@@ -214,7 +212,6 @@
     function getOrderFields()
     {
       $result = array();
-
       foreach($this->m_colcfg as $field=>$config)
       {
         if (is_object($this->m_node->m_attribList[$field]))
@@ -273,38 +270,7 @@
         $this->m_custom_atkorderby = $ATK_VARS["atkorderby"];
 
         // try to parse..
-        $elems = explode(" ", $ATK_VARS["atkorderby"]);
-        $lastattr="";
-        foreach ($elems as $elem)
-        {
-          if (is_object($this->m_node->m_attribList[$elem]))
-          {
-            // attribute reference
-            $lastattr=$elem;
-            $this->addOrderByField($elem, "asc");
-          }
-          else if (strtolower($elem)=="asc"||strtolower($elem)=="desc")
-          {
-            // direction modifier for previous statement
-            if ($lastattr!="")
-            {
-              $this->setSortDirection($lastattr, strtolower($elem));
-            }
-          }
-          else
-          {
-            // custom order by
-            $lastattr="";
-            list($table, $field) = explode(".", $elem);
-
-            //echo $table."-".$field;
-            if (($table == $this->m_node->m_type) && is_object($this->m_node->m_attribList[$field]))
-            {
-              //echo 'yes';
-              $this->addOrderByField($field, "asc");
-            }
-          }
-        }
+        $this->_addOrderByStatement($ATK_VARS["atkorderby"]);
       }
 
       // Cleanup structure
@@ -314,19 +280,19 @@
 
     function getOrder($attribute)
     {
-      return $this->m_colcfg[$attribute]["sortorder"];
+      return isset($this->m_colcfg[$attribute]["sortorder"]) ? $this->m_colcfg[$attribute]["sortorder"] : 0;
     }
 
     function getDirection($attribute)
     {
-      return ($this->m_colcfg[$attribute]["direction"]!=""?$this->m_colcfg[$attribute]["direction"]:"asc");
+      return (array_key_exists("direction", $this->m_colcfg[$attribute])?$this->m_colcfg[$attribute]["direction"]:"asc");
     }
 
     function getAttributeByOrder($order)
     {
       foreach($this->m_colcfg as $attrib=>$info)
       {
-        if ($info["sortorder"]==$order)
+        if (atkArrayNvl($info, "sortorder", 0)==$order)
         {
           return $attrib;
         }
@@ -339,7 +305,7 @@
       $total = 0;
       foreach ($this->m_colcfg as $attrib=>$info)
       {
-        if ($info["sortorder"]>0) $total++;
+        if (atkArrayNvl($info, "sortorder", 0)>0) $total++;
       }
       return $total;
     }
@@ -348,7 +314,7 @@
     {
       foreach($this->m_colcfg as $attrib=>$info)
       {
-        if ($info["sortorder"]==$order) return $this->getDirection($attrib);
+        if (atkArrayNvl($info, "sortorder", 0)==$order) return $this->getDirection($attrib);
       }
       return "asc";
     }
@@ -369,14 +335,14 @@
 
     function hasSubTotal($attribute)
     {
-      return ($this->m_colcfg[$attribute]["subtotal"]==1);
+      return ((isset($this->m_colcfg[$attribute]["subtotal"]) ? $this->m_colcfg[$attribute]["subtotal"] : 0)==1);
     }
 
     function hasSubTotalByOrder($order)
     {
       foreach($this->m_colcfg as $attrib=>$info)
       {
-        if ($info["sortorder"]==$order) return $this->hasSubTotal($attrib);
+        if (atkArrayNvl($info, "sortorder", 0)==$order) return $this->hasSubTotal($attrib);
       }
       return false;
     }
@@ -388,7 +354,7 @@
 
     function _compareSortAttrs($a, $b)
     {
-      return ($a["sortorder"]<=$b["sortorder"]?-1:1);
+      return (atkArrayNvl($a, "sortorder", 0) <= atkArrayNvl($b, "sortorder", 0) ? -1 : 1);
     }
 
     function totalizable()
@@ -420,6 +386,42 @@
         if ($this->hasSubTotal($attribute)) $result[]=$attribute;
       }
       return $result;
+    }
+
+    function _addOrderByStatement($orderby)
+    {
+      $elems = explode(" ", $orderby);
+      $lastattr="";
+      foreach ($elems as $elem)
+      {
+        if (atkArrayNvl($this->m_node->m_attribList,$elem))
+        {
+          // attribute reference
+          $lastattr=$elem;
+          $this->addOrderByField($elem, "asc");
+        }
+        else if (strtolower($elem)=="asc"||strtolower($elem)=="desc")
+        {
+          // direction modifier for previous statement
+          if ($lastattr!="")
+          {
+            $this->setSortDirection($lastattr, strtolower($elem));
+          }
+        }
+        else
+        {
+          // custom order by
+          $lastattr="";
+          list($table, $field) = explode(".", $elem);
+
+          //echo $table."-".$field;
+          if (($table == $this->m_node->m_type) && is_object($this->m_node->m_attribList[$field]))
+          {
+            //echo 'yes';
+            $this->addOrderByField($field, "asc");
+          }
+        }
+      }
     }
 
   }

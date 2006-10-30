@@ -1,25 +1,23 @@
 Author
 ------
-Ivo Jansch         <ivo@achievo.org>
+Ivo Jansch             <ivo@achievo.org>
 
 
 Additional Development
 ----------------------
-Sandy Pleyte       <sandy@achievo.org>
-Peter Verhage      <peter@achievo.org>
-Wim Kosten         <wim@ibuildings.nl>
-Maurice Maas       <maurice@ibuildings.nl>
-Martin Roest       <martin@ibuildings.nl>
-Lineke Willems     <lineke@achievo.org>
-Ludo Beumer        <ludo@ibuildings.nl>
-Boy Baukema        <boy@ibuildings.nl>
-Dennis-Jan Broerse <dennisjan@ibuildings.nl>
+Sandy Pleyte           <sandy@achievo.org>
+Peter Verhage          <peter@achievo.org>
+Wim Kosten             <wim@ibuildings.nl>
+Maurice Maas           <maurice@ibuildings.nl>
+Martin Roest           <martin@ibuildings.nl>
+Lineke Willems         <lineke@achievo.org>
+Boy Baukema            <boy@ibuildings.nl>
 
 
 Marketing
 ----------
-Jeroen Stephan       <jeroen@ibuildings.nl>
-Jasper van der Hulst <jasper@ibuildings.nl>
+Jeroen Stephan         <jeroen@ibuildings.nl>
+Jasper van der Hulst   <jasper@ibuildings.nl>
 
 
 Sponsors
@@ -49,6 +47,11 @@ development of new features.
 * For Dataroomservices, The Netherlands (http://www.dataroomservices.nl), we
   added PDA detection support.
 
+* For Zicht Nieuwe Media Ontwerpers, The Netherlands (http://www.zicht.nl), we
+  added the atkShuttleRelation, enhanced the atkFckAttribute and added the
+  autonumbering feature to atkFileAttribute. Zicht also sponsored a large part
+  of the atkMlWrapper functionality.
+
 To become a sponsor, please read http://www.achievo.org/support/sponsor.
 
 
@@ -63,6 +66,7 @@ Braz. Portuguese: Armando M. Baratti   <ambaratti@aduaneiras.com.br>
                   Wanderlei Antonio Cavassin <cavassin@conectiva.com.br>
                   Roberto Berto        <roberto.berto@gmail.com>
                   Elton Luís Minetto   <elm@unochapeco.edu.br>
+                  Carlisson Galdino    <carlisson@cge.al.gov.br>
 Catalan         : Llu?s Torrent        <lluis6a@teleline.es>
 Chinese         : Chin-Tang Chang      <ictchang@gate.sinica.edu.tw>
 Czech           : Jakub Kahovec        <jakub.kahovec@newton.cz>
@@ -90,6 +94,7 @@ German          : Bastian Kleineidam   <bastian.kleineidam@triplex.de>
                   Stephan Reichhelm    <reichhelm@grit.de>
                   Christian Veron      <veronc@schneiderkreuznach.com>
                   Udo Werner           <udo_werner@gmx.net>
+Greek           : Velissariou Costas   <velissariouc@gmail.com>
 Hungarian       : Miklos Bagi Jr.      <bagim@muszakikiado.hu>
 Italian         : Marco De Toni        <marco.detoni@dedalomedia.it>
                   Luca Pescatore       <l.pescatore@network.it>
@@ -144,12 +149,6 @@ Ber Dohmen <info@ibuildings.nl>
   Ber developed the DHTML menu, and created a menu abstraction layer,
   during an internship at ibuildings.nl.
 
-Boy Baukema <info@ibuildings.nl>
-
-  Boy revised internationalization features, to improve overall
-  application performance through dynamic includes, during an internship
-  at ibuildings.nl.
-
 Mark Baaijens <mark@ibuildings.nl>
 
   Mark added the atkSecureRelation (Privacy Enhancing Technology)
@@ -162,7 +161,8 @@ Yury Golovnya <YGolovnya@kyiv.utel.com.ua>
 Guido van Biemen <guido@ibuildings.nl>
 
   Guido, among other things, integrated the TinyButStrong Open Office
-  template engine in ATK.
+  template engine in ATK, made ATK largely notice free and fixed a significant
+  amount of bugs.
 
 
 Theme Designers
@@ -170,7 +170,8 @@ Theme Designers
 'outlook'   Paul Verhoeff   <paul@ibuildings.nl>
 'win2k'     Markus Schubert <achievo@schubert24.com>
 'moronic'   Sandy Pleyte    <sandy@achievo.org>
-  
+'macoslike' Marcel Visscher <m.visscher@promez.nl>
+
 
 Other Contributors
 ------------------
@@ -199,7 +200,6 @@ Arnold Cano                           <arnoldc@mcmservice.com>
 Danny Peeters                         <danny@ibuildings.nl>
 Alberto Galanti                       <alberto@officinadigitale.it>
 Bas de Nooijer                        <bas@ibuildings.nl>
-Guido van Biemen                      <guido@ibuildings.nl>
 Tjeerd Bijlsma                        <tjeerd@ibuildings.nl>
 Przemek Piotrowski                    <przemek.piotrowski@nic.com.pl>
 Olav B. Lygre                         <olav@lygre.no>
@@ -210,6 +210,15 @@ Nico de Boer                          <nico@ibuildings.nl>
 Klaus ?                               <Dauerwaldweg@yahoo.com>
 Gabriel Achtig                        <gabilan@gmail.com>
 Christian Hudson [ChristianH]         <chrish@apstat.com>
+Ludo Beumer                           <ludo@ibuildings.nl>
+Dennis-Jan Broerse                    <dennisjan@ibuildings.nl>
+Patrick van der Velden                <patrick@ibuildings.nl>
+Kevin L. Winmoe [KevinLW]             <kevinlwinmoe@yahoo.com>
+Jorge Garifuna [JorgeG]               <info@GariDigital.com>
+Fabio Saitta                          <fabio@saitta.it>
+Jeroen van Sluijs                     <jeroenvs@ibuildings.nl>
+Bart Helms                            <bart@ibuildings.nl>
+Rainer Glaschick [RainerG]            <rgpb@online.de>
 
 Names between [] are the names they are refered by in the CHANGES file. (If
 different from their first name).

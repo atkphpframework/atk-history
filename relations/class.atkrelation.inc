@@ -105,7 +105,7 @@
      */
     function createDestination()
     {
-      if ($this->m_destInstance == "")
+      if (!is_object($this->m_destInstance))
       {
         $cache_id = $this->m_owner.".".$this->m_name;
         $this->m_destInstance = &getNode($this->m_destination, true, $cache_id);
@@ -118,10 +118,18 @@
 	        return false;
 	      }
 
-        if ($this->hasFlag(AF_NO_FILTER)) $this->m_destInstance->m_flags |= NF_NO_FILTER;
+        if ($this->hasFlag(AF_NO_FILTER)) 
+          $this->m_destInstance->m_flags |= NF_NO_FILTER;
+          
         foreach (array_keys($this->m_destInstance->m_attribList) as $key)
         {
           $attribute = &$this->m_destInstance->m_attribList[$key];
+          
+          if (count($attribute->m_tabs) == 1 && $attribute->m_tabs[0] == "default")
+          {
+            $attribute->setTabs($this->m_tabs);
+          }
+          
           if (is_subclass_of($attribute, "atkrelation") && is_object($this->m_ownerInstance) && $attribute->m_destination == $this->m_ownerInstance->atkNodeType())
             $attribute->m_destInstance = &$this->m_ownerInstance;
         }
@@ -234,6 +242,23 @@
       // Return the translation
       return $label;
     }
+    
+    /**
+     * Parses the destination filter
+     * 
+     * @param $destfilter sting filter to parse
+     * @param $record the current record
+     * @return $filter string filter.
+     */
+    function parseFilter($destFilter,$record)
+    {
+      if($destFilter!="")
+      {
+        atkimport("atk.utils.atkstringparser");
+        $parser = new atkStringParser($destFilter);
+        return $parser->parse($record);
+      }
+      return "";
+    }
   }
-
 ?>

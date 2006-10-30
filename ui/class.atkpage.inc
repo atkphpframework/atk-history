@@ -130,6 +130,15 @@
     }
 
     /**
+     * Return all javascript files
+     *
+     * @return array contain file paths
+     */
+    function getScripts()
+    {
+      return $this->m_scriptfiles;
+    }
+    /**
      * Register a javascript code statement which will be rendered in the
      * header.
      *
@@ -163,6 +172,20 @@
    {
      if (!in_array($code, $this->m_loadscripts)) $this->m_loadscripts[] = $code;
    }
+   
+   /**
+    * Return all javascript codes in an array
+    *
+    * @return array
+    */
+   function getScriptCodes()
+   {
+     $scriptCodes = $this->m_scriptcode;
+     $scriptCodes[] = $this->_getGlobalSubmitScriptCode();
+     $scriptCodes[] = $this->_getGlobalLoadScriptCode();
+     
+     return $scriptCodes;
+   }
 
     /**
      * Register a Cascading Style Sheet.
@@ -170,13 +193,32 @@
      * This method has a duplicate check. Calling it with the same stylesheet
      * more than once, will still result in only one single include of the
      * stylesheet.
-     * @param String $file The (relative path and) filename of the stylesheet.
+     * @param String $file  The (relative path and) filename of the stylesheet.
+     * @param String $media The stylesheet media (defaults to 'all').
      */
-    function register_style($file)
+    function register_style($file, $media='all')
     {
-      if (!in_array($file, $this->m_stylesheets)) $this->m_stylesheets[] = $file;
+      if (empty($media))
+      {
+        $media = 'all';
+      }
+
+      if (!array_key_exists($file, $this->m_stylesheets))
+      {
+        $this->m_stylesheets[$file] = $media;
+      }
     }
 
+    /**
+     * Return all stylesheet files
+     *
+     * @return array contain file paths
+     */
+    function getStyles()
+    {
+      return $this->m_stylesheets;
+    }
+    
     /**
      * Register Cascading Style Sheet fragment that will be included in the
      * page header.
@@ -187,7 +229,17 @@
      {
        if (!in_array($code, $this->m_stylecode)) $this->m_stylecode[] = $code;
      }
-
+     
+    /**
+     * Return all style codes
+     *
+     * @return array
+     */
+     function getStyleCodes()
+     {
+       return $this->m_stylecode;
+     }
+     
      /**
       * Register hidden variables. These will be accessible to javascript and DHTML functions/scripts
       * but will not be shown to the user unless he/she has a very, very old browser
@@ -196,10 +248,10 @@
       */
      function register_hiddenvars($hiddenvars)
      {
-     	 foreach ($hiddenvars as $hiddenvarname => $hiddenvarvalue)
-     	 {
-     	 	 $this->m_hiddenvars[$hiddenvarname] = $hiddenvarvalue;
-     	 }
+       foreach ($hiddenvars as $hiddenvarname => $hiddenvarvalue)
+       {
+         $this->m_hiddenvars[$hiddenvarname] = $hiddenvarvalue;
+       }
      }
 
     /**
@@ -221,18 +273,13 @@
       if ($extra_header != "") $res.= $extra_header."\n";
 
       $this->addScripts($res);
+      $this->addStyles($res);
 
-      for ($i = 0; $i < count($this->m_stylesheets); $i++)
-        $res.='  <link href="'.$this->m_stylesheets[$i].'" rel="stylesheet" type="text/css">'."\n";
-
-      for ($i = 0; $i < count($this->m_stylecode); $i++)
-	      $res.= '<style> '.$this->m_stylecode[$i].' </style>'."\n";
-
-	    $favico = atkconfig("defaultfavico");
+      $favico = atkconfig("defaultfavico");
       if ($favico!="")
       {
-        $res.= '<link rel="icon" href="'.$favico.'" type="image/x-icon">
-                <link rel="shortcut icon" href="'.$favico.'" type="image/x-icon">'."\n";
+        $res.= '  <link rel="icon" href="'.$favico.'" type="image/x-icon">'."\n";
+        $res.= '  <link rel="shortcut icon" href="'.$favico.'" type="image/x-icon">'."\n";
       }
 
       $res.="</head>\n";
@@ -241,19 +288,52 @@
 
     /**
      * Adds javascripts from the member variables to HTML output
-     * @param String $res The HTML output
+     * @param String $res Reference to the HTML output
      */
     function addScripts(&$res)
-    {
+    {   
+      $res = "";
+        
       for ($i = 0; $i < count($this->m_scriptfiles); $i++)
       {
         $res.='  <script type="text/javascript" language="JavaScript" src="'.$this->m_scriptfiles[$i].'"></script>'."\n";
       }
 
-      $res.="  <script type=\"text/javascript\">
-  function globalSubmit(form)
-  {
-     var retval = true;\n";
+      $res.="  <script type=\"text/javascript\">";
+      
+      $res.= $this->_getGlobalSubmitScriptCode();
+      $res.= $this->_getGlobalLoadScriptCode();
+
+      // javascript code.
+      for ($i=0, $_i=count($this->m_scriptcode); $i<$_i; $i++)     
+      {
+        $res.= $this->m_scriptcode[$i]."\n";
+      }
+
+      $res.= "  </script>\n\n";
+    }
+    
+    function _getGlobalLoadScriptCode()
+    {
+      $res = "";
+      if (count($this->m_loadscripts))
+      {
+        $res.="  function globalLoad()
+        {\n";
+        for ($i=0, $_i=count($this->m_loadscripts); $i<$_i; $i++)
+        {
+          $res.= '    '.$this->m_loadscripts[$i]."\n";
+        }
+        $res.="  }\n";
+      }
+      return $res;
+    }
+    
+    function _getGlobalSubmitScriptCode()
+    {      
+      $res = "\nfunction globalSubmit(form)
+      {
+         var retval = true;\n";
 
       for ($i=0, $_i = count($this->m_submitscripts); $i<$_i; $i++)
       {
@@ -262,29 +342,26 @@
       }
 
       $res.="    return retval;
-   }\n";
-
-      if (count($this->m_loadscripts))
-      {
-        $res.="  function globalLoad()
-  {\n";
-        for ($i=0, $_i=count($this->m_loadscripts); $i<$_i; $i++)
-        {
-          $res.= $this->m_loadscripts[$i]."\n";
-        }
-        $res.="  }\n";
-      }
-
-      // javascript code.
-      for ($i=0, $_i=count($this->m_scriptcode); $i<$_i; $i++)
-      {
-        $res.= $this->m_scriptcode[$i]."\n";
-      }
-
-      $res.= "  </script>\n\n";
+      }\n";
+      return $res;
     }
 
+    /**
+     * Add stylesheets and stylecodes to the HMTL output
+     *
+     * @param String $res Reference to the HTML output
+     */
+    function addStyles(&$res)
+    {
+      foreach ($this->m_stylesheets as $file => $media)
+      {
+        $res.='  <link href="'.$file.'" rel="stylesheet" type="text/css" media="'.$media.'" />'."\n";
+      }
 
+      for ($i = 0; $i < count($this->m_stylecode); $i++)
+        $res.= '<style type="text/css"> '.$this->m_stylecode[$i].' </style>'."\n";
+    }
+    
     /**
      * Add content to the page.
      * @param String $content The content to add to the page.
@@ -300,7 +377,7 @@
      * @return String The HTML body, including <body> and </body> tags.
      */
     function body($extraprops="")
-    {
+    {      
       global $ATK_VARS;
 
       $res = '<body ';
@@ -338,6 +415,7 @@
       $page = '';
       if(hasFlag($flags,HTML_DOCTYPE)) $page.=atkconfig("doctype");
       $page.= "\n<html>\n";
+      
       if(hasFlag($flags,HTML_HEADER)) $page.= $this->head($title, $extra_header);
       if (hasFlag($flags,HTML_BODY)) $page.= $this->body($extrabodyprops);
       $page.= $this->m_content."\n";
@@ -356,16 +434,16 @@
     function renderHiddenVars()
     {
       $page = "";
-    	if ($this->m_hiddenvars)
-    	{
-    	  $page.= "\n".'<div id="hiddenvars" style="display: none">';
-    		foreach ($this->m_hiddenvars as $hiddenvarname => $hiddenvarvalue)
-    		{
-        	$page.="\n <span id='$hiddenvarname'>$hiddenvarvalue</span>";
-    		}
-    		$page.="\n</div>";
-    	}
-    	return $page;
+      if ($this->m_hiddenvars)
+      {
+        $page.= "\n".'<div id="hiddenvars" style="display: none">';
+        foreach ($this->m_hiddenvars as $hiddenvarname => $hiddenvarvalue)
+        {
+          $page.="\n <span id='$hiddenvarname'>$hiddenvarvalue</span>";
+        }
+        $page.="\n</div>";
+      }
+      return $page;
     }
 
     /**
@@ -374,12 +452,10 @@
      */
     function atkPage()
     {
-      // Load default app-level stylesheet.
-      $this->register_style((file_exists(atkconfig("atkroot")."./style.css") ? "." : atkconfig("atkroot")."atk").'/style.css');
-
+      global $ATK_VARS;
       /** @todo: Move this to the places where the tabscript is registered. */
       // Load default tab show script.
-      $this->register_loadscript('if ( window.showTab ) {showTab(\'' . (isset($ATK_VARS['atktab']) ? $res.=$ATK_VARS['atktab'] : '') . '\');}');
+      $this->register_loadscript('if ( window.showTab ) {showTab(\''.(isset($ATK_VARS['atktab'])?$ATK_VARS['atktab']:'').'\');}');
     }
 
     /**

@@ -1,5 +1,4 @@
 <?php
-
   /**
    * This file is part of the Achievo ATK distribution.
    * Detailed copyright and licensing information can be found
@@ -26,6 +25,7 @@
    * Params:
    * file   The path of the stylesheet, relative to the running scripts
    *        directory.
+   * media  The stylesheet media.
    *
    * Example:
    * {atkstyle file="styles/default.css"}
@@ -36,8 +36,7 @@
   function smarty_function_atkstyle($params, &$smarty)
   {
     $page = &atkPage::getInstance();    
-    $page->register_style($params["file"]);        
+    $page->register_style($params["file"], $params["media"]);        
     return "";
   }
-  
 ?>

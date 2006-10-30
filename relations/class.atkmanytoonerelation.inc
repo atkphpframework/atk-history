@@ -16,12 +16,14 @@
    * @version $Revision$
    * $Id$
    */
-
-  /**
+/**
    * flag(s) specific for atkManyToOneRelation
    */
-  define("AF_RELATION_AUTOLINK", AF_SPECIFIC_1); // create edit/view links for the items in a manytoonerelation dropdown.
+  define("AF_RELATION_AUTOLINK", AF_SPECIFIC_1); // create edit/view links for the items in
+                                                 // a manytoonerelation dropdown.
   define("AF_RELATION_NO_NULL_ITEM", AF_SPECIFIC_2);// Do not add null option ever
+
+  define("AF_MANYTOONE_LAZY", AF_SPECIFIC_3); // lazy load
 
   /**
    * @internal include base class
@@ -116,6 +118,11 @@
         $this->m_refKey[] = $name;
         $this->atkRelation($name, $destination, $flags);
       }
+
+      if ($this->hasFlag(AF_MANYTOONE_LAZY) && (count($this->m_refKey) > 1 || $this->m_refKey[0] != $this->fieldName()))
+      {
+        atkerror("AF_MANYTOONE_LAZY flag is not supported for multi-column reference key or a reference key that uses another column.");
+      }
     }
 
     /**
@@ -195,8 +202,20 @@
       if (isset($rec[$this->fieldName()]))
       {
         $myrec = $rec[$this->fieldName()];
+        if (is_array($myrec))
+        {
+          $result = array();
+          if ($this->createDestination())
+          {
+            foreach (array_keys($this->m_destInstance->m_attribList) as $attrName)
+            {
+              $attr = &$this->m_destInstance->m_attribList[$attrName];
+              $result[$attrName] = $attr->db2value($myrec);
+            }
+          }
 
-        if (is_array($myrec)) return $myrec;
+          return $result;
+        }
         else
         {
           // if the record is not an array, probably only the value of the primary key was loaded.
@@ -212,15 +231,15 @@
      * @param $record Record
      * @return a displayable string
      */
-    function display($record, $mode)
+    function display($record, $mode="")
     {
       if ($this->createDestination())
       {
-        if (count($record[$this->fieldName()])==1)
+        if (count($record[$this->fieldName()])==count($this->m_refKey))
         {
-          // The record consist of only one field, which is the primary key.
-          // This means we have to load the rest of the data, in order to
-          // load a descriptor.
+          // The record only contains the same amount of fields as the number
+          // of referential (primary) keys. This means we have to load the
+          // rest of the data, in order to load a descriptor.
           atkdebug("Delayed loading of descriptor fields for ".$this->m_name);
           $recs = $this->m_destInstance->selectDb($this->m_destInstance->primaryKey($record[$this->fieldName()]), "", "", "", $this->m_destInstance->descriptorFields());
           $title = $this->m_destInstance->descriptor($recs[0]);
@@ -271,14 +290,8 @@
       if ($this->createDestination())
       {
         $id = $fieldprefix.$this->fieldName();
-        $filter="";
-        if ($this->m_destinationFilter!="")
-        {
-          atkimport("atk.utils.atkstringparser");
-          $parser = new atkStringParser($this->m_destinationFilter);
-          $filter = $parser->parse($record);
-        }
 
+        $filter=$this->parseFilter($this->m_destinationFilter,$record);
         $autolink = $this->getRelationAutolink($id, $filter);
         $editflag = true;
 
@@ -324,7 +337,7 @@
             }
             // Newly added check
             $newlyadded = "";
-            if (isset($this->m_ownerInstance->m_postvars[$id."_ret"]))
+            if (is_object($this->m_ownerInstance) && isset($this->m_ownerInstance->m_postvars[$id."_ret"]))
             {
               $newlyadded = $this->m_ownerInstance->m_postvars[$id."_ret"];
             }
@@ -341,9 +354,8 @@
         {
           // Large mode
           // TODO: Fill a dropdown box with recent records..
-          $selname = $fieldprefix.$this->fieldName()."_newsel";
+          $selname = $id."_newsel";
 
-          $id = $fieldprefix.$this->fieldName();
           $newlyadded = $this->m_ownerInstance->m_postvars[$id."_ret"];
 
           if ($ATK_VARS[$selname]!="")
@@ -359,7 +371,7 @@
             $recset = $this->m_destInstance->selectDb($newlyadded,"","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
             $destrecord = $recset[0];
             $record[$this->fieldName()] = $destrecord; // put destrecord inside original record.
-		      }
+          }
           elseif (is_array($record[$this->fieldName()]) && count($record[$this->fieldName()]) == count($this->m_destInstance->m_primaryKey))
           // old record present, but probably only primary key fields are loaded (this happens after pressing 'save' on a record)
           {
@@ -382,7 +394,13 @@
 
           if (count($destrecord))
           {
-            $result.= $this->m_destInstance->descriptor($destrecord)."&nbsp;&nbsp;";
+            $result.= '<span id="'.$id.'_current" >'.$this->m_destInstance->descriptor($destrecord)."&nbsp;&nbsp;";
+            if (!$this->hasFlag(AF_OBLIGATORY))
+            {
+              $result.= '<a href="#" onClick="document.getElementById(\''.
+                                    $id.'\').value=\'\'; document.getElementById(\''.$id.'_current\').style.display=\'none\'">'.atktext("unselect").'</a>&nbsp;&nbsp;';
+            }
+            $result.= '</span>';
           }
 
           $result.=$this->hide($record, $fieldprefix);
@@ -466,7 +484,7 @@
             $currentPk = $this->m_destInstance->primaryKey($newrecord);
           }
         }
-      $result = '<input type="hidden" name="'.$fieldprefix.$this->formName().
+      $result = '<input type="hidden" id="'.$fieldprefix.$this->formName().'" name="'.$fieldprefix.$this->formName().
       '" value="'.$currentPk.'">';
         return $result;
       }
@@ -489,9 +507,7 @@
         {
           if ($this->m_destinationFilter!="")
           {
-            atkimport("atk.utils.atkstringparser");
-            $parser = new atkStringParser($this->m_destinationFilter);
-            $filter = $parser->parse($record);
+            $filter = $this->parseFilter($this->m_destinationFilter,$record);
             $this->m_destInstance->addFilter($filter);
           }
           $recordset = $this->m_destInstance->selectDb("","","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
@@ -536,132 +552,110 @@
     }
 
     /**
+     * Retrieve the default searchmode of an attribute
+     *
+     * @param boolean $extended Whether extended search is being used
+     * @return String the default searchmode for this attribute.
+     */
+    function getSearchMode($extended = false)
+    {
+      if ($this->hasFlag(AF_LARGE))
+      {
+        return parent::getSearchMode($extended);
+      }
+      return "exact"; // only support exact search when searching with dropdowns
+    }
+
+    /**
+     * Creates a smart search condition for a given search value, and adds it
+     * to the query that will be used for performing the actual search.
+     *
+     * @param Integer  $id         The unique smart search criterium identifier.
+     * @param Integer  $nr         The element number in the path.
+     * @param Array    $path       The remaining attribute path.
+     * @param atkQuery $query      The query to which the condition will be added.
+     * @param String   $ownerAlias The owner table alias to use.
+     * @param Mixed    $value      The value the user has entered in the searchbox.
+     * @param String   $mode       The searchmode to use.
+     */
+    function smartSearchCondition($id, $nr, $path, &$query, $ownerAlias, $value, $mode)
+    {
+      if (count($path) > 0)
+      {
+        $this->createDestination();
+
+        $destAlias = "ss_{$id}_{$nr}_".$this->fieldName();
+
+        $query->addJoin(
+          $this->m_destInstance->m_table, $destAlias,
+          $this->getJoinCondition($query, $ownerAlias, $destAlias),
+          false
+        );
+
+        $attrName = array_shift($path);
+        $attr = &$this->m_destInstance->getAttribute($attrName);
+
+        if (is_object($attr))
+        {
+          $attr->smartSearchCondition($id, $nr + 1, $path, $query, $destAlias, $value, $mode);
+        }
+      }
+      else
+      {
+        $this->searchCondition($query, $ownerAlias, $value, $mode);
+      }
+    }
+
+    /**
      * Creates an search condition for a given search value
-     * @param  atkQuery $query 			query to hook ourselves in to
-     * @param  string   $table 			the table name
-     * @param  string   $value 			the search value
+     * @param  atkQuery $query      query to hook ourselves in to
+     * @param  string   $table      the table name
+     * @param  string   $value      the search value
      * @param  string   $searchmode the searchmode for the search (e.g. substring)
      * @return string          a piece of the SQL where clause
      */
-    function searchCondition(&$query, $table, $value, $searchmode)
+    function searchCondition(&$query, $table, $value, $searchmode, $fieldaliasprefix='')
     {
-      $searchcondition = $this->getSearchCondition($query, $table, $value, $searchmode);
+      $searchcondition = $this->getSearchCondition($query, $table, $fieldaliasprefix, $value, $searchmode);
       $query->addSearchCondition($searchcondition);
-
     }
 
-    function getSearchCondition(&$query, $table, $value, $searchmode)
+    function getSearchCondition(&$query, $table, $fieldaliasprefix, $value, $searchmode)
     {
-    	if (!$this->hasFlag(AF_LARGE) || !$this->createDestination())
-    	{
-    		// We only support 'exact' matches.
-    		// But you can select more than one value, which we search using the IN() statement,
-    		// which should work in any ansi compatible database.
-    		if (is_array($value)) // This last condition is for when the user selected the 'search all' option, in which case, we don't add conditions at all.
-    		{
-    			if (count($value)==1) // exactly one value
-    			{
-    			  if ($value[0]!="")
-    			  {
-    			    return $query->exactCondition($table.".".$this->fieldName(),escapeSQL($value[0]));
-    			  }
-    			}
-    			else // search for more values using IN()
-    			{
-    			  return $table.".".$this->fieldName()." IN ('".implode("','",$value)."')";
-    			}
-    		}
-    		else
-    		{
-    			$cond= $query->exactCondition($table.".".$this->fieldName(),escapeSQL($value));
-    			atkdebug($cond, "condition");
-    			return $cond;
-    		}
-    	}
-    	else // in theory, this never happens.
-    	{
-    		$descfields = array();
-    		$descfields = $this->m_destInstance->descriptorFields();
-    		//$this->addToQuery($query);
-    		return $this->_getSearchPerAttrib($descfields, $query, $value, $searchmode);
-    	}
-    	return;
-    }
-
-    /**
-     * Gets the searchconditions for attribute in the destination that we are searching on
-     * @param  Array    $attribs    the names of the attributes we are searching on
-     * @param  atkQuery $query 			query to hook ourselves in to
-     * @param  string   $value 			the search value
-     * @param  string   $searchmode the searchmode for the search (e.g. substring)
-     */
-    function _getSearchPerAttrib($attribs, &$query, $value, $searchmode)
-    {
-    	$searchConditions = array();
-    	$prevfield = "";
-
-    	foreach($attribs as $field)
-    	{
-    		if ($field !== $prevfield)
-    		{
-    			$p_attrib = &$this->m_destInstance->getAttribute($field);
-    			if (is_object($p_attrib))
-    			{
-    				if ($query->m_joinaliases[$this->m_destInstance->m_table."*".$this->m_destInstance->primaryKeyField()])
-    				{
-    					$itsTable = $query->m_joinaliases[$this->m_destInstance->m_table."*".$this->m_destInstance->primaryKeyField()];
-    				}
-    				else if ($p_attrib->m_destInstance)
-    				{
-    					$itsTable = $p_attrib->m_destInstance->m_table;
-    				}
-    				else
-    				{
-    					$itsTable = $p_attrib->m_ownerInstance->m_table;
-    				}
-
-    				$searchcondition = $this->_getAttribSearchCondition($p_attrib, $query, $itsTable, $value, $searchmode);
-    				if ($searchcondition) $searchConditions[] = $searchcondition;
-    			}
-    			$prevfield = $field;
-    		}
-    	}
-
-    	if (count($searchConditions))
-    	{
-    		return "(".implode(" OR ",$searchConditions).")";
-    	}
-    }
-
-    /**
-     * Gets the searchcondition of an attribute or adds it if it can't return it's searchcondition
-     * also takes care the attribute get's it's own searchmode if it is set
-     * @param  Object   $p_attrib		An instance of the attribute that we want to the the searchcondition of
-     * @param  atkQuery $query 			query to hook ourselves in to
-     * @param  string   $table 			the table name where the attribute belongs to
-     * @param  string   $value 			the search value
-     * @param  string   $searchmode the searchmode for the search (e.g. substring)
-     */
-    function _getAttribSearchCondition($p_attrib, &$query, $table, $value, $searchmode)
-    {
-    	// checking for the getSearchCondition
-    	// for backwards compatibility
-    	if (method_exists($p_attrib,"getSearchCondition"))
-    	{
-    		$attribsearchmode = $searchmode;
-    		if (is_array($searchmode))
-    		{
-    			$attribsearchmode = $attribsearchmode[$p_attrib->m_name];
-    		}
-    		$searchcondition = $p_attrib->getSearchCondition($query,$table,$value,$searchmode);
-    	}
-    	else
-    	{
-    		// if the attrib can't return it's searchcondition, we'll just add it to the query
-    		// and hope for the best
-    		$p_attrib->searchCondition($query,$table,$value,$searchmode);
-    	}
-    	return $searchcondition;
+      atkdebug("searchmode: ".$this->m_name." - ".$searchmode);
+      if ($searchmode=="exact" || is_numeric($value))
+      {
+        // We only support 'exact' matches on primary key.
+        // But you can select more than one value, which we search using the IN() statement,
+        // which should work in any ansi compatible database.
+        if (is_array($value)) // This last condition is for when the user selected the 'search all' option, in which case, we don't add conditions at all.
+        {
+          if (count($value)==1) // exactly one value
+          {
+            if ($value[0]!="")
+            {
+              return $query->exactCondition($table.".".$this->fieldName(),$this->escapeSQL($value[0]));
+            }
+          }
+          else // search for more values using IN()
+          {
+            return $tableAlias.".".$this->fieldName()." IN ('".implode("','",$value)."')";
+          }
+        }
+        else
+        {
+          $cond= $query->exactCondition($table.".".$this->fieldName(),$this->escapeSQL($value));
+          atkdebug($cond, "condition");
+          return $cond;
+        }
+      }
+      else // probably AF_LARGE
+      {
+        // ask the destination node for it's search condition
+        $alias = $fieldaliasprefix . $this->fieldName();
+        return $this->m_destInstance->getSearchCondition($query, $alias, $fieldaliasprefix, $value, $searchmode);
+      }
+      return;
     }
 
     /**
@@ -673,6 +667,12 @@
      */
     function addToQuery(&$query, $tablename="", $fieldaliasprefix="", $rec="", $level=0, $mode="")
     {
+      if ($this->hasFlag(AF_MANYTOONE_LAZY))
+      {
+        parent::addToQuery($query, $tablename, $fieldaliasprefix, $rec, $level, $mode);
+        return;
+      }
+
       if ($this->createDestination())
       {
         if ($mode != "update" && $mode != "add")
@@ -682,7 +682,7 @@
                           $alias,
                           $this->getJoinCondition($query, $tablename, $alias),
                           $this->m_leftjoin);
-          $this->m_destInstance->addToQuery($query, $alias, $level+1);
+          $this->m_destInstance->addToQuery($query, $alias, $level+1, false, $mode);
         }
         else
         {
@@ -699,6 +699,63 @@
             }
           }
         }
+      }
+    }
+
+
+    /**
+     * Retrieve detail records from the database.
+     *
+     * Called by the framework to load the detail records.
+     *
+     * @param atkDb $db The database used by the node.
+     * @param array $record The master record
+     * @param String $mode The mode for loading (admin, select, copy, etc)
+     *
+     * @return array Recordset containing detailrecords, or NULL if no detail
+     *               records are present. Note: when $mode is edit, this
+     *               method will always return NULL. This is a framework
+     *               optimization because in edit pages, the records are
+     *               loaded on the fly.
+     */
+    function load(&$db, $record, $mode)
+    {
+      if ($this->createDestination())
+      {
+        $condition = $this->m_destInstance->m_table.'.'.$this->m_destInstance->primaryKeyField().
+                     "='".$record[$this->fieldName()][$this->m_destInstance->primaryKeyField()]."'";
+        list($record) = $this->m_destInstance->selectDb($condition, "", "", "", "", $mode);
+        return $record;
+      }
+    }
+
+    /**
+     * Determine the load type of this attribute.
+     *
+     * With this method, the attribute tells the framework whether it wants
+     * to be loaded in the main query (addToQuery) or whether the attribute
+     * has its own load() implementation.
+     * For the atkOneToOneRelation, this depends on the presence of the
+     * AF_ONETOONE_LAZY flag.
+     *
+     * Framework method. It should not be necesary to call this method
+     * directly.
+     *
+     * @param String $mode The type of load (view,admin,edit etc)
+     *
+     * @return int Bitmask containing information about load requirements.
+     *             POSTLOAD|ADDTOQUERY when AF_ONETOONE_LAZY is set.
+     *             ADDTOQUERY when AF_ONETOONE_LAZY is not set.
+     */
+    function loadType($mode)
+    {
+      if ($this->hasFlag(AF_MANYTOONE_LAZY))
+      {
+        return POSTLOAD|ADDTOQUERY;
+      }
+      else
+      {
+        return ADDTOQUERY;
       }
     }
 
@@ -731,7 +788,17 @@
       // relationship with.
       if ($this->createDestination())
       {
-        return $this->m_destInstance->m_attribList[$this->m_destInstance->primaryKeyField()]->dbFieldType();
+        if(count($this->m_refKey)>1)
+        {
+          $keys = array();
+          for($i=0, $_i=count($this->m_refKey); $i<$_i; $i++)
+          {
+            $keys [] = $this->m_destInstance->m_attribList[$this->m_destInstance->m_primaryKey[$i]]->dbFieldType();
+          }
+          return $keys;
+        }
+        else
+          return $this->m_destInstance->m_attribList[$this->m_destInstance->primaryKeyField()]->dbFieldType();
       }
       return "";
     }
@@ -743,7 +810,17 @@
       // relationship with.
       if ($this->createDestination())
       {
-        return $this->m_destInstance->m_attribList[$this->m_destInstance->primaryKeyField()]->dbFieldSize();
+        if(count($this->m_refKey)>1)
+        {
+          $keys = array();
+          for($i=0, $_i=count($this->m_refKey); $i<$_i; $i++)
+          {
+            $keys [] = $this->m_destInstance->m_attribList[$this->m_destInstance->m_primaryKey[$i]]->dbFieldSize();
+          }
+          return $keys;
+        }
+        else
+          return $this->m_destInstance->m_attribList[$this->m_destInstance->primaryKeyField()]->dbFieldSize();
       }
       return 0;
     }
@@ -777,21 +854,19 @@
       else $realtablename = $this->m_ownerInstance->m_table;
       $joinconditions = array();
 
-      if ($fieldalias) $query->m_joinaliases[$this->m_destInstance->m_table."*".$this->m_destInstance->primaryKeyField()] = $fieldalias;
-      else $query->m_joinaliases[$this->m_destInstance->m_table."*".$this->m_destInstance->primaryKeyField()] = $this->m_destInstance->m_table;
-
-      $alias = $query->m_joinaliases[$this->m_destInstance->m_table."*".$this->m_destInstance->primaryKeyField()];
-
       for ($i=0, $_i=count($this->m_refKey); $i<$_i; $i++)
       {
         $joinconditions[] = $realtablename.".".$this->m_refKey[$i].
         "=".
-        $alias.".".$this->m_destInstance->m_primaryKey[$i];
+        $fieldalias.".".$this->m_destInstance->m_primaryKey[$i];
       }
 
       if ($this->m_joinFilter!="")
       {
-        $joinconditions[] = $this->m_joinFilter;
+        atkimport('atk.utils.atkstringparser');
+        $parser = new atkStringParser($this->m_joinFilter);
+        $filter = $parser->parse(array('table' => $realtablename, 'owner' => $realtablename, 'destination' => $fieldalias));
+        $joinconditions[] = $filter;
       }
       return implode(" AND ",$joinconditions);
     }
@@ -838,7 +913,14 @@
             }
           }
         }
+        if (strpos($order, ".")!==false)
+        {
+          // realias if destination order contains a tablename.
+          $order = substr($order, strpos($order, ".")+1);
+        }
+
         return $this->fieldName().".".$order;
+
       }
       return parent::getOrderByStatement();
     }

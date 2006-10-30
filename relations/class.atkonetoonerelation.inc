@@ -211,16 +211,16 @@
           }
 
           $condition.= $this->getDestinationFilterCondition($fieldaliasprefix);
-          $query->addJoin($this->m_destInstance->m_table, $fieldaliasprefix.$this->fieldName(),$condition, true);
+          $query->addJoin($this->m_destInstance->m_table, $fieldaliasprefix.$this->fieldName(),$condition, true,$mode);
 
           // we pass true as the last param to addToQuery, because we need all fields..
-          $this->m_destInstance->addToQuery($query, $fieldaliasprefix.$this->fieldName(), $level+1, true);
+          $this->m_destInstance->addToQuery($query, $fieldaliasprefix.$this->fieldName(), $level+1, true,$mode);
         }
 
         // When storing, we don't add to the query.. we have our own store() method..
         // With one exception. If the foreign key is in the source node, we also need to update
         // the refkey value.
-        if ($this->m_refKey=="")// && $mode=="add")
+        if ($this->m_refKey=="" && $mode=="add")
         {
           $query->addField($this->fieldName(),$rec[$this->fieldName()][$this->m_destInstance->m_primaryKey[0]],"","",!$this->hasFlag(AF_NO_QUOTES));
         }
@@ -308,7 +308,7 @@
     {
       $classname = $this->m_destination;
       $cache_id = $this->m_owner.".".$this->m_name;
-      $rel = &getNode($classname,$cache_id);
+      $rel = &atkGetNode($classname,true,$cache_id);
       atkdebug("O2O DELETE for $classname: ".$this->m_refKey."=".$record[$this->m_ownerInstance->primaryKeyField()]);
 
       if ($this->m_refKey!="")
@@ -474,7 +474,6 @@
       if ($this->createDestination())
       {
         $vars = &$this->_getStoreValue($record);
-
         if ($vars["mode"]=="edit")
         {
           atkdebug("Updating existing one2one record");
@@ -489,21 +488,27 @@
         }
         elseif ($vars["mode"]=="add" || $mode == "add" || $mode == "copy")
         {
-          atkdebug("Adding new one2one record for mode $mode");
-          $this->m_destInstance->preAdd($vars);
-          $result = $this->m_destInstance->addDb($vars, true, $mode);
-
+          if (!empty($vars["atkprimkey"]) && $mode!="copy")
+          {
+            // destination record already exists, and we are not copying.
+            $result = true;
+          }
+          else
+          {
+            atkdebug("atkonetoonerelation->store(): Adding new one2one record for mode $mode");
+            $this->m_destInstance->preAdd($vars);
+            $result = $this->m_destInstance->addDb($vars, true, $mode);
+          }
           if ($this->m_refKey=="")
           {
             // Foreign key is in source node, so we must update the record value with
             $record[$this->fieldName()][$this->m_destInstance->m_primaryKey[0]] = $vars[$this->m_destInstance->m_primaryKey[0]];
           }
-
           return $result;
         }
         else
         {
-          atkdebug("Nothing to store in one2one record");
+          atkdebug("atkonetoonerelation->store(): Nothing to store in one2one record");
           return true;
         }
       }
@@ -569,7 +574,7 @@
     {
       if ($this->createDestination())
       {
-        if (isset($this->m_refKey) && !empty($this->m_refkey))
+        if (isset($this->m_refKey) && !empty($this->m_refKey))
         {
           // foreign key is in the destination node.
           $attrib = $this->m_destInstance->m_attribList[$this->m_refKey];
@@ -626,31 +631,6 @@
         return $output;
       }
       return "";
-    }
-
-    /**
-     * Put the attribute on one or more tabs.
-     * @param array $tabs An array of tabs on which the attribute should
-     *                    be displayed.
-     */
-    function setTabs($tab)
-    {
-      // normally, we would fill m_tabs with $tab
-      parent::setTabs($tab);
-
-      // but we also need to pass this on to our destinstance.
-      $this->createDestination();
-      if(is_array($this->m_destInstance->m_attribList))
-      {
-        foreach(array_keys($this->m_destInstance->m_attribList) as $attrname)
-        {
-          $p_attrib = &$this->m_destInstance->m_attribList[$attrname];
-          if (count($p_attrib->m_tabs)==1&&$p_attrib->m_tabs[0]=="default")
-          {
-            $p_attrib->setTabs($tab);
-          }
-        }
-      }
     }
 
     /**
@@ -749,9 +729,8 @@
 
             $a = $this->m_destInstance->editArray($mode, $myrecord, $forceList, array(), $fieldprefix.$this->fieldName()."_AE_");
 
-            /* errors and hidden fields */
-            if (is_array($a["error"]) && !empty($a["error"])) $error = array_merge($error, $a["error"]);
-              $arr["hide"] = array_merge($arr["hide"], $a["hide"]);
+            /* hidden fields */
+            $arr["hide"] = array_merge($arr["hide"], $a["hide"]);
 
             /* editable fields, if AF_NOLABEL is specified or if there is just 1 field with the
              * same name as the relation we don't display a label
@@ -807,6 +786,7 @@
         if ($this->createDestination())
 	      {
           $this->m_destInstance->validate($record[$this->fieldName()], $mode, array($this->m_refKey));
+          $record["atkerror"] = array_merge($record["atkerror"], $record[$this->fieldName()]["atkerror"]);
 	      }
       }
     }
@@ -905,7 +885,7 @@
         // regular behaviour.
         parent::addToListArrayHeader($action, $arr, $fieldprefix, $flags, $atksearch, $atkorderby);
       }
-      else
+      else if (!$this->hasFlag(AF_HIDE_LIST))
       {
         // integrated version, don't add ourselves, but add all columns from the destination.
         if ($this->createDestination())
@@ -946,7 +926,7 @@
       {
         parent::addToListArrayRow($action, $arr, $nr, $fieldprefix, $flags);
       }
-      else
+      else if (!$this->hasFlag(AF_HIDE_LIST))
       {
         // integrated version, don't add ourselves, but add all columns from the destination.
         if ($this->createDestination())
@@ -958,8 +938,9 @@
           $arr["rows"][$nr]["record"] = $arr["rows"][$nr]["record"][$this->fieldName()];
           foreach (array_keys($this->m_destInstance->m_attribList) as $attribname)
           {
+            $pref = $fieldprefix . "_AE_" .$this->fieldName();
             $p_attrib = &$this->m_destInstance->getAttribute($attribname);
-            $p_attrib->addToListArrayRow($action, $arr, $nr, $fieldprefix, $flags);
+            $p_attrib->addToListArrayRow($action, $arr, $nr, $pref, $flags);
           }
           $arr["rows"][$nr]["record"] = $oldrecord;
         }
@@ -1069,8 +1050,11 @@
      * in it.
      * For original documentation for this method, please see the atkAttribute class
      */
-    function addToSearchformFields(&$fields, &$node, &$record, $fieldprefix = "")
+    function addToSearchformFields(&$fields, &$node, &$record, $fieldprefix = "", $currentSearchMode=array())
     {
+      if (!is_array($currentSearchMode))
+        $currentSearchMode = array();
+
       if ($this->hasFlag(AF_ONETOONE_INTEGRATE) && $this->createDestination())
       {
         foreach (array_keys($this->m_destInstance->m_attribList) as $attribname)
@@ -1084,15 +1068,15 @@
             //       (which completely breaks) in searching a onetoone something like a 'searchname' should
             //       be implemented and used.
             if (method_exists($p_attrib, "atkDateAttribute"))
-              $p_attrib->addToSearchformFields($fields,$node,$record[$this->fieldName()], "_AE_".$this->fieldName()."_AE_");
+              $p_attrib->addToSearchformFields($fields,$node,$record[$this->fieldName()], "_AE_".$this->fieldName()."_AE_", $currentSearchMode[$this->fieldName()]);
             else
-              $p_attrib->addToSearchformFields($fields,$node,$record[$this->fieldName()], "_AE_".$this->fieldName());
+              $p_attrib->addToSearchformFields($fields,$node,$record[$this->fieldName()], "_AE_".$this->fieldName(), $currentSearchMode[$this->fieldName()]);
           }
         }
       }
       else
       {
-        parent::addToSearchformFields($fields,$node,$record, $fieldprefix);
+        parent::addToSearchformFields($fields,$node,$record, $fieldprefix, $currentSearchMode);
       }
     }
   }

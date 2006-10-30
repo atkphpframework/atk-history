@@ -33,7 +33,6 @@
      */
     function action_add()
     {
-      atkdebug("Action add");
       $page = &$this->getPage();
       $page->addContent($this->m_node->renderActionPage("add", $this->invoke("addPage")));
     }
@@ -55,22 +54,27 @@
 
       $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");
       $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
+      $page->register_loadscript("placeFocus();");
       $node->addStyle("style.css");
+      $controller = &atkcontroller::getInstance();
+      $controller->setNode(&$this->m_node);
 
       $params = $node->getDefaultActionParams();
 
-      $formstart ='<form name="entryform" enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?'.SID.'"'.
+      $formstart ='<form name="entryform" enctype="multipart/form-data" action="'.$controller->getPhpFile().'?'.SID.'"'.
                      ' method="post" onsubmit="return globalSubmit(this)">';
 
       /* if we are on an admin page we would like to stay on the admin page after adding a new record */
-      if ($node->m_action == "admin") $formstart.=session_form(SESSION_NESTED);
+      if ($node->m_action == "admin" && count($record['atkerror']) == 0) $formstart.=session_form(SESSION_NESTED);
       else $formstart.=session_form();
+            
+      $formstart .= $controller->getHiddenVarsString();
 
       if (isset($node->m_postvars['atkfilter']))
       {
         $formstart .= '<input type="hidden" name="atkfilter" value="'.$node->m_postvars['atkfilter'].'">';
       }
-      
+
       $params["formstart"] = $formstart;
 
       $ui = &$node->getUi();
@@ -86,13 +90,14 @@
         $params["content"] = $node->tabulate("add", $form);
 
 				$params["buttons"] = $this->m_node->getFormButtons("add", $record);
-        $params["formend"] = '</form><SCRIPT type="text/javascript" language="JavaScript">placeFocus()</SCRIPT>';
+        $params["formend"] = '</form>';
 
         $output = $ui->renderAction("add", $params);
 
-        $total = $ui->renderBox(array("title"=>$node->actionTitle('add'),
-                                      "content"=>$output));
-
+        $this->addRenderBoxVar("title", $node->actionTitle('add'));
+        $this->addRenderBoxVar("content", $output);
+        $total = $ui->renderBox($this->m_renderBoxVars);
+        
         return $total;
       }
       else
