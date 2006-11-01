@@ -357,7 +357,7 @@
       $fieldname = $this->fieldName();
       atkdebug("<h1>atkListAttribute::fetchValue({$postvars[$fieldname]})</h1>");
       
-      if (in_array($postvars[$fieldname],$this->m_values)) return $postvars[$fieldname];
+      if (in_array(strtolower($postvars[$fieldname]),$this->m_values)) return $postvars[$fieldname];
       else if (in_array($postvars[$fieldname],$this->m_options))
       {
         $key = array_search($postvars[$fieldname],$this->m_options);

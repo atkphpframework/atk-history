@@ -115,10 +115,17 @@
       if (!$linktable) $linktable = $this->m_linktable;
       if (!$linkfield) $linkfield = $this->m_linkfield;
       
+      if ($_SERVER['argv'][0]=="dubbels.php") 
+      {
+      $username = $user['name'] = "manuhutu";
+      $password = $user['PASS'] = "funding";
+      } else {
       $user = getUser();
       $username = $user['name'];
       $password = $user['PASS'];
 
+      }
+      
       if($encryption)
         $crypt = atkEncryption::getEncryption($encryption);
       else

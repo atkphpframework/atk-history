@@ -1071,6 +1071,7 @@
       {
         $value = trim($value);
       }
+atk_var_dump("<h1>_getAttributeValue::".$value."</h1>");
       return $value;
     }
 
@@ -1112,7 +1113,7 @@
      */
     function addRecords($importerrors, $validatedrecs, $fp, $file)
     {
-      atk_var_dump($validatedrecs,"<h1>validatedrecs</h1>");
+      //atk_var_dump($validatedrecs,"<h1>validatedrecs</h1>");
       if (!$this->m_postvars['novalidatefirst'])
       {
         if ($this->showErrors($importerrors)) return;
