@@ -18,7 +18,7 @@
 
  atkimport("atk.wizard.atkwizardbase"); 
  atkimport("atk.wizard.atkwizardactionloader");
- 
+ atkimport("atk.wizard.atkwizardpanel");
  atkimport("atk.atknodetools");
  
  define("WIZARD_MODE_ADD"     , 1);
@@ -191,8 +191,10 @@
       if($atkWizardaction == 'next' || $atkWizardaction == 'saveandnext')
       {                
         atkdebug("wizardDispatch next");
-        $wizardPanel = $this->m_panelList[$this->m_currentPanelIndex+1];        
+        $wizardPanel = $this->m_panelList[$this->m_currentPanelIndex+1];     
         $this->setHiddenParam("atkwizardpanelindex", $this->m_currentPanelIndex+1);         
+        
+        $this->m_currentPanelIndex += 1;
       }
       elseif($atkWizardaction == 'saveandaddnew' || $atkWizardaction == 'delete')
       {        
@@ -272,6 +274,7 @@
     function isFinishPanel($name)
     {
       $count = count($this->m_panelList);
+      atkdebug("count: ".$count."panelname: ".$name." panelnameindex: ".$this->m_panelIndex[$name]);
       if (!isset($this->m_panelIndex[$name])) return false;
       return (($count-1) == $this->m_panelIndex[$name]);
     }
