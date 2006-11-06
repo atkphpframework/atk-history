@@ -136,6 +136,7 @@ Changes in tomorrow branch
 * Changed display function of emailattribute, onetomanyrelation and 
   manytomanyrelation to correctly show data in csv export (without html).
   [Lineke]
+* Check if mb_convert_encoding function exists. [Lineke]
 
 Changed in ATK 5.6.1
 --------------------

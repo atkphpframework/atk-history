@@ -987,7 +987,7 @@
         set_time_limit(60);
         atkdebug('set_time_limit(60)');
         
-        if (atktext('charset') != '') $line = mb_convert_encoding($line, atktext('charset'));
+        if (atktext('charset') != '' && function_exists("mb_convert_encoding")) $line = mb_convert_encoding($line, atktext('charset'));
 
         $data = $this->fgetcsvfromline($line, $columncount, $delimiter, $enclosure);
 
