@@ -630,15 +630,6 @@
     var $m_extended_search_action = NULL;
 
     /**
-     * Extended search action. The action which is called if the user
-     * wants to perform an extended search.
-     *
-     * @access private
-     * @var String
-     */
-    var $m_extended_search_action = NULL;
-
-    /**
      * Constructor.
      *
      * This initialises the node. Derived classes should always call their
