@@ -49,18 +49,32 @@
 
     /**
      * Connect to the database
-     * @return connection status
+     *
+     * @param string $host Hostname
+     * @param string $user Username
+     * @param string $password Password
+     * @return mixed Connection status
      */
-    function connect()
+    function doConnect($host,$user,$password,$database,$port,$charset)
     {
       /* establish connection */
       if (empty($this->m_link_id))
       {
-        $this->m_link_id = @mysql_connect($this->m_host, $this->m_user, $this->m_password);
+        if (!empty($port))
+          $host = "$host:$port";
+          
+        $this->m_link_id = @mysql_connect($host, $user, $password, true /* ALWAYS NEW LINK */);
         if (!$this->m_link_id)
         {
           $this->halt($this->getErrorMsg());
         }
+        
+        /* set character set */
+        if (!empty($charset))
+        {
+          atkdebug("Set database character set to: {$charset}");
+          @mysql_query($this->m_link_id, "SET NAMES '{$charset}'");
+        }        
       }
 
       /* select database */
@@ -85,7 +99,7 @@
       switch ($this->m_errno)
       {
         case    0: return DB_SUCCESS;
-        case 1044: return DB_ACCESSDENIED;  // todofixme: deze komt bij mysql pas na de eerste query.
+        case 1044: return DB_ACCESSDENIED_DB;  // todofixme: deze komt bij mysql pas na de eerste query.
         case 1045: return DB_ACCESSDENIED_USER;
         case 1049: return DB_UNKNOWNDATABASE;
         case 2004:
@@ -140,8 +154,11 @@
         atkDebugger::addQuery($query);
       }
 
+      $mode = $this->getQueryMode($query);
+      atkdebug("atkmysqldb::query -> connect with mode = $mode");
+      
       /* connect to database */
-      if ($this->connect()==DB_SUCCESS)
+      if ($this->connect($mode)==DB_SUCCESS)
       {
         /* free old results */
         if ($this->m_query_id)
@@ -222,10 +239,18 @@
     function lock($table, $mode="write")
     {
       /* connect first */
-      if ($this->connect()==DB_SUCCESS)
+      if ($this->connect("w")==DB_SUCCESS)
       {
+        $query = "lock tables $table $mode";
+           
+        if (atkconfig("debug")>0)
+        {               
+          atkimport("atk.utils.atkdebugger");        
+          atkDebugger::addQuery($query);
+        }        
+
         /* lock */
-        $result = @mysql_query("lock tables $table $mode", $this->m_link_id);
+        $result = @mysql_query($query, $this->m_link_id);
         if (!$result) $this->halt("$mode lock on $table failed.");
 
         /* return result */
@@ -241,7 +266,7 @@
     function unlock()
     {
       /* connect first */
-      if ($this->connect()==DB_SUCCESS)
+      if ($this->connect("w")==DB_SUCCESS)
       {
         /* unlock */
         $result = @mysql_query("unlock tables");
@@ -292,7 +317,7 @@
     function nextid($sequence)
     {
       /* first connect */
-      if ($this->connect()==DB_SUCCESS)
+      if ($this->connect("w")==DB_SUCCESS)
       {
         /* lock sequence table */
         if ($this->lock($this->m_seq_table))
@@ -332,6 +357,18 @@
         $this->halt("cannot lock ".$this->m_seq_table." - has it been created?");
       }
     }
+    
+    /**
+     * Returns the table type.
+     *
+     * @param string $table table name
+     * @return string table type
+     */
+    function _getTableType($table)
+    {
+      list($status) = $this->getRows("SHOW TABLE STATUS LIKE '" .$table ."';"); 
+      return $status != NULL && isset($status['Engine']) ? $status['Engine'] : NULL;
+    }
 
     /**
      * Return the meta data of a certain table
@@ -342,14 +379,18 @@
     function metadata($table, $full=false)
     {
       /* first connect */
-      if ($this->connect()==DB_SUCCESS)
+      if ($this->connect("r")==DB_SUCCESS)
       {
         atkimport("atk.db.atkddl");
         $ddl = &atkDDL::create("mysql");
 
         /* list fields */
         atkdebug("Retrieving metadata for $table");
-        $id = @mysql_list_fields($this->m_database, $table);
+        
+        // table type
+        $tableType = $this->_getTableType($table);
+        
+        $id = @mysql_list_fields($this->m_database, $table, $this->m_link_id);
         if (!$id)
         {
           atkdebug("Metadata query failed.");
@@ -367,12 +408,13 @@
 
         for ($i=0; $i<$count; $i++)
         {
-          $result[$i]["table"]   = @mysql_field_table($id, $i);
-          $result[$i]["name"]    = @mysql_field_name($id, $i);
-          $result[$i]["type"]    = @mysql_field_type($id, $i);
-          $result[$i]["gentype"] = $ddl->getGenericType($result[$i]['type']);
-          $result[$i]["len"]     = @mysql_field_len($id, $i);
-          $result[$i]["flags"]   = explode(' ', @mysql_field_flags($id, $i));
+          $result[$i]["table"]      = @mysql_field_table($id, $i);
+          $result[$i]["table_type"] = $tableType;
+          $result[$i]["name"]       = @mysql_field_name($id, $i);
+          $result[$i]["type"]       = @mysql_field_type($id, $i);
+          $result[$i]["gentype"]    = $ddl->getGenericType($result[$i]['type']);
+          $result[$i]["len"]        = @mysql_field_len($id, $i);
+          $result[$i]["flags"]      = explode(' ', @mysql_field_flags($id, $i));
 
           $result[$i]["flags"] =
             (in_array('primary_key',    $result[$i]["flags"]) ? MF_PRIMARY        : 0) |
@@ -482,6 +524,18 @@
     function func_datetimetochar($fieldname)
     {
       return "DATE_FORMAT($fieldname, '%Y-%m-%d %H:%i')";
+    }
+    
+    /**
+     * Set database sequence value.
+     * 
+     * @param string $seqname sequence name
+     * @param int $value sequence value
+     */
+    function setSequenceValue($seqname, $value)
+    {
+      $query = "UPDATE ".$this->m_seq_table." SET ".$this->m_seq_field." = '$value' WHERE ".$this->m_seq_namefield." = '$seqname'";
+      $this->query($query);
     }
   }
 ?>

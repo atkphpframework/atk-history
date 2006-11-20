@@ -48,6 +48,9 @@
     var $m_action = "";
 
     /** @access private */
+    var $m_partial = NULL;
+    
+    /** @access private */
     var $m_renderBoxVars = array();
 
     /**
@@ -74,6 +77,7 @@
       $this->m_postvars = &$postvars;
       $this->m_node = &$node;
       $this->m_action = $action;
+      $this->m_partial = $node->m_partial;
       $this->invoke("action_".$action);
     }
 
@@ -84,6 +88,8 @@
     function setNode(&$node)
     {
       $this->m_node = &$node;
+      $this->m_partial = $node->m_partial;  
+      $this->m_postvars = &$node->m_postvars;    
     }
 
     /**

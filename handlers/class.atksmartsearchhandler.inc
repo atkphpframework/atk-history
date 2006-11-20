@@ -457,7 +457,7 @@
         $valueArray = $value == NULL ? NULL : array($attr->fieldName() => $value);
         $modeArray = $mode == NULL ? NULL : array($attr->fieldName() => $mode);
         $attr->addToSearchFormFields($fields, $entry['node'], $valueArray, $prefix, $modeArray);
-        $field = array_pop($fields);
+        $field = array_shift($fields); // we only support the first field returned
         
         return $type == 'mode' ? $field['searchmode'] : $field['widget'];
       }
@@ -580,7 +580,6 @@
     function saveCriteria($name, $criteria)
     {
       $this->forgetCriteria($name);
-      atk_var_dump($criteria, "Save criteria $name");      
       $db = &$this->m_node->getDb(); 
       $query = "INSERT INTO {$this->m_table} (nodetype, name, criteria) VALUES('%s', '%s', '%s')";
       $db->query(sprintf($query, $this->m_node->atkNodeType(), escapeSQL($name), escapeSQL(serialize($criteria))));
@@ -598,7 +597,6 @@
       $query = "SELECT c.criteria FROM {$this->m_table} c WHERE c.nodetype = '%s' AND UPPER(c.name) = UPPER('%s')";
       list($row) = $db->getRows(sprintf($query, $this->m_node->atkNodeType(), escapeSQL($name)));      
       $criteria = $row == NULL ? NULL : unserialize($row['criteria']);
-      atk_var_dump($criteria, "Load criteria $name");      
       return $criteria;
     }
     
@@ -748,6 +746,7 @@
      */
     function smartSearchPage($name="", $criteria=array())
     {
+      atkimport("atk.atklanguage");
       $node = &$this->m_node;
       $page = &$this->getPage();
       $ui = &$this->getUi();

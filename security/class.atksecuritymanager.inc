@@ -53,6 +53,51 @@
     // error message that caused the fatal error is put in this variable.
     var $m_fatalError = "";
 
+
+    /**
+     * returns the full classname for use with atkimport
+     *
+     * @param string $type
+     * @return string full classname
+     */
+    function _getclassname($type)
+    {
+      // assume that when a type includes a dot, the fullclassname is used.
+      if(!stristr($type,"."))
+      {
+        $cls = "atk.security.auth_$type";
+      }
+      else $cls=$type;
+      return $cls;
+    }
+    
+    /**
+     * returns an array of authentication types
+     * authentication_type is a comma delimeted string with
+     * native atk auth types like 'db' or 'none' or it can be a
+     * full classname like module.mymodule.myauthtype
+     *
+     * @param string $authentication_type
+     * @return array authetication types
+     */
+    function _getAuthTypes($authentication_type)
+    {
+      $authentication = explode(",",trim($authentication_type));
+      $types=array();
+      if(!is_array($authentication))
+      {
+        array_push($types,$this->_getclassname(trim($authentication)));
+      }
+      else
+      {
+        foreach ($authentication as $type)
+        {
+          array_push($types,$this->_getclassname(trim($type)));
+        }
+      }
+      return $types;
+    }
+    
     /**
      * Constructor
      * @access private
@@ -61,44 +106,22 @@
     {
       atkdebug("creating securityManager (authenticationtype: $authentication_type, authorizationtype: $authorization_type, scheme: $securityscheme)");
 
-      $atkroot = atkconfig("atkroot");
-      require_once($atkroot."atk/security/class.auth_interface.inc");
-
-
-      /* authentication class */
-      $authentication = explode(",",trim($authentication_type));
-      if(is_array($authentication))
+      // required interface;
+      atkimport("atk.security.auth_interface");
+      
+      $authentication = $this->_getAuthTypes($authentication_type);
+      foreach($authentication as $class)
       {
-        foreach($authentication as $class)
+        if(!$obj = &atknew($class))
         {
-          $class = trim($class);
-          if($class!="")
-          {
-            $classname = "auth_".$class;
-            include_once($atkroot."atk/security/class.".$classname.".inc");
-            if(class_exists($classname))
-            {
-              atkdebug("atkSecurityManager() constructing class $classname");
-              $this->m_authentication[$class] = new $classname;
-            }
-          }
+          atkdebug("atkSecurityManager() unsupported authentication type or type no found for $class");
         }
-      }
-      else
-      {
-        $classname = "auth_".$authentication;
-        include_once($atkroot."atk/security/class.".$classname.".inc");
-        if(class_exists($classname))
-        {
-          atkdebug("atkSecurityManager() constructing class $classname");
-          $this->m_authentication[$authentication] = new $classname;
-        }
+        else $this->m_authentication[$class] = &$obj;
       }
 
       /* authorization class */
-      $classname = "auth_".$authorization_type;
-      include_once($atkroot."atk/security/class.auth_".$authorization_type.".inc");
-      $this->m_authorization = new $classname;
+      $clsname = $this->_getclassname($authorization_type);
+      $this->m_authorization = &atknew($clsname);
 
       /* security scheme */
       $this->m_scheme = $securityscheme;
@@ -435,7 +458,6 @@
      */
     function loginForm($defaultname, $lastresponse)
     {
-
       $loginattempts = sessionLoad('loginattempts');
       if($loginattempts=="") $loginattempts = 0;
 
@@ -452,10 +474,11 @@
 
       atkdebug('LoginAttempts: '.$loginattempts);
 
-      $page = &atknew("atk.ui.atkpage");
+      $page = &atkinstance("atk.ui.atkpage",true);
       $ui = &atkinstance("atk.ui.atkui");
 
       $page->register_style($ui->stylePath("style.css"));
+      $page->register_style($ui->stylePath("login.css"));
 
       $page->register_script(atkConfig('atkroot')."atk/javascript/tools.js");
 
@@ -483,8 +506,8 @@
         $tplvars["username"] = atktext("username");
         $tplvars["password"] = atktext("password");
         $tplvars["userfield"] = $userField;
-        $tplvars["passwordfield"] = '<input class="loginform" type="password" size="15" name="auth_pw" value="">';
-        $tplvars["submitbutton"] = '<input class="button" type="submit" value="'.atktext('login').'">';
+        $tplvars["passwordfield"] = '<input class="loginform" type="password" size="15" name="auth_pw" value="" />';
+        $tplvars["submitbutton"] = '<input class="button" type="submit" value="'.atktext('login').'" />';
         $tplvars["title"] = atktext('login_form');
 
         if ($lastresponse == AUTH_LOCKED)
@@ -511,7 +534,7 @@
         // generate the form
         $output.="<tr><td valign=top>".atktext('username')."</td><td>:</td><td>".$userField."</td></tr>";
         $output.="<tr><td colspan=3 height=6></td></tr>";
-        $output.="<tr><td valign=top>".atktext('password')."</td><td>:</td><td><input type=password size=15 name=auth_pw value=''></td></tr>";
+        $output.="<tr><td valign=top>".atktext('password')."</td><td>:</td><td><input type=password size=15 name=auth_pw value='' /></td></tr>";
         $output.='<tr><td colspan="3" align="center" height="50" valign="middle">';
         $output.='<input name="login" class="button" type="submit" value="'.atktext('login').'">';
         $tplvars["auth_enablepasswordmailer"] = atkconfig("auth_enablepasswordmailer", false);
@@ -576,7 +599,7 @@
       }
       else
       {
-        return '<input type="text" size="15" name="auth_user" value="'.htmlentities($defaultname).'">';
+        return '<input type="text" size="15" name="auth_user" value="'.htmlentities($defaultname).'" />';
       }
     }
 
@@ -789,5 +812,4 @@
     if (!is_object($secMgr)) return 1;
     else return $secMgr->allowed($node, $privilege);
   }
-
 ?>

@@ -39,7 +39,8 @@
     var $m_remoteKey = "";
     var $m_link = "";
     var $m_linkInstance = NULL;
-
+    var $m_store_deletion_filter = "";
+    
     /**
      * Constructor
      * @param String $name The name of the relation
@@ -196,25 +197,30 @@
      * @param $record
      * @return a displayable string for this value
      */
-    function display($record)
+    function display($record, $mode="")
     {
       if ($this->createDestination())
       {
         $recordset = array();
 
-        for ($i=0;$i<count($record[$this->m_name]);$i++)
+        if (is_array($record[$this->fieldName()]))
         {
-          $recordset[] = $record[$this->m_name][$i][$this->getRemoteKey()];
+          for ($i=0;$i<count($record[$this->m_name]);$i++)
+          {
+            $recordset[] = $record[$this->m_name][$i][$this->getRemoteKey()];
+          }
         }
 
         if (count($record[$this->m_name])!=0)
         {
-          $result = "<ul>";
+          if ($mode != 'csv') $result = "<ul>";
           for ($i=0;$i<count($recordset);$i++)
           {
-            $result.="<li>".$this->m_destInstance->descriptor($recordset[$i]);
+            if ($mode != 'csv') $result.="<li>";
+            elseif ($result != '') $result.=', ';
+            $result .= $this->m_destInstance->descriptor($recordset[$i]);
           }
-          $result.="</ul>";
+          if ($mode != 'csv') $result.="</ul>";
         }
         return $result;
       }
@@ -288,6 +294,14 @@
       $filter="";
       if(count($checked) > 0)
         $filter = "NOT IN ('".implode("','",$checked)."')";
+
+      //append the store deletion filter (if set)
+      if($this->m_store_deletion_filter!="")
+      {
+        if($filter!="") $filter.= " AND ";
+          
+        $filter.= " ".$this->m_store_deletion_filter;
+      }
 
       if (is_object($rel) && $rel->deleteDb($this->m_linkInstance->m_table.'.'.$this->getLocalKey()."='".$record[$this->m_ownerInstance->primaryKeyField()]."'".($filter!=""?" AND ".$this->m_linkInstance->m_table.'.'.$this->getRemoteKey()." $filter":"")))
       {
@@ -429,7 +443,7 @@
         }
       }
     }
-
+    
     /**
      * Checks if a key is not an array
      * @param $key   field containing the key values
@@ -443,6 +457,37 @@
         return $key[$field];
       }
       return $key;
+    }    
+    
+    /**
+     * Fetch value. If nothing selected, return empty array instead
+     * of nothing.
+     * 
+     * @param array $postvars
+     */
+    function fetchValue($postvars)
+    {
+      $value = parent::fetchValue($postvars);
+      return $value == NULL ? array() : $value;
+    }
+    
+    /**
+     * Function adds a custom filter that is used when deleting items during the store() function.
+     * 
+     * Example:
+     * Normally the delete function would do something like this:     
+     *
+     * DELETE FROM phase WHERE phase.template NOT IN (1,2,3)
+     * 
+     * If the template field is NULL, although it is not specified in the NOT IN (1,2,3), it will not be deleted.
+     * An extra check can be added just in case the template value is not NULL but 0 or '' (which would delete the phase).
+     * 
+     * @param String $filter The filter that is used when deleting records in the store function.
+     * @return none
+     */
+    function setStoreDeletionFilter($filter)
+    {
+      $this->m_store_deletion_filter = $filter;
     }
   }
 ?>

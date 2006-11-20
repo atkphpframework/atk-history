@@ -94,8 +94,8 @@
   // to change the menu_delimiter to " " (menu_delimiter is what atk
   // puts between menu items).
   $config_menu_pos = "left";
-  $config_menu_delimiter = "<br>";
-  $config_menu_layout = "plain";
+  $config_menu_delimiter = "<br />";
+  $config_menu_layout = "modern";
 
   // If you have a menu at either left or right, you can add an
   // extra topframe by setting the following option to 1.
@@ -143,6 +143,7 @@
   // "pop3"   - users / passwords are stored in the POP3 server
   // "ldap"   - users / passwords are stored in an LDAP server
   // "server" - authentication is done by the webserver (.htaccess)
+  // custom type with a fullclassname like 'module.mymodule.myauth' (syntax similar as atknew or atkimport)
   // if you need to use multiple authentication types list them delimited by comma
   $config_authentication = "none";
 

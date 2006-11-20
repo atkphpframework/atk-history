@@ -166,6 +166,8 @@
      */
     function text($string, $module, $node="", $lng="", $firstfallback="", $nodefaulttext=false,$modulefallback=false)
     {
+      // We don't translate nothing
+      if ($string=='') return '';
       if ($lng=="") $lng = atkLanguage::getLanguage();
       $lng = strtolower($lng);
       $atklanguage =& atkLanguage::getInstance();
@@ -199,7 +201,7 @@
       else { $lng = atkLanguage::getUserLanguage(); }
       return strtolower($lng);
     }
-            
+
     /**
      * Get the selected language of the current user if he/she set one,
      * otherwise we try to get it from the browser settings and if even THAT
@@ -250,7 +252,7 @@
       }
       return $autolng;
     }
-    
+
     /**
      * Get the languages supported by the application
      *
@@ -350,7 +352,7 @@
       {
         if (atkconfig("debug_translations", false))
           atkdebug("atkLanguage: translation for '$key' with module: '$module' and node: '$node' and language: '$lng' not found, returning default text");
-
+          
         // Still nothing found. return default string
         return $this->defaultText($key);
       }

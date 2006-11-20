@@ -454,6 +454,12 @@
             WHERE uc.table_name = c.table_name
             AND ucc.column_name = c.column_name
             AND uc.constraint_type = 'U'
+            AND NOT EXISTS (
+              SELECT 1
+              FROM user_cons_columns ucc1 
+              WHERE ucc1.constraint_name = uc.constraint_name
+              AND ucc1.column_name <> ucc.column_name
+            )
           ) AS is_unique,
           (
             SELECT COUNT(1)
@@ -488,9 +494,9 @@
           ($row['is_primary'] == 1 ? MF_PRIMARY : 0) |
           ($row['is_unique'] == 1 ? MF_UNIQUE : 0) |
           ($row['is_not_null'] == 1 ? MF_NOT_NULL : 0) |
-          ($row['is_auto_inc'] == 1 ? MF_AUTO_INCREMENT : 0);
+          ($row['is_primary'] == 1 && $row['is_auto_inc'] == 1 ? MF_AUTO_INCREMENT : 0);
 
-        if ($row['is_auto_inc'] == 1)
+        if ($row['is_primary'] == 1 && $row['is_auto_inc'] == 1)
           $meta[$i]['sequence'] = $row['sequence'];
         else if ($row['default_value'] !== NULL)
         {

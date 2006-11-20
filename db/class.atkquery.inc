@@ -171,7 +171,8 @@
       $this->m_fields[] = $fieldname;
       if ($quotefield) $this->m_quotedfields[] = $fieldname;
 
-      if ($quote||$value=="") $value = "'".$value."'";
+      if ($quote) $value = "'".$value."'";
+      elseif ($value === NULL || $value === '') $value = 'NULL';
 
       $this->m_values[$fieldname] = $value;
 
@@ -284,13 +285,14 @@
         if ($fieldalias!="") $result.=" AS ".$fieldalias;
         if ($i < count($this->m_fields)-1) $result.=", ";
       }
-      $result.= " FROM ";
+      $result.= " FROM (";
       for ($i=0;$i<count($this->m_tables);$i++)
       {
         $result.= $this->quoteField($this->m_tables[$i]);
         if ($this->m_aliases[$i]!="") $result.=" ".$this->m_aliases[$i];
         if ($i < count($this->m_tables)-1) $result.=", ";
       }
+      $result.= ") ";
 
       for ($i=0;$i<count($this->m_joins);$i++)
       {
@@ -530,6 +532,29 @@
         }
       }
     }
+    
+    /**
+     * Generate a searchcondition that checks if the field is null.
+     */
+    function nullCondition($field, $emptyStringIsNull=false)
+    {
+      $result = "$field IS NULL";
+      if ($emptyStringIsNull)
+        $result = "($result OR $field = '')";
+      return $result;
+    }
+    
+    
+    /**
+     * Generate a searchcondition that checks if the field is not null.
+     */
+    function notNullCondition($field, $emptyStringIsNull=false)
+    {
+      $result = "$field IS NOT NULL";
+      if ($emptyStringIsNull)
+        $result = "($result AND $field <> '')";
+      return $result;      
+    }    
 
     /**
      * Generate a searchcondition that checks whether $value matches $field exactly.

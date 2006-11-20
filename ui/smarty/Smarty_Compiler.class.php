@@ -1527,7 +1527,6 @@ class Smarty_Compiler extends Smarty {
                       /* If the token is a valid identifier, we set attribute name
                        and go to state 1. */
 
-
                     // PETER HACK, balance quotes and make html quotes normal quotes
                     if (substr($token, 0, 6) == "&quot;")
                       $token = substr($token, 6);

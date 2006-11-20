@@ -290,12 +290,14 @@
     }
     
     /**
-     * Recursive mdir.
+     * Recursive mkdir.
      * 
      * @see http://nl2.php.net/mkdir
      *
      * @param string $path path to create
      * @return success/failure
+     * 
+     * @static
      */
     function mkdir($path)
     {
@@ -312,7 +314,42 @@
       
       return true;
     }
-
+    
+    /**
+     * Recursive rmdir.
+     * 
+     * @see http://nl3.php.net/rmdir
+     * 
+     * @param string $dir path to remove
+     * @return succes/failure
+     * 
+     * @static
+     */
+    function rmdir($dir)
+    {
+      if (!($handle = @opendir($dir))) return false;
+      
+      while (false !== ($item = readdir($handle)))
+      {
+        if ($item != "." && $item != "..")
+        {
+          if (is_dir("$dir/$item"))
+          {
+            if (!atkFileAttribute::rmdir("$dir/$item"))
+              return false;
+          } 
+          else
+          {
+            if (!@unlink("$dir/$item"))
+              return false;
+          }
+        }
+      }
+      
+      closedir($handle);
+      return @rmdir($dir);
+    }
+    
     /**
      * Perform processing on an image right after it is uploaded.
      *
@@ -566,7 +603,7 @@
         return $this->m_ownerInstance->$method($rec, $default);
       else return $this->filenameMangle($rec, $default);
     }
-
+    
     /**
      * Determine the real filename of a file (based on m_filenameTpl).
      * @access public

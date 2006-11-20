@@ -19,10 +19,26 @@
   /**
    * flags specific for atkOneToOneRelation
    */
-  define("AF_ONETOONE_ADD",             AF_SPECIFIC_1); // override the default no add flag
-  define("AF_ONETOONE_ERROR",           AF_SPECIFIC_2); // enable error notifications / triggers
-  define("AF_ONETOONE_INTEGRATE",       AF_SPECIFIC_3); // invisibly integrate a onetoonerelation as if the fields where part of the current node.
-  define("AF_ONETOONE_LAZY",            AF_SPECIFIC_4); // use lazy loading instead of query addition.
+  
+  /**
+   * Override the default no add flag
+   */
+  define("AF_ONETOONE_ADD",             AF_SPECIFIC_1);
+  
+  /**
+   * Enable error notifications / triggers
+   */
+  define("AF_ONETOONE_ERROR",           AF_SPECIFIC_2);
+  
+  /**
+   * Invisibly integrate a onetoonerelation as if the fields where part of the current node.
+   */
+  define("AF_ONETOONE_INTEGRATE",       AF_SPECIFIC_3);
+  
+  /**
+   * Use lazy loading instead of query addition.
+   */
+  define("AF_ONETOONE_LAZY",            AF_SPECIFIC_4);
 
   /**
    * @internal Include the base class.
@@ -742,8 +758,12 @@
               $arr["fields"][] = array("html"=>"-", "tabs"=>$this->m_tabs);
               $arr["fields"][] = array("line"=>"<b>".atktext($this->m_name, $this->m_ownerInstance->m_module, $this->m_ownerInstance->m_type)."</b>", "tabs"=>$this->m_tabs);
             }
-            $arr["fields"] = array_merge($arr["fields"], $a["fields"]);
-
+            
+            if (is_array($a["fields"]))
+            {
+              $arr["fields"] = array_merge($arr["fields"], $a["fields"]);
+            }
+            
             if (!$this->hasFlag(AF_ONETOONE_INTEGRATE) && !$this->hasFlag(AF_NOLABEL) && !(count($a["fields"]) == 1 && $a["fields"][0]["name"] == $this->m_name))
             {
               /* separator */

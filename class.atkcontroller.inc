@@ -170,11 +170,6 @@
     function dispatch($postvars, $fullpage=true)
     {
       atkdebug("atkcontroller::dispatch()");
-      atk_var_dump($postvars, "postvars");
-      // Use invoke to be backwards compatible with overrides 
-      // of loadDispatchPage in atknode.
-      $this->invoke("loadDispatchPage", $postvars);
-      //$this->loadDispatchPage($postvars);
       $this->m_postvars = $postvars;
       $node = &$this->getNode();
       if(!is_object($node)) return;
@@ -182,16 +177,33 @@
       $ui = $node->getUi();
       $page = &$node->getPage();
       atkdebug("atkcontroller::dispatch() call page->render");
-      //TODO FIXME: This is een weird hack??
-      if($fullpage)
+      
+      // backwards compatibility mode      
+      if ($flags == NULL)
       {
-        atkdebug("atkcontroller::dispatch() fullpage = true");
-        $fullHtmlPage = true;
-      } 
-      else 
-        $fullHtmlPage = false;
-      $screen = $page->render(atktext('app_shorttitle')." - ".$ui->title($node->m_module, $node->m_type, $node->m_postvars['atkaction']), $fullHtmlPage);
+        $flags = array_key_exists("atkpartial", $postvars) ? HTML_PARTIAL : HTML_STRICT;
+      }
+      elseif (is_bool($flags))
+      {
+        $flags = $flags ? HTML_STRICT : HTML_HEADER|HTML_DOCTYPE;
+      }
 
+      if (hasFlag($flags, HTML_PARTIAL) && !$postvars["atkdebug"]["force"])
+      {
+        global $config_debug;
+        $config_debug = 0;
+      }
+      
+      // Use invoke to be backwards compatible with overrides 
+      // of loadDispatchPage in atknode.
+      $this->invoke("loadDispatchPage", $postvars);
+      
+      $screen = '';
+      if (!$page->isEmpty()) // Only output an html output if there is anything to output.
+      {
+        $screen = $page->render(atktext('app_shorttitle')." - ".$ui->title($this->m_module, $this->m_type,$this->m_postvars['atkaction']), $flags);
+      }
+      
       if(!$this->m_return_output)
       {
         $output = &atkOutput::getInstance();
@@ -225,21 +237,16 @@
       if(!is_object($node)) return;
       
       $node->m_postvars = $postvars;
-
       $node->m_action = $postvars['atkaction'];
+      $this->m_partial = $postvars["atkpartial"];
 
       atkdebug("atkcontroller::loaddispatchpage " . $node->m_action);
-      
-      /** DIRTY HACK
-          if action is something else than edit, we clear the atkformdata sessionstuff **/
-      if ($node->m_action!="edit"&&$node->m_action!="add"&&$node->m_action!="admin")
-      {
-        atkdebug("Clearing stored formdata");
-        $node->m_postvars["atkformdata"]="";
-      }
 
       $page = &$node->getPage();
       
+      $page->register_script(atkconfig("atkroot")."atk/javascript/prototype/prototype.js");
+      $page->register_script(atkconfig("atkroot")."atk/javascript/scriptaculous/scriptaculous.js");
+      $page->register_script(atkconfig("atkroot")."atk/javascript/atkbusy.js");
       atkdebug("loaddispatchpage. action:" .$node->m_action) ;
       
       if ($node->allowed($node->m_action))
@@ -277,7 +284,7 @@
       if (!is_array($content)) $content = array($title=>$content);
       $blocks = array();
       foreach($content as $itemtitle => $itemcontent)
-        $blocks[] = $ui->renderBox(array("title"=>$itemtitle, "content"=>$itemcontent));
+        $blocks[] = $ui->renderBox(array("title"=>$itemtitle, "content"=>$itemcontent), 'dispatch');
       /**
        * @todo Don't use renderActionPage here because it tries to determine
        *       it's own title based on the title which is passed as action.

@@ -37,17 +37,6 @@
   define("EASYCONSONANTS", "aeuy");
 
   /**
-   * Categories of password character categories
-   */
-  define("UPPERCHARS", "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
-  define("LOWERCHARS", "abcdefghijklmnopqrstuvwxyz");
-  define("ALPHABETICCHARS", UPPERCHARS.LOWERCHARS);
-  define("NUMBERS", "0123456789");
-  define("SPECIALCHARS", "!@#$%^&*()-+_=[]{}\|;:'\",.<>/?"); // <- only used when generating a password
-  define("EASYVOWELS", "bcdfghjkmnpqrstvwxz");
-  define("EASYCONSONANTS", "aeuy");
-
-  /**
    * The atkPasswordAttribute class represents an attribute of a node
    * that is a password field. It automatically encrypts passwords
    * with the MD5 method of PHP. To update a password a user has to

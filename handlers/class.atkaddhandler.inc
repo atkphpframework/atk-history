@@ -34,6 +34,22 @@
     function action_add()
     {
       $page = &$this->getPage();
+
+      list($type, $attribute, $partial) = explode('.', $this->m_partial);
+      if ($type == 'attribute')
+      {
+        $attr =& $this->m_node->getAttribute($attribute);
+        if ($attr == NULL)
+        {
+          atkerror("Unknown / invalid attribute '$attribute' for node '".$this->m_node->atkNodeType()."'");
+          return;
+        }
+        
+        $result = $attr->partial($partial, 'add');
+        $page->addContent($result);
+        return;
+      }      
+      
       $page->addContent($this->m_node->renderActionPage("add", $this->invoke("addPage")));
     }
 
@@ -51,7 +67,15 @@
 
       // Utility.
       $edithandler = &$node->getHandler("edit");
+      
+      // check if there are postvars set for filling the record, this 
+      // can happen when a new selection is made using the select handler etc.
+      if ($record == NULL)
+      {
+        $record = $this->m_node->updateRecord('', NULL, NULL, true);        
+      }
 
+      $page->register_script(atkconfig('atkroot').'atk/javascript/prototype/prototype.js');            
       $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");
       $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
       $page->register_loadscript("placeFocus();");
@@ -61,11 +85,12 @@
 
       $params = $node->getDefaultActionParams();
 
-      $formstart ='<form name="entryform" enctype="multipart/form-data" action="'.$controller->getPhpFile().'?'.SID.'"'.
+      $formstart ='<form id="entryform" name="entryform" enctype="multipart/form-data" action="'.$controller->getPhpFile().'?'.SID.'"'.
                      ' method="post" onsubmit="return globalSubmit(this)">';
 
-      /* if we are on an admin page we would like to stay on the admin page after adding a new record */
-      if ($node->m_action == "admin" && count($record['atkerror']) == 0) $formstart.=session_form(SESSION_NESTED);
+      /* if we are on an admin page we would like to stay on the admin page after adding a new record 
+         if we are on level 0, we want to present the user with a new (empty!) addition form when (s)he gets back */
+      if ($node->m_action == "admin" || atkLevel() == 0) $formstart.=session_form(SESSION_NESTED);
       else $formstart.=session_form();
             
       $formstart .= $controller->getHiddenVarsString();

@@ -42,6 +42,7 @@
     var $m_flags=0;
     var $m_actionloader;
     var $m_masternode=NULL;
+    var $m_template="recordlist.tpl";
 
     /**
      * @access private
@@ -76,8 +77,29 @@
       return $result;
     }
 
+    function render(&$node, $recordset, $actions, $flags=0, $suppressList="", $formName="", $navigation=array(),$embedprefix="")
+    {
+        $data = $this->getRecordlistData($node, $recordset, $actions, $flags, $suppressList, $formName, $navigation,$embedprefix);
+        $ui   = &$this->m_node->getUi();
+        $res  = $ui->render($this->m_template, array("vorientation"=>$data["vorientation"],
+                                                     "rows"=>$data["rows"],
+                                                     "header"=>$data["header"],
+                                                     "search"=>$data["search"],
+                                                     "sort"=>$data["sort"],
+                                                     "total"=>$data["total"],
+                                                     "searchstart"=>$data["searchstart"],
+                                                     "searchend"=>$data["searchend"],
+                                                     "sortstart"=>$data["sortstart"],
+                                                     "sortend"=>$data["sortend"],
+                                                     "liststart"=>$data["liststart"],
+                                                     "listend"=>$data["listend"],
+                                                     "listid"=>$data["listid"],
+                                                     "mra"=>$data["mra"]),$this->m_node->m_module);
+        return $res;
+    }
+
     /**
-     * Creates a normal recordlist based on the given parameters.
+     * Get records for a recordlist without actually rendering the recordlist.
      * @param Array   $recordset    the list of records
      * @param Array   $actions      the default actions array
      * @param Integer $flags        recordlist flags (see the top of this file)
@@ -87,7 +109,7 @@
      * @param String  $embedprefix  The prefix for embeded fields
      * @return String The rendered recordlist
      */
-    function render(&$node, $recordset, $actions, $flags=0, $suppressList="", $formName="", $navigation=array(),$embedprefix="")
+    function getRecordlistData(&$node, $recordset, $actions, $flags=0, $suppressList="", $formName="", $navigation=array(),$embedprefix="")
     {
       $this->setNode($node);
       $this->m_flags = $flags;
@@ -153,6 +175,13 @@
 
         foreach (array_values($list["heading"]) as $head)
         {
+          // make old recordlist compatible with new order specification
+          if (!empty($head["order"]))
+          {
+            global $ATK_VARS;
+            $head["url"] = session_url($_SERVER["PHP_SELF"].'?atknodetype='.$ATK_VARS["atknodetype"].'&atkaction='.$ATK_VARS["atkaction"].'&atkorderby='.rawurlencode($head["order"]));            
+          }
+          
           if (hasFlag($this->m_flags, RL_EMBED) && !empty($head["url"]))
           {
             $head["url"] = str_replace("atkorderby=","atkorderby{$embedprefix}=",$head["url"]);
@@ -182,6 +211,7 @@
             $headercols[] = array("content"=>"&nbsp;");
           }
         }
+
 
         /**************/
         /* SORT   ROW */
@@ -417,7 +447,7 @@
             {
               $record["cols"][] = array("content"=>$str_actions);
             }
-            //else  $record["cols"][] = array("content"=>"");
+            else $record["cols"][] = array("content"=>"");
           }
 
           /* columns */
@@ -428,7 +458,7 @@
           if ($orientation=="right"||$orientation=="both")
           {
             if (!empty($list["rows"][$i]["actions"])) $record["cols"][] = array("content"=>$str_actions);
-            //else $record["cols"][] = array("content"=>"");
+            else $record["cols"][] = array("content"=>"");
           }
 
           $records[] = $record;
@@ -537,24 +567,26 @@
           $kb->addRecordListHandler($listName, $selectcolor, count($records));
         }
 
-        $res = $ui->render("recordlist.tpl", array("vorientation"=>$vorientation,
-                                                   "rows"=>$records,
-                                                   "header"=>$headercols,
-                                                   "search"=>$searchcols,
-                                                   "sort"=>$sortcols,
-                                                   "total"=>$totalcols,
-                                                   "searchstart"=>$searchstart,
-                                                   "searchend"=>$searchend,
-                                                   "sortstart"=>$sortstart,
-                                                   "sortend"=>$sortend,
-                                                   "liststart"=>$liststart,
-                                                   "listend"=>$listend,
-                                                   "listid"=>$listName,
-                                                   "mra"=>$mra),$this->m_node->m_module);
-        return $res;
+        $recordListData = array("vorientation"=>$vorientation,
+                                "rows"=>$records,
+                                "header"=>$headercols,
+                                "search"=>$searchcols,
+                                "sort"=>$sortcols,
+                                "total"=>$totalcols,
+                                "searchstart"=>$searchstart,
+                                "searchend"=>$searchend,
+                                "sortstart"=>$sortstart,
+                                "sortend"=>$sortend,
+                                "liststart"=>$liststart,
+                                "listend"=>$listend,
+                                "listid"=>$listName,
+                                "mra"=>$mra);
+                 
+        return $recordListData;
       }
     }
-    
+
+
     /**
      * Checks wether there are any actions in the recordlist data
      *
@@ -569,7 +601,7 @@
       }
       return false;
     }
-
+    
     function getCustomMraHtml()
     {
       if (method_exists($this->m_node, "getcustommrahtml"))

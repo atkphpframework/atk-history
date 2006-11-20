@@ -36,12 +36,35 @@
     {
       //atk_var_dump($this->m_renderBoxVars, "m_renderBoxVars action_edit 1");
       $page = &$this->getPage();
-      $recordset = $this->m_node->selectDb($this->m_postvars['atkselector'],"","","","","edit");
+
+      list($type, $attribute, $partial) = explode('.', $this->m_partial);
+      if ($type == 'attribute')
+      {
+        $attr =& $this->m_node->getAttribute($attribute);
+        if ($attr == NULL)
+        {
+          atkerror("Unknown / invalid attribute '$attribute' for node '".$this->m_node->atkNodeType()."'");
+          return;
+        }
+
+        $result = $attr->partial($partial, 'edit');
+        $page->addContent($result);
+        return;
+      }      
+
+      list($record) = $this->m_node->selectDb($this->m_postvars['atkselector'],"","","","","edit");
+      
+      // check if there are postvars set that overwrite the record contents, this can happen when a 
+      // new selection is made using the select handler etc.
+      $fetchedRecord = $this->m_node->updateRecord('', NULL, NULL, true);
+      if (is_array($record))
+        $record = array_merge($record, $fetchedRecord);
+      
       if ($this->m_node->hasFlag(NF_LOCK))
       {
-        if ($this->m_node->m_lock->lock($this->m_node->primaryKey($recordset[0]), $this->m_node->m_table))
+        if ($this->m_node->m_lock->lock($this->m_node->primaryKey($record), $this->m_node->m_table))
         {
-          $res = $this->invoke("editPage", $recordset[0], true);
+          $res = $this->invoke("editPage", $record, true);
         }
         else
         {
@@ -50,9 +73,7 @@
       }
       else
       {
-        atkdebug("invoke editpage");
-        //atk_var_dump($this->m_renderBoxVars, "m_renderBoxVars action_edit 2");
-        $res = $this->invoke("editPage", $recordset[0], false);
+        $res = $this->invoke("editPage", $record, false);
       }
 
       $page->addContent($this->m_node->renderActionPage("edit", $res));
@@ -70,6 +91,7 @@
     {
       $node = &$this->m_node;
       $page = &$this->getPage();
+      $page->register_script(atkconfig('atkroot').'atk/javascript/prototype/prototype.js');      
       $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");
       $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
       $page->register_loadscript("placeFocus();");
@@ -80,7 +102,7 @@
       $controller = &atkcontroller::getInstance();
       $controller->setNode(&$this->m_node);
       
-      $formstart = '<form name="entryform" enctype="multipart/form-data" action="'.$controller->getPhpFile().'?'.SID.'"'.
+      $formstart = '<form id="entryform" name="entryform" enctype="multipart/form-data" action="'.$controller->getPhpFile().'?'.SID.'"'.
                                    ' method="post" onsubmit="return globalSubmit(this)">'.
                                    session_form();
 
@@ -132,15 +154,16 @@
      * @param String $fieldprefix  If set, each form element is prefixed with
      *                             the specified prefix (used in embedded
      *                             forms)
+     * @param boolean $ignoreTab   Ignore the tabs an attribute should be shown on.
      *
      * @return String the edit form as a string
      */
-    function editForm($mode="add", $record = NULL, $forceList="", $suppressList="", $fieldprefix="",$template="")
+    function editForm($mode="add", $record = NULL, $forceList="", $suppressList="", $fieldprefix="",$template="",$ignoreTab=false)
     {
       $node = &$this->m_node;
 
       /* get data, transform into form, return */
-      $data = $node->editArray($mode, $record, $forceList, $suppressList, $fieldprefix);
+      $data = $node->editArray($mode, $record, $forceList, $suppressList, $fieldprefix, $ignoreTab);
       // Format some things for use in tpl.
       /* check for errors and display them */
       $tab = $node->getActiveTab();
@@ -289,6 +312,8 @@
             $tplfield["tooltip"] = $tooltip;
             $editsrc.=$tooltip."&nbsp;";
           }
+          
+          $tplfield['id']=str_replace('.','_',$node->atknodetype().'_'.$field["name"]);
 
           $tplfield["full"] = $editsrc;
         }

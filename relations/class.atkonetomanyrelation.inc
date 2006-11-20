@@ -59,6 +59,7 @@
     /**
      * The maximum number of detail records. If the number of detail records
      * exceeds this maximum, the link for adding new details disappears.
+     * @access private
      * @var int
      */
     var $m_maxRecords = 0;
@@ -67,9 +68,18 @@
     /**
      * The load method might build a custom filter. When it does, we might want
      * to use it again in other methods.
+     * @access private
      * @var string
      */
     var $m_loadFilter = "";
+
+    /**
+     * The field that the foreign key in the destination points to.
+     * Is set to the primary key if no value is provided.
+     * @access private
+     * @var array;
+     */
+    var $m_ownerFields = array();
 
     /**
      * Default constructor.
@@ -115,6 +125,20 @@
         $this->m_refKey[] = $refKey;
       }
     }
+    
+    function setOwnerFields($ownerfields)
+    {
+      $this->m_ownerFields = $ownerfields;
+    }
+    
+    function getOwnerFields()
+    {
+      if (is_array($this->m_ownerFields) && count($this->m_ownerFields)>0)
+      {
+        return $this->m_ownerFields;
+      }
+      return $this->m_ownerInstance->m_primaryKey;
+    }
 
     /**
      * Returns a displayable string for this value, to be used in HTML pages.
@@ -141,16 +165,16 @@
 
       if ($this->createDestination())
       {
-        /* record list */
+        // record list
         if (count($myrecords) > 0)
         {
           $result = "";
-          /* display in list mode */
+          // display in list mode
           if (($mode == "list") || ($mode == "csv"))
             for ($i = 0; $i < count($myrecords);$i++)
-              $result .= ($i > 0 ? "<br>" : "").$this->m_destInstance->descriptor($myrecords[$i]);
+              $result .= ($i > 0 && $mode == "list" ? "<br>" : ($i > 0 ? ', ' : '')).$this->m_destInstance->descriptor($myrecords[$i]);
 
-          /* display in view mode */
+          // display in view mode
           else
           {
             if (!empty($this->m_destinationFilter)) $filter = rawurlencode($this->m_destinationFilter);
@@ -231,35 +255,18 @@
       {
         if ($this->m_ownerInstance->m_postvars[$this->fieldName()."_save"])
         {
-          $this->m_ownerInstance->m_postvars[$this->fieldName()]['lng'] = $this->m_ownerInstance->m_postvars['lng'];
-          foreach (array_keys($this->m_ownerInstance->m_postvars[$this->fieldName()]) as $fieldname)
-          {
-            if (!in_array($fieldname,array("atkaction","atknodetype","atkprimkey","atkprevaction")))
-            {
-              $attribute = &$this->m_destInstance->getAttribute($fieldname);
+          $destCopy = $this->m_destInstance;
+          $destCopy->m_postvars = $this->m_ownerInstance->m_postvars[$this->fieldName()];
+          $record = $destCopy->updateRecord();
 
-              if (in_array($fieldname,array('_lgswitch','lng')))
-              {
-                $this->m_ownerInstance->m_postvars[$this->fieldName()][$fieldname] = $this->m_ownerInstance->m_postvars[$fieldname];
-              }
-              else if (is_object($attribute))
-              {
-                $this->m_ownerInstance->m_postvars[$this->fieldName()][$fieldname] = $attribute->fetchValue($this->m_ownerInstance->m_postvars[$this->fieldName()]);
-              }
-              else
-              {
-                atkerror("$fieldname is no attribute for integrated save, is this correct?");
-              }
-            }
-          }
-          $this->m_destInstance->validate($this->m_ownerInstance->m_postvars[$this->fieldName()],"add");
-          if (!$this->m_ownerInstance->m_postvars[$this->fieldName()]['atkerror'])
+          $this->m_destInstance->validate($record,"add");
+          if (!$record['atkerror'])
           {
-            $this->m_destInstance->addDb($this->m_ownerInstance->m_postvars[$this->fieldName()]);
+            $this->m_destInstance->addDb($record);
           }
           else
           {
-            $error = "<span class='error'>".atktext($this->m_ownerInstance->m_postvars[$this->fieldName()]['atkerror'][0]['attrib_name'],$this->m_ownerInstance->m_module).': '.$this->m_ownerInstance->m_postvars[$this->fieldName()]['atkerror'][0]['msg']."</span><br />";
+            $error = "<span class='error'>".$record['atkerror'][0]['attrib_name'].': '.$record['atkerror'][0]['msg']."</span><br />";
           }
         }
       }
@@ -307,13 +314,14 @@
 
         $destInstanceCopy = $this->m_destInstance;
         $editrecord=array();
-        foreach ($destInstanceCopy->m_attribList as $key=> $attribute)
+        foreach (array_keys($destInstanceCopy->m_attribList) as $key)
         {
-          if (strtolower($attribute->m_destination)==strtolower($this->m_ownerInstance->atknodetype()))
+          // When we're in a OTM we need to hide MTOs back to the current owner
+          $p_attrib = &$destInstanceCopy->m_attribList[$key];
+          if (strtolower($p_attrib->m_destInstance->m_table)==strtolower($this->m_ownerInstance->m_table))
           {
             $selector = array_values(decodeKeyValuePair($this->m_ownerInstance->m_postvars["atkselector"]));
-            $editrecord[$attribute->fieldname()] = array($this->m_ownerInstance->primaryKeyField()=>$selector[0]);
-            $p_attrib = &$destInstanceCopy->m_attribList[$key];
+            $editrecord[$p_attrib->fieldname()] = array($this->m_ownerInstance->primaryKeyField()=>$selector[0]);
             $p_attrib->addFlag(AF_HIDE);
           }
         }
@@ -322,7 +330,8 @@
         atkimport("atk.handlers.atkedithandler");
         $handler = new atkEditHandler();
         $handler->m_node = &$destInstanceCopy;
-        $output.=$handler->editForm("add",$editrecord,"","",$fname."_AE_","integratededitform.tpl");
+
+        $output.=$handler->editForm("add",$editrecord,"","",$fname."_AE_","integratededitform.tpl",true);
 
         $output.= $this->_getEmbeddedButtons($fname);
         $text = atktext("link_".$fname."_add",$this->m_ownerInstance->m_module,$this->m_owner,"","",true);
@@ -438,26 +447,7 @@
       $url = "";
       if (($this->m_maxRecords==0||$this->m_maxRecords>count($myrecords))&&$this->createDestination() && !$this->m_destInstance->hasFlag(NF_NO_ADD))
       {
-        if ($this->destinationHasRelation())
-        {
-          // we need to set the filter of the record we are going to add.
-          // The referential key must be set to the value of the current
-          // primary key.
-          for ($i=0, $_i=count($this->m_refKey); $i<$_i; $i++)
-          {
-            $primkeyattr = &$this->m_ownerInstance->m_attribList[$this->m_ownerInstance->m_primaryKey[$i]];
-
-            $filterelems[] = $this->m_refKey[0].".".$this->m_ownerInstance->m_primaryKey[$i]."=".$primkeyattr->value2db($record);
-
-          }
-        }
-        else
-        {
-          for ($i=0, $_i=count($this->m_refKey); $i<$_i; $i++)
-          {
-            $filterelems[] = $this->m_refKey[$i]."=".$record[$this->m_ownerInstance->m_primaryKey[$i]];
-          }
-        }
+        $filterelems = $this->_getFilterElements($record);
         $strfilter = implode(" AND ", $filterelems);
         if ($this->m_destinationFilter!="")
         {
@@ -478,6 +468,30 @@
         $url = href($add_url,$label,SESSION_NESTED,$saveform,$onchange.' class="atkonetomanyrelation"');
       }
       return $url;
+    }
+    
+    function _getFilterElements($record)
+    {
+      $ownerfields = $this->getOwnerFields();
+      if ($this->destinationHasRelation())
+      {
+        // we need to set the filter of the record we are going to add.
+        // The referential key must be set to the value of the current
+        // primary key.
+        for ($i=0, $_i=count($this->m_refKey); $i<$_i; $i++)
+        {
+          $primkeyattr = &$this->m_ownerInstance->m_attribList[$ownerfields[$i]];
+          $filterelems[] = $this->m_refKey[0].".".$ownerfields[$i]."=".$primkeyattr->value2db($record);
+        }
+      }
+      else
+      {
+        for ($i=0, $_i=count($this->m_refKey); $i<$_i; $i++)
+        {
+          $filterelems[] = $this->m_refKey[$i]."=".$record[$ownerfields[$i]];
+        }
+      }
+      return $filterelems;
     }
 
     /**
@@ -555,10 +569,11 @@
       $whereelems = array();
 
       if (count($this->m_refKey)==0||$this->m_refKey[0]=="") $this->m_refKey[0]=$this->m_owner;
+      $ownerfields = $this->getOwnerFields();
 
       for ($i=0, $_i = count($this->m_refKey); $i<$_i; $i++)
       {
-        $primkeyattr = &$this->m_ownerInstance->m_attribList[$this->m_ownerInstance->m_primaryKey[$i]];
+        $primkeyattr = &$this->m_ownerInstance->m_attribList[$ownerfields[$i]];
 
         if (!$primkeyattr->isEmpty($record))
         {
@@ -627,13 +642,13 @@
             }
             ($paging==true)?$limitarray=$this->fetchLimitArray():$limitarray="";
 
+            $stmt = "";
             if(isset($this->m_ownerInstance->m_postvars['atkorderby'.$this->fieldName()]))
             {
               $atkorderby = $this->m_ownerInstance->m_postvars['atkorderby'.$this->fieldName()];
               // EVIL BAD SMELL, sorting and recordlist embedding is handled in a very cumbersome way (with prefixes and embedprefixes
               // that are hardly understandable
               $elems = explode(" ", $atkorderby);
-              $stmt = "";
               if (isset($this->m_destInstance->m_attribList[$elems[0]]))
               {
                 $attr = &$this->m_destInstance->getAttribute($elems[0]);
@@ -736,10 +751,11 @@
       $classname = $this->m_destination;
       $cache_id = $this->m_owner.".".$this->m_name;
       $rel = &getNode($classname,$cache_id);
+      $ownerfields = $this->getOwnerFields();
 
       for ($i=0, $_i = count($this->m_refKey); $i<$_i; $i++)
       {
-         $primkeyattr = &$this->m_ownerInstance->m_attribList[$this->m_ownerInstance->m_primaryKey[$i]];
+         $primkeyattr = &$this->m_ownerInstance->m_attribList[$ownerfields[$i]];
          $whereelems[] = $rel->m_table.".".$this->m_refKey[$i]."='".$primkeyattr->value2db($record)."'";
       }
       $where = implode(" AND ", $whereelems);
@@ -773,6 +789,7 @@
         {
           if ($this->createDestination())
           {
+            $ownerfields = $this->getOwnerFields();
             for ($i=0;$i<count($onetomanyrecs);$i++)
             {
               // the referential key of the onetomanyrecs could be wrong, if we
@@ -782,14 +799,14 @@
               {
                 for ($j=0, $_j = count($this->m_refKey); $j<$_j; $j++)
                 {
-                  $onetomanyrecs[$i][$this->m_refKey[$j]] = $record[$this->m_ownerInstance->m_primaryKey[$j]];
+                  $onetomanyrecs[$i][$this->m_refKey[$j]] = $record[$ownerfields[$j]];
                 }
               }
               else
               {
                 for ($j=0, $_j = count($this->m_refKey); $j<$_j; $j++)
                 {
-                   $onetomanyrecs[$i][$this->m_refKey[0]][$this->m_ownerInstance->m_primaryKey[$j]] = $record[$this->m_ownerInstance->m_primaryKey[$j]];
+                   $onetomanyrecs[$i][$this->m_refKey[0]][$ownerfields[$j]] = $record[$ownerfields[$j]];
                 }
               }
 
@@ -850,6 +867,7 @@
                 ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>';
       return $result;
     }
+
 
     /**
      * Returns the condition (SQL) that should be used when we want to join an owner
@@ -946,6 +964,7 @@
      
 
 
+
      function getSearchCondition(&$query, $table, $value, $searchmode)
      {
        $usedfields = array();
@@ -990,9 +1009,10 @@
          $attr->searchCondition($query, $alias, $value, $searchmode);
 
          $condition = array();
-         for ($i = 0; $i < sizeof($this->m_ownerInstance->m_primaryKey); $i++)
+         $ownerfields = $this->getOwnerFields();
+         for ($i = 0; $i < sizeof($ownerfields); $i++)
          {
-            $condition[] = $this->m_ownerInstance->m_table . "." . $this->m_ownerInstance->m_primaryKey[$i] . "=". $alias . "." . $this->m_refKey[$i];
+            $condition[] = $this->m_ownerInstance->m_table . "." . $ownerfields[$i] . "=". $alias . "." . $this->m_refKey[$i];
          }
 
          $query->addJoin($table,$alias,implode(" AND ",$condition),false);

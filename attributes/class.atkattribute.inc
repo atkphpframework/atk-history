@@ -460,6 +460,13 @@
     var $m_searchmode = "";
 
     /**
+     * Wether to force an insert of the attribute
+     * @access private
+     * @var bool
+     */
+    var $m_forceinsert=false;
+    
+    /**
      * Wether to force an update of the attribute
      * @access private
      * @var bool
@@ -480,6 +487,13 @@
      * @var String
      */
     var $m_onchangehandler_init = "";
+    
+    /**
+     * Variable to store depended attributes.
+     * @access private
+     * @var Array
+     */
+    var $m_dependees = array();    
 
     /**
      * Constructor
@@ -601,7 +615,7 @@
      */
     function isEmpty($record)
     {
-      return (!isset($record[$this->fieldName()])||(is_string($record[$this->fieldName()]) && $record[$this->fieldName()]===""));
+      return (!isset($record[$this->fieldName()])||$record[$this->fieldName()]===""||$record[$this->fieldName()]===NULL);
     }
 
     /**
@@ -620,15 +634,7 @@
     {
       if (is_array($rec)&&isset($rec[$this->fieldName()]))
       {
-        if(is_object($this->m_ownerInstance))
-        {
-          $db = &$this->m_ownerInstance->getDb();
-          return $db->escapeSQL($rec[$this->fieldName()]);
-        }
-        else
-        {
-          return escapeSQL($rec[$this->fieldName()]);
-        }
+        return $this->escapeSQL($rec[$this->fieldName()]);
       }
       return NULL;
     }
@@ -655,6 +661,17 @@
     }
 
     /**
+     * Is there a value posted for this attribute?
+     *
+     * @param array $postvars
+     * @return boolean posted?
+     */
+    function isPosted($postvars)
+    {
+      return is_array($postvars)&&isset($postvars[$this->fieldName()]);
+    }
+    
+    /**
      * Convert values from an HTML form posting to an internal value for
      * this attribute.
      *
@@ -667,7 +684,7 @@
      */
     function fetchValue($postvars)
     {
-      if (is_array($postvars)&&isset($postvars[$this->fieldName()]))
+      if ($this->isPosted($postvars))
       {
         return $postvars[$this->fieldName()];
       }
@@ -698,9 +715,13 @@
         $onchange = '';
       }
 
+      $size = $this->m_size;
+      if ($mode == 'list' && $size > 20) 
+        $size = 20;
+      
       $result = '<input type="text" id="'.$id.'" name="'.$id.'" class="atkattribute"'.
                 ' value="'.(isset($record[$this->fieldName()])?htmlspecialchars($record[$this->fieldName()]):"").'"'.
-                ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').
+                ($size > 0 ? ' size="'.$size.'"' : '').
                 ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').' '.$onchange.' />';
 
       return $result;
@@ -799,6 +820,8 @@
      */
     function addToEditArray($mode, &$arr, &$defaults, &$error, $fieldprefix)
     {
+      $this->_registerDependees($mode, $fieldprefix);
+      
       /* hide */
       if (($mode=="edit" && $this->hasFlag(AF_HIDE_EDIT)) || ($mode=="add" && $this->hasFlag(AF_HIDE_ADD)))
       {
@@ -942,7 +965,7 @@
 
         if (!hasFlag($flags, RL_NO_SORT) && !$this->hasFlag(AF_NO_SORT))
         {
-          $arr["heading"][$key]["url"] = $this->listHeaderSortUrl($columnConfig);
+          $arr["heading"][$key]["order"] = $this->listHeaderSortOrder($columnConfig);
         }
 
         if (hasFlag($flags, RL_EXT_SORT))
@@ -984,7 +1007,12 @@
       {
         /* an <attributename>_display function may be provided in a derived class to display an attribute */
         $function = $this->m_name."_display";
-        if (method_exists($this->m_ownerInstance, $function))
+        if (in_array($this->fieldName(), $this->m_ownerInstance->m_editableListAttributes) && $this->m_ownerInstance->allowed('edit', $arr["rows"][$nr]["record"]))
+        {
+          $arr["rows"][$nr]["data"][$fieldprefix.$this->fieldName()] = 
+            $this->getEdit('list', $arr["rows"][$nr]["record"], 'atkrecordlistdata_AE_'.$arr['name'].'_AE_'.$nr.'_AE_');
+        }
+        elseif (method_exists($this->m_ownerInstance, $function))
           $arr["rows"][$nr]["data"][$fieldprefix.$this->fieldName()] = $this->m_ownerInstance->$function($arr["rows"][$nr]["record"], "list");
         else $arr["rows"][$nr]["data"][$fieldprefix.$this->fieldName()] = $this->display($arr["rows"][$nr]["record"], "list");
 
@@ -1107,7 +1135,7 @@
       	// auto wildcard detection
       	$searchmode = "wildcard";
       }
-
+      
       $searchCondition = &$this->getSearchCondition($query, $table, $value, $searchmode);
       if ($searchCondition)
       {
@@ -1343,23 +1371,24 @@
     {
       return ($recA[$this->fieldName()] == $recB[$this->fieldName()]);
     }
+    
+    /**
+     * Used to force an attribute to update with every addDb() call
+     * @param bool $force Wether or not to force the attribute to insert
+     */
+    function setForceInsert($force)
+    {
+      $this->m_forceinsert = $force;
+    }
 
     /**
-     * This function is called by the framework to determine if the attribute
-     * needs to be saved to the database in an updateDb call.
-     *
-     * The regular atkAttribute returns false if AF_READONLY_EDIT or
-     * AF_HIDE_EDIT are set, but derived attributes may override this
-     * behavior.
-     *
-     * @param array $record The record that is going to be saved.
-     * @return boolean True if this attribute should participate in the update
-     *                 query; false if not.
+     * Getter for wether or not an attribute is forced to insert
+     * @return bool Wether or not an attribute is forced to insert
      */
-    function needsUpdate($record)
+    function getForceInsert()
     {
-      return ((!$this->hasFlag(AF_READONLY_EDIT) && !$this->hasFlag(AF_HIDE_EDIT)) || $this->m_forceupdate);
-    }
+      return $this->m_forceinsert;
+    }    
 
     /**
      * Used to force an attribute to update with every updateDb() call
@@ -1396,12 +1425,30 @@
     {
       return (!$this->hasFlag(AF_HIDE_ADD) ||
               $this->hasFlag(AF_AUTO_INCREMENT) ||
-              !$this->isEmpty($record));
+              !$this->isEmpty($record) ||
+              $this->m_forceinsert);
 
       // If we are set to hide_add, we will only insert into the
       // db if a value has been set (for example by an initial_values
       // method). Also, autoincrement fields might be hidden, and their
       // value is still empty, but they do need to be inserted lateron.
+    }
+
+    /**
+     * This function is called by the framework to determine if the attribute
+     * needs to be saved to the database in an updateDb call.
+     *
+     * The regular atkAttribute returns false if AF_READONLY_EDIT or
+     * AF_HIDE_EDIT are set, but derived attributes may override this
+     * behavior.
+     *
+     * @param array $record The record that is going to be saved.
+     * @return boolean True if this attribute should participate in the update
+     *                 query; false if not.
+     */
+    function needsUpdate($record)
+    {
+      return ((!$this->hasFlag(AF_READONLY_EDIT) && !$this->hasFlag(AF_HIDE_EDIT)) || $this->m_forceupdate);
     }
 
     /**
@@ -1829,19 +1876,8 @@
         $field["searchmode"] = $sel;
       }
 
-
       // set "label" value:
-      if ($this->hasFlag(AF_NOLABEL)==false)
-      {
-        if ($this->hasFlag(AF_BLANKLABEL))
-        $field['label'] = "";
-        else
-        $field['label'] = $this->label($record);
-      }
-      else
-      {
-        $field['line'] = $field['widget'];
-      }
+      $field['label'] = $this->label($record);
 
       // add $field to fields array
       $fields[] = $field;
@@ -1891,10 +1927,8 @@
       return $res;
     }
 
-    function listHeaderSortUrl(&$columnConfig)
+    function listHeaderSortOrder(&$columnConfig)
     {
-      global $ATK_VARS;
-
       $order = $this->fieldName();
 
       if (isset($columnConfig->m_colcfg[$order]))
@@ -1903,9 +1937,7 @@
         if ($direction=="asc") $order.=" desc";
       }
 
-      //if ($columnConfig->getDirection($order) != "asc") $order .= " ASC";
-
-      return session_url($_SERVER["PHP_SELF"].'?atknodetype='.$ATK_VARS["atknodetype"].'&atkaction='.$ATK_VARS["atkaction"].'&atkorderby='.rawurlencode($order));
+      return $order;
     }
 
     function getOrderByStatement()
@@ -1948,6 +1980,73 @@
     {
       $db = &$this->getDb();
       return $db->escapeSQL($value, $wildcards);
+    }
+    
+    /**
+     * Handle partial.
+     *
+     * @param $partial partial name
+     * @param $mode    add/edit mode
+     */
+    function partial($partial, $mode)
+    {
+      $method = "partial_{$partial}";
+      
+      if (!method_exists($this, $method))
+      {
+        return '<span style="color: red; font-weight: bold">Invalid partial!</span>';
+      }
+      
+      return $this->$method($mode);
+    }
+    
+    /**
+     * Refreshes the add/edit field for this attribute.
+     *
+     * @param $mode add/edit mode
+     */
+    function partial_refresh($mode)
+    {
+      $record = $this->m_ownerInstance->updateRecord();
+      $fieldprefix = $this->m_ownerInstance->m_postvars['atkfieldprefix']; 
+      $this->_registerDependees($mode, $fieldprefix);          
+      return $this->getEdit($mode, $record, $fieldprefix);
+    }
+
+    /**
+     * Add dependee.
+     */
+    function addDependee($attribName)
+    {
+      $this->m_dependees[] = $attribName;
+    }
+    
+    /**
+     * Register change handlers for dependees.
+     */
+    function _registerDependees($mode="", $fieldprefix="")
+    {
+      $id = $fieldprefix.$this->fieldName();
+
+      $page = &$this->m_ownerInstance->getPage();
+      $page->register_script(atkconfig('atkroot').'atk/javascript/class.atkattribute.js');
+      
+      foreach ($this->m_dependees as $attribName)
+      {
+        $attrField = str_replace('.', '_', $this->m_ownerInstance->atkNodeType())."_$attribName";  
+        $url = addslashes(partial_url($this->m_ownerInstance->atkNodeType(), $mode == "add" ? "add" : "edit", "attribute.$attribName.refresh", array("atkfieldprefix" => $fieldprefix)));
+        
+        $code = "ATK.Attribute.refresh('$attrField', '$url')";
+        $this->addOnChangeHandler($code);
+
+        $isPartial = $this->m_ownerInstance->m_partial != NULL;
+        if (!$isPartial)
+        {
+          $code = "ATK.Attribute.refresh('$attrField', '$url', true)";        
+        }
+        
+        $page->register_loadscript($code);        
+      }
     }
   }
 ?>

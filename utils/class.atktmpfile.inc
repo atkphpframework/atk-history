@@ -49,6 +49,16 @@
         return file($this->getPath());
       }
     }
+    
+    function readFile()
+    {
+      if ($this->exists())
+      {
+        if (function_exists("file_get_contents"))
+          return file_get_contents($this->getPath());
+        else return implode(null, $this->read());
+      }
+    }
 
     function writeFile($data)
     {
@@ -99,6 +109,21 @@
         $this->m_mode="";
         $this->m_fp = null;
       }
+    }
+    
+    /**
+     * Send the file contents directly to the browser.
+     *
+     * @return boolean True if succesful, false on error.
+     */
+    function fpassthru()
+    {
+      if ($this->open("r"))
+      {
+        fpassthru($this->m_fp);      
+        $this->close();
+      }
+      return true;
     }
 
     function remove()

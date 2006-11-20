@@ -146,6 +146,12 @@
    */
   $config_pgsqlfetchmode = defined("PGSQL_ASSOC") ? PGSQL_ASSOC : 0;
 
+  /**
+   * Database Cluster nodes
+   * $config_db_cluster["default"] = array("master","slave","slave2");
+   */
+  $config_db_cluster = array();
+
   /********************************** SECURITY *******************************/
 
   /**
@@ -466,6 +472,13 @@
    * @var String
    */
   $config_menu_align = "center";
+  
+  /**
+   * Auto-include logout link in menu?
+   * 
+   * @var Boolean
+   */
+  $config_menu_logout_link = true;
 
   /**
    * 0 = no   - 1 = yes
@@ -490,6 +503,13 @@
    * @var boolean
    */
   $config_tabs = true;
+  
+  /**
+   * Whatever DHTML tabs should be stateful or not
+   * (E.g. the current tab is saved for the current node/selector combination)
+   * @var boolean
+   */
+  $config_dhtml_tabs_stateful = true;
 
   /**
    * The number of records to display on a single page
@@ -726,13 +746,51 @@
    * @var boolean
    */
   $config_mail_enabled = true;
-  
+
   /**
    * Default extended search action. This action can always be overriden
    * in the node by using $node->setExtendedSearchAction. At this time
    * (by default) the following values are supported: 'search' or 'smartsearch'
-   * 
+   *
    * @var string
    */
   $config_extended_search_action = 'search';
+  
+  /**
+   * Should all many-to-one relations have the AF_RELATION_AUTOCOMPLETE flag set?
+   * 
+   * @var boolean
+   */
+  $config_manytoone_autocomplete_default = false;
+  
+  /**
+   * Should all many-to-one relations that have the AF_LARGE flag set also 
+   * have the AF_RELATION_AUTOCOMPLETE flag set?
+   * 
+   * @var boolean
+   */
+  $config_manytoone_autocomplete_large = true;  
+  
+  /**
+   * Controls how many characters a user must enter before an auto-completion 
+   * search is being performed.
+   * 
+   * @var int
+   */
+  $config_manytoone_autocomplete_minchars = 2;
+    
+  /**
+   * The search mode of the autocomplete fields. Can be 'startswith', 'exact' or 'contains'.
+   *
+   * @access private
+   * @var String
+   */
+  $config_manytoone_autocomplete_searchmode = "contains";
+  
+  /**
+   * Value determines wether the search of the autocompletion is case-sensitive.
+   *
+   * @var boolean
+   */
+  $config_manytoone_autocomplete_search_case_sensitive = false;
 ?>
