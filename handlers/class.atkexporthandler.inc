@@ -121,7 +121,7 @@
         {
           if($item['checked']) $checked = 'CHECKED';
           else $checked = '';
-          
+
           $content.= '<TD align="left" width="'.(90/$cols).'%"><LABEL><INPUT TYPE="checkbox" NAME="export_'.$item['name'].'" VALUE="export_'.$group[$i]['name'].'" '.$checked.'>'.$item['text'].'</LABEL></TD>';
           $idx++;
           if($idx%$cols == 0)
@@ -175,7 +175,7 @@
       $delimiter = $this->m_postvars["delimiter"];
       $source = $this->m_postvars;
       $list_includes = array();
-      foreach($source as $name => $value) 
+      foreach($source as $name => $value)
       {
           $pos = strpos($name, 'export_');
           if (is_integer($pos) and $pos == 0)
@@ -193,13 +193,13 @@
       foreach($atts as $name => $object)
       {
         $att = &$node_bk->getAttribute($name);
-        if(in_array($name, $list_includes))
-          $att->m_flags &= !AF_HIDE_LIST;
+        if(in_array($name, $list_includes) && $att->hasFlag(AF_HIDE_LIST))
+          $att->m_flags ^= AF_HIDE_LIST;
         else
           $att->addFlag(AF_HIDE_LIST);
       }
 
-      if (!is_array($actions)) 
+      if (!is_array($actions))
       {
         $actions = $node->defaultActions("export");
       }
@@ -221,7 +221,7 @@
         }
         $recordset_new[] = $row;
       }
-      
+
       $rl->render($node_bk, $recordset_new, "", $enclosure, $enclosure.$delimiter, "\r\n", 1, "", "", array('filename' => 'export_'.$node->m_type), "csv", $source['generatetitlerow'], true);
       return true;
     }
