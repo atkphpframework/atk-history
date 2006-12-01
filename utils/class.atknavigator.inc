@@ -30,6 +30,8 @@
    */
   class atkNavigator
   {
+    var $m_displayShowAll = true;
+
     function buildNavigation(&$node, $mode="", $navurls="", $embedded=false)
     {
       if ($navurls=="")
@@ -202,8 +204,11 @@
         if ($i!=$count-1) $nav.=" ";
       }
 
-      if (isset($node->m_postvars['atksearch']))
-        $nav.=" - ".href(dispatch_url("{$node->m_module}.{$node->m_type}", $node->m_action,array("atksearch"=>"")), atktext("view_all", "atk"));
+      if ($this->m_displayShowAll == true)
+      {
+        if (isset($node->m_postvars['atksearch']))
+          $nav.=" - ".href(dispatch_url("{$node->m_module}.{$node->m_type}", $node->m_action,array("atksearch"=>"")), atktext("view_all", "atk"));
+      }
 
       return $nav;
     }

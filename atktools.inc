@@ -219,6 +219,31 @@
       $g_debug_msg[]=$txt;
     }
   }
+  
+  /**
+   * Send a notice to the debug log.
+   * A notice doesn't get show unless your debug level is 3 or higher.
+   *
+   * @param String $txt The text that will be added to the log
+   */
+  function atknotice($txt)
+  {
+    return atkdebug($txt,DEBUG_NOTICE);
+  }
+  
+  /**
+   * Send a warning to the debug log.
+   * A warning gets shown more prominently than a normal debug line.
+   * However it does not trigger a mailreport 
+   * or anything else that an atkerror triggers.
+   *
+   * @param unknown_type $txt
+   * @return unknown
+   */
+  function atkwarning($txt)
+  {
+    return atkdebug($txt,DEBUG_WARNING);
+  }
 
   function atkGetTimingInfo()
   {
@@ -620,9 +645,9 @@
 
 
   /**
-   * Same as array_merge from php, but without duplicates.. 
+   * Same as array_merge from php, but without duplicates..
    * Supports unlimited number of arrays as arguments.
-   * 
+   *
    * @param Array $array1 the first array
    * @param Array $array2 the second array
    * @return Array The result of the merge between $array1 and $array2
@@ -630,7 +655,7 @@
   function atk_array_merge($array1, $array2)
   {
     $res = Array();
-    
+
     $arrays = func_get_args();
     for ($i = 0, $_i = count($arrays); $i < $_i; $i++)
     {
@@ -642,7 +667,7 @@
         }
       }
     }
-    
+
     return $res;
   }
 
@@ -1140,10 +1165,14 @@
    * @param String $conn The name of the connection to retrieve
    * @return atkDb Database connection instance
    */
-  function &atkGetDb($conn="default", $reset=false)
+  function &atkGetDb($conn=NULL, $reset=false, $mode="r")
   {
     atkimport("atk.db.atkdb");
-    $db = &atkDb::getInstance($conn, $reset);
+    if ($conn == NULL)
+    {
+      $conn = atkDb::getDefault();
+    }
+    $db = &atkDb::getInstance($conn, $reset, $mode);
     return $db;
   }
 
@@ -1577,7 +1606,7 @@
       $url .= '&'.buildQueryString($params);
     return $url;
   }
-  
+
   /**
    * Generate a partial url.
    *
@@ -1594,7 +1623,7 @@
     $params['atkpartial'] = $partial;
 
     return session_url(dispatch_url($node, $action, $params), SESSION_PARTIAL);
-  }   
+  }
 
   /**
    * Writes trace file to system tmp directory
@@ -1694,20 +1723,20 @@
   /**
    * Imports a zend-file
    * @param string $classname Name of class in zend-format (starting with a Capital)
-   */  
+   */
   function zendimport($classname)
-  {        
+  {
     $current_path = getcwd();
     chdir(atkConfig('atkroot')."atk/ext/zend/");
-    
+
     $filename = 'Zend/'.$classname.'.php';
-    
+
     if (file_exists($filename))
     {
       require_once $filename;
     }
-    
-    chdir($current_path);    
+
+    chdir($current_path);
   }
 
   /**
@@ -2075,5 +2104,22 @@
     }
 
     return $s_ip;
+  }
+  
+  /**
+   * Function checks php version and clones the 
+   * given attribute in the right way
+   *
+   * @param object $attribute The attribute to clone
+   * @return object $attr
+   */
+  function atkClone($attribute)
+  {
+    if (intval(substr(phpversion(),0,1))<5)
+      $attr = $attribute;
+    else 
+      $attr = clone($attribute);
+    
+    return $attr;
   }
 ?>

@@ -392,18 +392,20 @@
     /**
      * Populate the record with the destination record data.
      *
-     * @param $record  record
-     * @param $full    load all data or only the descriptor fields?
+     * @param array $record        record
+     * @param mixed $fullOrFields  load all data, only the given fields or only the descriptor fields?
      */
-    function populate(&$record, $full=false)
+    function populate(&$record, $fullOrFields=false)
     {
       if ($record[$this->fieldName()] == "") return;
 
-      atkdebug("Delayed loading of ".($full ? "" : "descriptor ")."fields for ".$this->m_name);
+      atkdebug("Delayed loading of ".($fullOrFields || is_array($fullOrFields) ? "" : "descriptor ")."fields for ".$this->m_name);
       $this->createDestination();
 
       $includes = "";
-      if (!$full)
+      if (is_array($fullOrFields))
+        $includes = array_merge($this->m_destInstance->m_primaryKey, $fullOrFields);
+      else if (!$fullOrFields)
         $includes = $this->m_destInstance->descriptorFields();
 
       list($record[$this->fieldName()]) =
@@ -1048,13 +1050,7 @@
      */
     function load(&$db, $record, $mode)
     {
-      if ($this->createDestination())
-      {
-        $condition = $this->m_destInstance->m_table.'.'.$this->m_destInstance->primaryKeyField().
-                     "='".$record[$this->fieldName()][$this->m_destInstance->primaryKeyField()]."'";
-        list($record) = $this->m_destInstance->selectDb($condition, "", "", "", "", $mode);
-        return $record;
-      }
+      return $this->_getSelectedRecord($record, $mode);
     }
 
     /**
@@ -1151,6 +1147,30 @@
           return $this->m_destInstance->m_attribList[$this->m_destInstance->primaryKeyField()]->dbFieldSize();
       }
       return 0;
+    }
+    
+    /**
+     * Returns the selected record for this many-to-one relation. Uses
+     * the owner instance $this->fieldName()."_selected" method if it exists.
+     */
+    function _getSelectedRecord($record=array(), $mode="select")
+    {
+      $method = $this->fieldName()."_selected";
+      if (method_exists($this->m_ownerInstance, $method))
+        return $this->m_ownerInstance->$method($record, $mode);
+      else return $this->getSelectedRecord($record, $mode);
+    }    
+    
+    /**
+     * Returns the currently selected record.
+     */
+    function getSelectedRecord($record=array(), $mode="select")
+    {
+      $this->createDestination();
+      $condition = $this->m_destInstance->m_table.'.'.$this->m_destInstance->primaryKeyField().
+                   "='".$record[$this->fieldName()][$this->m_destInstance->primaryKeyField()]."'";
+      list($record) = $this->m_destInstance->selectDb($condition, "", "", "", "", $mode);
+      return $record;
     }
 
     /**
@@ -1259,11 +1279,13 @@
      */
     function _checkPrimaryKeysForSelector(&$recordset)
     {
-      if ($this->m_ownerInstance->m_postvars['atkselector'] && $this->m_ownerInstance->m_postvars['atkselector'])
+      $sessionm = &atkGetSessionManager();
+      $atkselector = $sessionm->stackVar('atkselector');
+      if ($atkselector)
       {
         foreach ($recordset as $key=>$record)
         {
-          if (str_replace("'","\'",$this->m_ownerInstance->m_postvars['atkselector'])==$this->m_ownerInstance->m_postvars['atkselector'])
+          if ($atkselector==$record['atkprimkey'])
           {
             $recordset = array($record);
             return true;
@@ -1561,9 +1583,9 @@
         $option = $this->m_destInstance->descriptor($rec);
         $value = $this->m_destInstance->primaryKey($rec);
         $result .= '
-          <li title="'.htmlentities($option).'">
-            '.htmlentities($option).'
-            <span class="selection" style="display: none">'.htmlentities($option).'</span>
+          <li title="'.atk_htmlentities($option).'">
+            '.atk_htmlentities($option).'
+            <span class="selection" style="display: none">'.atk_htmlentities($option).'</span>
             <span class="value" style="display: none">'.$value.'</span>
           </li>';
       }

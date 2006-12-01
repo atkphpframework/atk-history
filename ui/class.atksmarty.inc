@@ -41,7 +41,10 @@
       if ($s_smarty == NULL)
       {
         atkdebug("Creating Smarty instance");
-        include_once(atkconfig("atkroot")."atk/ui/smarty/Smarty.class.php");
+        if (!class_exists("Smarty"))
+        {
+          include_once(atkconfig("atkroot")."atk/ui/smarty/Smarty.class.php");
+        }
 
         // Warning: you'd think that the next line should read
         // $s_smarty = & new Smarty();

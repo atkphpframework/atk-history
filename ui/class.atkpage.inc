@@ -368,9 +368,9 @@
       {
         return $this->renderPartial();
       }
-      
+
       if ($theme->tplPath('page.tpl')) $this->m_content= $ui->render('page.tpl',array('content'=>$this->m_content));
-      
+
       $page = '';
       if(hasFlag($flags,HTML_DOCTYPE)) $page.=$theme->getAttribute('doctype',atkconfig("doctype"));
       $page.= "\n<html>\n";

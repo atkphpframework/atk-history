@@ -63,7 +63,7 @@
         if (!empty($port))
           $host = "$host:$port";
           
-        $this->m_link_id = @mysql_connect($host, $user, $password);
+        $this->m_link_id = @mysql_connect($host, $user, $password, true /* ALWAYS NEW LINK */);
         if (!$this->m_link_id)
         {
           $this->halt($this->getErrorMsg());
@@ -99,7 +99,7 @@
       switch ($this->m_errno)
       {
         case    0: return DB_SUCCESS;
-        case 1044: return DB_ACCESSDENIED;  // todofixme: deze komt bij mysql pas na de eerste query.
+        case 1044: return DB_ACCESSDENIED_DB;  // todofixme: deze komt bij mysql pas na de eerste query.
         case 1045: return DB_ACCESSDENIED_USER;
         case 1049: return DB_UNKNOWNDATABASE;
         case 2004:
@@ -156,6 +156,7 @@
 
       $mode = $this->getQueryMode($query);
       atkdebug("atkmysqldb::query -> connect with mode = $mode");
+      
       /* connect to database */
       if ($this->connect($mode)==DB_SUCCESS)
       {
@@ -356,6 +357,18 @@
         $this->halt("cannot lock ".$this->m_seq_table." - has it been created?");
       }
     }
+    
+    /**
+     * Returns the table type.
+     *
+     * @param string $table table name
+     * @return string table type
+     */
+    function _getTableType($table)
+    {
+      list($status) = $this->getRows("SHOW TABLE STATUS LIKE '" .$table ."';"); 
+      return $status != NULL && isset($status['Engine']) ? $status['Engine'] : NULL;
+    }
 
     /**
      * Return the meta data of a certain table
@@ -373,7 +386,11 @@
 
         /* list fields */
         atkdebug("Retrieving metadata for $table");
-        $id = @mysql_list_fields($this->m_database, $table);
+        
+        // table type
+        $tableType = $this->_getTableType($table);
+        
+        $id = @mysql_list_fields($this->m_database, $table, $this->m_link_id);
         if (!$id)
         {
           atkdebug("Metadata query failed.");
@@ -391,12 +408,13 @@
 
         for ($i=0; $i<$count; $i++)
         {
-          $result[$i]["table"]   = @mysql_field_table($id, $i);
-          $result[$i]["name"]    = @mysql_field_name($id, $i);
-          $result[$i]["type"]    = @mysql_field_type($id, $i);
-          $result[$i]["gentype"] = $ddl->getGenericType($result[$i]['type']);
-          $result[$i]["len"]     = @mysql_field_len($id, $i);
-          $result[$i]["flags"]   = explode(' ', @mysql_field_flags($id, $i));
+          $result[$i]["table"]      = @mysql_field_table($id, $i);
+          $result[$i]["table_type"] = $tableType;
+          $result[$i]["name"]       = @mysql_field_name($id, $i);
+          $result[$i]["type"]       = @mysql_field_type($id, $i);
+          $result[$i]["gentype"]    = $ddl->getGenericType($result[$i]['type']);
+          $result[$i]["len"]        = @mysql_field_len($id, $i);
+          $result[$i]["flags"]      = explode(' ', @mysql_field_flags($id, $i));
 
           $result[$i]["flags"] =
             (in_array('primary_key',    $result[$i]["flags"]) ? MF_PRIMARY        : 0) |
@@ -506,6 +524,18 @@
     function func_datetimetochar($fieldname)
     {
       return "DATE_FORMAT($fieldname, '%Y-%m-%d %H:%i')";
+    }
+    
+    /**
+     * Set database sequence value.
+     * 
+     * @param string $seqname sequence name
+     * @param int $value sequence value
+     */
+    function setSequenceValue($seqname, $value)
+    {
+      $query = "UPDATE ".$this->m_seq_table." SET ".$this->m_seq_field." = '$value' WHERE ".$this->m_seq_namefield." = '$seqname'";
+      $this->query($query);
     }
   }
 ?>

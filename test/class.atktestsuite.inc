@@ -24,6 +24,8 @@
   atkimport("atk.test.atktestreporter");
   atkimport("atk.test.atkattributetestcase");
   atkimport("atk.test.atktestcase");
+  atkimport("atk.db.atkdb");
+  atkimport("atk.db.atkddl");
 
   /**
    * atkTestCaseCollector is a visitor that can be passed to an
@@ -97,13 +99,23 @@
      */
     function run($reporttype="html", $module="")
     {
-      $test = &new GroupTest("Full ATK test");
+      $config = atkconfig('db');
 
-      if ($_REQUEST['include'] && file_exists(atkconfig('platformroot').$_REQUEST['include']))
+      if (isset($config['test']))
       {
-        $this->_addIncludeTestCase($test);
+        // setup the test database
+        $this->_setupTestDB();
       }
-      else 
+
+      $test = &new GroupTest("Full ATK test");
+      $class = $_REQUEST['class'];
+      $testclass = $this->getTestCaseLocationForClass($class);
+
+      if ($class && file_exists(getClassPath($testclass)))
+      {
+        $this->_runTestCase($test,$testclass);
+      }
+      else
       {
         $this->_addTestsByTraversing($test,$module);
       }
@@ -111,30 +123,73 @@
       {
         $test->run(atknew("atk.test.atktestreporter"));
       }
+      elseif($reporttype=="arrayHtml")
+      {
+        $testresults = $test->run(atknew("atk.test.arrayhtmlreporter"));
+      }
+      elseif($reporttype=="arrayText")
+      {
+        $testresults = $test->run(atknew("atk.test.arraytextreporter"));
+      }
       else
       {
         $test->run(new TextReporter());
       }
+
+      return $testresults;
     }
-    
-    function _addIncludeTestCase(&$test)
+
+
+    /**
+     * Setup the test database. Clones the database structure of the
+     * default database to the test database. All data in the test
+     * database will be lost!
+     */
+    function _setupTestDB()
     {
-      include_once(atkconfig('atkroot').$_REQUEST['include']);
-      $elems = explode(".", $_REQUEST['include']);
-      array_pop($elems);
-      $test->addTestClass(array_pop($elems));
+      $defaultDB = &atkGetDb('default');
+      $testDB = &atkGetDb('test');
+
+      $testDB->dropAll();
+
+      $tables = $defaultDB->table_names();
+      foreach($tables as $table)
+      {
+        $ddl = $testDB->createDDL();
+        $metadata = $defaultDB->metadata($table["table_name"]);
+        $ddl->loadMetaData($metadata);
+        $query = $ddl->buildCreate();
+        $testDB->query($query);
+      }
     }
-    
+
+    function getTestCaseLocationForClass($class)
+    {
+      $exploded = explode('.',$class);
+      $class = array_pop($exploded);
+      return implode('.',$exploded).'.testcases.test_'.$class;
+    }
+
+    function _runTestCase(&$test,$testcase)
+    {
+      atkimport($testcase,true);
+      $test->addTestClass(array_pop(explode(".", $testcase)));
+    }
+
     function _addTestsByTraversing(&$test, $module)
     {
       $traverser = &atknew("atk.utils.atkdirectorytraverser");
       $traverser->addCallbackObject(new atkTestCaseCollector($test));
-
       if ($module!="")
       {
         if ($module=="atk") // make it possible to only test atk.
         {
           $dir = atkconfig("atkroot")."atk/";
+        }
+        //make it possible to run all tests from another dir than the root dir. EE.g. i case test.php isn't used.
+        elseif ($module=="all")
+        {
+        	$dir = atkconfig("atkroot")."..";
         }
         else
         {

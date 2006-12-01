@@ -6,6 +6,14 @@ Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 
 Changed in ATK 5.7
 ------------------
+* AtkMlWrapper attribute clone fix: check phpversion and use right clone 
+  method based on this (check http://www.acko.net/node/54) [Nico]
+* AtkMlWrapper getRecordForLng fix: first check if record is empty [Nico]
++ Added m_displayShowAll var to atknavigator, so you can configure if you
+  want to show the 'show all' link in the navigation [Wim,Nico]
++ Devided render part in the atkrecordlist class into a specific render 
+  part and a part which collects all needed data for rendering. 
+  This way it's easy to display a recordlist in a different layout. [wim]
 + Added pre-action support in atkNode and atkActionListener classes. [patrick]
 + Added support to the LDAP authentication class for searching in 
   multiple locations (DN's) instead of one base DN as it was previously
@@ -170,15 +178,25 @@ Changed in ATK 5.7
 + Added 'web20' theme, the first theme without frames, with Web 2.0 colors,
   rounded corners and partial XHTML 1.0 Strict compliance. [Boy]
 + Added support for port-specification for the mysql41 driver. [Peter,Dennis]
-+ Added DEBUG_NOTICE flag which only gets shown 
-  in debug level 3 or higher and made PHP notices use it. [Boy]
-* Security: Fixed cross-site scripting (xss) vulnerability in Login screen and 
-  any other screen that made use of the makeHiddenPostvars method. (bug #697) 
-  [Ivo]
 + Added {atkloadscript} Smarty plug-in (can be used to register javascript
   code to run at the body onLoad event). [Boy]
-+ Added parts of Zend Framwork to atk/ext. Used for processing RSS feeds 
-  [Jeroen]  
++ Added parts of Zend Framwork to atk/ext. 
+  Used for processing RSS feeds. [Jeroen]  
++ Added DEBUG_NOTICE flag which only gets shown 
+  in debug level 3 or higher and made PHP notices use it. [Boy]
++ Added fpassthru convenience method to atkTmpFile. [Ivo]
++ Added atkIndexPage to ui directory. This class can be used to generate
+  an index page which loads up your app. [Boy]
++ Added atkwarning and atknotice functions, used to add warnings and
+  notices to your debug log. [Boy]
++ Added a new fileutils class where can copy a skell to a specific location
+  and you can create a destination at once for example ../dir/subdir/sudir2
+  [dennisjan]
++ Added feature to parse a directory name by a template. [dennisjan]
++ Added selected record override to atkManyToOneRelation and Usage: create 
+  a function named <attribname>_selected($record, $mode) in your node,
+  enable AF_MANYTOONE_LAZY and return the selected record. [Peter]
++ Added true test database support incl. support for fixtures. [Rene,Peter]
 * When updateDb fails it has to return false in stead of true. [dennisjan]
 * Bugfix in atknode, atkmlsplitter and atkManyToOneRelation
   (m_joinaliases removed from the code) [Sandy, Peter]
@@ -526,7 +544,8 @@ Changed in ATK 5.7
   but doesn't actually flush anything and make it support a dispatch.tpl
   template if available. [Boy]
 * Made index.php support themes with 'useframes' attribute (defaults to true), 
-  loading themes with this attribute set to false without frames. [Boy]
+  loading themes with this attribute set to false without frames,
+  please update your index.php from atk/skel/index.php. [Boy]
 * atkPlainMenu now supports themes and configurations which set a different
   'menufile' (defaults to menu.php) and different 'menu_params' 
   (defaults to 'target="main"'). [Boy]
@@ -544,14 +563,45 @@ Changed in ATK 5.7
 * Use assignExportData function in your node to add extra data to the export.
   This makes it possible to do your own query and add extra info to the export.
   [Lineke]
-* Made testreporter recognize if 'include' URL variable contains a complete
-  path relative from the atkroot 
-  (example: modules/testcases/class.test_mytest.inc) if so, don't traverse
-  the entire application, just load that testcase up. [Boy]
+* Made testreporter support finding and running the test for a single class,
+  in ATK notation (module.mymodule.utils.utilclass) by using the 'class' 
+  REQUEST variable. If found, the framework won't traverse
+  the entire application, but just check for a testcase in the underlying
+  testcases directory and load that testcase up.
+  Example: test.php?class=atk.ui.atkpage which will load up 
+  atk/ui/testcases/class.test_atkpage.inc. [Boy]
+* Security: Fixed cross-site scripting (xss) vulnerability in Login screen and 
+  any other screen that made use of the makeHiddenPostvars method. (bug #697) 
+  [Ivo]
+* It is only allowed to set the focus if the node allowes it. [dennisjan]
+* Fixed OCI db driver unique constraint information in metadata (only use the
+  unique flags for fields that are unique on their own). [Peter]
+* Use createQuery on the node db instance to create a query object for unique field 
+  set validation instead of using the default db instance. [Peter]
+* atkManyToOneRelation::populate now support list of attribute names. [Peter]
+* Bugfix in importhandler, mb_convert_encoding function is not always present.
+  So we check if the function exists. [Lineke]
+* Bugfix: atkMessageQueue messages are now also displayed in adminpages. [Ivo]
+* Bugfix: atkformdata should be kept in the session because the window might 
+  be forked. [Jeroen,Peter]
+* Remember atktab in atkformdata because it might be changed in the current
+  edit session. [Jeroen,Peter]
+* Bugfix: atkQuery should enclose the FROM clause in parentheses due to changes
+  in MySQL 5.0.15 to make MySQL more compliant with the standard. [Dennis]  
+* Fixed issue in MySQL driver which caused connections to be re-used
+  even though we connect to a different database. [Peter]
+* Fixed some PHP5 notices. [Peter]
+* Added getAttributes function to the atkStringParser, same as getFields but 
+  if a relation is referenced using a dot only returns the attribute name 
+  before the dot. [Sandy,Peter]
+* Fixed bug in the atkFileAttribute that made Apache segfault when uploading
+  2 or more files (and use a template). [Sandy,Peter]
 - Temporarily removed the 'generate title row' checkbox in atkExportHandler as
   it isn't yet implemented. [Guido]
 - Removed default theme's action_view.tpl as it basically is no difference 
   than the default action.tpl. [Ivo]
++ Added atkGetMimeTypeFromFileExtension to atkfiletools - to get the right 
+  mimetype for the given filename. [Harrie]
 
 Changed in ATK 5.6
 ------------------
