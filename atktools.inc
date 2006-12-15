@@ -283,7 +283,7 @@
       return "Incorrect php-version for atk_get_trace()";
 
     // Get the debug backtrace
-    $traceArr = debug_backtrace();
+    $traceArr = eval('debug_backtrace()');
 
     // Remove the call of atk_get_trace
     array_shift($traceArr);
