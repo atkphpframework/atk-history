@@ -283,7 +283,7 @@
       return "Incorrect php-version for atk_get_trace()";
 
     // Get the debug backtrace
-    $traceArr = eval('debug_backtrace()');
+    //$traceArr = debug_backtrace(); This function crashes the PHP binary, until we have a solid solution this function is disabled.
 
     // Remove the call of atk_get_trace
     array_shift($traceArr);
