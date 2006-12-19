@@ -38,11 +38,28 @@
     {
       $page = &$this->getPage();
 
-      if ($this->m_partial != NULL)
+      if (isset($this->m_partial) && $this->m_partial!="")
       {
-        $page->addContent($this->invoke("adminPage"));
-        return;
-      }
+        list($type, $attribute, $partial) = explode('.', $this->m_partial);
+        if ($type == 'attribute')
+        {
+          $attr =& $this->m_node->getAttribute($attribute);
+          if ($attr == NULL)
+          {
+            atkerror("Unknown / invalid attribute '$attribute' for node '".$this->m_node->atkNodeType()."'");
+            return;
+          }
+
+          $result = $attr->partial('admin', array('partial' => $partial));
+          $page->addContent($result);
+          return;
+        }
+        else 
+        {
+          $page->addContent($this->invoke("adminPage"));
+          return;
+        }
+      }      
       
       $res = array();
       if ($this->m_node->hasFlag(NF_NO_ADD)==false&&$this->m_node->allowed("add"))

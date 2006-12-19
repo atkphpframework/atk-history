@@ -321,6 +321,12 @@
   "auth_passwordmail_sent" => "Een nieuw wachtwoord is verzonden naar uw email adres.",
   "auth_passwordmail_subjectnew_password"=>"Nieuw wachtwoord",
   "auth_passwordmail_explanation"=>"U ontvangt deze email omdat U de Wachtwoord vergeten functie gebruikt heeft. U kunt vanaf nu inloggen met de volgende gegevens:",
+  "all" => "Alles",
+  "autocomplete_no_results" => "Geen resultaten gevonden voor deze zoekopdracht.",
+  "autocomplete_no_results_exact" => "Geen exacte resultaten gevonden voor deze zoekopdracht.",
+  "autocomplete_no_results_startswith" => "Geen resultaten gevonden die beginnen met de gegeven zoekopdracht.",
+  "autocomplete_no_results_contains" => "Geen resultaten gevonden waarin de gegeven zoekopdracht voorkomt.",
+  "autocomplete_minimum_chars" => "Voer minimaal %d karakters in.",  
 );
 
 ?>

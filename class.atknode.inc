@@ -3282,14 +3282,14 @@
       {
         $usedFields = atk_array_merge($this->descriptorFields(),$this->m_primaryKey,$includes);
         foreach (array_keys($this->m_attribList) as $name)
-          if (is_object($this->m_attribList[$name]) && $this->m_attribList[$name]->hasFlag(AF_FORCE_LOAD)) $usedFields[] = $name;
+          if (is_object($this->getAttribute($name)) && $this->m_attribList[$name]->hasFlag(AF_FORCE_LOAD)) $usedFields[] = $name;
         $usedFields = array_unique($usedFields);
       }
-
+atk_var_dump($usedFields, "ADD TO QUERY ".$this->atkNodeType());
       foreach ($usedFields as $usedfield)
       {
         list($attribname) = explode(".", $usedfield);
-        $p_attrib = &$this->m_attribList[$attribname];
+        $p_attrib = &$this->getAttribute($attribname);
         if (is_object($p_attrib))
         {
           $loadmode = $p_attrib->loadType("");
@@ -4161,5 +4161,71 @@
       if ($module==NULL) $module = $this->m_module;
       return atktext($string, $module, $this->m_type, $lng, $firstfallback, $nodefaulttext);
     }
+
+    /**
+     * Get search condition for this node.
+     *
+     * @param atkQuery $query
+     * @param unknown_type $table
+     * @param unknown_type $alias
+     * @param unknown_type $value
+     * @param unknown_type $searchmode
+     * @return unknown
+     */
+    function getSearchCondition(&$query, $table, $alias, $value, $searchmode)
+    {
+      $usefieldalias = false;
+
+      if ($alias=="")
+      {
+        $alias = $this->m_table;
+      }
+      else
+      {
+        $usefieldalias = true;
+      }
+
+      $searchConditions = array();
+
+      $attribs = $this->descriptorFields();
+      array_unique($attribs);
+
+      foreach($attribs as $field)
+      {
+        $p_attrib = &$this->getAttribute($field);
+        if (!is_object($p_attrib)) continue;
+
+        if ($usefieldalias) $fieldaliasprefix = $alias."_AE_";
+
+        // checking for the getSearchCondition for backwards compatibility
+        if (method_exists($p_attrib, "getSearchCondition"))
+        {
+          $attribsearchmode = $searchmode;
+          if (is_array($searchmode))
+          {
+            $attribsearchmode = $attribsearchmode[$p_attrib->m_name];
+          }
+          atkdebug("getSearchCondition: $table - $fieldaliasprefix");
+          $searchCondition = $p_attrib->getSearchCondition($query,$table,$value,$searchmode,$fieldaliasprefix);
+          if ($searchCondition != "")
+            $searchConditions[] = $searchCondition;
+        }
+        else
+        {
+          // if the attrib can't return it's searchcondition, we'll just add it to the query
+          // and hope for the best
+          $p_attrib->searchCondition($query,$table,$value,$searchmode,$fieldaliasprefix);
+        }
+      }
+
+      if (count($searchConditions))
+      {
+        return "(".implode(" OR ",$searchConditions).")";
+      }
+      else
+      {
+        return "";
+      }
+    }    
   }
 ?>

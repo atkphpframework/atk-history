@@ -140,6 +140,7 @@ Changes in tomorrow branch
 * Bugfix in exporthandler: only remove AF_HIDE_LIST flag if attribute has this
   flag. This bug caused attributes with AF_LARGE flag to remove this flag. 
   [Lineke]
+* Backported HEAD atkManyToOneRelation changes. [Peter]
 
 Changed in ATK 5.6.1
 --------------------

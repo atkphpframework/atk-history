@@ -50,7 +50,7 @@
      /* establish connection */
      if (empty($this->m_link_id))
      {
-       $this->m_link_id = @mysqli_connect($this->m_host, $this->m_user, $this->m_password);
+       $this->m_link_id = @mysqli_connect($this->m_host, $this->m_user, $this->m_password, $this->m_port);
        if (!$this->m_link_id)
        {
          $this->halt($this->getErrorMsg());
