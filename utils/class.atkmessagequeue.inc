@@ -141,7 +141,8 @@
 
     function &getQueue()
     {
-      $sessionmgr = &atkGetSessionManager();
+      global $g_sessionManager;
+      $sessionmgr = &$g_sessionManager;
       $session = &$sessionmgr->getSession();
       if (!isset($session['atkmessagequeue']))
       {

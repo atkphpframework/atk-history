@@ -15,7 +15,7 @@
    * @version $Revision$
    * $Id$
    */
-
+atkimport('atk.handlers.atkactionhandler');
   /**
    * Handler for the 'import' action of a node. The import action is a
    * generic tool for importing CSV files into a table.
@@ -27,6 +27,9 @@
    */
   class atkImportHandler extends atkActionHandler
   {
+    var $m_log=array();
+    var $m_timelimit=30;
+
     /**
      * The action handler.
      * @param bool Always true
@@ -53,6 +56,18 @@
         case "process": $this->doProcess(); break;
       }
       return true;
+    }
+
+    function log($txt)
+    {
+      $txt = '<strong>'.date('[d-m-Y H:i:s] ').'</strong>'.$txt;
+      atkdebug($txt);
+      $this->m_log[] = $txt;
+    }
+
+    function getLog()
+    {
+      return implode('<br />',$this->m_log);
     }
 
     /**
@@ -268,12 +283,15 @@
      * @param int    $rowcount    The number of rows in the CSV file
      * @return String The HTML header
      */
-    function _getAnalyseHeader($fileid, $columncount, $delimiter, $enclosure, $rowcount)
+    function _getAnalyseHeader($fileid, $columncount, $delimiter, $enclosure, $rowcount,$startform=true)
     {
       global $HTTP_SERVER_VARS;
 
-      $content.= '<br><form name="entryform" enctype="multipart/form-data" action="'.$HTTP_SERVER_VARS['REQUEST_URI'].'"'.
+      if ($startform)
+      {
+        $content.= '<br><form name="entryform" enctype="multipart/form-data" action="'.$HTTP_SERVER_VARS['REQUEST_URI'].'"'.
                                   ' method="post">'.session_form();
+      }
       $content.= '<input type="hidden" name="phase" value="process">';
       $content.= '<input type="hidden" name="fileid" value="'.$fileid.'">';
       $content.= '<input type="hidden" name="columncount" value="'.$columncount.'">';
@@ -397,7 +415,7 @@
      * @param String $onfalseidentifier What to do on a false identifier
      * @return String The HTML with the extra options
      */
-    function _getAnalyseExtraOptions($skipfirstrow, $doupdate, $onfalseidentifier, $allField, $novalidatefirst)
+    function _getAnalyseExtraOptions($skipfirstrow, $doupdate, $onfalseidentifier, $allField, $novalidatefirst,$allfieldrecord=array())
     {
       $content.= '<br /><table id="importoptions">';
       $content.= '  <tr>';
@@ -410,13 +428,17 @@
 
         if(is_object($attr))
         {
-          $fakeeditarray = array();
-          $content.= ' '.atktext("value").': '.$attr->edit($fakeeditarray,"","edit").'<br/>';
+          atk_var_dump($allfieldrecord,"<h1>allfieldrecord for ".$attr->fieldName()."</h1>");
+          $content.= ' '.atktext("value").': '.$attr->edit($allfieldrecord,"","edit").'<br/>';
         }
       }
 
       $content.= '</td></tr><tr><td>';
+      $content.= atktext("import_novalidatefirst").': </td><td> <input type="checkbox" name="novalidatefirst" value="1" '.($novalidatefirst?"CHECKED":"").'/>';
+      $content.= '</td></tr><tr><td>';
       $content.= atktext("import_skipfirstrow").': </td><td><input type="checkbox" name="skipfirstrow" value="1" '.($skipfirstrow?"CHECKED":"").'/>';
+      $content.= '</td></tr><tr><td>';
+      $content.='<br /><b>Bijwerken</b>';
       $content.= '</td></tr><tr><td>';
       $content.= atktext("import_doupdate").': </td><td> <input type="checkbox" name="doupdate" value="1" '.($doupdate?"CHECKED":"").'/>';
 
@@ -424,8 +446,6 @@
 
       $content.= '</td></tr><tr><td>';
       $content.= atktext("import_onfalseidentifier").': </td><td> <input type="checkbox" name="onfalseid" value="1" '.($onfalseidentifier?"CHECKED":"").'/>';
-      $content.= '</td></tr><tr><td>';
-      $content.= atktext("import_novalidatefirst").': </td><td> <input type="checkbox" name="novalidatefirst" value="1" '.($novalidatefirst?"CHECKED":"").'/>';
 
       $content.= '    </td>';
       $content.= '  </tr>';
@@ -910,7 +930,6 @@
 
       foreach($firstRecord as $value)
       {
-
         $key = $this->inArray($attributes,$value);
         if($key)
         {
@@ -968,20 +987,28 @@
      */
     function doImport()
     {
-      $allField =     $this->m_postvars["allField"];
-      $col_map =      $this->m_postvars["col_map"];
       $fileid =       $this->m_postvars["fileid"];
       $file =         $this->getTmpFileDestination($fileid);
-      $enclosure =    $this->m_postvars["enclosure"];
-      $delimiter =    $this->m_postvars["delimiter"];
-      $columncount =  $this->m_postvars["columncount"];
-      $skipfirstrow = $this->m_postvars['skipfirstrow'];
 
       $importerrors = array();
       $importerrors[0]=array();
       $validatedrecs = array();
       $validatedrecs["add"]=array();
       $validatedrecs["update"] = array();
+
+      $fp = $this->_doImport($file,$importerrors,$validatedrecs);
+
+      $this->addRecords($importerrors, $validatedrecs, $fp, $file);
+    }
+
+    function _doImport($file,&$importerrors,&$validatedrecs)
+    {
+      $allField =     $this->m_postvars["allField"];
+      $col_map =      $this->m_postvars["col_map"];
+      $enclosure =    $this->m_postvars["enclosure"];
+      $delimiter =    $this->m_postvars["delimiter"];
+      $columncount =  $this->m_postvars["columncount"];
+      $skipfirstrow = $this->m_postvars['skipfirstrow'];
 
       $allFieldValue = $this->getAllFieldValue($col_map);
       $initial_values = $this->m_node->initial_values();
@@ -993,14 +1020,14 @@
       if($skipfirstrow == "1") $line = fgets($fp);
       for($line = fgets($fp),$counter=1; $line!==false; $line = fgets($fp),$counter++)
       {
-        atkdebug("Validating record nr. $counter");
+        atkdebug("Validating row $counter");
         //if we have an empty line, pass it
         if(trim($line)=="")
           continue;
 
         //large import are a problem for the maximum execution time, so we want to set for each
         //loop of the for-loop an maximum execution time
-        set_time_limit(30);
+        set_time_limit($this->m_timelimit);
 
         $data = $this->fgetcsvfromline($line, $columncount, $delimiter, $enclosure);
 
@@ -1021,9 +1048,9 @@
             $this->addToRecord($rec,$col_map[$i],$value);
           }
         }
-        $this->validateRecord($rec, $validatedrecs, $importerrors, $counter);
+        $this->validateRecord($rec, $validatedrecs, $importerrors, $counter,$line);
       }
-      $this->addRecords($importerrors, $validatedrecs, $fp, $file);
+      return $fp;
     }
 
     /**
@@ -1111,7 +1138,7 @@ atk_var_dump("<h1>_getAttributeValue::".$value."</h1>");
      * @param Object $fp             Pointer to the importfile
      * @param String $file           Filenmae
      */
-    function addRecords($importerrors, $validatedrecs, $fp, $file)
+    function addRecords($importerrors, $validatedrecs, $fp, $file,$unlink=true)
     {
       //atk_var_dump($validatedrecs,"<h1>validatedrecs</h1>");
       if (!$this->m_postvars['novalidatefirst'])
@@ -1125,7 +1152,7 @@ atk_var_dump("<h1>_getAttributeValue::".$value."</h1>");
         foreach ($validrecs as $validrec)
         {
           $counter++;
-          atkdebug("Doing $action for record nr $counter");
+          $this->logAddingofRecord($action,$counter,$validrec);
 
           $this->$action($validrec);
         }
@@ -1137,9 +1164,17 @@ atk_var_dump("<h1>_getAttributeValue::".$value."</h1>");
       fclose($fp);
 
       // remove the csv file
-//      unlink($file);
+      if ($unlink) unlink($file);
 
       $this->m_node->redirect();
+    }
+
+    function logAddingofRecord($action,$counter,$record)
+    {
+      if ($action==='add')         $action='Toevoegen';
+      else if ($action==='update') $action='Bijwerken';
+
+      $this->log("$action van rij $counter <br /><pre>".var_export($record,1).'</pre>');
     }
 
     /**
@@ -1322,7 +1357,7 @@ atk_var_dump("<h1>_getAttributeValue::".$value."</h1>");
      * @param Array &$importerrors  The errors so far in the import process
      * @param int   $counter        The number that the record is
      */
-    function validateRecord(&$rec, &$validatedrecs, &$importerrors, $counter)
+    function validateRecord(&$rec, &$validatedrecs, &$importerrors, $counter,$line="")
     {
       // Update variables
       $doupdate   =     $this->m_postvars['doupdate'];
@@ -1356,15 +1391,9 @@ atk_var_dump("<h1>_getAttributeValue::".$value."</h1>");
         }
       }
 
-      if (file_exists('/home/funding/www/atktmp/importerrors.txt'))
-      {
-        $fp = &fopen('/home/funding/www/atktmp/importerrors.txt','w+');
-        fwrite($fp, var_export($importerrors,1));
-        fclose($fp);
-      }
-
       if ($doupdate) $prepareres = $this->prepareUpdateRecord($rec, $counter, $importerrors);
 
+      $rec['__csv__']=$line;
       if (empty($importerrors[$counter][0]))
       {
         if ($prepareres==true)

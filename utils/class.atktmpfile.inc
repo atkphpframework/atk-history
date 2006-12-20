@@ -49,7 +49,7 @@
         return file($this->getPath());
       }
     }
-    
+
     function readFile()
     {
       if ($this->exists())
@@ -62,7 +62,7 @@
 
     function writeFile($data)
     {
-      if ($this->open("w"))
+      if ($this->open("a"))
       {
         $this->write($data);
         $this->close();
@@ -110,7 +110,7 @@
         $this->m_fp = null;
       }
     }
-    
+
     /**
      * Send the file contents directly to the browser.
      *
@@ -118,9 +118,9 @@
      */
     function fpassthru()
     {
-      if ($this->open("r"))
+      if ($this->open("w"))
       {
-        fpassthru($this->m_fp);      
+        fpassthru($this->m_fp);
         $this->close();
       }
       return true;
@@ -155,8 +155,6 @@
       if($filectime!=false) return (time()-$filectime);
       return false;
     }
-
-
 
     function getPath()
     {

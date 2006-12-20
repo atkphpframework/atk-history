@@ -17,11 +17,13 @@ function get_object(name)
 }
 
 // For toggling the display on an object
-function toggleDisplay(name, obj)
-{  
+function toggleDisplay(obj)
+{
+  if (!obj.style) obj = get_object(obj);
+
   if (obj.style.display=="none")
   {
-    obj.style.display="";		  
+    obj.style.display="";
   }
   else
   {
