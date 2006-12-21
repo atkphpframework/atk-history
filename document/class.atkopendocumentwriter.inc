@@ -92,7 +92,7 @@
       // Save the content.xml back to the copied document
       if (!$this->m_tbsooo->SaveXmlToDoc())
         return false;
-        
+
       return true;
     }
 
@@ -109,11 +109,23 @@
       // Parse template
       if (!$this->_parse($tpl_file, $tpl_vars))
         return false;
-        
-      exportFile($this->m_tbsooo->GetPathnameDoc(), $outputfilename, ($forcedownload?"application/octet-stream":$this->m_tbsooo->GetMimetypeDoc()));
+
+      // Fix for internet explorer misbehaviour when using attachment as content disposition
+      $useragent = getenv("HTTP_USER_AGENT");
+      $attachmentword = ((strpos($useragent, "MSIE") !== false) || (strpos($useragent, "Internet Explorer") !== false)) ? "Atachment" : "Attachment";
+
+      // Add additional http response headers to set proper content type, filename and filesize
+      $file = $this->m_tbsooo->GetPathnameDoc();
+      header('Content-Type: ' . ($forcedownload ? 'application/octet-stream' : $this->m_tbsooo->GetMimetypeDoc()));
+//header('Content-Length: ' . filesize($file));
+      header('Content-Disposition: ' . $attachmentword . '; Filename="' . (is_null($outputfilename) ? substr($file, strrpos($file, '/') + 1) : $outputfilename) . '"');
+      header("Content-Transfer-Encoding: binary");
+
+      // Send the document to the user agent
+      $this->m_tbsooo->FlushDoc();
 
       // Remove the document from disk
-      $this->m_tbsooo->RemoveDoc();
+      //$this->m_tbsooo->RemoveDoc();
 
       // Remove old unremoved documents
       $this->m_tbsooo->ClearProcessDir();
@@ -171,8 +183,8 @@
       $inputString = $this->convertFirefoxHtmlToXML($inputString);
 
       $inputString = $this->convertIEHtmlToXML($inputString);
-
-      $inputString = $this->convertGeneralHtmlToXML($inputString);      
+      
+      $inputString = $this->convertGeneralHtmlToXML($inputString);
 
       return $inputString;
     }
@@ -221,22 +233,15 @@
       $inputString = str_replace('&lt;span style="font-weight: bold; font-style: italic;"&gt;', '<text:span text:style-name="atkbolditalic">', $inputString);
       $inputString = str_replace('&lt;span style="font-style: italic; font-weight: bold;"&gt;', '<text:span text:style-name="atkbolditalic">', $inputString);
 
-      // *BOLD* inside <li> tag: <li style="font-weight: bold;">bold bullet</li>
-      $inputString = preg_replace("/&lt;li style=\"font-weight\: bold;\"&gt;(.*)&lt;\/li&gt;/iU", "&lt;li&gt;<text:span text:style-name=\"atkbold\">$1</text:span>", $inputString);
-
-      // italic inside <li> tag: <li style="font-style: italic;">italic bullet</li>
-      $inputString = preg_replace("/&lt;li style=\"font-style\: italic;\"&gt;(.*)&lt;\/li&gt;/iU", "&lt;li&gt;<text:span text:style-name=\"atkitalic\">$1</text:span>", $inputString);
-      
       // *BOLD*
       $inputString = str_replace('&lt;span style="font-weight: bold;"&gt;', '<text:span text:style-name="atkbold">', $inputString);
 
       // /italic/
       $inputString = str_replace('&lt;span style="font-style: italic;"&gt;', '<text:span text:style-name="atkitalic">', $inputString);
-           
 
       // substitute html- by xml-'span' tags
       $inputString = str_replace('&lt;/span&gt;' , '</text:span>', $inputString);
-
+      
       // replace <br .*/> chars by xml-newline (also take font-styles in account)
       $inputString = preg_replace("/(<|&lt;)br.*\/(>|&gt;)/iU","<text:line-break/>", $inputString);
 
@@ -271,11 +276,10 @@
 
       // replace &nbsp; by space
       $inputString = str_replace('&nbsp;', ' ', $inputString);
-      $inputString = str_replace('&amp;nbsp;', ' ', $inputString);
 
       return $inputString;
     }
-
+    
     function convertGeneralHtmlToXML($inputString)
     {
       /**************************************************************
@@ -284,17 +288,13 @@
       // Convert all html bullets to an XML-tab + -
       // Only 1 level deep supported (deeper levels will be converted to level 1 in the generated document)
       $inputString = str_replace("\r" , '', $inputString);
-      $inputString = str_replace("<text:line-break/><text:line-break/>&lt;ul&gt;<text:line-break/>", '', $inputString);                    // first <ul>
+      $inputString = str_replace("<text:line-break/><text:line-break/>&lt;ul&gt;<text:line-break/><text:line-break/>" , '', $inputString); // first <ul>
       $inputString = str_replace("&lt;ul&gt;<text:line-break/><text:line-break/>"  , '',               $inputString);                      //  sub <ul>'s
-      $inputString = str_replace('&lt;li&gt;'                                      , '- ', $inputString);                      // use '-' as bullet
+      $inputString = str_replace('&lt;li&gt;'                                      , '<text:tab/> - ', $inputString);                      // use '-' as bullet
       $inputString = str_replace('&lt;/li&gt;<text:line-break/>'                   , '',               $inputString);                      // end bullet
       $inputString = str_replace('<text:line-break/>&lt;/ul&gt;<text:line-break/>' , '',               $inputString);                      // main closing </ul>
-      $inputString = str_replace('&lt;/ul&gt;<text:line-break/><text:line-break/>' , '',               $inputString);                      //  sub closing </ul>'s
-      $inputString = str_replace('&lt;/ul&gt;'                                     , '',               $inputString);                      // remove remaining </ul>'s
+      $inputString = str_replace('&lt;/ul&gt;<text:line-break/><text:line-break/>' , '',               $inputString);                      //  sub closing </ul>'s 
       
-      // tbsooo_class.php (LoadXmlFromDoc) converted apostrophe (&apos; -> \') from XML file for TBS functions
-      // causes corrupt document: convert it back to &apos;
-      $inputString = str_replace('\'', '&apos;', $inputString);
       return $inputString;
     }
   }
