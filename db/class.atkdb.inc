@@ -237,28 +237,28 @@
 
     /**
      * Set database sequence value.
-     * 
+     *
      * @param string $seqname sequence name
      * @param int $value sequence value
-     * 
-     * @abstract 
+     *
+     * @abstract
      */
     function setSequenceValue($seqname, $value)
     {
     	atkerror('WARNING: '.get_class($this).'.setSequenceValue NOT IMPLEMENTED!');
     }
-    
+
     /**
-     * Set the name of the default database. 
+     * Set the name of the default database.
      * This can be used for test purposes.
-     * 
+     *
      * @param string $name default database name
      */
     function setDefault($name)
     {
       atkDb::_getOrSetDefault($name);
     }
-    
+
     /**
      * Returns the default database name.
      *
@@ -268,7 +268,7 @@
     {
       return atkDb::_getOrSetDefault();
     }
-    
+
     /**
      * Get or set the default database name.
      *
@@ -282,7 +282,7 @@
         $s_default = $name;
       else return $s_default;
     }
-    
+
     /**
      * Get the database driver type.
      * @return String driver type
@@ -369,12 +369,16 @@
      */
     function getQueryMode($query)
     {
-      $type = strtolower(substr($query,0,7));
-      if($type!="select " || strpos(strtolower($query),'into')!==false)
+      $query = strtolower($query);
+
+      $regexes = array('^\\s*select(?!\\s+into)','^\\s*show');
+      foreach ($regexes as $regex)
+      if (preg_match("/$regex/",$query))
       {
-        return "w";
+        return 'r';
       }
-      return "r";
+      atkdebug('Query mode not detected! Using write mode.');
+      return 'w';
     }
 
     /**
@@ -493,12 +497,12 @@
         $this->m_dbcluster = $tmp_db->m_dbcluster;
         atkdebug("atkdb::connect -> New mode = ".$this->m_mode);
 
-        $this->doConnect($this->m_host,$this->m_user,$this->m_password,$this->m_database,$this->m_port,$this->m_charset);
+        return $this->doConnect($this->m_host,$this->m_user,$this->m_password,$this->m_database,$this->m_port,$this->m_charset);
       }
       elseif($this->m_link_id==NULL)
       {
         atkdebug("atkdb::connect -> Don't switch use current db");
-        $this->doConnect($this->m_host,$this->m_user,$this->m_password,$this->m_database,$this->m_port,$this->m_charset);
+        return $this->doConnect($this->m_host,$this->m_user,$this->m_password,$this->m_database,$this->m_port,$this->m_charset);
       }
     }
 
@@ -847,7 +851,7 @@
         $this->query("DELETE FROM ".$table['table_name'].";");
       }
     }
-    
+
     /**
      * Drop all database tables.
      */
@@ -859,7 +863,7 @@
         $this->query("DROP TABLE ".$table['table_name'].";");
       }
     }
-    
+
     /**
      * Create an atkDDL object for constructing ddl queries.
      * @return atkDDL DDL object
@@ -941,6 +945,7 @@
     {
       $dbconfig = atkconfig("db");
       $dbcluster = atkconfig("db_cluster");
+      $connections = array();
 
       if(is_array($dbcluster) && isset($dbcluster[$conn]))
       {
@@ -1000,7 +1005,7 @@
       $g_dbinstances[$name] = &$db;
       return $olddb;
     }
-    
+
   }
 
 ?>
