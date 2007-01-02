@@ -341,7 +341,10 @@
                 $valArr[] = $name;
               else
               {
-                $valArr[] = $name."=".$value;
+                if (is_object($value))
+                  $valArr[] = sprintf("%s=Object(%s)", $name, get_class($val));
+                else
+                  $valArr[] = $name."=".$value;
               }
             }
             $stringval = "array(".implode(", ", $valArr).")";
