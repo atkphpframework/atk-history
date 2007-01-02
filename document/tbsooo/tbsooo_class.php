@@ -180,9 +180,9 @@ class clsTinyButStrongOOo extends clsTinyButStrong
     }
 
     // zip and remove the file
-    // Jeroen/Ivo hack: -m sometimes caused corrupt files. -d has better results it seems. 
-    exec($this->_zip_bin.' -d '.$this->_ooo_basename.'.'.$this->_ooo_file_ext.' '.$this->_ooo_basename.'/'.$this->_xml_filename, $results, $return_code);
+    $results = array();
     exec($this->_zip_bin.' -j '.$this->_ooo_basename.'.'.$this->_ooo_file_ext.' '.$this->_ooo_basename.'/'.$this->_xml_filename, $results, $return_code);
+    unlink($this->_ooo_basename.'/'.$this->_xml_filename);
 
     //Dennis hack: On some systems zip would return -1 instead of 0 when nothing went wrong.
     if ($return_code>0) {

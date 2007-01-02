@@ -112,7 +112,7 @@
 
       // Fix for internet explorer misbehaviour when using attachment as content disposition
       $useragent = getenv("HTTP_USER_AGENT");
-      $attachmentword = ((strpos($useragent, "MSIE") !== false) || (strpos($useragent, "Internet Explorer") !== false)) ? "Atachment" : "Attachment";
+      $attachmentword = ((strpos($useragent, "MSIE") !== false) || (strpos($useragent, "Internet Explorer") !== false) && (strpos($useragent, "MSIE7") === false)) ? "Atachment" : "Attachment";
 
       // Add additional http response headers to set proper content type, filename and filesize
       $file = $this->m_tbsooo->GetPathnameDoc();
