@@ -204,7 +204,7 @@
       $modulenames = array_keys($modules);
       foreach ($modulenames as $modulename)
       {
-        if (isset($this->m_theme['modulefiles']))
+        if (isset($this->m_theme['modulefiles'][$modulename]))
         {
           $iconfile = $this->getIconFileFromTheme($icon,$type, $this->m_theme['modulefiles'][$modulename]);
           if ($iconfile) return $iconfile;
