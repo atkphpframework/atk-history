@@ -446,8 +446,9 @@
      * place the error in atkdebug and continue.
      * @access protected
      */
-    function halt()
+    function halt($message="")
     {
+      atkerror($message);
       if ($this->m_haltonerror)
       {
         if($this->getErrorType()=="system")
