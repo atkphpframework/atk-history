@@ -180,10 +180,8 @@
         
         $unlock_table = false;
         if (mysql_errno($this->m_link_id) == 1100 && $mode == "w")
-        if ($mode == "w")
         {
           $error = mysql_error($this->m_link_id);
-          $error = "Table 'content_page' was not locked with LOCK TABLES";
           $matches = array();
           preg_match("/\'(.*)\'/U",$error,$matches);
           
