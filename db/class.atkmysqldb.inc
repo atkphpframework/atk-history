@@ -179,35 +179,10 @@
         $this->m_query_id = @mysql_query($query, $this->m_link_id);
         
         $unlock_table = false;
-        if (mysql_errno($this->m_link_id) == 1100 && $mode == "w")
+        if (mysql_errno($this->m_link_id) == 1100)
         {
-          $error = mysql_error($this->m_link_id);
-          $matches = array();
-          preg_match("/\'(.*)\'/U",$error,$matches);
-          
-          if (is_array($matches) && sizeof($matches) == 2)
-          {
-            atkdebug("<b>Fallback feature called because error '1100' occured during the last query. Running query again using table lock for table '{$matches[1]}' (".$this->m_link_id.").</b>");
-            $table = $matches[1];
-            
-            if ($this->m_query_id)
-            {
-              if (is_resource($this->m_query_id))
-                mysql_free_result($this->m_query_id);
-              $this->m_query_id = 0;
-            }
-            $this->m_affected_rows = 0;
-            
-            $this->lock($table);
-            $this->m_query_id = @mysql_query($query, $this->m_link_id);
-            
-            $this->m_affected_rows = mysql_affected_rows();
-            $unlock_table = true;
-          } 
-          else
-          {
-            atk_var_dump($matches,"<b>Error 1100 occured but callback was unable to get tablename from errormessage:</b>");
-          }
+          $this->locktables_fallback_on_error($query, $mode);
+          $unlock = true;
         }
         else 
         {
@@ -232,6 +207,45 @@
       return false;
     }
 
+    /**
+     * This method provides a fallback when error 1100 occurs
+     * (Table ... not locked using LOCK TABLES). This method locks
+     * the table and runs the query again.
+     *
+     * @param string $query The original query that failed
+     * @param string $querymode Kind of query - 'w' for write or 'r' for read
+     */
+    function locktables_fallback_on_error($query, $querymode='w')
+    {
+      $error = mysql_error($this->m_link_id);
+      $matches = array();
+      
+      preg_match("/\'(.*)\'/U",$error,$matches);
+          
+      if (is_array($matches) && sizeof($matches) == 2)
+      {
+        atkdebug("<b>Fallback feature called because error '1100' occured during the last query. Running query again using table lock for table '{$matches[1]}' (".$this->m_link_id.").</b>");
+        $table = $matches[1];
+        
+        if ($this->m_query_id)
+        {
+          if (is_resource($this->m_query_id))
+            mysql_free_result($this->m_query_id);
+          $this->m_query_id = 0;
+        }
+        $this->m_affected_rows = 0;
+        
+        $this->lock($table,($querymode=='r' ? 'read' : 'write'));
+        $this->m_query_id = @mysql_query($query, $this->m_link_id);
+        
+        $this->m_affected_rows = mysql_affected_rows();
+      } 
+      else
+      {
+        atk_var_dump($matches,"<b>Error 1100 occured but callback was unable to get tablename from errormessage:</b>");
+      }
+    }
+    
     /**
      * Goto the next record in the result set
      * @return result of going to the next record
