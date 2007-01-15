@@ -448,7 +448,6 @@
      */
     function halt($message="")
     {
-      atkerror($message);
       if ($this->m_haltonerror)
       {
         if($this->getErrorType()=="system")
