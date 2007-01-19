@@ -95,12 +95,32 @@ class atkSessionGarbageCollector
    *
    * @return atkSessionGarbageCollector
    */
-  function atkSessionGarbageCollector()
+  function atkSessionGarbageCollector($config_identifier)
   {
-    $config_identifier = atkconfig("identifier");
-    if (empty($config_identifier)) $config_identifier = "default";
+    if (empty($config_identifier))
+    {
+      atkerror('SessionGarbageCollector called with empty config identifier');
+    }
     $this->s_data = &$_SESSION[$config_identifier];
     $this->s_expiretimers = atkconfig('session_var_expiry',array('stack:*'=>(atkconfig("session_cache_expire") * 60)));
+    atk_var_dump($_SESSION,'mv_SESSION');
+  }
+
+  /**
+   * Retrieve the one-and-only atkSessionGarbageCollector instance.
+   * @return atkSessionGarbageCollector
+   */
+  function &getInstance($config_identifier)
+  {
+    static $s_gc = NULL;
+    static $conf_id;
+    if (($s_gc == NULL) || ($conf_id != $config_identifier))
+    {
+      $s_gc = new atkSessionGarbageCollector($config_identifier);
+      $conf_id = $config_identifier;
+      atkdebug("Created a new atkSessionGarbageCollector instance");
+    }
+    return $s_gc;
   }
 
   /**
@@ -168,7 +188,7 @@ class atkSessionGarbageCollector
      * @param list of names of the variables' 'ancestors'.
      * @return Mixed.
      */
-  function getVar()
+  function &getVar()
   {
     //If we don't provide at least one argument, complain.
     if (func_num_args() < 1)
@@ -224,6 +244,19 @@ class atkSessionGarbageCollector
     return true;
   }
 
+    /**
+   * Unset a session variable.
+   * @param list of names of the variables' 'ancestors'.
+   * @access public
+   *
+   */
+  function unsetVar()
+  {
+    $varname = $this->_getVarName(func_get_args());
+    $eval = '$this->'.$varname;
+    $res = eval('unset($this->'.$varname.");");
+  }
+
   /**
    * Set the timeout for a session variable.
    * @param list of names of the variables' 'ancestors'.
@@ -267,6 +300,7 @@ class atkSessionGarbageCollector
       unset($this->s_expiretimers[$varid]);
     }
   }
+  
   /**
    * Get the timeout for a session variable.
    * @param list of names of the variables' 'ancestors'.
@@ -283,18 +317,6 @@ class atkSessionGarbageCollector
     {
       return false;
     }
-  }
-  /**
-   * Unset a session variable.
-   * @param list of names of the variables' 'ancestors'.
-   * @access public
-   *
-   */
-  function unsetVar()
-  {
-    $varname = $this->_getVarName(func_get_args());
-    $eval = '$this->'.$varname;
-    $res = eval('unset($this->'.$varname.");");
   }
 
   /**

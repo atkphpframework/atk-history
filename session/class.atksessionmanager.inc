@@ -19,7 +19,7 @@
    * @internal some session initialization.
    */
   $cookie_params = session_get_cookie_params();
-
+  
   $config_identifier = atkconfig("identifier");
   if (empty($config_identifier)) $config_identifier = "default";
 
@@ -60,6 +60,8 @@
   if (isset($_REQUEST["atkprevlevel"]))$atkprevlevel= trim($_REQUEST["atkprevlevel"]);
   if (isset($_REQUEST["atkstackid"]))  $atkstackid  = trim($_REQUEST["atkstackid"]);
 
+  atkimport("atk.session.atksessiongarbagecollector");
+
   /**
    * The atk session manager.
    *
@@ -95,6 +97,12 @@
     var $m_usestack = true; // should we use a session stack?
 
     /**
+     * @access private
+     * @var atkSessionGarbageCollector
+     */
+    var $m_gc; // garbage collector
+
+    /**
      * Default constructor.
      * @param String $namespace If multiple scripts/applications are
      *                          installed on thesame url, they can each use
@@ -113,7 +121,11 @@
       $this->m_usestack = $usestack;
       // added in 5.3 but not working
       // session_regenerate_id();
+      $this->m_gc = atkSessionGarbageCollector::getInstance(atkconfig("identifier","default"));
       atkdebug("creating sessionManager (namespace: $namespace)");
+      $this->m_gc->setTimeOut($this->m_namespace, "stack",'*',5);
+      $this->m_gc->setTimeOut($this->m_namespace, "debugger",'*',5);
+      $this->m_gc->expireTimers();
     }
 
     /**
@@ -206,8 +218,8 @@
       {
         global $g_sessionData;
 
-        $currentitem = &$g_sessionData[$this->m_namespace]["stack"][atkStackID()][atkLevel()];
-
+        //$currentitem = &$g_sessionData[$this->m_namespace]["stack"][atkStackID()][atkLevel()];
+        $currentitem = $this->m_gc->getVar($this->m_namespace, "stack", atkStackID(), strval(atkLevel()));
         if (is_array($currentitem))
         {
           if ($value=="")
@@ -348,8 +360,8 @@
       // New stack, new stackid, if level = -1.
       $stackid = atkStackID(($atklevel==-1));
 
-      $stack = &$g_sessionData[$this->m_namespace]["stack"][$stackid];
-
+      //$stack = &$g_sessionData[$this->m_namespace]["stack"][$stackid];
+      $stack = $this->m_gc->getVar($this->m_namespace,'stack',$stackid);
       // Prevent going more than 1 level above the current stack top which
       // causes a new stackitem to be pushed onto the stack at the wrong
       // location.
