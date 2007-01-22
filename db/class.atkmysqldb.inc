@@ -153,11 +153,9 @@
       /* limit? */
       if ($offset >= 0 && $limit > 0)
         $query .= " LIMIT $offset, $limit";
-      if (atkconfig("debug")>0)
-      {
-        atkimport("atk.utils.atkdebugger");
-        atkDebugger::addQuery($query);
-      }
+
+      atkimport("atk.utils.atkdebugger");
+      atkDebugger::addQuery($query);
 
       $mode = $this->getQueryMode($query);
       atkdebug("atkmysqldb::query -> connect with mode = $mode");
@@ -166,10 +164,9 @@
       if ($this->connect($mode)==DB_SUCCESS)
       {
         /* free old results */
-        if ($this->m_query_id)
+        if ($this->m_query_id && is_resource($this->m_query_id))
         {
-          if (is_resource($this->m_query_id))
-            mysql_free_result($this->m_query_id);
+          mysql_free_result($this->m_query_id);
           $this->m_query_id = 0;
         }
 
@@ -248,11 +245,8 @@
       {
         $query = "lock tables $table $mode";
 
-        if (atkconfig("debug")>0)
-        {
-          atkimport("atk.utils.atkdebugger");
-          atkDebugger::addQuery($query);
-        }
+        atkimport("atk.utils.atkdebugger");
+        atkDebugger::addQuery($query);
 
         /* lock */
         $result = @mysql_query($query, $this->m_link_id);
