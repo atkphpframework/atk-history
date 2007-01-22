@@ -549,8 +549,8 @@
 
         $theme = &atkinstance("atk.ui.atktheme");
         $resetIcon = sprintf('<img width="16" height="16" border="0" valign="absmiddle" src="%1$s" alt="%2$s" title="%2$s">',
-                        $theme->iconPath('delete',"recordlist", $this->m_node->m_module),
-                        atktext("reset", $this->m_node->m_module, $this->m_node->m_type));
+                        $theme->iconPath('delete',"recordlist", $this->m_ownerInstance->m_module),
+                        atktext("reset", $this->m_ownerInstance->m_module, $this->m_ownerInstance->m_type));
 
         $links = $this->createSelectAndAutoLinks($id, $record);
 
