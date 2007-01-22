@@ -45,9 +45,9 @@
     {
       $this->m_tbsooo = new clsTinyButStrongOOo;
       $this->m_tbsooo->VarPrefix = "documentvar_";
-      $this->m_tbsooo->SetZipBinary(atkconfig("ziplocation", "zip"));
-      $this->m_tbsooo->SetUnzipBinary(atkconfig("unziplocation", "unzip"));
-      $this->m_tbsooo->SetProcessDir(atkconfig("atktempdir"));
+      $processdir = atkconfig("atktempdir") . "documents";
+      if (!is_dir($processdir)) mkdir($processdir);
+      $this->m_tbsooo->SetProcessDir($processdir);
     }
 
     /**
@@ -117,7 +117,6 @@
       // Add additional http response headers to set proper content type, filename and filesize
       $file = $this->m_tbsooo->GetPathnameDoc();
       header('Content-Type: ' . ($forcedownload ? 'application/octet-stream' : $this->m_tbsooo->GetMimetypeDoc()));
-//header('Content-Length: ' . filesize($file));
       header('Content-Disposition: ' . $attachmentword . '; Filename="' . (is_null($outputfilename) ? substr($file, strrpos($file, '/') + 1) : $outputfilename) . '"');
       header("Content-Transfer-Encoding: binary");
 
@@ -125,7 +124,7 @@
       $this->m_tbsooo->FlushDoc();
 
       // Remove the document from disk
-      //$this->m_tbsooo->RemoveDoc();
+      $this->m_tbsooo->RemoveDoc();
 
       // Remove old unremoved documents
       $this->m_tbsooo->ClearProcessDir();
