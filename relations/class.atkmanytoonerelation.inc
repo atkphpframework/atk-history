@@ -137,6 +137,13 @@
      */
     var $m_autocomplete_search_case_sensitive = false;
     
+    /**
+     * Value determines if select link for autocomplete should use atkSubmit or not (for use in admin screen)
+     *
+     * @var boolean
+     */
+    var $m_autocomplete_saveform = true;
+    
     // override onchangehandler init
     var $m_onchangehandler_init = "newvalue = el.options[el.selectedIndex].value;\n";
 
@@ -227,6 +234,16 @@
     function setAutoCompleteMinChars($chars)
     {
       $this->m_autocomplete_minchars = $chars;
+    }
+    
+    /**
+     * Set if the select link should save form (atkSubmit) or not (for use in admin screen)
+     *
+     * @param boolean $saveform
+     */
+    function setAutoCompleteSaveForm($saveform=true)
+    {
+      $this->m_autocomplete_saveform = $saveform;
     }
 
     /**
@@ -680,7 +697,7 @@
                        "&atkaction=select&atkfilter=".$filter."&atktarget=".$atktarget,
                        $linkname,
                        SESSION_NESTED,
-                       true,'class="atkmanytoonerelation"');
+                       $this->m_autocomplete_saveform,'class="atkmanytoonerelation"');
       }
       else
       {
@@ -688,7 +705,7 @@
                        "&atkaction=select&atktarget=".$atktarget,
                        $linkname,
                        SESSION_NESTED,
-                       true,'class="atkmanytoonerelation"');
+                       $this->m_autocomplete_saveform,'class="atkmanytoonerelation"');
       }
       return $result;
     }

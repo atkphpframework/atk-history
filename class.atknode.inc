@@ -3285,7 +3285,6 @@
           if (is_object($this->getAttribute($name)) && $this->m_attribList[$name]->hasFlag(AF_FORCE_LOAD)) $usedFields[] = $name;
         $usedFields = array_unique($usedFields);
       }
-atk_var_dump($usedFields, "ADD TO QUERY ".$this->atkNodeType());
       foreach ($usedFields as $usedfield)
       {
         list($attribname) = explode(".", $usedfield);
