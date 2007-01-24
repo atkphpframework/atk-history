@@ -144,6 +144,15 @@
      */
     var $m_autocomplete_saveform = true;
     
+    /**
+     * Set the minimal number of records for showing the automcomplete. If there are less records
+     * the normal dropdown is shown
+     *
+     * @access private
+     * @var integer
+     */
+    var $m_autocomplete_minrecords = -1;
+    
     // override onchangehandler init
     var $m_onchangehandler_init = "newvalue = el.options[el.selectedIndex].value;\n";
 
@@ -244,6 +253,17 @@
     function setAutoCompleteSaveForm($saveform=true)
     {
       $this->m_autocomplete_saveform = $saveform;
+    }
+    
+    /**
+     * Set the minimal number of records for the autocomplete to show
+     * If there are less records the normal dropdown is shown
+     *
+     * @param integer $minrecords
+     */
+    function setAutoCompleteMinRecords($minrecords)
+    {
+      $this->m_autocomplete_minrecords = $minrecords;
     }
 
     /**
@@ -514,7 +534,13 @@
       // and one with a dropdownbox that contains the last 10 used records,
       // with a link to a selector with all records. This second one is for
       // relations with large tables, so is only used when AF_LARGE is set.
-      if ($this->hasFlag(AF_RELATION_AUTOCOMPLETE) && (is_object($this->m_ownerInstance)))
+      
+      if ($this->hasFlag(AF_RELATION_AUTOCOMPLETE) && $this->m_autocomplete_minrecords > -1) 
+      {
+        $recordset = $this->_getSelectableRecords($record, 'select');
+      }
+      
+      if ($this->hasFlag(AF_RELATION_AUTOCOMPLETE) && (is_object($this->m_ownerInstance)) && is_array($recordset) && count($recordset) > $this->m_autocomplete_minrecords)
       {
         $this->createDestination();
         $page = &$this->m_ownerInstance->getPage();
