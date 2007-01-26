@@ -534,13 +534,12 @@
       // and one with a dropdownbox that contains the last 10 used records,
       // with a link to a selector with all records. This second one is for
       // relations with large tables, so is only used when AF_LARGE is set.
-      
       if ($this->hasFlag(AF_RELATION_AUTOCOMPLETE) && $this->m_autocomplete_minrecords > -1) 
       {
         $recordset = $this->_getSelectableRecords($record, 'select');
       }
       
-      if ($this->hasFlag(AF_RELATION_AUTOCOMPLETE) && (is_object($this->m_ownerInstance)) && is_array($recordset) && count($recordset) > $this->m_autocomplete_minrecords)
+      if ($this->hasFlag(AF_RELATION_AUTOCOMPLETE) && (is_object($this->m_ownerInstance)) && ((is_array($recordset) && count($recordset) > $this->m_autocomplete_minrecords) || $this->m_autocomplete_minrecords == -1))
       {
         $this->createDestination();
         $page = &$this->m_ownerInstance->getPage();
