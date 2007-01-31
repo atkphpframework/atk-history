@@ -114,14 +114,14 @@
     var $m_autocomplete_minchars = 2;
 
     /**
-     * An array with the fieldnames of the destination node in which the autocompletion must search 
+     * An array with the fieldnames of the destination node in which the autocompletion must search
      * for results.
      *
      * @access private
      * @var array
      */
     var $m_autocomplete_searchfields = "";
-    
+
     /**
      * The search mode of the autocomplete fields. Can be 'startswith', 'exact' or 'contains'.
      *
@@ -129,21 +129,21 @@
      * @var String
      */
     var $m_autocomplete_searchmode = "contains";
-    
+
     /**
      * Value determines wether the search of the autocompletion is case-sensitive.
      *
      * @var boolean
      */
     var $m_autocomplete_search_case_sensitive = false;
-    
+
     /**
      * Value determines if select link for autocomplete should use atkSubmit or not (for use in admin screen)
      *
      * @var boolean
      */
     var $m_autocomplete_saveform = true;
-    
+
     /**
      * Set the minimal number of records for showing the automcomplete. If there are less records
      * the normal dropdown is shown
@@ -152,7 +152,7 @@
      * @var integer
      */
     var $m_autocomplete_minrecords = -1;
-    
+
     // override onchangehandler init
     var $m_onchangehandler_init = "newvalue = el.options[el.selectedIndex].value;\n";
 
@@ -179,8 +179,8 @@
 
       $this->m_autocomplete_minchars = atkconfig("manytoone_autocomplete_minchars", 2);
       $this->m_autocomplete_searchmode = atkconfig("manytoone_autocomplete_searchmode", "contains");
-      $this->m_autocomplete_search_case_sensitive = atkconfig("manytoone_autocomplete_search_case_sensitive", false);  
-  
+      $this->m_autocomplete_search_case_sensitive = atkconfig("manytoone_autocomplete_search_case_sensitive", false);
+
       if (is_array($name))
       {
         $this->m_refKey = $name;
@@ -203,7 +203,7 @@
         atkerror("AF_MANYTOONE_LAZY flag is not supported for multi-column reference key or a reference key that uses another column.");
       }
     }
-    
+
     /**
      * Set the searchfields for the autocompletion.
      *
@@ -213,7 +213,7 @@
     {
       $this->m_autocomplete_searchfields = $searchfields;
     }
-    
+
     /**
      * Set the searchmode for the autocompletion:
      * exact, startswith(default) or contains.
@@ -224,7 +224,7 @@
     {
       $this->m_autocomplete_searchmode = $mode;
     }
-    
+
     /**
      * Set the case-sensitivity for the autocompletion search (true or false).
      *
@@ -234,7 +234,7 @@
     {
       $this->m_autocomplete_search_case_sensitive = $case_sensitive;
     }
-    
+
     /**
      * Sets the minimum number of characters before auto-completion kicks in.
      *
@@ -244,7 +244,7 @@
     {
       $this->m_autocomplete_minchars = $chars;
     }
-    
+
     /**
      * Set if the select link should save form (atkSubmit) or not (for use in admin screen)
      *
@@ -254,7 +254,7 @@
     {
       $this->m_autocomplete_saveform = $saveform;
     }
-    
+
     /**
      * Set the minimal number of records for the autocomplete to show
      * If there are less records the normal dropdown is shown
@@ -364,7 +364,7 @@
         $record = array($this->fieldName() => $result);
         $this->populate($record);
         $result = $record[$this->fieldName()];
-        
+
         return $result;
       }
       return NULL;
@@ -432,7 +432,7 @@
      * @param mixed $fullOrFields  load all data, only the given fields or only the descriptor fields?
      */
     function populate(&$record, $fullOrFields=false)
-    { 
+    {
       if ($record[$this->fieldName()] == "") return;
 
       atkdebug("Delayed loading of ".($fullOrFields || is_array($fullOrFields) ? "" : "descriptor ")."fields for ".$this->m_name);
@@ -534,27 +534,27 @@
       // and one with a dropdownbox that contains the last 10 used records,
       // with a link to a selector with all records. This second one is for
       // relations with large tables, so is only used when AF_LARGE is set.
-      if ($this->hasFlag(AF_RELATION_AUTOCOMPLETE) && $this->m_autocomplete_minrecords > -1) 
+      if ($this->hasFlag(AF_RELATION_AUTOCOMPLETE) && $this->m_autocomplete_minrecords > -1)
       {
         $recordset = $this->_getSelectableRecords($record, 'select');
       }
-      
+
       if ($this->hasFlag(AF_RELATION_AUTOCOMPLETE) && (is_object($this->m_ownerInstance)) && ((is_array($recordset) && count($recordset) > $this->m_autocomplete_minrecords) || $this->m_autocomplete_minrecords == -1))
       {
         $this->createDestination();
         $page = &$this->m_ownerInstance->getPage();
 
         $id = $this->getHtmlid($fieldprefix);
-        
+
         global $ATK_VARS;
         $selname = $id.'_newsel';
         if ($ATK_VARS[$selname]!="")
         {
           // $ATK_VARS[$selname] contains full primary key of selected record.
-          $recset = $this->m_destInstance->selectDb($ATK_VARS[$selname],"","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));        
+          $recset = $this->m_destInstance->selectDb($ATK_VARS[$selname],"","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
           $destrecord = $recset[0];
-          $record[$this->fieldName()] = $destrecord;          
-        }        
+          $record[$this->fieldName()] = $destrecord;
+        }
 
         $afterUpdateFunc = "";
         if (count($this->m_onchangecode))
@@ -903,20 +903,20 @@
           ($this->hasFlag(AF_RELATION_AUTOCOMPLETE) ? ' onchange=""' : '').
           ($this->m_searchsize > 0 ? ' size="'.$this->m_searchsize.'"' : '').
           ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>';
-          
+
         if ($this->hasFlag(AF_RELATION_AUTOCOMPLETE))
         {
           $page = &$this->m_ownerInstance->getPage();
           $url = partial_url($this->m_ownerInstance->atkNodeType(), 'admin', 'attribute.'.$this->fieldName().'.autocomplete_search');
           $code = "ATK.ManyToOneRelation.completeSearch('{$id}', '{$id}_result', '{$url}', {$this->m_autocomplete_minchars});";
-          $this->m_ownerInstance->addStyle("atkmanytoonerelation.css");          
+          $this->m_ownerInstance->addStyle("atkmanytoonerelation.css");
           $page->register_script(atkconfig("atkroot").'atk/javascript/prototype/prototype.js');
           $page->register_script(atkconfig("atkroot").'atk/javascript/scriptaculous/scriptaculous.js');
           $page->register_script(atkconfig('atkroot').'atk/javascript/class.atkmanytoonerelation.js');
-          $page->register_loadscript($code);        
+          $page->register_loadscript($code);
           $result .= '<div id="'.$id.'_result" style="display: none" class="atkmanytoonerelation_result"></div>';
         }
-        
+
         return $result;
       }
     }
@@ -1217,7 +1217,7 @@
       }
       return 0;
     }
-    
+
     /**
      * Returns the selected record for this many-to-one relation. Uses
      * the owner instance $this->fieldName()."_selected" method if it exists.
@@ -1228,8 +1228,8 @@
       if (method_exists($this->m_ownerInstance, $method))
         return $this->m_ownerInstance->$method($record, $mode);
       else return $this->getSelectedRecord($record, $mode);
-    }    
-    
+    }
+
     /**
      * Returns the currently selected record.
      */
@@ -1295,7 +1295,7 @@
     {
       // DISABLED CHECK, TOO SLOW
       return true;
-      
+
       if ($record[$this->fieldName()] == NULL) return false;
 
       $this->createDestination();
@@ -1625,15 +1625,15 @@
     {
       $partial = $options['partial'];
       $method = "partial_{$partial}";
-      
+
       if (!method_exists($this, $method))
       {
         return parent::partial($mode, $options);
       }
-      
+
       return $this->$method($mode);
     }
-    
+
     /**
      * Auto-complete partial.
      *
@@ -1644,9 +1644,9 @@
       $searchvalue = $this->m_ownerInstance->m_postvars['value'];
       if (strlen($searchvalue) < $this->m_autocomplete_minchars)
       {
-        return '<ul><li class="minimum_chars">'.sprintf($this->text('autocomplete_minimum_chars'), $this->m_autocomplete_minchars).'</li></ul>';        
+        return '<ul><li class="minimum_chars">'.sprintf($this->text('autocomplete_minimum_chars'), $this->m_autocomplete_minchars).'</li></ul>';
       }
-            
+
       $this->createDestination();
 
       $fieldprefix = $this->m_ownerInstance->m_postvars['atkfieldprefix'];
@@ -1663,12 +1663,12 @@
       {
         if(in_array($this->m_autocomplete_searchmode,array("exact","startswith","contains")))
           $str = $this->text('autocomplete_no_results_'.$this->m_autocomplete_searchmode);
-        else 
+        else
           $str = $this->text('autocomplete_no_results');
-       
+
         return '<ul><li class="no_results">'.$str.'</li></ul>';
       }
-      
+
       $result = '';
       foreach ($records as $rec)
       {
@@ -1684,23 +1684,23 @@
 
       return "<ul>$result</ul>";
     }
-    
+
     /**
      * Auto-complete search partial.
      */
     function partial_autocomplete_search()
     {
-      $this->createDestination();      
-      
+      $this->createDestination();
+
       $searchvalue = $this->m_ownerInstance->m_postvars['value'];
       $db = &$this->m_ownerInstance->getDb();
       $searchvalue = $db->escapeSQL($searchvalue);
       $filter = $this->createSearchFilter($searchvalue);
       $this->m_destInstance->addFilter($filter);
 
-      $record = array();      
+      $record = array();
       $records = $this->_getSelectableRecords($record, 'search');
-      
+
       $result = '';
       foreach ($records as $rec)
       {
@@ -1711,7 +1711,7 @@
       }
 
       return "<ul>$result</ul>";
-    }    
+    }
 
     /**
      * Creates a search filter with the given search value on the given
@@ -1724,53 +1724,56 @@
     {
       if($this->m_autocomplete_searchfields=="")
         $searchfields = $this->m_destInstance->descriptorFields();
-      else 
+      else
         $searchfields = $this->m_autocomplete_searchfields;
-        
+
       $parts = preg_split('/\s+/', $searchvalue);
-      
+
       $mainFilter = array();
       foreach ($parts as $part)
       {
         $filter = array();
         foreach($searchfields as $attribname)
-        {        
+        {
+          if (strstr($attribname, '.')) $table = '';
+          else $table = $this->m_destInstance->m_table.".";
+
           if(!$this->m_autocomplete_search_case_sensitive)
-            $tmp = "LOWER(".$this->m_destInstance->m_table.".".$attribname.")";
-          else 
-            $tmp = $this->m_destInstance->m_table.".".$attribname;
-          
-          switch($this->m_autocomplete_searchmode)    
-          {           
-            case "exact":            
+            $tmp = "LOWER(".$table.$attribname.")";
+          else
+            $tmp = $table.$attribname;
+
+          switch($this->m_autocomplete_searchmode)
+          {
+            case "exact":
               if(!$this->m_autocomplete_search_case_sensitive)
                 $tmp.= " = LOWER('{$part}')";
-              else 
+              else
                 $tmp.= " = '{$part}'";
               break;
             case "startswith":
               if(!$this->m_autocomplete_search_case_sensitive)
                 $tmp.= " LIKE LOWER('{$part}%')";
-              else 
+              else
                 $tmp.= " LIKE '{$part}%'";
               break;
             case "contains":
               if(!$this->m_autocomplete_search_case_sensitive)
                 $tmp.= " LIKE LOWER('%{$part}%')";
-              else 
+              else
                 $tmp.= " LIKE '%{$part}%'";
               break;
-            default:            
-              $tmp.= " = LOWER('{$part}')";          
+            default:
+              $tmp.= " = LOWER('{$part}')";
           }
-  
+
           $filter[] = $tmp;
         }
-        
+
         if (count($filter) > 0)
           $mainFilter[] = "(".implode(") OR (", $filter).")";
       }
-      
+
       if (count($mainFilter) > 0)
         return "(".implode(") AND (", $mainFilter).")";
       else return "";
