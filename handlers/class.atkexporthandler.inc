@@ -189,13 +189,13 @@
       $node_bk = $node;
       $num_atts = count($node_bk->m_attribList);
       $atts = &$node_bk->m_attribList;
-
+      
       foreach($atts as $name => $object)
       {
         $att = &$node_bk->getAttribute($name);
         if(in_array($name, $list_includes) && $att->hasFlag(AF_HIDE_LIST))
           $att->m_flags ^= AF_HIDE_LIST;
-        else
+        elseif (!in_array($name, $list_includes))
           $att->addFlag(AF_HIDE_LIST);
       }
 
