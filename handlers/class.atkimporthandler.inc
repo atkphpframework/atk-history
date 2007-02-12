@@ -890,10 +890,10 @@ atkimport('atk.handlers.atkactionhandler');
     {
       foreach($array as $key=>$item)
       {
-        if(strtolower($item) == strtolower($value))
+        if(trim(strtolower($item)) == trim(strtolower($value)))
           return $key;
 
-        if(strtolower($item) == strtolower(atktext($value, $this->m_node->m_module, $this->m_node->m_type)))
+        if(trim(strtolower($item)) == trim(strtolower(atktext($value, $this->m_node->m_module, $this->m_node->m_type))))
           return $key;
       }
       return false;
