@@ -197,25 +197,30 @@
      * @param $record
      * @return a displayable string for this value
      */
-    function display($record)
+    function display($record, $mode="")
     {
       if ($this->createDestination())
       {
         $recordset = array();
 
-        for ($i=0;$i<count($record[$this->m_name]);$i++)
+        if (is_array($record[$this->fieldName()]))
         {
-          $recordset[] = $record[$this->m_name][$i][$this->getRemoteKey()];
+          for ($i=0;$i<count($record[$this->m_name]);$i++)
+          {
+            $recordset[] = $record[$this->m_name][$i][$this->getRemoteKey()];
+          }
         }
 
         if (count($record[$this->m_name])!=0)
         {
-          $result = "<ul>";
+          if ($mode != 'csv') $result = "<ul>";
           for ($i=0;$i<count($recordset);$i++)
           {
-            $result.="<li>".$this->m_destInstance->descriptor($recordset[$i]);
+            if ($mode != 'csv') $result.="<li>";
+            elseif ($result != '') $result.=', ';
+            $result .= $this->m_destInstance->descriptor($recordset[$i]);
           }
-          $result.="</ul>";
+          if ($mode != 'csv') $result.="</ul>";
         }
         return $result;
       }
@@ -297,7 +302,7 @@
           
         $filter.= " ".$this->m_store_deletion_filter;
       }
-        
+
       if (is_object($rel) && $rel->deleteDb($this->m_linkInstance->m_table.'.'.$this->getLocalKey()."='".$record[$this->m_ownerInstance->primaryKeyField()]."'".($filter!=""?" AND ".$this->m_linkInstance->m_table.'.'.$this->getRemoteKey()." $filter":"")))
       {
         for ($i=0;$i<count($record[$this->fieldName()]);$i++)
@@ -306,7 +311,14 @@
           $remKey    = $this->checkKeyDimension($record[$this->fieldName()][$i][$this->getRemoteKey()], $this->m_destInstance->primaryKeyField());
           $locKey    = $this->checkKeyDimension($record[$this->m_ownerInstance->primaryKeyField()]);
           $newrecord = $rel->initial_values();
-          $newrecord[$this->getRemoteKey()][$this->m_destInstance->primaryKeyField()] = $remKey; // $record[$this->fieldName()][$i][$this->getRemoteKey()];
+          if (is_array($record[$this->fieldName()][$i][$this->getRemoteKey()]))
+          {
+            $newrecord[$this->getRemoteKey()][$this->m_destInstance->primaryKeyField()] = $remKey; // $record[$this->fieldName()][$i][$this->getRemoteKey()];
+          }
+          else 
+          {
+            $newrecord[$this->getRemoteKey()] = $remKey; // $record[$this->fieldName()][$i][$this->getRemoteKey()];            
+          }
           $newrecord[$this->getLocalKey()][$this->m_ownerInstance->primaryKeyField()] = $locKey; // $record[$this->m_ownerInstance->primaryKeyField()];
 
           // First check if the record does not exist yet.

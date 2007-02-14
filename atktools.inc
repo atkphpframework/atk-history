@@ -31,6 +31,13 @@
    * clearly visible.
    */
   define("DEBUG_WARNING", 2);
+  
+  /**
+   * Hides the debug unless in level 2.
+   * This should be used for debug you only really want to see if you
+   * are developping (like deprecated warnings).
+   */
+  define("DEBUG_NOTICE", 4);
 
   /**
    * Function atkErrorHandler
@@ -74,13 +81,13 @@
     if ($errtype==E_NOTICE || error_reporting()==0)
     {
       // Just show notices in the debug log, but don't influence the program flow
-      //atkdebug("[$errortypestring] $errstr in $errfile (line $errline)");
+      atkdebug("[$errortypestring] $errstr in $errfile (line $errline)",DEBUG_NOTICE);
       return;
     }
     else if (($errtype & (E_WARNING|E_USER_WARNING)) > 0)
     {
       // This is something we should pay attention to, but we don't need to die.
-      atkerror("[$errortypestring] $errstr in $errfile (line $errline)");
+//      atkerror("[$errortypestring] $errstr in $errfile (line $errline)");
       return;
     }
     else
@@ -118,7 +125,7 @@
       $output=atkOutput::getInstance();
       $res ="<html>";
       $res.='<body bgcolor="#ffffff" color="#000000">';
-      $res.="<font color=\"$level_color\"><b>".atktext($level,"atk")."</b></font>: $msg.<br>\n";
+      $res.="<font color=\"$level_color\"><b>".atktext($level,"atk")."</b></font>: $msg.<br />\n";
       $res.="<b>Halted</b>";
       $output->output($res);
       $output->outputFlush();
@@ -201,7 +208,7 @@
           $g_debug_msg[]=$line;
         }
       }
-      else
+      else if (!hasFlag($flags,DEBUG_NOTICE))
       {
         $g_debug_msg[]=$line;
       }
@@ -211,6 +218,31 @@
     {
       $g_debug_msg[]=$txt;
     }
+  }
+  
+  /**
+   * Send a notice to the debug log.
+   * A notice doesn't get show unless your debug level is 3 or higher.
+   *
+   * @param String $txt The text that will be added to the log
+   */
+  function atknotice($txt)
+  {
+    return atkdebug($txt,DEBUG_NOTICE);
+  }
+  
+  /**
+   * Send a warning to the debug log.
+   * A warning gets shown more prominently than a normal debug line.
+   * However it does not trigger a mailreport 
+   * or anything else that an atkerror triggers.
+   *
+   * @param unknown_type $txt
+   * @return unknown
+   */
+  function atkwarning($txt)
+  {
+    return atkdebug($txt,DEBUG_WARNING);
   }
 
   function atkGetTimingInfo()
@@ -251,7 +283,8 @@
       return "Incorrect php-version for atk_get_trace()";
 
     // Get the debug backtrace
-    $traceArr = debug_backtrace();
+    return '';
+    $traceArr = debug_backtrace(); //This function crashes the PHP binary, until we have a solid solution this function is disabled.
 
     // Remove the call of atk_get_trace
     array_shift($traceArr);
@@ -410,7 +443,8 @@
   function atktext($string, $module="",$node="", $lng="", $firstfallback="", $nodefaulttext=false, $modulefallback=false)
   {
     atkimport("atk.atklanguage");
-    return atkLanguage::text($string, $module, $node, $lng, $firstfallback, $nodefaulttext,$modulefallback);
+    $text = atkLanguage::text($string, $module, $node, $lng, $firstfallback, $nodefaulttext,$modulefallback);
+    return $text;
   }
 
   /**
@@ -597,10 +631,6 @@
   {
     if ($saveform)
     {
-      //$str = "javascript:atkSubmit('".session_url($url,$sessionstatus)."')";
-    //echo $url."-".base64_encode(session_url($url,$sessionstatus))."<br>";
-      //$str = 'javascript:atkSubmit("'.session_url($url,$sessionstatus).'")';
-    //echo $url."-<br>";
       $str = 'javascript:atkSubmit("'.atkurlencode(session_url($url,$sessionstatus)).'")';
     }
     else
@@ -611,15 +641,14 @@
     // note, we use single quotes instead of doublequotes in the href='',
     // because we otherwise have a problem with internet explorers buggy
     // javascript parser..
-  //echo $str;
     return "<a href='".$str."' ".$extraprops.">".$name."</a>";
   }
 
 
   /**
-   * Same as array_merge from php, but without duplicates.. 
+   * Same as array_merge from php, but without duplicates..
    * Supports unlimited number of arrays as arguments.
-   * 
+   *
    * @param Array $array1 the first array
    * @param Array $array2 the second array
    * @return Array The result of the merge between $array1 and $array2
@@ -627,7 +656,7 @@
   function atk_array_merge($array1, $array2)
   {
     $res = Array();
-    
+
     $arrays = func_get_args();
     for ($i = 0, $_i = count($arrays); $i < $_i; $i++)
     {
@@ -639,7 +668,7 @@
         }
       }
     }
-    
+
     return $res;
   }
 
@@ -1137,10 +1166,14 @@
    * @param String $conn The name of the connection to retrieve
    * @return atkDb Database connection instance
    */
-  function &atkGetDb($conn="default", $reset=false)
+  function &atkGetDb($conn=NULL, $reset=false, $mode="r")
   {
     atkimport("atk.db.atkdb");
-    $db = &atkDb::getInstance($conn, $reset);
+    if ($conn == NULL)
+    {
+      $conn = atkDb::getDefault();
+    }
+    $db = &atkDb::getInstance($conn, $reset, $mode);
     return $db;
   }
 
@@ -1341,9 +1374,9 @@
       $disp = 'attachment';
     }
     if($mimetype!="") $mime=$mimetype;
-    else if ($mimetype=="" && $detectmime && function_exists('mime_content_type')) 
+    else if ($mimetype=="" && $detectmime && function_exists('mime_content_type'))
       $mime = mime_content_type($file);
-    
+
     $fp = @fopen($file,"rb");
     if ($fp!=NULL)
     {
@@ -1363,7 +1396,7 @@
 
       header("Content-Description: File Transfer");
       header("Content-Transfer-Encoding: binary");
-      
+
       fpassthru($fp);
       return true;
     }
@@ -1565,14 +1598,16 @@
    * @param string $phpfile The php file to use for dispatching, defaults to dispatch.php
    * @return string url for the node with the action
    */
-  function dispatch_url($node, $action, $params="",$phpfile='dispatch.php')
+  function dispatch_url($node, $action, $params="",$phpfile='')
   {
+    $theme = &atkinstance('atk.ui.atktheme');
+    if (!$phpfile) $phpfile =  $theme->getAttribute('dispatcher',atkconfig("dispatcher",'dispatch.php'));
     $url = $phpfile."?atknodetype=".$node."&atkaction=".$action;
     if ($params != "" && is_array($params) && count($params) > 0)
       $url .= '&'.buildQueryString($params);
     return $url;
   }
-  
+
   /**
    * Generate a partial url.
    *
@@ -1589,7 +1624,7 @@
     $params['atkpartial'] = $partial;
 
     return session_url(dispatch_url($node, $action, $params), SESSION_PARTIAL);
-  }   
+  }
 
   /**
    * Writes trace file to system tmp directory
@@ -1684,6 +1719,25 @@
     }
     else
       return false;
+  }
+
+  /**
+   * Imports a zend-file
+   * @param string $classname Name of class in zend-format (starting with a Capital)
+   */
+  function zendimport($classname)
+  {
+    $current_path = getcwd();
+    chdir(atkConfig('atkroot')."atk/ext/zend/");
+
+    $filename = 'Zend/'.$classname.'.php';
+
+    if (file_exists($filename))
+    {
+      require_once $filename;
+    }
+
+    chdir($current_path);
   }
 
   /**
@@ -1996,7 +2050,7 @@
     }
     return false;
   }
-  
+
   /**
    * Remove a class overloader for a class
    *
@@ -2013,7 +2067,7 @@
     }
     return false;
   }
-  
+
   /**
    * Checks wether or not a class has an overloader defined
    *
@@ -2029,7 +2083,7 @@
     }
     return false;
   }
-  
+
   /**
    * Returns the IP of the remote client.
    *
@@ -2038,7 +2092,7 @@
   function atkGetClientIp()
   {
     static $s_ip = NULL;
-    
+
     if ($s_ip === NULL)
     {
       if (getenv("HTTP_CLIENT_IP"))
@@ -2046,10 +2100,27 @@
       elseif (getenv("HTTP_X_FORWARDED_FOR"))
         $s_ip = getenv("HTTP_X_FORWARDED_FOR");
       elseif (getenv("REMOTE_ADDR"))
-        $s_ip = getenv("REMOTE_ADDR");    
+        $s_ip = getenv("REMOTE_ADDR");
       else $s_ip = 'x.x.x.x';
     }
-    
+
     return $s_ip;
+  }
+  
+  /**
+   * Function checks php version and clones the 
+   * given attribute in the right way
+   *
+   * @param object $attribute The attribute to clone
+   * @return object $attr
+   */
+  function atkClone($attribute)
+  {
+    if (intval(substr(phpversion(),0,1))<5)
+      $attr = $attribute;
+    else 
+      $attr = clone($attribute);
+    
+    return $attr;
   }
 ?>

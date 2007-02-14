@@ -325,11 +325,11 @@
 
       // session vars are valid until they are set to something else. if you go a session level higher,
       // the next level will still contain these vars (unless overriden in the url)
-      $sessionVars = array("atknodetype","atkfilter","atkselector","atkaction","atkpkret");
+      $sessionVars = array("atknodetype","atkfilter","atkaction","atkpkret");
 
       // pagevars are valid on a page. if you go a session level higher, the pagevars are no longer
       // visible until you return.
-      $pageVars = array("atksearch","atksearchmode","atkorderby","atkstartat","atklimit","atktarget","atkformdata","atktree","atksuppress","atktab","atksmartsearch");
+      $pageVars = array("atksearch","atkselector","atksearchmode","atkorderby","atkstartat","atklimit","atktarget","atkformdata","atktree","atksuppress","atktab","atksmartsearch");
       
       // lockedvars are session or page vars that will not be overwritten in partial mode
       // e.g., the values that are already known in the session will be used
@@ -371,8 +371,11 @@
         $atkformdata = array();
         foreach(array_keys($postvars) as $varname)
         {
-          // only save formdata itself, hence no $atk.. variables
-          if (substr($varname,0,3)!="atk")
+          // Only save formdata itself, hence no $atk.. variables.
+          // Except atktab because it could be changed in the page load.
+          // but why don't we save all page vars here? What is the reason for
+          // not doing this? TODO: Ask Ivo.
+          if (substr($varname,0,3)!="atk" || $varname == 'atktab')
           {
             $atkformdata[$varname] = $postvars[$varname];
           }
@@ -394,8 +397,6 @@
 
         // finally, reset atkescape to prevent atk from keeping escaping upon return
         unset($currentitem['atkescape']);
-
-        atk_var_dump($currentitem, "Current item in escape mode");
       }
       else
       {
@@ -517,9 +518,15 @@
             {
               $postvars[$var] = $value;
             }
-          }          
-          unset($currentitem['atkformdata']);
-          // atkformdata will be present in postvars.. editForm() has to read them..
+            else if (is_array($postvars[$var]) && is_array($value))
+            {
+              $postvars[$var] = array_merge($value, $postvars[$var]);
+            }
+          }
+
+          // We leave atkformdata in the current stack entry untouched so that
+          // when the stack might be forked of whatsoever the form data is still
+          // present. However, this data should not be directly accessed in the node!         
         }
 
         if (is_array($currentitem))
@@ -867,6 +874,7 @@
    */
   function isValidSessionId()
   {
+    
     $name = atkconfig("identifier");
     $sessionid = "";
     global ${$name};
@@ -881,10 +889,10 @@
     }
 
     if ($sessionid=="") return true;
-
+    
     for ($position=0; $position<strlen($sessionid); $position++)
     {
-      if (!eregi('[a-zA-Z0-9]', $sessionid[$position])) return false;
+      if (!eregi('[a-zA-Z0-9:]', $sessionid[$position])) return false;
     }
     return true;
   }
