@@ -50,15 +50,24 @@
 
     function visitFile($fullpath)
     {
-      $include = $_REQUEST["include"];
+      $include = atkArrayNvl($_REQUEST, "include");
       $includefiles = explode("|",$include);
       $filename = basename($fullpath);
       if (substr($filename, 0, 11)=="class.test_" && (!$include ||($include && in_array($filename,$includefiles))) && strpos($fullpath,"/testcases/")!==false)
       {
         $elems = explode(".", $filename); // leads to 'class' 'test_...' and '.inc'
         $testclassname = $elems[1];
-        include_once($fullpath);
-        $this->m_grouptest->addTestClass($testclassname);
+        if (isset($_REQUEST['list']))
+        {
+          $fullpath = atkCleanPath($fullpath);
+      	  $ret ='<tr><td>'.$fullpath.'</td><td><a href="'.$_SERVER['PHP_SELF'].'?showpassed&atkclass='.getClassName($fullpath).'">Test</a><br></tr></td>';
+        	echo $ret;
+        }
+        else
+        {
+          include_once($fullpath);
+          $this->m_grouptest->addTestClass($testclassname);
+        }
       }
     }
 
@@ -86,6 +95,20 @@
      */
     function atkTestSuite()
     {
+      error_reporting(E_ALL & ~E_NOTICE);
+    }
+
+    /**
+     * Detect if a test-database is used or not.
+     *
+     * @return boolean use test-database?
+     * @static
+     */
+    function useTestDatabase()
+    {
+      $config = atkconfig('db');
+      $mapping = atkconfig('test_db_mapping');
+      return isset($config['test']) || count($mapping) > 1 || (count($mapping) == 1 && key($mapping) != 'default');
     }
 
     /**
@@ -101,15 +124,18 @@
     {
       $config = atkconfig('db');
 
-      if (isset($config['test']))
+      if (atkTestSuite::useTestDatabase())
       {
-        // setup the test database
-        $this->_setupTestDB();
+        // setup the test database(s)
+        $this->_setupTestDatabases();
       }
+      $test = &new GroupTest("Test Page");
 
-      $test = &new GroupTest("Full ATK test");
-      $class = $_REQUEST['class'];
-      $testclass = $this->getTestCaseLocationForClass($class);
+      if($_REQUEST['class']) $class = $_REQUEST['class'];
+      else $class = $_REQUEST['atkclass'];
+
+      if(file_exists(getClassPath($class))) $testclass = $class;
+      else $testclass = $this->getTestCaseLocationForClass($class);
 
       if ($class && file_exists(getClassPath($testclass)))
       {
@@ -119,6 +145,8 @@
       {
         $this->_addTestsByTraversing($test,$module);
       }
+      if (isset($_REQUEST['list'])) return;
+
       if($reporttype=="html")
       {
         $test->run(atknew("atk.test.atktestreporter"));
@@ -141,25 +169,30 @@
 
 
     /**
-     * Setup the test database. Clones the database structure of the
-     * default database to the test database. All data in the test
-     * database will be lost!
+     * Setup the test database(s). Clones the database structure of the
+     * default databases to the test databases. All data in the test
+     * databases will be lost!
      */
-    function _setupTestDB()
+    function _setupTestDatabases()
     {
-      $defaultDB = &atkGetDb('default');
-      $testDB = &atkGetDb('test');
-
-      $testDB->dropAll();
-
-      $tables = $defaultDB->table_names();
-      foreach($tables as $table)
+      $mapping = atkconfig('test_db_mapping');
+      foreach ($mapping as $normal => $test)
       {
-        $ddl = $testDB->createDDL();
-        $metadata = $defaultDB->metadata($table["table_name"]);
-        $ddl->loadMetaData($metadata);
-        $query = $ddl->buildCreate();
-        $testDB->query($query);
+        $normalDb = &atkGetDb($normal);
+        $testDb = &atkGetDb($test);
+
+        $config = atkconfig('db');
+        $clone = !isset($config[$test]['clone_structure']) || $config[$test]['clone_structure'];
+
+        if ($clone)
+        {
+          $testDb->cloneAll($normalDb);
+        }
+        else
+        {
+          $testDb->deleteAll();
+          $testDb->commit();
+        }
       }
     }
 
@@ -195,12 +228,34 @@
         {
           $dir = moduleDir($module);
         }
-        $traverser->traverse($dir);
+        $this->traverse($traverser, $dir);
       }
       else
       {
-        $traverser->traverse(".");
-        $this->_traverseExtraModules($traverser);
+        $this->traverse($traverser, ".", true);
+      }
+    }
+
+    function traverse($traverser, $dir, $extramods=false)
+    {
+      // pre-traverse code
+      if (isset($_REQUEST['list']))
+      {
+        $ret = "<h1>Testcase list</h1>";
+    	  $ret .='<table border="1" cellspacing="0" cellpadding="5">';
+    	  $ret .='<tr><th>Path</th><th>&nbsp;</th></tr>';
+      	echo $ret;
+      }
+
+      // traverse
+      $traverser->traverse($dir);
+      if ($extramods) $this->_traverseExtraModules($traverser);
+
+      // post-traverse code
+      if (isset($_REQUEST['list']))
+      {
+    	  $ret ='</table>';
+      	echo $ret;
       }
     }
 
@@ -217,7 +272,7 @@
     {
       global $g_modules;
       $curdir = getcwd();
-      if (chdir(atkconfig('modulepath')))
+      if (chdir(atkconfig('module_path')))
       {
         $modulepath = getcwd();
         if (chdir($curdir))

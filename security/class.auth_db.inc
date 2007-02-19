@@ -41,7 +41,7 @@
      {
        if ($user=="") return AUTH_UNVERIFIED; // can't verify if we have no userid
 
-       $db = &atkGetDb();
+       $db = &atkGetDb(atkconfig("auth_database"));
        $query = $this->buildSelectUserQuery($db->escapeSql($user),
                                             atkconfig("auth_usertable"),
                                             atkconfig("auth_userfield"),
@@ -205,7 +205,6 @@
 
          $groups = array_unique($groups);
        }
-atk_var_dump($level, 'Level');
        if (count($level) == 1)
          $level = $level[0];
 
@@ -289,6 +288,11 @@ atk_var_dump($level, 'Level');
        return $result;
      }
 
+     function userListCompare($a, $b)
+     {
+     	 return strcmp($a["username"], $b["username"]);
+     }
+     
      function getUserList()
      {
        $db = &atkGetDb();
@@ -315,6 +319,7 @@ atk_var_dump($level, 'Level');
        {
          $userlist[] = array("userid"=>$recs[$i][atkconfig("auth_userfield")], "username"=>$stringparser->parse($recs[$i]));
        }
+       usort($userlist, array("auth_db", "userListCompare"));
        return $userlist;
 
      }

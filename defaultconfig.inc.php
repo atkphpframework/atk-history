@@ -131,6 +131,17 @@
    * @var String
    */
   $config_db["default"]["driver"]="mysql";
+  
+  /**
+   * Test database mapping. Maps normal databases to their test database.
+   * Most of the applications only use one database in that case the default
+   * should be sufficient. But in case you use multiple database and also
+   * want to run tests on all these database you can override this mapping
+   * or add your own mappings.
+   * 
+   * @var array
+   */
+  $config_test_db_mapping = array('default' => 'test');
 
   /**
    * Backwardscompatibility setting. Set this to MYSQL_BOTH if your
@@ -236,6 +247,12 @@
 
   /************************** AUTHENTICATION *********************************/
 
+  /**
+   * 
+   * @var String
+   */
+  $config_auth_database    = "default";
+  
   /**
    *
    * @var String
@@ -557,6 +574,14 @@
    * @var String
    */
   $config_language_basedir = "languages/";
+  
+  /**
+   * Use browser language to detect application language.
+   * By default set to false to remain backwards compatible.
+   *
+   * @var
+   */
+  $config_use_browser_language = false;
 
   /**
    * True: one language switch attributes automatically switches all others on
@@ -680,7 +705,7 @@
    * @var Array
    */
   $config_allowed_includes = array("atk/lock/lock.php", "atk/lock/lock.js.php", "atk/javascript/class.atkdateattribute.js.inc",
-                                               "atk/popups/help.inc", "atk/popups/colorpicker.inc");
+                                   "atk/popups/help.inc", "atk/popups/colorpicker.inc", "atk/ext/captcha/img/captcha.jpg.php");
 
   /**
    * Forces the themecompiler to recompile the theme all the time

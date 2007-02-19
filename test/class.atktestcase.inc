@@ -32,7 +32,6 @@
     var $m_restoreNode = array();
     var $m_restoreSecMgr = NULL;
     
-    var $m_oldDefaultDb = NULL;
     var $m_useTestDatabase = NULL;
     var $m_fixtures = array();
     var $m_fixtureData = array();
@@ -42,11 +41,15 @@
      *
      * @return atkTestCase
      */
-    function atkTestCase()
+    function atkTestCase($label = false)
     {
-      // allow specifying fixtures using var $fixtures = array(...);
-      if (isset($this->fixtures) && is_array($this->fixtures))
-        $this->m_fixtures = array_merge($this->m_fixtures, $this->fixtures);
+      $this->UnitTestCase($label);
+    }
+    
+    function getLabel()
+    {
+      $label = parent::getLabel();
+      return empty($label) ? get_class($this) : $label;
     }
     
     /**
@@ -58,8 +61,7 @@
     {
       if ($this->m_useTestDatabase === NULL)
       {
-        $config = atkconfig('db');
-        $this->setUseTestDatabase(isset($config['test']));
+        $this->setUseTestDatabase(atkTestSuite::useTestDatabase());
       }
       
       return $this->m_useTestDatabase;
@@ -84,11 +86,20 @@
      */
     function setUp()
     {
+      // don't let test-cases influence each other, so make sure
+      // the node repository etc. is empty when we start a new test-case
+      global $g_nodeRepository, $g_moduleRepository, $g_nodeHandlers, $g_nodeListeners, $g_nodeControllers;
+      $g_nodeRepository = array();
+      $g_moduleRepository = array();
+      $g_nodeHandlers = array();
+      $g_nodeListeners = array();
+      $g_nodeControllers = array();
+      
       if ($this->useTestDatabase())
       {
-        // switch the default database to the test database
-        $this->m_oldDefaultDb = atkDb::getDefault();        
-        atkDb::setDefault("test");      
+        // switch to the test databases
+        $mapping = atkconfig("test_db_mapping");
+        atkDb::useMapping($mapping);      
         $this->_loadData();
       }
     }
@@ -104,31 +115,43 @@
     {
       if ($this->useTestDatabase())
       {
-        atkDb::setDefault($this->m_oldDefaultDb);
-        $this->_cleanData();
+        // stop using the test database(s)
+        $this->_cleanData();        
+        atkDb::clearMapping();
       }
     }    
     
     /**
-     * Returns the fixture for the given table name with 
-     * the given name. If the fixture doesn't exist
-     * NULL is returned.
+     * Returns the fixture for the given table name with the given name. 
+     * If the fixture doesn't exist NULL is returned. If no database is specified
+     * all databases will be searched. If no name is specified all fixtures for
+     * the given table will be returned.
      * 
      * @param string $table table name
      * @param string $name  fixture name
      * 
      * @return array fixture data
      */
-    function fixture($table, $name)
+    function fixture($table, $name=NULL, $database=NULL)
     {
-      if (isset($this->m_fixtureData[$table][$name]))
+      if ($database != NULL && $name == NULL && isset($this->m_fixtureData[$database][$table]))
       {
-        return $this->m_fixtureData[$table][$name];
+        return $this->m_fixtureData[$database][$table];
       }
-      else 
+      else if ($database != NULL && $name != NULL && isset($this->m_fixtureData[$database][$table][$name]))
       {
-        return NULL;
+        return $this->m_fixtureData[$database][$table][$name];
       }
+      else if ($database == NULL)
+      {
+        foreach (array_keys($this->m_fixtureData) as $database)
+        {
+          $data = $this->fixture($table, $name, $database);
+          if ($data != NULL) return $data;
+        }
+      }
+      
+      return NULL;
     }
 
     /**
@@ -144,26 +167,14 @@
      */
     function __call($method, $args)
     {
-      if (isset($this->m_fixtureData[$method]))
+      foreach (array_keys($this->m_fixtureData) as $database)
       {
-        return $this->fixture($method, $args[0]);
+        if (isset($this->m_fixtureData[$database][$method]))
+          return $this->fixture($method, isset($args[0]) ? $args[0] : NULL, isset($args[1]) ? $args[1] : NULL);
       }
-      else 
-      {
-        // can't put this code here directly because PHP4 doesn't know about the throw keyword
-        // and although this code will never get executed under PHP4, it will give a parse error
-        eval("throw new Exception('Invalid method name $method for ".get_class($this)."!');");
-      }
-    }
-    
-    /**
-     * Returns the test database.
-     *
-     * @return atkDb test database
-     */
-    function &_getTestDB()
-    {
-      return atkGetDb('test');
+      
+      atkerror("Invalid method name $method for ".get_class($this)." (fixture not loaded?)!");
+      return NULL;
     }
     
     /**
@@ -172,19 +183,28 @@
      */
     function _cleanData()
     {
-      atkdebug("Clean test database...");
+      atkdebug("Clean test database(s)...");
       
-    	$db = &$this->_getTestDB();      
-    	$config = atkconfig("db");
-      
-      if (!isset($config["test"]["transactional_fixtures"]) || 
-          !$config["test"]["transactional_fixtures"])
-      {
-        $db->deleteAll();
-      }
-      else
-      {
-        $db->rollback();
+      $config = atkconfig("db");      	      
+      $mapping = atkconfig("test_db_mapping");
+    	    	
+      foreach ($mapping as $normal => $test)
+      {      
+      	$db = &$this->_getTestDb($normal);      
+        if (!isset($config[$test]["transactional_fixtures"]) || 
+            !$config[$test]["transactional_fixtures"])
+        {
+          //$db->toggleForeignKeys(false);          
+          
+          $db->deleteAll();
+          $db->commit();
+          
+          //$db->toggleForeignKeys(true);                    
+        }
+        else
+        {
+          $db->rollback();
+        }
       }
     }
     
@@ -193,203 +213,104 @@
      */
     function _loadData()
     {
-      atkdebug("Load fixtures into test database...");
+      atkdebug("Load fixtures into test database(s)...");
       
       if (count($this->m_fixtures) == 0) return;
 
+      atkimport('atk.fixture.atkfixturemanager');
+      $manager = &atkFixtureManager::getInstance();
+      
       $this->m_fixtureData = array();
-      foreach($this->m_fixtures as $fullname)
+      foreach($this->m_fixtures as $database => $fixtures)
       {
-        $this->_loadFixtureData($fullname);
-      }
-    }
-    
-    /**
-     * Load data for the given fixture into the test database.
-     * 
-     * @param string $fullname full fixture name
-     */
-    function _loadFixtureData($fullname)
-    {
-      $path = $this->_getFixturePath($fullname);
-      if ($path == NULL)
-      {
-        atkdebug("WARNING: no fixture data file found for fixture '{$fullname}'!");
-        return;
-      }
-      
-      $type = $this->_getFixtureType($path);
-      $method = "_get{$type}FixtureData";
-      if (!method_exists($this, $method))
-      {
-        atkdebug("WARNING: don't know how to load fixture data of type '{$type}' (fixture '{$fullname}')!");
-      }
-      
-      $table = $this->_getFixtureTable($fullname);
-      $db = &$this->_getTestDB();
-      if (!$db->tableExists($table))
-      {
-        atkdebug("WARNING: table '{$table}' not found in test database (fixture '$fullname')!");
-      }
-      
-      $data = $this->$method($fullname, $path);
-      $this->_saveFixtureData($table, $data);
-    }
-    
-    /**
-     * Get the fixture path for the given fixture (full-)name.
-     * 
-     * @param string $fullname full fixture name
-     * @return stringn fixture path
-     */
-    function _getFixturePath($fullname)
-    {
-      $parts = explode('.', $fullname);
-      
-      // beneath application root
-      if (count($parts) == 1)
-      {
-        $fullname = 'testcases.fixtures.'.$fullname;
-      }
-      
-      // beneath module directory
-      else if (
-        count($parts) == 2 &&
-        !is_dir(atkconfig("atkroot").$parts[0].'/'.$parts[1]) && 
-        moduleExists($parts[0]))
-      {
-        $fullname = 'module.'.$parts[0].'.testcases.fixtures.'.$parts[1];
-      }
-      
-      // full path (without testcases/fixtures directory!)
-      else
-      {
-        $fullname = implode('.', array_slice(0, count($parts) - 1)).'.testcases.fixtures.'.$parts[count($parts) - 1];
-      }
-      
-      $path = getClassPath($fullname, false);
-      $files = glob("{$path}.*");   
-      
-      return count($files) == 0 ? NULL : $files[0];
-    }
-    
-    /**
-     * Returns the fixture type for the given fixture path.
-     * 
-     * @param string $path fixture path
-     * @return string fixture type
-     */
-    function _getFixtureType($path)
-    {
-      return substr($path, strrpos($path, '.') + 1);
-    }
-    
-    /**
-     * Returns the fixture table for the given full fixture name.
-     * 
-     * @param string $fullname full fixture name
-     * @return string table name
-     */
-    function _getFixtureTable($fullname)
-    {
-      return end(explode('.', $fullname));
-    }
-    
-    /**
-     * Returns the YAML fixture data from the given path.
-     *
-     * @param string $fullname full fixture name
-     * @param string $path     fixture path
-     * 
-     * @return array data
-     */
-    function _getYmlFixtureData($fullname, $path)
-    {
-      $contents = file_get_contents($path);
-      $contents = $this->_parsePHP($contents);
-    	include_once(atkconfig("atkroot")."atk/ext/spyc/spyc.php");
-      $data = Spyc::YAMLLoad($contents);
-      return $data;
-    }
-    
-    /**
-     * Returns the PHP fixture data from the given path.
-     *
-     * @param string $fullname full fixture name
-     * @param string $path     fixture path
-     * 
-     * @return array data
-     */
-    function _getPHPFixtureData($fullname, $path)
-    {
-      $data = array();
-      include_once($path);
-      return $data;
-    }
-    
-    /**
-     * Parses the given string using PHP. Parsed results will be returned. 
-     * PHP code must be surrounded by PHP open and close tags. Script code
-     * has full access to all loaded ATK files.
-     */
-    function _parsePHP($contents)
-    {
-    	ob_start();
-      eval(str_replace(array("?>\r\n", "?>\n"), array("?> \r\n", "?> \n"), "?>".$contents));
-      $contents = ob_get_contents();
-      ob_end_clean();
-      return $contents;
-    }
-    
-    /**
-     * Save fixture data to the database in the given table.
-     * 
-     * @param string $table table name
-     * @param array  $data  fixture data 
-     */
-    function _saveFixtureData($table, $data)
-    {
-      $db = &$this->_getTestDB();
-            
-      // save data
-      foreach ($data as $item => $record)
-      {
-        // make fixture data available
-        $this->m_fixtureData[$table][$item] = $record;
+        $db = &$this->_getTestDb($database);
         
-        // insert data into database
-        $query = &$db->createQuery();
-        $query->addTable($table);
+        //$db->toggleForeignKeys(false);
         
-        foreach($record as $field => $value)
+        foreach ($fixtures as $fullname)
         {
-          $query->addField($field, $value);
+          $result = $manager->load($fullname, $db, $this->_getPath());
+          if ($result === false)
+          {
+            atkerror("Error loading fixture '$fullname'!");
+          }
+          else 
+          {
+            $table = $result['table'];
+            $data = $result['data'];
+  
+            if (!isset($this->m_fixtureData[$database][$table]))
+              $this->m_fixtureData[$database][$table] = array();
+  
+            $this->m_fixtureData[$database][$table] =
+              array_merge($this->m_fixtureData[$database][$table], $data);
+          }
         }
         
-        $query->executeInsert();
-      }
-      
-      // set sequence value(s)
-      $metadata = $db->metadata($table);
-      foreach($metadata as $field)
-      {
-        if (hasFlag($field['flags'], MF_AUTO_INCREMENT))
-        {
-          $sequence = isset($field['sequence']) ? $field['sequence'] : $table;
-          $query = "SELECT MAX(" .$field['name'] .") AS value FROM $table";
-          list($result) = $db->getRows($query);
-          $db->setSequenceValue($sequence, $result['value']);
-        }
+        //$db->toggleForeignKeys(true);
       }
     }
     
     /**
-     * Adds the given fixtures (each argument can be the fullname of a fixture).
+     * Get path for this test-case.
+     * 
+     * @return returns the path for this test-case
      */
-    function addFixtures()
+    function _getPath()
     {
-      $fixtures = func_get_args();
-      $this->m_fixtures = array_merge($this->m_fixtures, $fixtures);
+      static $s_path = array();
+      $class = get_class($this);
+      
+      if (!isset($s_path[$class]))
+      {
+        $includes = get_included_files();
+        $name = "class.{$class}.inc";
+        $nameLength = strlen("class.{$class}.inc");
+        foreach ($includes as $file)
+        {
+          if (strcasecmp($name, substr($file, -$nameLength)) == 0)
+          {
+            $s_path[$class] = substr($file, 0, -$nameLength);
+            break;
+          }
+        }
+      }
+      
+      if (!isset($s_path[$class]))
+        atkerror('Could not determine path for test-case: '.$class);
+      else return $s_path[$class];
+    }    
+    
+    /**
+     * Get test database.
+     */
+    function &_getTestDb($database)
+    {
+      return atkGetDb($database);
+    }
+    
+    /**
+     * Adds the given fixture to the given database.
+     * 
+     * @param string $name     fixture name
+     * @param string $database database name
+     */
+    function addFixture($name, $database="default")
+    {
+      $this->addFixtures(array($name), $database);
+    }
+    
+    /**
+     * Adds the given fixtures to the given database.
+     * 
+     * @param array $names     fixture names
+     * @param string $database database name
+     */
+    function addFixtures($names, $database="default")
+    {
+      if (!isset($this->m_fixtures[$database]))
+        $this->m_fixtures[$database] = array();
+      $this->m_fixtures[$database] = array_merge($this->m_fixtures[$database], $names);       
     }
     
     function setMockDb($conn=NULL)
@@ -397,7 +318,7 @@
       global $config_db;
       
       if ($conn === NULL)
-        $conn = atkDb::getDefault();
+        $conn = "default";
 
       $config_db["mock"]["driver"] = "mock";
 
@@ -408,10 +329,8 @@
     function restoreDb($conn=NULL)
     {
       if ($conn === NULL)
-        $conn = atkDb::getDefault();      
-      //$copy = $this->m_restoreDb[$conn];
+        $conn = "default";      
       atkDb::setInstance($conn, $this->m_restoreDb[$conn]);
-      //$this->m_restoreDb[$conn]="";
     }
 
     function &setMockNode($nodename, &$mocknode)

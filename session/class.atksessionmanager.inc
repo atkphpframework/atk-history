@@ -330,7 +330,7 @@
       // pagevars are valid on a page. if you go a session level higher, the pagevars are no longer
       // visible until you return.
       $pageVars = array("atksearch","atkselector","atksearchmode","atkorderby","atkstartat","atklimit","atktarget","atkformdata","atktree","atksuppress","atktab","atksmartsearch");
-      
+
       // lockedvars are session or page vars that will not be overwritten in partial mode
       // e.g., the values that are already known in the session will be used
       $lockedVars = array('atknodetype', 'atkaction');
@@ -402,7 +402,7 @@
       {
         // partial mode?
         $partial = false;
-        
+
         if ($atklevel==-1||!is_array($stack)) // SESSION_NEW
         {
           atkdebug("Cleaning stack");
@@ -422,9 +422,9 @@
         else if ($atklevel == -3) // SESSION_PARTIAL
         {
           $partial = true;
-          
+
           // Note that the atklevel is now -3. This is actually wrong. We are at
-          // some level in the stack. We can determine the real level by 
+          // some level in the stack. We can determine the real level by
           // counting the stack.
           $atklevel = count($stack) - 1;
         }
@@ -513,6 +513,7 @@
           atkdebug("Session formdata present");
           foreach($currentitem['atkformdata'] as $var => $value)
           {
+
             // don't override what was passed in the url.
             if (!isset($postvars[$var]))
             {
@@ -520,13 +521,15 @@
             }
             else if (is_array($postvars[$var]) && is_array($value))
             {
-              $postvars[$var] = array_merge($value, $postvars[$var]);
+              // Formdata that was posted earlier needs to be merged with the current
+              // formdata. We use a custom array_merge here to preserve key=>value pairs.
+              $postvars[$var] = atk_array_merge_keys($value, $postvars[$var]);
             }
           }
 
           // We leave atkformdata in the current stack entry untouched so that
           // when the stack might be forked of whatsoever the form data is still
-          // present. However, this data should not be directly accessed in the node!         
+          // present. However, this data should not be directly accessed in the node!
         }
 
         if (is_array($currentitem))
@@ -561,11 +564,11 @@
       for ($i=0;$i<count($stack);$i++)
       {
         if (!isset($stack[$i]["atknodetype"])) continue;
-        
+
         $mod = getNodeModule($stack[$i]["atknodetype"]);
         $node = getNodeType($stack[$i]["atknodetype"]);
         $title = $ui->title($mod, $node, $stack[$i]["atkaction"]);
-        $descriptor = $stack[$i]["descriptor"];
+        $descriptor = atkArrayNvl($stack[$i], "descriptor", "");
         if ($i<count($stack)-1)
         {
           $res[]=array("url"=>session_url('dispatch.php?atklevel='.$i),
@@ -577,7 +580,7 @@
           $res[]=array("url"=>"", "title"=>$title, "descriptor"=>$descriptor);
         }
       }
-      
+
       return $res;
     }
 
@@ -602,9 +605,12 @@
       {
         if (isset($stack[$i]["descriptor"]) || $i == ($stackcount-1))
         {
-          $node = &getNode($stack[$i]["atknodetype"]);
-          $module = getNodeModule($stack[$i]["atknodetype"]);
-          $nodename = getNodeType($stack[$i]["atknodetype"]);
+          if($stack[$i]["atknodetype"] != "")
+          {
+            $node = &getNode($stack[$i]["atknodetype"]);
+            $module = getNodeModule($stack[$i]["atknodetype"]);
+            $nodename = getNodeType($stack[$i]["atknodetype"]);
+          }
 
           if (is_object($node))
           {
@@ -620,7 +626,7 @@
         }
       }
       return $res;
-    }         
+    }
 
     /**
      * Verify the integrity of the session stack.
@@ -799,7 +805,7 @@
     }
     return $atklevel;
   }
-  
+
   function atkPrevLevel()
   {
     global $atkprevlevel;

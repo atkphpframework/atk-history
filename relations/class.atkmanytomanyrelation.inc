@@ -40,7 +40,8 @@
     var $m_link = "";
     var $m_linkInstance = NULL;
     var $m_store_deletion_filter = "";
-    
+    var $m_localFilter = NULL;
+
     /**
      * Constructor
      * @param String $name The name of the relation
@@ -202,25 +203,32 @@
       if ($this->createDestination())
       {
         $recordset = array();
-
         if (is_array($record[$this->fieldName()]))
         {
+          $remotekey = $this->getRemoteKey();
           for ($i=0;$i<count($record[$this->m_name]);$i++)
           {
-            $recordset[] = $record[$this->m_name][$i][$this->getRemoteKey()];
+            if(is_array($remotekey))
+            {
+              $recordset[] = $record[$this->m_name][$i][$remotekey][$this->m_destInstance->primaryKeyField()];
+            }
+            else
+            {
+              $recordset[] = $record[$this->m_name][$i][$remotekey];
+            }
           }
         }
-
+        $result = "";
         if (count($record[$this->m_name])!=0)
         {
-          if ($mode != 'csv') $result = "<ul>";
+          if (!in_array($mode, array("csv", "plain"))) $result = "<ul>";
           for ($i=0;$i<count($recordset);$i++)
           {
-            if ($mode != 'csv') $result.="<li>";
+            if (!in_array($mode, array("csv", "plain"))) $result.="<li>";
             elseif ($result != '') $result.=', ';
             $result .= $this->m_destInstance->descriptor($recordset[$i]);
           }
-          if ($mode != 'csv') $result.="</ul>";
+          if (!in_array($mode, array("csv", "plain"))) $result.="</ul>";
         }
         return $result;
       }
@@ -251,10 +259,35 @@
     {
       if ($this->createLink())
       {
+        $where = $this->_getLoadWhereClause($record);
         $rel = &$this->m_linkInstance;
-        return $rel->selectDb($this->m_linkInstance->m_table.".".$this->getLocalKey()."='".$record[$this->m_ownerInstance->primaryKeyField()]."'");
+        return $rel->selectDb($where);
       }
       return array();
+    }
+
+    function _getLoadWhereClause($record)
+    {
+      $whereelems = array();
+      $localkey = $this->getLocalKey();
+      if(!is_array($localkey)) $localkey = array($localkey);
+
+      $ownerfields = $this->m_ownerInstance->m_primaryKey;
+
+      for ($i=0, $_i = count($localkey); $i<$_i; $i++)
+      {
+        $primkeyattr = &$this->m_ownerInstance->m_attribList[$ownerfields[$i]];
+
+        if (!$primkeyattr->isEmpty($record))
+        {
+          $whereelems[] = $this->m_linkInstance->m_table.".".$localkey[$i]."='".$primkeyattr->value2db($record)."'";
+        }
+      }
+      
+      if ($this->m_localFilter != NULL)
+        $whereelems[] = $this->m_localFilter;
+
+      return "(".implode(") AND (", $whereelems).")";
     }
 
     /**
@@ -265,7 +298,9 @@
       if ($this->createLink())
       {
         $rel = &$this->m_linkInstance;
-        return $rel->deleteDb($this->m_linkInstance->m_table.".".$this->getLocalKey()."=".$record[$this->m_ownerInstance->primaryKeyField()]);
+        $where = $this->_getLoadWhereClause($record);
+        if($where!='')
+          return $rel->deleteDb($where);
       }
       return false;
     }
@@ -295,36 +330,51 @@
       if(count($checked) > 0)
         $filter = "NOT IN ('".implode("','",$checked)."')";
 
+      $selector = "(".$this->_getLoadWhereClause($record).")".($filter!=""?" AND ".$this->m_linkInstance->m_table.'.'.$this->getRemoteKey()." $filter":"");
+
       //append the store deletion filter (if set)
       if($this->m_store_deletion_filter!="")
       {
-        if($filter!="") $filter.= " AND ";
-          
-        $filter.= " ".$this->m_store_deletion_filter;
+        if($selector!="") $selector.= " AND ";
+
+        $selector.= " ".$this->m_store_deletion_filter;
       }
 
-      if (is_object($rel) && $rel->deleteDb($this->m_linkInstance->m_table.'.'.$this->getLocalKey()."='".$record[$this->m_ownerInstance->primaryKeyField()]."'".($filter!=""?" AND ".$this->m_linkInstance->m_table.'.'.$this->getRemoteKey()." $filter":"")))
+      if (is_object($rel) && $rel->deleteDb($selector))
       {
         for ($i=0;$i<count($record[$this->fieldName()]);$i++)
         {
           // magical stuff..
           $remKey    = $this->checkKeyDimension($record[$this->fieldName()][$i][$this->getRemoteKey()], $this->m_destInstance->primaryKeyField());
-          $locKey    = $this->checkKeyDimension($record[$this->m_ownerInstance->primaryKeyField()]);
+
           $newrecord = $rel->initial_values();
+
           if (is_array($record[$this->fieldName()][$i][$this->getRemoteKey()]))
           {
-            $newrecord[$this->getRemoteKey()][$this->m_destInstance->primaryKeyField()] = $remKey; // $record[$this->fieldName()][$i][$this->getRemoteKey()];
+            $newrecord[$this->getRemoteKey()][$this->m_destInstance->primaryKeyField()] = $remKey;
           }
-          else 
+          else
           {
-            $newrecord[$this->getRemoteKey()] = $remKey; // $record[$this->fieldName()][$i][$this->getRemoteKey()];            
+            $newrecord[$this->getRemoteKey()] = $remKey;
           }
-          $newrecord[$this->getLocalKey()][$this->m_ownerInstance->primaryKeyField()] = $locKey; // $record[$this->m_ownerInstance->primaryKeyField()];
+          $localKey = $this->getLocalKey();
+          if(is_array($localKey))
+          {
+            for($j=0;$j<count($localKey);$j++)
+            {
+              $locKey    = $this->checkKeyDimension($record[$this->m_ownerInstance->m_primaryKey[$j]]);
+              $newrecord[$localKey[0]][$this->m_ownerInstance->m_primaryKey[$j]] = $locKey;
+            }
+          }
+          else
+          {
+            $locKey    = $this->checkKeyDimension($record[$this->m_ownerInstance->primaryKeyField()]);
+            $newrecord[$localKey][$this->m_ownerInstance->primaryKeyField()] = $locKey;
+          }
 
           // First check if the record does not exist yet.
           /* @var $rel atkNode */
-          $where = $this->m_linkInstance->m_table.'.'.$this->getLocalKey()."='".
-                     $record[$this->m_ownerInstance->primaryKeyField()]."'".
+          $where = $this->_getLoadWhereClause($record).
                      " AND ".$this->m_linkInstance->m_table.'.'.$this->getRemoteKey()."='".
                      $remKey."'";
 
@@ -450,7 +500,7 @@
         }
       }
     }
-    
+
     /**
      * Checks if a key is not an array
      * @param $key   field containing the key values
@@ -464,12 +514,12 @@
         return $key[$field];
       }
       return $key;
-    }    
-    
+    }
+
     /**
      * Fetch value. If nothing selected, return empty array instead
      * of nothing.
-     * 
+     *
      * @param array $postvars
      */
     function fetchValue($postvars)
@@ -477,24 +527,37 @@
       $value = parent::fetchValue($postvars);
       return $value == NULL ? array() : $value;
     }
-    
+
     /**
      * Function adds a custom filter that is used when deleting items during the store() function.
-     * 
+     *
      * Example:
-     * Normally the delete function would do something like this:     
+     * Normally the delete function would do something like this:
      *
      * DELETE FROM phase WHERE phase.template NOT IN (1,2,3)
-     * 
+     *
      * If the template field is NULL, although it is not specified in the NOT IN (1,2,3), it will not be deleted.
      * An extra check can be added just in case the template value is not NULL but 0 or '' (which would delete the phase).
-     * 
+     *
      * @param String $filter The filter that is used when deleting records in the store function.
      * @return none
      */
     function setStoreDeletionFilter($filter)
     {
       $this->m_store_deletion_filter = $filter;
+    }
+    
+    /**
+     * Local filter is used to only show values that are once selected
+     * that comply with the local filter. A local filter is also automatically
+     * set as store deletion filter.
+     *
+     * @param string $filter filter
+     */
+    function setLocalFilter($filter)
+    {
+      $this->setStoreDeletionFilter($filter);
+      $this->m_localFilter = $filter;
     }
   }
 ?>

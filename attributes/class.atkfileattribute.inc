@@ -248,10 +248,12 @@
             $file = $rec[$this->fieldName()]["orgfilename"];
           }
           atkdebug("file is now ".$file);
-          if ($file!="")
+          if ($file!="" && file_exists($this->m_dir.$file))
           {
             unlink($this->m_dir.$file);
           }
+          else
+            atkdebug("File doesn't exist anymore.");
         }
 //        echo ':::::return leeg::::';
         return '';
@@ -291,7 +293,7 @@
     }
 
     /**
-     * Recursive mdir.
+     * Recursive mkdir.
      *
      * @see http://nl2.php.net/mkdir
      *
@@ -346,7 +348,6 @@
           }
         }
       }
-
       closedir($handle);
       return @rmdir($dir);
     }
@@ -563,9 +564,19 @@
       }
     }
 
+    /**
+     * Get the file extension
+     *
+     * @param string $filename Filename
+     * @return string The file extension
+     */
     function getFileExtension($filename)
     {
-      return strtolower(substr($filename, strrpos($filename,'.')+1,strlen($filename)));
+      if($dotPos = strrpos($filename,'.'))
+      {
+        return strtolower(substr($filename, $dotPos+1,strlen($filename)));
+      }
+      return '';
     }
 
     function getSearchModes()
@@ -622,7 +633,7 @@
         $record = $this->m_ownerInstance->updateRecord($rec, $includes,array($this->fieldname()));
         $record[$this->fieldName()] = substr($default, 0, strrpos($default,'.'));
         $ext = $this->getFileExtension($default);
-        $filename = $parser->parse($record).".".$ext;
+        $filename = $parser->parse($record).($ext!=''?".".$ext:'');
       }
       return str_replace(' ','_',$filename);
     }
@@ -638,27 +649,52 @@
     function _filenameUnique($rec, $filename)
     {
       // check if there's another record using this same name. If so, (re)number the filename.
-      atkdebug("unique check");
+      atkdebug("atkFileAttribute::_filenameUnique() -> unique check");
 
-      $name = substr($filename, 0, strrpos($filename,'.'));
-      $ext = substr($filename, strrpos($filename,'.')+1);
+      if ($dotPos = strrpos($filename,'.'))
+      {
+        $name = substr($filename, 0, strrpos($filename,'.'));
+        $ext = substr($filename, strrpos($filename,'.'));
+      }
+      else
+      {
+        $name = $filename;
+        $ext = "";
+      }
 
-      $selector = "(".$this->fieldName()."='$filename' OR ".$this->fieldName()." LIKE '$name-_.$ext')";
+      $selector = "(".$this->fieldName()."='$filename' OR ".$this->fieldName()." LIKE '$name-%$ext')";
       if ($rec[$this->m_ownerInstance->primaryKeyField()]!="")
       {
         $selector.= " AND NOT (".$this->m_ownerInstance->primaryKey($rec).")";
       }
 
-      $count = $this->m_ownerInstance->countDb("($selector)", "", array($this->fieldName()));
+      $records = $this->m_ownerInstance->selectDb("($selector)", "", array($this->fieldName()));
 
-      atkdebug("count ".$count);
-
-      if ($count>0)
+      if (count($records)>0)
       {
-        // file name exists, so mangle it with a number.
-        $filename = $name."-".$count.".".$ext;
-      }
+        // Check for the highest number
+        $max_count=0;
+        foreach($records as $record)
+        {
+          $dotPos = strrpos($record[$this->fieldName()]["filename"],'.');
+          $dashPos = strrpos($record[$this->fieldName()]["filename"],'-');
+          if($dotPos!==false && $dashPos!==false)
+          {
+            $number = substr($record[$this->fieldName()]["filename"],($dashPos+1),($dotPos-$dashPos)-1);
+          }
+          elseif($dotPos===false && $ext==""  && $dashPos!==false)
+          {
+            $number = substr($record[$this->fieldName()]["filename"],($dashPos+1));
+          }
+          else continue;
 
+          if(intval($number)>$max_count) $max_count=$number;
+
+        }
+        // file name exists, so mangle it with a number.
+        $filename = $name."-".($max_count+1).$ext;
+      }
+      atkdebug("atkFileAttribute::_filenameUnique() -> New filename = ".$filename);
       return $filename;
     }
 
@@ -686,6 +722,5 @@
     {
       return "string";
     }
-
   }
 ?>

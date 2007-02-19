@@ -39,7 +39,7 @@
     function atkOci8Db()
     {
       // set the user error's
-      $this->m_user_error=array(1,1400,1438,2290,2291,2292,2293);
+      $this->m_user_error=array(1,1400,1407,1438,2290,2291,2292,2293);
       // Other errors are assumed to be critical errors
     }
 
@@ -71,7 +71,16 @@
           $this->halt("Invalid SQL: $query");
           return $this->_translateError($error);
         }
-
+        
+        /* set default timestamp format for Oracle */
+        $nls = OCIParse($this->m_link_id, "alter session set nls_timestamp_format='YYYY-MM-DD HH24:MI:SS'");
+        $myresult = OCIExecute($nls);
+        $error = OCIError($this->m_link_id);
+        if ($error["code"]!="")
+        {
+          $this->halt("Invalid SQL: $query");
+          return $this->_translateError($error);
+        }
       }
       return DB_SUCCESS;
     }
@@ -120,28 +129,63 @@
         OCILogoff($this->m_link_id);
       }
     }
+    
+    /**
+     * Enable/disable all foreign key constraints.
+     * 
+     * @param boolean $enable enable/disable foreign keys?
+     */
+    function toggleForeignKeys($enable)
+    {
+      $query = "SELECT fk.constraint_name, fk.table_name FROM user_constraints fk WHERE fk.constraint_type = 'R'";
+      $keys = $this->getRows($query);
+      
+      $state = $enable ? "ENABLE" : "DISABLE";
+      
+      foreach ($keys as $key)
+      {
+        $this->query("ALTER TABLE {$key[table_name]} {$state} CONSTRAINT {$key[constraint_name]}");
+      }      
+    }    
 
     /**
      * Commit the current transaction.
      */
     function commit()
     {
+      atkdebug(get_class($this)."::commit");            
       if($this->m_link_id)
       {
-        atkdebug("OCICommit");
         OCICommit($this->m_link_id);
       }
       return true;
     }
 
+    /**
+     * Set savepoint with the given name.
+     * 
+     * @param $name savepoint name
+     * @abstract
+     */
+    function savepoint($name)
+    {
+      atkdebug(get_class($this)."::savepoint $name");      
+      $this->query('SAVEPOINT '.$name);
+    }
+
     /*
      * Rollback the the current transaction.
      */
-    function rollback()
+    function rollback($savepoint="")
     {
-      if($this->m_link_id)
+      atkdebug(get_class($this)."::rollback $savepoint");      
+      
+      if (!empty($savepoint))
       {
-        atkdebug("OCIRollback");
+        $this->query('ROLLBACK TO SAVEPOINT '.$savepoint);        
+      }
+      else if($this->m_link_id)
+      {
         OCIRollback($this->m_link_id);
       }
       return true;
@@ -233,7 +277,7 @@
           $column_return = strtolower($column);
           $this->m_record[$column_return] = $result[$column];
         }
-        $m_row++;
+        $this->m_row++;
 
         return 1;
       }
@@ -412,6 +456,40 @@
         return $result[0];
       }
       return 0;
+    }
+    
+    /**
+     * Set sequence value.
+     *
+     * @param string $sequence
+     * @param int $value
+     */
+    function setSequenceValue($sequence, $value)
+    {
+      /* connect first */
+      if ($this->connect()==DB_SUCCESS)
+      {
+        $sequence = atkconfig("database_sequenceprefix").$sequence;      
+        $query = "SELECT {$sequence}.NEXTVAL AS value FROM DUAL";
+        atkdebug($query);
+        list($row) = $this->getRows($query);
+        $diff = $value - $row['value'];
+        if ($diff > 0)
+        {
+          $query = "ALTER SEQUENCE {$sequence} INCREMENT BY {$diff}";
+          atkdebug($query);    
+          $queryId = OCIParse($this->m_link_id, $query);
+          @OCIExecute($queryId) or $this->halt("Cannot set sequence value for sequence '$sequence'");
+          $query = "SELECT {$sequence}.NEXTVAL AS value FROM DUAL";
+          atkdebug($query);          
+          $queryId = OCIParse($this->m_link_id, $query);
+          @OCIExecute($queryId) or $this->halt("Cannot set sequence value for sequence '$sequence'");
+          $query = "ALTER SEQUENCE {$sequence} INCREMENT BY 1";
+          atkdebug($query);          
+          $queryId = OCIParse($this->m_link_id, $query);
+          @OCIExecute($queryId) or $this->halt("Cannot set sequence value for sequence '$sequence'");
+        }
+      }
     }
 
     /**

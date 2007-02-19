@@ -8,7 +8,7 @@ class atkModernMenu extends atkPlainMenu
   {
     $this->m_height = "130";
   }
-  
+
   function render()
   {
     $page = &atkinstance('atk.ui.atkpage');
@@ -24,23 +24,8 @@ class atkModernMenu extends atkPlainMenu
       return $oldmenu->render();
     }
   }
-  
+
   function getMenu()
-  {
-    $theme = &atkinstance("atk.ui.atktheme");
-    if ($theme->getAttribute('modern_menu_compat'))
-    {
-      $page->addContent($this->getMenu());
-      return $page->render("Menu", true);
-    }
-    else
-    {
-      $oldmenu = &atknew('atk.menu.atkplainmenu');
-      return $oldmenu->render();
-    }
-  }
-  
-  function getMenu(&$page)
   {
     $theme = &atkinstance("atk.ui.atktheme");
     if ($theme->getAttribute('modern_menu_compat'))
@@ -51,6 +36,7 @@ class atkModernMenu extends atkPlainMenu
 
       $menuitems = $this->getMenuItems($g_menu,'main');
 
+      $page = &atkInstance("atk.ui.atkpage");
       $page->register_style($theme->stylePath("style.css"));
       $page->register_style($theme->stylePath("menu.css"));
       $page->register_script(atkconfig("atkroot")."atk/javascript/menuload.js");
@@ -94,12 +80,12 @@ class atkModernMenu extends atkPlainMenu
 
         $menuitem['id'] = $menuitem['name'];
         $this->addSubMenuForMenuitem($menu,$menuitem);
-        
+
         if ($menuitem['name']!=='-')
         {
           $menuitem['name'] = $this->getMenuTranslation($menuitem['name'],$menuitem['module']);
         }
-        
+
         if (!empty($menuitem['url']))
         {
           $menuitem['url'] = session_url($menuitem['url']."&amp;atkmenutop={$menuitem['id']}", SESSION_NEW);

@@ -124,12 +124,49 @@
      * If called twice for the same filename, the file is loaded only once.
      * @param String $file The (relative path and) filename of the javascript
      *                     file.
+     * @param String $before The (partial) name of a script that this script
+     *                       should be loaded in front of. This can be used
+     *                       to inject a script before another script, or to
+     *                       avoid conflicts. Usually, this parameter is not
+     *                       needed.
      */
-    function register_script($file)
+    function register_script($file, $before="")
     {
-      if (!in_array($file, $this->m_scriptfiles)) $this->m_scriptfiles[] = $file;
+      if (!in_array($file, $this->m_scriptfiles))
+      {
+        if ($before=="")
+        {
+          $this->m_scriptfiles[] = $file;
+        }
+        else
+        {
+          // lookup the dependency and inject script right before it.
+          $result = array(); $injected = false;
+          for ($i=0, $_i=count($this->m_scriptfiles); $i<$_i; $i++)
+          {
+            if (stristr($this->m_scriptfiles[$i], $before)!==false)
+            {
+              // inject the new one here.
+              $result[] = $file; $injected = true;
+            }
+            $result[] = $this->m_scriptfiles[$i];
+          }
+          if (!$injected) $result[] = $file; // inject at the end if dependency not found.
+
+          $this->m_scriptfiles = $result;
+        }
+      }
     }
 
+    /**
+     * Return all javascript files
+     *
+     * @return array contain file paths
+     */
+    function getScripts()
+    {
+      return $this->m_scriptfiles;
+    }
     /**
      * Register a javascript code statement which will be rendered in the
      * header.
@@ -165,6 +202,20 @@
      if (!in_array($code, $this->m_loadscripts)) $this->m_loadscripts[] = $code;
    }
 
+   /**
+    * Return all javascript codes in an array
+    *
+    * @return array
+    */
+   function getScriptCodes()
+   {
+     $scriptCodes = $this->m_scriptcode;
+     $scriptCodes[] = $this->_getGlobalSubmitScriptCode();
+     $scriptCodes[] = $this->_getGlobalLoadScriptCode();
+
+     return $scriptCodes;
+   }
+
     /**
      * Register a Cascading Style Sheet.
      *
@@ -188,6 +239,16 @@
     }
 
     /**
+     * Return all stylesheet files
+     *
+     * @return array contain file paths
+     */
+    function getStyles()
+    {
+      return $this->m_stylesheets;
+    }
+
+    /**
      * Register Cascading Style Sheet fragment that will be included in the
      * page header.
      * @param String $code The Cascading Style Sheet code fragment to place in
@@ -196,6 +257,16 @@
      function register_stylecode($code)
      {
        if (!in_array($code, $this->m_stylecode)) $this->m_stylecode[] = $code;
+     }
+
+    /**
+     * Return all style codes
+     *
+     * @return array
+     */
+     function getStyleCodes()
+     {
+       return $this->m_stylecode;
      }
 
      /**
@@ -231,14 +302,7 @@
       if ($extra_header != "") $res.= $extra_header."\n";
 
       $this->addScripts($res);
-
-      foreach ($this->m_stylesheets as $file => $media)
-      {
-        $res.='  <link href="'.$file.'" rel="stylesheet" type="text/css" media="'.$media.'" />'."\n";
-      }
-
-      for ($i = 0; $i < count($this->m_stylecode); $i++)
-        $res.= '  <style type="text/css"> '.$this->m_stylecode[$i].' </style>'."\n";
+      $this->addStyles($res);
 
       $favico = atkconfig("defaultfavico");
       if ($favico!="")
@@ -253,17 +317,20 @@
 
     /**
      * Adds javascripts from the member variables to HTML output
-     * @param String $res The HTML output
+     * @param String $res Reference to the HTML output
      */
     function addScripts(&$res, $partial=false)
     {
-      for ($i = 0; $i < count($this->m_scriptfiles); $i++)
-        $res .= '  <script type="text/javascript" src="'.$this->m_scriptfiles[$i].'"></script>'."\n";
+      if (!$partial)
+      {
+        for ($i = 0; $i < count($this->m_scriptfiles); $i++)
+          $res .= '  <script type="text/javascript" src="'.$this->m_scriptfiles[$i].'"></script>'."\n";
+      }
 
       $res .= '  <script type="text/javascript">';
 
-      $res.=$this->getSubmitJavascript($partial);
-      $res.=$this->getLoadJavascript($partial);
+      $res.=$this->_getGlobalSubmitScriptCode($partial);
+      $res.=$this->_getGlobalLoadScriptCode($partial);
 
       // javascript code.
       for ($i=0, $_i=count($this->m_scriptcode); $i<$_i; $i++)
@@ -274,7 +341,7 @@
       $res .= "  </script>\n\n";
     }
 
-    function getSubmitJavascript($partial=false)
+    function _getGlobalSubmitScriptCode($partial=false)
     {
       $res = "\n    function globalSubmit(form)\n";
       $res .= "    {\n";
@@ -291,8 +358,9 @@
       return $res;
     }
 
-    function getLoadJavascript($partial=false)
+    function _getGlobalLoadScriptCode($partial=false)
     {
+      $res = '';
       if (count($this->m_loadscripts))
       {
         $res = "";
@@ -313,12 +381,48 @@
     }
 
     /**
+     * Add stylesheets and stylecodes to the HMTL output
+     *
+     * @param String $res Reference to the HTML output
+     */
+    function addStyles(&$res)
+    {
+      foreach ($this->m_stylesheets as $file => $media)
+      {
+        $res.='  <link href="'.$file.'" rel="stylesheet" type="text/css" media="'.$media.'" />'."\n";
+      }
+
+      for ($i = 0; $i < count($this->m_stylecode); $i++)
+        $res.= '<style type="text/css"> '.$this->m_stylecode[$i].' </style>'."\n";
+    }
+
+    /**
      * Add content to the page.
      * @param String $content The content to add to the page.
      */
     function addContent($content)
     {
       $this->m_content.=$content;
+    }
+    
+    /**
+     * Returns the current page content.
+     *
+     * @return string current page content
+     */
+    function getContent()
+    {
+      return $this->m_content;
+    }
+    
+    /**
+     * Sets the page content (overwriting current content).
+     *
+     * @param string $content new page content
+     */
+    function setContent($content)
+    {
+      $this->m_content = $content;
     }
 
     /**
@@ -374,6 +478,7 @@
       $page = '';
       if(hasFlag($flags,HTML_DOCTYPE)) $page.=$theme->getAttribute('doctype',atkconfig("doctype"));
       $page.= "\n<html>\n";
+
       if(hasFlag($flags,HTML_HEADER)) $page.= $this->head($title, $extra_header);
       if (hasFlag($flags,HTML_BODY)) $page.= $this->body($extrabodyprops);
 

@@ -3,7 +3,7 @@
   /**
    * This file is part of the Achievo ATK distribution.
    * Detailed copyright and licensing information can be found
-   * in the doc/COPYRIGHT and doc/LICENSE files which should be 
+   * in the doc/COPYRIGHT and doc/LICENSE files which should be
    * included in the distribution.
    *
    * @package atk
@@ -14,10 +14,10 @@
    * @version $Revision$
    * $Id$
    */
-   
+
   /**
-   * Validator for records, based on node definition. 
-   * 
+   * Validator for records, based on node definition.
+   *
    * The class takes a node, and based on the attribute definitions,
    * validation can be performed on records.
    *
@@ -25,23 +25,23 @@
    * @package atk
    *
    */
-  class atkNodeValidator 
+  class atkNodeValidator
   {
 
-    /**     
+    /**
      * @var atkNode The node which needs to get validated
      * @access private
      */
     var $m_nodeObj = null;
 
-    /**    
+    /**
      * @var array the record of the node which will get validated
      * @access private
      */
     var $m_record = array();
 
     /**
-     * @var String the mode in which the validate will get runned     
+     * @var String the mode in which the validate will get runned
      * @access private
      */
     var $m_mode = "";
@@ -50,16 +50,16 @@
      * constructor
      *
      */
-    function atkNodeValidator() 
+    function atkNodeValidator()
     {
     }
 
     /**
-     * set the list of fields which will get ignored 
+     * set the list of fields which will get ignored
      * @param array $fieldArr List of fields to ignore during validation
      */
     function setIgnoreList($fieldArr)
-    {	
+    {
       $this->m_ignoreList = $fieldArr;
     }
 
@@ -68,7 +68,7 @@
      * @param String $mode The mode ("edit"/"add")
      */
     function setMode($mode)
-    {	
+    {
       $this->m_mode = $mode;
     }
 
@@ -78,7 +78,7 @@
      * @param atkNode $nodeObj The node for validation
      */
     function setNode(&$nodeObj)
-    {	
+    {
       $this->m_nodeObj = &$nodeObj;
     }
 
@@ -89,7 +89,7 @@
      *                      stored in the record.
      */
     function setRecord(&$record)
-    {	
+    {
       $this->m_record = &$record;
     }
 
@@ -100,7 +100,7 @@
      * @param array $ignoreList Override the ignoreList
      */
     function validate($mode="", $ignoreList=array())
-    {	
+    {
       // check overrides
       if(count($ignoreList))
         $this->setIgnoreList($ignoreList);
@@ -109,7 +109,7 @@
         $this->setMode($mode);
 
        atkdebug("validate() with mode ".$this->m_mode." for node ".$this->m_nodeObj->atkNodeType());
-      
+
       // set the record
       $record = &$this->m_record;
 
@@ -134,12 +134,11 @@
           }
         }
       }
-      
+
       if(isset($record['atkerror'])&&count($record['atkerror']) > 0)
       {
         for ($i = 0, $_i = count($record["atkerror"]); $i < $_i; $i++)
-          $record["atkerror"][$i]["node"] = $this->m_nodeObj->m_type;        
-        return false;
+          $record["atkerror"][$i]["node"] = $this->m_nodeObj->m_type;
       }
 
       // After the values check, we check the Flags.
@@ -153,7 +152,7 @@
           //if(count($record['atkerror']) > 0) return false;
           //Validate if ne
           if ($p_attrib->hasFlag(AF_PRIMARY) && !$p_attrib->hasFlag(AF_AUTO_INCREMENT))
-          {                        
+          {
             $atkorgkey = $record["atkprimkey"];
             if(($atkorgkey == '' // no orgkey, so adding this record
                 || $atkorgkey != $this->m_nodeObj->primaryKey($record)) // key has changed, so check is necessary
@@ -174,24 +173,24 @@
             triggerError($record, $attribname, 'error_obligatoryfield', '', $p_attrib->m_tabs[0]);
           }
           // if flag is primary
-          else if ($p_attrib->hasFlag(AF_UNIQUE) && !$p_attrib->hasFlag(AF_PRIMARY) &&
-                   count($db->getrows("SELECT ".$p_attrib->fieldName()." FROM ".$this->m_nodeObj->m_table." WHERE $attribname='".$db->escapeSQL($p_attrib->value2db($record))."' AND NOT (".$this->m_nodeObj->primaryKey($record).")"))>0
+          else if ($p_attrib->hasFlag(AF_UNIQUE) && !$p_attrib->hasFlag(AF_PRIMARY) && !$p_attrib->isEmpty($record) &&
+                   count($db->getrows("SELECT ".$p_attrib->fieldName()." FROM ".$this->m_nodeObj->m_table." WHERE $attribname='".$db->escapeSQL($p_attrib->value2db($record))."'".($this->m_mode != 'add' ? " AND NOT (".$this->m_nodeObj->primaryKey($record).")" : "")))>0
                   )
           {
             triggerError($record, $attribname, 'error_uniquefield', '', $p_attrib->m_tabs[0]);
           }
         }
       }
-      
+
       $this->validateUniqueFieldSets($record);
 
       if (isset($record['atkerror']))
       {
         for ($i = 0, $_i = count($record["atkerror"]); $i < $_i; $i++)
-          $record["atkerror"][$i]["node"] = $this->m_nodeObj->m_type;        
+          $record["atkerror"][$i]["node"] = $this->m_nodeObj->m_type;
         return false;
       }
-      
+
       return true;
     }
 
@@ -212,31 +211,36 @@
         $query = &$db->createQuery();
         $query->addField('*');
         $query->addTable($this->m_nodeObj->m_table);
+
         foreach($uniqueFieldSet as $field)
-        { 
+        {
           $attrib = &$this->m_nodeObj->m_attribList[$field];
           if ($attrib)
           {
-            if (strstr(strtolower(get_class($attrib)),'attribute'))
+            if (is_a($attrib, 'atkmanytoonerelation') && count($attrib->m_refKey) > 1)
             {
-              $query->addCondition($query->quoteField($field)." = '".$attrib->value2db($record)."'");
-            }
-            else if (strstr(strtolower(get_class($attrib)),'manytoonerelation') && $attrib->createDestination())
-            {
+              $attrib->createDestination();
               foreach ($attrib->m_refKey as $refkey)
               {
                 $query->addCondition($query->quoteField($refkey)." = '".$db->escapeSQL($record[$attrib->fieldName()][$refkey])."'");
               }
             }
-            else $query->addCondition($query->quoteField($field)." = '".$db->escapeSQL($record[$field])."'");
+            else
+            {
+              $query->addCondition($query->quoteField($field)." = '".$attrib->value2db($record)."'");              
+            }
           }
-          else 
+          else
             atkerror("Field $field is mentioned in uniquefieldset but does not exist in ".$this->m_nodeObj->atknodetype());
         }
-        $query->addCondition("NOT (".$this->m_nodeObj->primaryKey($record).")");
         
+        if ($this->m_mode != 'add')
+        {
+          $query->addCondition("NOT (".$this->m_nodeObj->primaryKey($record).")");
+        }
+
         if (count($db->getRows($query->buildSelect()))> 0)
-        {	
+        {
           triggerError($record, $uniqueFieldSet, 'error_uniquefieldset', '', $this->m_nodeObj->m_type);
         }
       }

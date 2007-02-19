@@ -125,12 +125,12 @@
         $this->m_refKey[] = $refKey;
       }
     }
-    
+
     function setOwnerFields($ownerfields)
     {
       $this->m_ownerFields = $ownerfields;
     }
-    
+
     function getOwnerFields()
     {
       if (is_array($this->m_ownerFields) && count($this->m_ownerFields)>0)
@@ -168,11 +168,22 @@
         // record list
         if (count($myrecords) > 0)
         {
-          $result = "";
           // display in list mode
-          if (($mode == "list") || ($mode == "csv"))
+          if ($mode == "list")
+          {
+            $result = "<ul>";
             for ($i = 0; $i < count($myrecords);$i++)
-              $result .= ($i > 0 && $mode == "list" ? "<br>" : ($i > 0 ? ', ' : '')).$this->m_destInstance->descriptor($myrecords[$i]);
+              $result .= sprintf("<li>%s</li>", $this->m_destInstance->descriptor($myrecords[$i]));
+            $result .= "</ul>";
+          }
+
+          // display in csv/plain mode
+          elseif (in_array($mode, array("csv", "plain")))
+          {
+            $result = "";
+            for ($i = 0; $i < count($myrecords);$i++)
+              $result .= ($i > 0 ? ', ' : '').$this->m_destInstance->descriptor($myrecords[$i]);
+          }
 
           // display in view mode
           else
@@ -432,7 +443,7 @@
       // for now, we don't support extended search in embedded one2many recordlists.
       atkimport("atk.recordlist.atkrecordlist");
       $flags  = atkRecordList::convertFlags($this->m_destInstance->getFlags());
-      $flags |= RL_EMBED|RL_NO_EXTENDED_SEARCH;
+      $flags |= RL_EMBED|RL_NO_EXTENDED_SEARCH|RL_NO_SORT|RL_NO_SEARCH;
       return $flags;
     }
 
@@ -469,7 +480,7 @@
       }
       return $url;
     }
-    
+
     function _getFilterElements($record)
     {
       $ownerfields = $this->getOwnerFields();
@@ -962,7 +973,6 @@
          }
        }
      }
-
 
      function getSearchCondition(&$query, $table, $value, $searchmode)
      {

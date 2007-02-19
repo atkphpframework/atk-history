@@ -249,38 +249,69 @@
     }
 
     /**
-     * Set the name of the default database.
-     * This can be used for test purposes.
+     * Use the given mapping to translate database requests
+     * from one database to another database. This can be
+     * used for test purposes.
      *
-     * @param string $name default database name
+     * @param array $mapping database mapping
+     * @static
      */
-    function setDefault($name)
+    function useMapping($mapping)
     {
-      atkDb::_getOrSetDefault($name);
+      atkDb::_getOrUseMapping($mapping);
     }
 
     /**
-     * Returns the default database name.
+     * Returns the current database mapping.
+     * NULL if no mapping is active.
      *
-     * @return string default database name
+     * @return mixed current database mapping (null if inactive)
+     * @static
      */
-    function getDefault()
+    function getMapping()
     {
-      return atkDb::_getOrSetDefault();
+      return atkDb::_getOrUseMapping();
     }
 
     /**
-     * Get or set the default database name.
+     * Clear the current database mapping.
+     *
+     * @static
+     */
+    function clearMapping()
+    {
+      atkDb::_getOrUseMapping(NULL);
+    }
+
+    /**
+     * Returns the real database name. If a mapping
+     * exists the mapping is used to translate the
+     * database name to it's real database name. If
+     * the database name is not part of the mapping or
+     * no mapping is set the given name will be returned.
      *
      * @param string $name database name
-     * @return string database name
+     * @static
      */
-    function _getOrSetDefault($name=NULL)
+    function getTranslatedDatabaseName($name)
     {
-      static $s_default = 'default';
-      if ($name != NULL)
-        $s_default = $name;
-      else return $s_default;
+      $mapping = atkDb::getMapping();
+      return $mapping === NULL || !isset($mapping[$name]) ? $name : $mapping[$name];
+    }
+
+    /**
+     * Get or set the database mapping
+     *
+     * @param array $mapping database mapping
+     * @return mixed current database mapping (null if inactive)
+     * @static
+     */
+    function _getOrUseMapping($mapping="get")
+    {
+      static $s_mapping = NULL;
+      if ($mapping !== "get")
+        $s_mapping = $mapping;
+      else return $s_mapping;
     }
 
     /**
@@ -547,10 +578,24 @@
     }
 
     /**
-     * Rollback the current transaction.
+     * Set savepoint with the given name.
+     * 
+     * @param $name savepoint name
      * @abstract
      */
-    function rollback()
+    function savepoint($name)
+    {
+    }
+
+    /**
+     * Rollback the current transaction.
+     * (If a savepoint is given to the given savepoint.)
+     * 
+     * @param $savepoint savepoint name
+     * 
+     * @abstract
+     */
+    function rollback($savepoint="")
     {
     }
 
@@ -775,7 +820,7 @@
     function func_datetochar($fieldname, $format="")
     {
       if ($format=="") $format = atkconfig("date_to_char", "Y-m-d");
-      return "TO_CHAR($fieldname, ".$this->vendorDateFormat($format).")";
+      return "TO_CHAR($fieldname, '".$this->vendorDateFormat($format)."')";
     }
 
     /**
@@ -839,6 +884,16 @@
       $query->m_db = &$this;
       return $query;
     }
+    
+    /**
+     * Enable/disable all foreign key constraints.
+     * 
+     * @param boolean $enable enable/disable foreign keys?
+     */
+    function toggleForeignKeys($enable)
+    {
+      atkdebug('WARNING: '.get_class($this).'::toggleForeignKeys not implemented!');
+    }
 
     /**
      * Empty all database tables.
@@ -846,9 +901,26 @@
     function deleteAll()
     {
       $tables = $this->table_names();
-      foreach($tables as $table)
+      $count = count($tables);
+
+      do
       {
-        $this->query("DELETE FROM ".$table['table_name'].";");
+        $prevCount = $count;
+        $count = 0;
+
+        foreach($tables as $table)
+        {
+          if (!$this->query("DELETE FROM ".$table['table_name']))
+          {
+            $count++;
+          }
+        }
+      }
+      while ($count < $prevCount && $count > 0);
+
+      if ($count > 0)
+      {
+        atkerror('atkDb::deleteAll failed, probably because of circular dependencies');
       }
     }
 
@@ -860,7 +932,28 @@
       $tables = $this->table_names();
       foreach($tables as $table)
       {
-        $this->query("DROP TABLE ".$table['table_name'].";");
+        $this->query("DROP TABLE ".$table['table_name']);
+      }
+    }
+
+    /**
+     * Clones the database structure of the given database
+     * to this database. This also means the complete database
+     * is emptied beforehand.
+     *
+     * @param atkDb $otherDb other database instance
+     */
+    function cloneAll(&$otherDb)
+    {
+      $this->dropAll();
+      $tables = $otherDb->table_names();
+      foreach($tables as $table)
+      {
+        $ddl = $this->createDDL();
+        $metadata = $otherDb->metadata($table["table_name"]);
+        $ddl->loadMetaData($metadata);
+        $query = $ddl->buildCreate();
+        $this->query($query);
       }
     }
 
@@ -890,6 +983,9 @@
     function &getInstance($conn="default", $reset=false, $mode="rw")
     {
       global $g_dbinstances;
+
+      // translate connection name
+      $conn = atkDb::getTranslatedDatabaseName($conn);
 
       if (!isset($g_dbinstances[$conn]) || $reset || !atkdb::hasMode($g_dbinstances[$conn],$mode))
       {
@@ -1001,6 +1097,10 @@
     function &setInstance($name, &$db)
     {
       global $g_dbinstances;
+
+      // translate connection name
+      $name = atkDb::getTranslatedDatabaseName($name);
+
       $olddb = &$g_dbinstances[$name];
       $g_dbinstances[$name] = &$db;
       return $olddb;

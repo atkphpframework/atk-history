@@ -73,6 +73,24 @@
    }
 
    /**
+    * Store MySQL errors in internal variables
+    * @access private
+    */
+   function _setErrorVariables()
+   {
+     if($this->m_link_id!="")
+     {
+       $this->m_errno = mysqli_errno($this->m_link_id);
+       $this->m_error = mysqli_error($this->m_link_id);
+     }
+     else
+     {
+       $this->m_errno = mysqli_connect_errno();
+       $this->m_error = mysqli_connect_error();
+     }
+   }
+
+   /**
     * Disconnect from database
     */
    function disconnect()
@@ -127,12 +145,10 @@
        }
        else
        {
-         $this->m_affected_rows = mysql_affected_rows();
+         $this->m_affected_rows = mysqli_affected_rows($this->m_link_id);
        }
 
        $this->m_row = 0;
-
-       $this->m_affected_rows = mysqli_affected_rows($this->m_link_id);
 
        /* invalid query */
        if (!$this->m_query_id)
@@ -181,11 +197,7 @@
        $this->lock($table,($querymode == 'r' ? 'read' : 'write'));
        $this->m_query_id = @mysqli_query($this->m_link_id, $query);
 
-       $this->m_affected_rows = mysqli_affected_rows();
-     }
-     else
-     {
-       atk_var_dump($matches,"<b>Error 1100 occured but callback was unable to get tablename from errormessage:</b>");
+       $this->m_affected_rows = mysqli_affected_rows($this->m_link_id);
      }
    }
 

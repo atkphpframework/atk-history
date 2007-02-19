@@ -1,35 +1,41 @@
 <?php
 
   class atkIndexPage
-  {    
+  {
     /**
      * @var atkPage
      */
     var $m_page;
-    
+
     /**
      * @var atkTheme
      */
     var $m_theme;
-    
+
     /**
      * @var atkUi
      */
     var $m_ui;
-    
+
     /**
      * @var atkOutput
      */
     var $m_output;
-    
+
+    /**
+     * @var Array
+     */
+    var $m_user;
+
     function atkIndexPage()
     {
       $this->m_page =   &atkinstance("atk.ui.atkpage");
       $this->m_ui =     &atkinstance("atk.ui.atkui");
       $this->m_theme =  &atkinstance('atk.ui.atktheme');
       $this->m_output = &atkinstance('atk.ui.atkoutput');
+      $this->m_user =   getUser();
     }
-    
+
     function generate()
     {
       $this->atkGenerateTop();
@@ -39,7 +45,7 @@
       $this->m_output->output($this->m_page->render(atktext('app_title')), true);
       $this->m_output->outputFlush();
     }
-    
+
     function atkGenerateMenu()
     {
       /* general menu stuff */
@@ -58,7 +64,7 @@
       $this->m_page->register_style($this->m_theme->stylePath("top.css"));
 
       //Backwards compatible $content, that is what will render when the box.tpl is used instead of a top.tpl
-      $loggedin = text("logged_in_as", "", "atk").": <b>".($g_user["name"]?$g_user['name']:'administrator')."</b>";
+      $loggedin = text("logged_in_as", "", "atk").": <b>".($this->m_user["name"]?$this->m_user['name']:'administrator')."</b>";
       $content = '<br />'.$loggedin.' &nbsp; <a href="index.php?atklogout=1">'.ucfirst(atktext("logout")).' </a>&nbsp;<br /><br />';
 
       $top = $this->m_ui->renderBox(array("content"=> $content,
@@ -69,7 +75,7 @@
       "centerpiece"=>"",
       "searchpiece"=>"",
       "title" => atktext("app_title"),
-      "user"   => $g_user["name"]),
+      "user"   => $this->m_user["name"]),
       "top");
 
       $this->m_page->addContent($top);
@@ -94,7 +100,7 @@
 
         $box = $this->m_ui->renderBox(array("title"=>text("title_session_expired"),
         "content"=>'<br><br>'.text("explain_session_expired").'<br><br><br><br>
-                                           <a href="index.php?atklogout=true'.$destination.'" target="_top">'.text("relogin").'<a/><br><br>'));
+                                           <a href="index.php?atklogout=true'.$destination.'" target="_top">'.text("relogin").'</a><br><br>'));
 
         $this->m_page->addContent($box);
 
@@ -112,7 +118,8 @@
 
           if (is_object($obj))
           {
-            $obj->loadDispatchPage($ATK_VARS);
+            $controller = &atkinstance("atk.atkcontroller");
+            $controller->invoke("loadDispatchPage", $ATK_VARS);
           }
           else
           {
