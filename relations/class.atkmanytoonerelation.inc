@@ -213,37 +213,6 @@
     {
       $this->m_autocomplete_searchfields = $searchfields;
     }
-
-    /**
-     * Set the searchmode for the autocompletion:
-     * exact, startswith(default) or contains.
-     *
-     * @param array $searchmode
-     */
-    function setAutoCompleteSearchMode($mode)
-    {
-      $this->m_autocomplete_searchmode = $mode;
-    }
-
-    /**
-     * Set the case-sensitivity for the autocompletion search (true or false).
-     *
-     * @param array $case_sensitive
-     */
-    function setAutoCompleteCaseSensitive($case_sensitive)
-    {
-      $this->m_autocomplete_search_case_sensitive = $case_sensitive;
-    }
-
-    /**
-     * Set the searchfields for the autocompletion.
-     *
-     * @param array $searchfields
-     */
-    function setAutoCompleteSearchFields($searchfields)
-    {
-      $this->m_autocomplete_searchfields = $searchfields;
-    }
     
     /**
      * Set the searchmode for the autocompletion:
@@ -1199,42 +1168,6 @@
       return 0;
     }
     
-    /**
-     * Returns the selected record for this many-to-one relation. Uses
-     * the owner instance $this->fieldName()."_selected" method if it exists.
-     */
-    function _getSelectedRecord($record=array(), $mode="select")
-    {
-      $method = $this->fieldName()."_selected";
-      if (method_exists($this->m_ownerInstance, $method))
-        return $this->m_ownerInstance->$method($record, $mode);
-      else return $this->getSelectedRecord($record, $mode);
-    }    
-    
-    /**
-     * Returns the currently selected record.
-     */
-    function getSelectedRecord($record=array(), $mode="select")
-    {
-      $this->createDestination();
-      $condition = $this->m_destInstance->m_table.'.'.$this->m_destInstance->primaryKeyField().
-                   "='".$record[$this->fieldName()][$this->m_destInstance->primaryKeyField()]."'";
-      list($record) = $this->m_destInstance->selectDb($condition, "", "", "", "", $mode);
-      return $record;
-    }
-
-    /**
-     * Returns the selected record for this many-to-one relation. Uses
-     * the owner instance $this->fieldName()."_selected" method if it exists.
-     */
-    function _getSelectedRecord($record=array(), $mode="select")
-    {
-      $method = $this->fieldName()."_selected";
-      if (method_exists($this->m_ownerInstance, $method))
-        return $this->m_ownerInstance->$method($record, $mode);
-      else return $this->getSelectedRecord($record, $mode);
-    }
-
     /**
      * Returns the currently selected record.
      */
