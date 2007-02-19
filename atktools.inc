@@ -278,6 +278,7 @@
    */
   function atk_get_trace($format="html")
   {
+    return "";
     // Return if the debug_backtrace function doesn't exist
     if(!function_exists("debug_backtrace"))
       return "Incorrect php-version for atk_get_trace()";
