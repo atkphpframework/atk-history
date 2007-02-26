@@ -16,7 +16,7 @@
    */
 
   /**
-   * atkTestCase is a specialization of SimpleTest's UnitTestCase. It 
+   * atkTestCase is a specialization of SimpleTest's UnitTestCase. It
    * contains utility methods that can be used by testcases, such as
    * the ability to swap the default database driver with a mock
    * version
@@ -25,45 +25,329 @@
    * @package atk
    * @subpackage test
    *
-   */
+   */   
   class atkTestCase extends UnitTestCase
   {
     var $m_restoreDb = array();
     var $m_restoreNode = array();
     var $m_restoreSecMgr = NULL;
     
-    function setMockDb($conn="default")
+    var $m_useTestDatabase = NULL;
+    var $m_fixtures = array();
+    var $m_fixtureData = array();
+    
+    /**
+     * Constructor.
+     *
+     * @return atkTestCase
+     */
+    function atkTestCase($label = false)
+    {
+      $this->UnitTestCase($label);
+    }
+    
+    function getLabel()
+    {
+      $label = parent::getLabel();
+      return empty($label) ? get_class($this) : $label;
+    }
+    
+    /**
+     * Use test database?
+     * 
+     * @return boolean use test database?
+     */
+    function useTestDatabase()
+    {
+      if ($this->m_useTestDatabase === NULL)
+      {
+        $this->setUseTestDatabase(atkTestSuite::useTestDatabase());
+      }
+      
+      return $this->m_useTestDatabase;
+    }
+    
+    /**
+     * Use test database?
+     *
+     * @param boolean $value use test database?
+     */
+    function setUseTestDatabase($value)
+    {
+      atkdebug("Use test database? => ".print_r($value, true));
+      $this->m_useTestDatabase = $value;
+    }
+
+    /**
+     * Called before each test method to setup some
+     * data etc. By default this means the fixture data
+     * will be loaded into the test database. Make sure
+     * you call the parent if you override this method!
+     */
+    function setUp()
+    {
+      // don't let test-cases influence each other, so make sure
+      // the node repository etc. is empty when we start a new test-case
+      global $g_nodeRepository, $g_moduleRepository, $g_nodeHandlers, $g_nodeListeners, $g_nodeControllers;
+      $g_nodeRepository = array();
+      $g_moduleRepository = array();
+      $g_nodeHandlers = array();
+      $g_nodeListeners = array();
+      $g_nodeControllers = array();
+      
+      if ($this->useTestDatabase())
+      {
+        // switch to the test databases
+        $mapping = atkconfig("test_db_mapping");
+        atkDb::useMapping($mapping);      
+        $this->_loadData();
+      }
+    }
+    
+    /**
+     * Called after each test method. By default this
+     * means the fixture data and any other data added
+     * to the database will be removed from the test
+     * database. Make sure you call the parent if you
+     * override this method!
+     */
+    function tearDown()
+    {
+      if ($this->useTestDatabase())
+      {
+        // stop using the test database(s)
+        $this->_cleanData();        
+        atkDb::clearMapping();
+      }
+    }    
+    
+    /**
+     * Returns the fixture for the given table name with the given name. 
+     * If the fixture doesn't exist NULL is returned. If no database is specified
+     * all databases will be searched. If no name is specified all fixtures for
+     * the given table will be returned.
+     * 
+     * @param string $table table name
+     * @param string $name  fixture name
+     * 
+     * @return array fixture data
+     */
+    function fixture($table, $name=NULL, $database=NULL)
+    {
+      if ($database != NULL && $name == NULL && isset($this->m_fixtureData[$database][$table]))
+      {
+        return $this->m_fixtureData[$database][$table];
+      }
+      else if ($database != NULL && $name != NULL && isset($this->m_fixtureData[$database][$table][$name]))
+      {
+        return $this->m_fixtureData[$database][$table][$name];
+      }
+      else if ($database == NULL)
+      {
+        foreach (array_keys($this->m_fixtureData) as $database)
+        {
+          $data = $this->fixture($table, $name, $database);
+          if ($data != NULL) return $data;
+        }
+      }
+      
+      return NULL;
+    }
+
+    /**
+     * Override __call to intercept method calls for fixture data.
+     * This makes it possible to access fixtures if there is a method
+     * with the same name as the table the fixture is defined for. Only
+     * works properly in PHP5.
+     * 
+     * @param string $method method name (table name)
+     * @param array  $args   method arguments
+     * 
+     * @return array fixture data
+     */
+    function __call($method, $args)
+    {
+      foreach (array_keys($this->m_fixtureData) as $database)
+      {
+        if (isset($this->m_fixtureData[$database][$method]))
+          return $this->fixture($method, isset($args[0]) ? $args[0] : NULL, isset($args[1]) ? $args[1] : NULL);
+      }
+      
+      atkerror("Invalid method name $method for ".get_class($this)." (fixture not loaded?)!");
+      return NULL;
+    }
+    
+    /**
+     * Clean-up data in the test database so we have a nice clean
+     * database for the next test method.
+     */
+    function _cleanData()
+    {
+      atkdebug("Clean test database(s)...");
+      
+      $config = atkconfig("db");      	      
+      $mapping = atkconfig("test_db_mapping");
+    	    	
+      foreach ($mapping as $normal => $test)
+      {      
+      	$db = &$this->_getTestDb($normal);      
+        if (!isset($config[$test]["transactional_fixtures"]) || 
+            !$config[$test]["transactional_fixtures"])
+        {
+          //$db->toggleForeignKeys(false);          
+          
+          $db->deleteAll();
+          $db->commit();
+          
+          //$db->toggleForeignKeys(true);                    
+        }
+        else
+        {
+          $db->rollback();
+        }
+      }
+    }
+    
+    /**
+     * Load fixture data into the test database.
+     */
+    function _loadData()
+    {
+      atkdebug("Load fixtures into test database(s)...");
+      
+      if (count($this->m_fixtures) == 0) return;
+
+      atkimport('atk.fixture.atkfixturemanager');
+      $manager = &atkFixtureManager::getInstance();
+      
+      $this->m_fixtureData = array();
+      foreach($this->m_fixtures as $database => $fixtures)
+      {
+        $db = &$this->_getTestDb($database);
+        
+        //$db->toggleForeignKeys(false);
+        
+        foreach ($fixtures as $fullname)
+        {
+          $result = $manager->load($fullname, $db, $this->_getPath());
+          if ($result === false)
+          {
+            atkerror("Error loading fixture '$fullname'!");
+          }
+          else 
+          {
+            $table = $result['table'];
+            $data = $result['data'];
+  
+            if (!isset($this->m_fixtureData[$database][$table]))
+              $this->m_fixtureData[$database][$table] = array();
+  
+            $this->m_fixtureData[$database][$table] =
+              array_merge($this->m_fixtureData[$database][$table], $data);
+          }
+        }
+        
+        //$db->toggleForeignKeys(true);
+      }
+    }
+    
+    /**
+     * Get path for this test-case.
+     * 
+     * @return returns the path for this test-case
+     */
+    function _getPath()
+    {
+      static $s_path = array();
+      $class = get_class($this);
+      
+      if (!isset($s_path[$class]))
+      {
+        $includes = get_included_files();
+        $name = "class.{$class}.inc";
+        $nameLength = strlen("class.{$class}.inc");
+        foreach ($includes as $file)
+        {
+          if (strcasecmp($name, substr($file, -$nameLength)) == 0)
+          {
+            $s_path[$class] = substr($file, 0, -$nameLength);
+            break;
+          }
+        }
+      }
+      
+      if (!isset($s_path[$class]))
+        atkerror('Could not determine path for test-case: '.$class);
+      else return $s_path[$class];
+    }    
+    
+    /**
+     * Get test database.
+     */
+    function &_getTestDb($database)
+    {
+      return atkGetDb($database);
+    }
+    
+    /**
+     * Adds the given fixture to the given database.
+     * 
+     * @param string $name     fixture name
+     * @param string $database database name
+     */
+    function addFixture($name, $database="default")
+    {
+      $this->addFixtures(array($name), $database);
+    }
+    
+    /**
+     * Adds the given fixtures to the given database.
+     * 
+     * @param array $names     fixture names
+     * @param string $database database name
+     */
+    function addFixtures($names, $database="default")
+    {
+      if (!isset($this->m_fixtures[$database]))
+        $this->m_fixtures[$database] = array();
+      $this->m_fixtures[$database] = array_merge($this->m_fixtures[$database], $names);       
+    }
+    
+    function setMockDb($conn=NULL)
     {
       global $config_db;
+      
+      if ($conn === NULL)
+        $conn = "default";
 
       $config_db["mock"]["driver"] = "mock";
-      
+
       $mockdb = &atkGetDb("mock");
-      $this->m_restoreDb[$conn] = &atkDb::setInstance($conn, $mockdb);      
+      $this->m_restoreDb[$conn] = &atkDb::setInstance($conn, $mockdb);
     }
-    
-    function restoreDb($conn="default")
+
+    function restoreDb($conn=NULL)
     {
-      $copy =$this->m_restoreDb[$conn];
-      atkDb::setInstance($conn, $copy);
-      $this->m_restoreDb[$conn]="";
+      if ($conn === NULL)
+        $conn = "default";      
+      atkDb::setInstance($conn, $this->m_restoreDb[$conn]);
     }
-    
+
     function &setMockNode($nodename, &$mocknode)
     {
-      $this->m_restoreNode[$nodename] = &atkSetNode($nodename, $mocknode);      
+      $this->m_restoreNode[$nodename] = &atkSetNode($nodename, $mocknode);
     }
-    
+
     function restoreNode($nodename)
     {
       atkSetNode($nodename, $this->m_restoreNode[$nodename]);
     }
-    
+
     function &setMockSecurityManager(&$mockmanager)
     {
-      $this->m_restoreSecMgr = &atkSetSecurityManager($mockmanager);     
+      $this->m_restoreSecMgr = &atkSetSecurityManager($mockmanager);
     }
-    
+
     function restoreSecurityManager()
     {
       atkSetSecurityManager($this->m_restoreSecMgr);

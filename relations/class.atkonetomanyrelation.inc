@@ -59,6 +59,7 @@
     /**
      * The maximum number of detail records. If the number of detail records
      * exceeds this maximum, the link for adding new details disappears.
+     * @access private
      * @var int
      */
     var $m_maxRecords = 0;
@@ -67,9 +68,18 @@
     /**
      * The load method might build a custom filter. When it does, we might want
      * to use it again in other methods.
+     * @access private
      * @var string
      */
     var $m_loadFilter = "";
+
+    /**
+     * The field that the foreign key in the destination points to.
+     * Is set to the primary key if no value is provided.
+     * @access private
+     * @var array;
+     */
+    var $m_ownerFields = array();
 
     /**
      * Default constructor.
@@ -115,12 +125,12 @@
         $this->m_refKey[] = $refKey;
       }
     }
-    
+
     function setOwnerFields($ownerfields)
     {
       $this->m_ownerFields = $ownerfields;
     }
-    
+
     function getOwnerFields()
     {
       if (is_array($this->m_ownerFields) && count($this->m_ownerFields)>0)
@@ -158,11 +168,22 @@
         // record list
         if (count($myrecords) > 0)
         {
-          $result = "";
           // display in list mode
-          if (($mode == "list") || ($mode == "csv"))
+          if ($mode == "list")
+          {
+            $result = "<ul>";
             for ($i = 0; $i < count($myrecords);$i++)
-              $result .= ($i > 0 ? "<br>" : "").$this->m_destInstance->descriptor($myrecords[$i]);
+              $result .= sprintf("<li>%s</li>", $this->m_destInstance->descriptor($myrecords[$i]));
+            $result .= "</ul>";
+          }
+
+          // display in csv/plain mode
+          elseif (in_array($mode, array("csv", "plain")))
+          {
+            $result = "";
+            for ($i = 0; $i < count($myrecords);$i++)
+              $result .= ($i > 0 ? ', ' : '').$this->m_destInstance->descriptor($myrecords[$i]);
+          }
 
           // display in view mode
           else
@@ -422,7 +443,7 @@
       // for now, we don't support extended search in embedded one2many recordlists.
       atkimport("atk.recordlist.atkrecordlist");
       $flags  = atkRecordList::convertFlags($this->m_destInstance->getFlags());
-      $flags |= RL_EMBED|RL_NO_EXTENDED_SEARCH;
+      $flags |= RL_EMBED|RL_NO_EXTENDED_SEARCH|RL_NO_SORT|RL_NO_SEARCH;
       return $flags;
     }
 
@@ -459,7 +480,7 @@
       }
       return $url;
     }
-    
+
     function _getFilterElements($record)
     {
       $ownerfields = $this->getOwnerFields();
@@ -632,13 +653,13 @@
             }
             ($paging==true)?$limitarray=$this->fetchLimitArray():$limitarray="";
 
+            $stmt = "";
             if(isset($this->m_ownerInstance->m_postvars['atkorderby'.$this->fieldName()]))
             {
               $atkorderby = $this->m_ownerInstance->m_postvars['atkorderby'.$this->fieldName()];
               // EVIL BAD SMELL, sorting and recordlist embedding is handled in a very cumbersome way (with prefixes and embedprefixes
               // that are hardly understandable
               $elems = explode(" ", $atkorderby);
-              $stmt = "";
               if (isset($this->m_destInstance->m_attribList[$elems[0]]))
               {
                 $attr = &$this->m_destInstance->getAttribute($elems[0]);
@@ -952,7 +973,6 @@
          }
        }
      }
-
 
      function getSearchCondition(&$query, $table, $value, $searchmode)
      {
