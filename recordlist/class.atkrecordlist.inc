@@ -647,7 +647,10 @@
         $actions = $actions["actions"];
       }
       else
+      {
         $mra = $this->m_node->hasFlag(NF_NO_DELETE) ? array() : array("delete");
+      }
+        
 
       /* get the rows */
       for ($i = 0, $_i = count($recordset); $i < $_i; $i++)
