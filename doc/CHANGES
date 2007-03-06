@@ -4,6 +4,13 @@
 Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 [names] are references to people in the AUTHORS file.
 
+Changed in ATK 5.7 PHOENIX
+------------------
++ Added atkString datatype. [Boy]
+* Added ability to pass parmeters to atknew for constructor of class you
+  are trying to create. [Boy]
+* Improved displaying of error messages in OCI8 driver. [Boy]
+
 Changed in ATK 5.7
 ------------------
 + Sessionmanager can set a cookie which spawns multiple subdomains
