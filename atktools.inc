@@ -1879,9 +1879,7 @@
       {
         foreach ($args as $key=>$arg) $arguments[]="\$args[$key]";
         $arguments = implode(',',$arguments);
-        $eval = "\$obj = &new $classname($arguments);";
-        atk_var_dump($eval);
-        eval($eval);
+        eval("\$obj = &new $classname($arguments);");
       }
       else $obj = &new $classname();
 
