@@ -49,7 +49,7 @@
         return file($this->getPath());
       }
     }
-    
+
     function readFile()
     {
       if ($this->exists())
@@ -110,7 +110,7 @@
         $this->m_fp = null;
       }
     }
-    
+
     /**
      * Send the file contents directly to the browser.
      *
@@ -120,7 +120,7 @@
     {
       if ($this->open("r"))
       {
-        fpassthru($this->m_fp);      
+        fpassthru($this->m_fp);
         $this->close();
       }
       return true;
