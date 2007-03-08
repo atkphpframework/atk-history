@@ -62,5 +62,92 @@
         return false;
       }
     }
+
+    function findClass($classname)
+    {
+      static $s_forced;
+      $classname = strtolower($classname);
+      $classloader = new atkClassLoader();
+      $classes = $classloader->getAllClasses();
+      if (!in_array($classname,array_keys($classes)))
+      {
+        if (!$s_forced)
+        {
+          $s_forced=1;
+          $classes = $classloader->getAllClasses(true);
+          if (!in_array($classname,array_keys($classes)))
+          {
+            return $classes[$classname];
+          }
+        }
+        return false;
+      }
+      return $classes[$classname];
+    }
+
+    /**
+     * Gets all the classes
+     *
+     * @param bool $force Force reloading of classes, instead of using cache.
+     * @return Array An array with the classes as keys and the path as value.
+     */
+    function getAllClasses($force=false)
+    {
+      static $s_classes=array();
+
+      if (empty($s_classes) || $force)
+      {
+        atkimport('atk.utils.atktmpfile');
+        $cache = new atkTmpFile('classes.inc.php');
+        $classes = array();
+        include(atkconfig('atkroot').$cache->getPath());
+
+        if (empty($classes) || $force)
+        {
+          $classes = $this->findAllClasses();
+          $cache->writeAsPhp('classes',$classes);
+        }
+        $s_classes = $classes;
+      }
+      return $s_classes;
+    }
+
+    /**
+     * Find all classes in ATK.
+     *
+     * @todo Make it search and support modules too.
+     *
+     * @return Array An array with the classes as keys and the path as value.
+     */
+    function findAllClasses()
+    {
+      $traverser = atknew('atk.utils.atkdirectorytraverser');
+      $classfinder = new atkClassFinder();
+      $traverser->addCallbackObject($classfinder);
+      // Traverse the temporary directory
+      $traverser->traverse(atkconfig('atkroot').'atk/');
+      $classes = $classfinder->getClasses();
+      atkdebug("atkClassLoader::findAllClasses($force): Found ".count($classes).' classes');
+      return $classes;
+    }
+  }
+
+  class atkClassFinder
+  {
+    var $m_classes=array();
+
+    function visitFile($file)
+    {
+      $filename = basename($file);
+      if (substr($filename,0,6)==='class.' && substr($filename, -4)==='.inc')
+      {
+        $this->m_classes[substr($filename, 6,-4)] = getClassName($file);
+      }
+    }
+
+    function getClasses()
+    {
+      return $this->m_classes;
+    }
   }
 ?>

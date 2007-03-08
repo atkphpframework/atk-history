@@ -7,6 +7,9 @@ Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 Changed in ATK 5.7 PHOENIX
 ------------------
 + Added atkString datatype. [Boy]
++ Added autoload feature. ATK will now try to load classes for you if you
+  forget to include them. Only works in PHP5 and if the configuration
+  variable $config_autoload_classes is set to true. [Boy]
 * Added ability to pass parmeters to atknew for constructor of class you
   are trying to create. [Boy]
 * Improved displaying of error messages in OCI8 driver. [Boy]

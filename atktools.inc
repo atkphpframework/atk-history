@@ -1837,7 +1837,7 @@
     $elems = explode("/", strtolower($classpath));
     for($counter=0; $counter<=count($elems);$counter++)
     {
-      if($elems[$counter] == "../")
+      if(isset($elems[$counter]) && $elems[$counter] == "../")
       {
         array_shift($elems);
       }

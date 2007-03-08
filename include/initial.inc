@@ -72,4 +72,22 @@
 
   // preload modules
   atkPreloadModules();
+
+  if (atkconfig('autoload_classes'))
+  {
+    atkimport('atk.utils.atkclassloader');
+    function __autoload($classname)
+    {
+      // We exempt Smarty from autoloading because somehow it causes
+      // a loop somewhere.
+      if (!in_array($classname,array('Smarty','Services_JSON','pear','PEAR_Error')))
+      {
+        atkdebug("Starting autoload of class name: ".$classname);
+        $classpath = atkClassLoader::findClass($classname);
+        if ($classpath) $ret = atkimport($classpath);
+        else atkerror("Class: $classname not found!");
+        atkdebug("Ending autoload of class name: ".$classname);
+      }
+    }
+  }
 ?>
