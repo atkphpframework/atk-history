@@ -210,8 +210,10 @@
       $seconds = $rec[$this->fieldName()]["seconds"];
 
       if ($hours=="" || $minutes=="") return NULL;
-
-      $result = sprintf("%02d",$hours).":".sprintf("%02d",$minutes).":".sprintf("%02d",$seconds);
+      
+      // although we are saving a time we almost always have to use a date / timestamp or whatever
+      // column in the database to save the time to, so we prefix the time with a (hardcoded) date
+      $result = sprintf("1970-01-01 %02d:%02d:%02d",$hours, $minutes, $seconds);
 
       return $result;
     }
