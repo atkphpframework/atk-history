@@ -45,8 +45,22 @@
       $this->atkAttribute($name,$flags); // base class constructor
       $this->m_beginTime = $beginTime;
       $this->m_endTime   = $endTime;
-      $this->m_steps     = $steps;
+      if (is_array($steps))  $this->m_steps     = $steps;
+      else                   $this->m_steps     = $this->intervalToSteps($steps);
       $this->m_default   = $default;
+    }
+
+    function intervalToSteps($interval)
+    {
+      $steps=array();
+      for ($i=0;$i<=59;$i++)
+      {
+        if ($i%$interval===0)
+        {
+          $steps[] = $i;
+        }
+      }
+      return $steps;
     }
 
     /**
@@ -59,7 +73,7 @@
     {
       return array("hours" => substr($time, 0, 2),
                    "minutes" => substr($time, 2, 2),
-                   "seconds" => substr($time, 4, 2));      
+                   "seconds" => substr($time, 4, 2));
     }
 
 
@@ -102,7 +116,7 @@
           'seconds' => $result['seconds']
         );
       }
-      
+
       return $result;
     }
 
@@ -183,7 +197,7 @@
       $m_hourBox .= "</select>";
       $m_minBox  .= "</select>";
       $m_secBox  = "<input type=\"hidden\" name=\"".$fieldprefix.$this->fieldName()."[seconds]\" value=\"00\">\n";
-       
+
       // assemble display version
       return $m_hourBox.":".$m_minBox.$m_secBox;
     }
@@ -221,7 +235,7 @@
       }
       return $retval;
     }
-    
+
     /**
      * Returns a piece of html code that can be used in a form to search values
      * @param $record Array with fields
