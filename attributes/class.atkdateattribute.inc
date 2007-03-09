@@ -271,6 +271,7 @@
         {
           $format = str_replace(array("y", "Y", "m", "n", "j", "d"), array("yy", "y", "mm", "m", "d", "dd"), $this->m_date_format_edit);
           $result.=' <input class="button" class="atkdateattribute" type="button" value="..." onclick="return showCalendar(\''.$fieldname.'\', \''.$fieldname.'\', \''.$format.'\', false);">';
+          //if (!$pda) $result.='<script language="javascript"> var '.$fieldname.'_fmt = \''.$this->m_date_format_edit.'\';</script>';          
         }
         return $result;
       }
