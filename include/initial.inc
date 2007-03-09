@@ -47,6 +47,7 @@
 
   include_once($config_atkroot."config.inc.php");
   require_once($config_atkroot."atk/atktools.inc");
+  require_once($config_atkroot.'atk/include/autoload.inc');
 
   // Once atktools is loaded, we can register our own error handler.
   if (atkconfig("use_atkerrorhandler", true))
@@ -73,21 +74,4 @@
   // preload modules
   atkPreloadModules();
 
-  if (atkconfig('autoload_classes'))
-  {
-    atkimport('atk.utils.atkclassloader');
-    function __autoload($classname)
-    {
-      // We exempt Smarty from autoloading because somehow it causes
-      // a loop somewhere.
-      if (!in_array($classname,array('Smarty','Services_JSON','pear','PEAR_Error')))
-      {
-        atkdebug("Starting autoload of class name: ".$classname);
-        $classpath = atkClassLoader::findClass($classname);
-        if ($classpath) $ret = atkimport($classpath);
-        else atkerror("Class: $classname not found!");
-        atkdebug("Ending autoload of class name: ".$classname);
-      }
-    }
-  }
 ?>
