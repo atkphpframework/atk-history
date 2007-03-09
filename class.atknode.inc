@@ -3074,7 +3074,7 @@
         {
           while (list($key,$value) = each($searchArray))
           {
-            if( (($value!="") && ($mode=="admin")) || (($value!="") && in_array($key,$querylist)) )
+            if( (($value!="") && ($mode=="admin" || $mode=="export")) || (($value!="") && in_array($key,$querylist)) )
             {
               $p_attrib = &$this->getAttribute($key);
 
