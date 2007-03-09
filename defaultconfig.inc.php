@@ -825,15 +825,4 @@
    */
   $config_manytoone_autocomplete_search_case_sensitive = false;
 
-  /**
-   * Wether or not ATK should try to load up classes that are not specifically included.
-   *
-   * This is handy with for instance the use of attributes in a node.
-   * If you did not do useattrib('atkDateAttribute'), ATK will include it for you.
-   *
-   * PHP5 only!
-   *
-   * @var boolean
-   */
-  $config_autoload_classes = false;
 ?>
