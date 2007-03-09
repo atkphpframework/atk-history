@@ -54,6 +54,7 @@ Changes in tomorrow branch
   element with id 'atkbusy' somewhere to indicate an Ajax
   request is being performed. [Peter]
 + Added descriptor to stacktrace array. [Peter]
+* Fixed export handling of (extended) search values. [Peter]
 * Changed functionality for 'count distinct' in atkMysqlQuery (count
   did not count correctly when some of the fields where NULL) [Peter]
 * Improvements to error reporting of importing and added ability 

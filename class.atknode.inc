@@ -2852,7 +2852,7 @@
       {
         while (list($key,$value) = each($searchArray))
         {
-          if( (($value!="") && ($mode=="admin")) || (($value!="") && in_array($key,$loadlist["query"])) )
+          if( (($value!="") && ($mode=="admin" || $mode=="export")) || (($value!="") && in_array($key,$loadlist["query"])) )
           {
             $p_attrib = &$this->getAttribute($key);
 
