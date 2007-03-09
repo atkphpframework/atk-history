@@ -45,6 +45,7 @@ function rl_do(rlId, rownum, action, confirmtext)
     confirmed = confirm(confirmtext);
     if (confirmed) extra = "&confirm=1";
   }
+  
   if (rl_a[rlId][rownum][action] && (!confirmtext || confirmed))
   {
     if (!rl_a[rlId]['embed'])
