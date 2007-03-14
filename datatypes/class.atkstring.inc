@@ -46,6 +46,12 @@
     {
       return $this->m_string;
     }
+
+    public function parse($data)
+    {
+      $this->m_string = atknew('atk.utils.atkstringparser',$this->m_string)->parse($data);
+      return $this;
+    }
   }
 
 ?>
