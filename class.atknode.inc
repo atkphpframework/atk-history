@@ -729,6 +729,44 @@
       $this->m_flags = $flags;
       $this->m_module = atkModule::getModuleScope();
     }
+    
+    /**
+     * Resolve section. If a section is only prefixed by
+     * a dot this means we need to add the default tab 
+     * before the dot.
+     * 
+     * @param string section name
+     * @return resolved section name
+     */
+    function resolveSection($section)
+    {
+      list($part1, $part2) = explode('.', $section);
+      if ($part2 != NULL && strlen($part2) > 0 && strlen($part1) == 0)
+        return $this->m_default_tab.".".$part2;
+      else if (strlen($part2) == 0 && strlen($part1) == 0)
+        return $this->m_default_tab;
+      else return $section;
+    }
+    
+    /**
+     * Resolve sections.
+     * 
+     * @param array $sections section list
+     * @return array resolved section list
+     * 
+     * @see resolveSection
+     */
+    function resolveSections($sections)
+    {
+      $result = array();
+      
+      foreach ($sections as $section)
+      {
+        $result[] = $this->resolveSection($section);
+      }      
+      
+      return $result;
+    }
 
     /**
      * Resolve sections, tabs and the order based on the given
@@ -760,6 +798,11 @@
       else if ($sections != "*" && !is_array($sections))
       {
         $sections = array($sections);
+      }
+      
+      if (is_array($sections))
+      {
+        $sections = $this->resolveSections($sections);
       }
 
       // Filter tabs from section names.
@@ -1416,7 +1459,7 @@
     function addDefaultExpandedSections()
     {
       $sections = func_get_args();
-
+      $sections = $this->resolveSections($sections);
       $this->m_default_expanded_sections = array_unique(array_merge($sections, $this->m_default_expanded_sections));
     }
 
@@ -3275,7 +3318,7 @@
       {
         while (list($key,$value) = each($searchArray))
         {
-          if( (($value!="") && ($mode=="admin")) || (($value!="") && in_array($key,$loadlist["query"])) )
+          if( (($value!="") && ($mode=="admin" || $mode=="export")) || (($value!="") && in_array($key,$loadlist["query"])) )
           {
             $p_attrib = &$this->getAttribute($key);
 
@@ -3521,7 +3564,7 @@
         {
           while (list($key,$value) = each($searchArray))
           {
-            if( (($value!="") && ($mode=="admin")) || (($value!="") && in_array($key,$querylist)) )
+            if( (($value!="") && ($mode=="admin" || $mode=="export")) || (($value!="") && in_array($key,$querylist)) )
             {
               $p_attrib = &$this->getAttribute($key);
 
