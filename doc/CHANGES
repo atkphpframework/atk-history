@@ -14,6 +14,11 @@ Changed in ATK 5.7 PHOENIX
 * Improved displaying of error messages in OCI8 driver. [Boy]
 * Added ability to specify interval instead of steps 
   in atkTimeAttribute. [Boy]
+* atkDurationAttribute now shows 'hour' instead of 'hours' translation
+  in '1 hour' option, likewise with minutes. [Boy]
+* If atkController fails to retreive the specified node, it won't die
+  with a PHP fatal error, but will display a box with a warning
+  and some errors. [Boy]
 
 Changed in ATK 5.7
 ------------------
