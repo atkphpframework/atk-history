@@ -233,13 +233,5 @@
         return $rec[$this->fieldName()]["hours"]*60 + $rec[$this->fieldName()]["minutes"];
       }
     }
-
-    function sum($rec1,$rec2,$fieldprefix="")
-    {
-      atkdebug("<h1>SUM: sum($rec1,$rec2,$fieldprefix)</h1>");
-      return parent::sum($rec1,$rec2,$fieldprefix);
-    }
-
-
   }
 ?>

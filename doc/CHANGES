@@ -23,6 +23,8 @@ Changed in ATK 5.7 PHOENIX
   with a PHP fatal error, but will display a box with a warning
   and some errors. [Boy]
 * Added a getrow method to atkDb, for getting a single row. [Boy]
+* Made it possible to use AF_TOTAL and AF_SEARCHABLE on
+  atkDurationAttribute. [Boy]
 
 Changed in ATK 5.7
 ------------------
