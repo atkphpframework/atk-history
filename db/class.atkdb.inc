@@ -756,6 +756,13 @@
       return $result;
     }
 
+    function getrow($query, $offset=-1, $limit=-1)
+    {
+      $this->query($query, $offset, $limit);
+      $this->next_record();
+      return $this->m_record;
+    }
+
     /**
      * This function indicates what searchmodes the database supports.
      * @return array with search modes

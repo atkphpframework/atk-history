@@ -137,16 +137,6 @@
     }
 
     /**
-     * Returns a piece of html code that can be used in a form to search values.
-     * @param array $record Array of records, with for each record 2 fields (hours, minutes)
-     * @return String Piece a of HTML Code
-     */
-    function search($record="")
-    {
-      return "&nbsp;"; // currently not searchable.
-    }
-
-    /**
      * Function display's the time
      * @param $record Array with time
      * @return String with YYYY-MM-DD
@@ -243,6 +233,13 @@
         return $rec[$this->fieldName()]["hours"]*60 + $rec[$this->fieldName()]["minutes"];
       }
     }
+
+    function sum($rec1,$rec2,$fieldprefix="")
+    {
+      atkdebug("<h1>SUM: sum($rec1,$rec2,$fieldprefix)</h1>");
+      return parent::sum($rec1,$rec2,$fieldprefix);
+    }
+
 
   }
 ?>
