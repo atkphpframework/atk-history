@@ -36,7 +36,8 @@
      * @param $name        Name of the attribute
      * @param $beginTime   Time to start with (eg 8)
      * @param $endTime     Time to end with (eg 24)
-     * @param $steps       Array containing possible minute values (eg array("00","15","30","45"))
+     * @param $steps       int|Array containing possible minute values (eg array("00","15","30","45"))
+     *                               or the interval (eg 5 for 00,05,10,15, etc.)
 	   * @param $default  Start Time (exp: 20:30)
      * @param $flags Flags for this attribute
      */
@@ -50,6 +51,12 @@
       $this->m_default   = $default;
     }
 
+    /**
+     * Convert an interval (integer) to an array with steps.
+     *
+     * @param int $interval The interval to convert
+     * @return array The array with steps.
+     */
     function intervalToSteps($interval)
     {
       $steps=array();
@@ -211,9 +218,7 @@
 
       if ($hours=="" || $minutes=="") return NULL;
       
-      // although we are saving a time we almost always have to use a date / timestamp or whatever
-      // column in the database to save the time to, so we prefix the time with a (hardcoded) date
-      $result = sprintf("1970-01-01 %02d:%02d:%02d",$hours, $minutes, $seconds);
+      $result = sprintf("%02d",$hours).":".sprintf("%02d",$minutes).":".sprintf("%02d",$seconds);
 
       return $result;
     }

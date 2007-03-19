@@ -1078,7 +1078,7 @@
          if($total_connections>0)
          {
            $random = rand(0,($total_connections-1));
-           atkdebug("<h1>Random server (".$connections[$random].") choosen from cluster $conn for mode: $mode</h1>");
+           atkdebug("Random server (".$connections[$random].") choosen from cluster $conn for mode: $mode");
            return $connections[$random];
          }
          else

@@ -35,6 +35,10 @@
     {
       global $ATK_VARS;
 
+      $page = &$this->getPage();
+      $theme = &atkinstance('atk.ui.atktheme');
+      $page->register_style($theme->stylePath("style.css"));
+
       //need to keep the postdata after a AF_LARGE selection in the allfield
       if(!isset($this->m_postvars["phase"]) && isset($ATK_VARS['atkformdata']))
         foreach($ATK_VARS['atkformdata'] as $key=>$value)
@@ -352,10 +356,10 @@
     function _getSampleValue($attributename, $value)
     {
       $attr = &$this->getUsableAttribute($attributename);
-      
+
       if(method_exists($attr, "parseTime"))
         $newval = $attr->parseTime($value);
-      else  
+      else
         $newval = $attr->parseStringValue($value);
 
       if (method_exists($attr, "createDestination"))

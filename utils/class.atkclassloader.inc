@@ -63,6 +63,13 @@
       }
     }
 
+    /**
+     * Finds a class in the current application.
+     *
+     * @param string $classname The classname to find.
+     * @return string|bool The classpath (atkimport statement) of the class
+     *                     if found, else false
+     */
     function findClass($classname)
     {
       static $s_forced;
@@ -86,7 +93,7 @@
     }
 
     /**
-     * Gets all the classes
+     * Gets an array with all the the classes
      *
      * @param bool $force Force reloading of classes, instead of using cache.
      * @return Array An array with the classes as keys and the path as value.
@@ -124,7 +131,6 @@
       $traverser = atknew('atk.utils.atkdirectorytraverser');
       $classfinder = new atkClassFinder();
       $traverser->addCallbackObject($classfinder);
-      // Traverse the temporary directory
       $traverser->traverse(atkconfig('atkroot').'atk/');
       $classes = $classfinder->getClasses();
       atkdebug("atkClassLoader::findAllClasses($force): Found ".count($classes).' classes');
@@ -132,6 +138,16 @@
     }
   }
 
+  /**
+   * Find all files that might be classes.
+   * 
+   * Made for use with the directory traverser.
+   * 
+   * @author Boy Baukema <boy@achievo.org>
+   *
+   * @package atk
+   * @subpackage utils
+   */
   class atkClassFinder
   {
     var $m_classes=array();
@@ -145,6 +161,12 @@
       }
     }
 
+    /**
+     * Returns all the found classes as keys with their classpath (atkimport statement)
+     * as value.
+     *
+     * @return array The found classes with classpatsh
+     */
     function getClasses()
     {
       return $this->m_classes;
