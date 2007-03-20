@@ -83,7 +83,7 @@
       }
     }
 
-    function &addField($name, $value="", $table="", $fieldaliasprefix="", $quote=true)
+    function &addField($name, $value="", $table="", $fieldaliasprefix="", $quote=true,$quotefield=false,$mode="",$fieldType="")
     {
       if (strstr($name," "))
         $name = "[$name]";

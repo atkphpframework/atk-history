@@ -251,6 +251,13 @@
    */
   $config_logfile = "/tmp/atk-security.log";
 
+  /**
+   * atkEventLog table name
+   * @var String
+   */
+
+  $config_eventlogtable = "atkeventlog";
+
   /************************** AUTHENTICATION *********************************/
 
   /**

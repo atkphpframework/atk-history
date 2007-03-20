@@ -294,7 +294,7 @@
         if($value == NULL)
           $query->addField($this->fieldName(),'NULL',"","",false);
         else
-          $query->addField($this->fieldName(),$value,"","",!$this->hasFlag(AF_NO_QUOTES));
+          $query->addField($this->fieldName(),"",$tablename,$fieldaliasprefix,!$this->hasFlag(AF_NO_QUOTES),false, $mode,$this->dbFieldType());
       }
       else
         $query->addField($this->fieldName(),"",$tablename,$fieldaliasprefix,!$this->hasFlag(AF_NO_QUOTES));

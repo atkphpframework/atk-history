@@ -45,13 +45,13 @@
     *               done without quotes, e.d. SET number = 4.
     * @return atkQuery The query object, for fluent usage.
     */
-    function &addField($name, $value="", $table="", $fieldaliasprefix="", $quote=true, $mode="", $fieldType="")
+    function &addField($name, $value="", $table="", $fieldaliasprefix="", $quote=true, $quotefield=false, $mode="", $fieldType="")
     {
-      //$this->m_fields[] = strtr($name,"_",".");
+      $fieldType = strtoupper($fieldType);
       if ($table!="") $fieldname = $table.".".$name;
       else $fieldname = $name;
 
-      if (strtoupper($fieldType) == 'DATETIME' && $mode != 'add' && $mode != 'update')
+      if ($fieldType == 'DATETIME' && $mode != 'add' && $mode != 'update')
       {
         $this->m_aliasLookup["al_".$this->m_generatedAlias] = $fieldaliasprefix.$name;
         $fieldname = "TO_CHAR(".$fieldname.",'YYYY-MM-DD HH24:MI:SS')";
@@ -59,14 +59,23 @@
         $this->m_fieldaliases[$fieldname] = "al_".$this->m_generatedAlias;
         $this->m_generatedAlias++;
       }
+      elseif ($fieldType == 'TIME' && $mode != 'add' && $mode != 'update')
+      {
+        $this->m_aliasLookup["al_".$this->m_generatedAlias] = $fieldaliasprefix.$name;
+        $fieldname = "TO_CHAR(".$fieldname.",'HH24:MI:SS')";
+
+        $this->m_fieldaliases[$fieldname] = "al_".$this->m_generatedAlias;
+        $this->m_generatedAlias++;
+      }
 
       $this->m_fields[] = $fieldname;
+      if ($quotefield) $this->m_quotedfields[] = $fieldname;
 
-      if (strtoupper($fieldType) == 'DATETIME' && ($mode == 'add' || $mode == 'update'))
+      if ($fieldType == 'DATETIME' && ($mode == 'add' || $mode == 'update'))
       {
         $value = "TO_TIMESTAMP('".$value."','YYYY-MM-DD HH24:MI:SS')";
       }
-      elseif (strtoupper($fieldType) == 'TEXT' && ($mode == 'add' || $mode == 'update'))
+      elseif ($fieldType == 'TEXT' && ($mode == 'add' || $mode == 'update'))
       {
         //binding needed for CLOB
         if($value != "")
@@ -77,7 +86,7 @@
 
       $this->m_values[$fieldname] = $value;
 
-      if ($fieldaliasprefix!="" && !(strtoupper($fieldType) == 'DATETIME' && $mode != 'add' && $mode != 'update'))
+      if ($fieldaliasprefix!="" && !in_array($fieldType,array('DATETIME','TIME')) && $mode != 'add' && $mode != 'update')
       {
         $this->m_aliasLookup["al_".$this->m_generatedAlias] = $fieldaliasprefix.$name;
         $this->m_fieldaliases[$fieldname] = "al_".$this->m_generatedAlias;
@@ -234,8 +243,6 @@
       $query = $this->buildInsert();
       return $this->m_db->query($query, 0, 0, $this->m_bind_vars);
     }
-
-
   }
 
 ?>
