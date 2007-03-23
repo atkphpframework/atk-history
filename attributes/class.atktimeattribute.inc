@@ -217,7 +217,7 @@
       $seconds = $rec[$this->fieldName()]["seconds"];
 
       if ($hours=="" || $minutes=="") return NULL;
-      
+
       $result = sprintf("%02d",$hours).":".sprintf("%02d",$minutes).":".sprintf("%02d",$seconds);
 
       return $result;
@@ -294,10 +294,12 @@
         if($value == NULL)
           $query->addField($this->fieldName(),'NULL',"","",false);
         else
-          $query->addField($this->fieldName(),"",$tablename,$fieldaliasprefix,!$this->hasFlag(AF_NO_QUOTES),false, $mode,$this->dbFieldType());
+          $query->addField($this->fieldName(),$value,"","",!$this->hasFlag(AF_NO_QUOTES),false, $mode,$this->dbFieldType());
       }
       else
-        $query->addField($this->fieldName(),"",$tablename,$fieldaliasprefix,!$this->hasFlag(AF_NO_QUOTES));
+      {
+        $query->addField($this->fieldName(),"",$tablename,$fieldaliasprefix,!$this->hasFlag(AF_NO_QUOTES),false, $mode,$this->dbFieldType());
+      }
     }
 
     function dbFieldType()

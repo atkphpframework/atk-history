@@ -75,6 +75,10 @@
       {
         $value = "TO_TIMESTAMP('".$value."','YYYY-MM-DD HH24:MI:SS')";
       }
+      elseif ($fieldType == 'TIME' && ($mode == 'add' || $mode == 'update'))
+      {
+        $value = "TO_TIMESTAMP('1970-01-01 ".$value."','YYYY-MM-DD HH24:MI:SS')";
+      }
       elseif ($fieldType == 'TEXT' && ($mode == 'add' || $mode == 'update'))
       {
         //binding needed for CLOB
