@@ -1,3 +1,25 @@
+if (!ATK) {  var ATK = {}; }
+
+ATK.Tools = {
+  debug: function(txt)
+  {
+    if (document.__debugging)
+    {
+      if (console) console.log(txt);
+      else $('atk_js_debugdiv').innerHTML+=txt+'<br />';
+    }
+  },
+
+  var_dump: function(dumpvar,txt)
+  {
+    if (document.__debugging)
+    {
+      if (console) console.log(txt+'= ',dumpvar);
+      else $('atk_js_debugdiv').innerHTML+=txt+'= '+dumpvar.toString()+'<br />';
+    }
+  }
+}
+
 /**
  * For getting objects but perserving backwards compatibility
  */

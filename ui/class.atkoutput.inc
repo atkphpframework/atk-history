@@ -64,7 +64,7 @@
       }
       return $s_instance;
     }
-    
+
     function sendCachingHeaders($lastmodificationstamp='',$nocache=true)
     {
       // Since atk pages are always dynamic, we have to prevent that some browsers cache
@@ -88,7 +88,7 @@
         }
       }
     }
-    
+
     /**
      * Send no cache headers to the browser.
      * @static
@@ -116,7 +116,6 @@
      */
     function outputFlush($nocache=true, $lastmodificationstamp="", $charset="")
     {
-      global $g_error_msg;
       $res = "";
       if (strlen($this->m_raw)>0)
       {
@@ -126,24 +125,12 @@
       {
         // send some headers first..
         $this->sendCachingHeaders($lastmodificationstamp,$nocache);
-        
+
         // Set the content type and the character set (as defined in the language files)
-        header ("Content-Type: text/html; charset=".($charset==""?atktext("charset","atk"):$charset)); 
+        header ("Content-Type: text/html; charset=".($charset==""?atktext("charset","atk"):$charset));
 
         $res = $this->m_content;
-
-        if (count($g_error_msg)>0)
-        {
-          if (atkconfig("display_errors")||atkconfig("debug")>0)
-          {
-            // only show errors in debugmode, or when display_errors is
-            // true.
-            $res.='<br><div style="font-family: monospace; font-size: 11px; color: #FF0000" align="left">error: '.implode("<br>\nerror: ",$g_error_msg).'</div>';
-          }
-          // also send a mail report with errormessages..
-          // (even when display of errors is turned off)
-          mailreport();
-        }
+        $res.=$this->getErrorMessages();
         $res.=$this->getDebugging();
       }
 
@@ -161,14 +148,35 @@
         echo $res;
       }
     }
-    
+
+    function getErrorMessages()
+    {
+      global $g_error_msg;
+      if (count($g_error_msg)>0)
+      {
+        if (atkconfig("display_errors")||atkconfig("debug")>0)
+        {
+          // only show errors in debugmode, or when display_errors is
+          // true.
+          $res='<br /><div style="font-family: monospace; font-size: 11px; color: #FF0000" align="left">error: '.implode("<br />\nerror: ",$g_error_msg).'</div>';
+        }
+        // also send a mail report with errormessages..
+        // (even when display of errors is turned off)
+        mailreport();
+      }
+      return $res;
+    }
+
     function getDebugging()
     {
       global $g_debug_msg;
       if (atkconfig("debug")>0)
       {
-        $output = '<br><div style="font-family: monospace; font-size: 11px;" align="left" id="atk_debugging_div">'.implode("<br>\n ",$g_debug_msg).'</div>';
-      return $output;
+        $output = '<br /><div id="atk_js_debugdiv"></div>
+                        <div style="font-family: monospace; font-size: 11px;" align="left" id="atk_debugging_div">'.
+                        implode("<br />\n ",$g_debug_msg).
+                        '</div>';
+        return $output;
       }
       return "";
     }

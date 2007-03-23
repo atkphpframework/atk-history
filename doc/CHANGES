@@ -6,6 +6,9 @@ Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 
 Changed in ATK 5.7 PHOENIX
 ------------------
++ Added ATK.Tools javascript object with debug and dump_var methods. 
+  Uses Firebug extension console if possible otherwise logs to div 
+  above general debugging. [Boy]
 * atkDurationAttribute now shows 'hour' instead of 'hours' translation
   in '1 hour' option, likewise with minutes. [Boy]
 * If atkController fails to retreive the specified node, it won't die
@@ -16,6 +19,9 @@ Changed in ATK 5.7 PHOENIX
   atkDurationAttribute. [Boy]
 * Made it possible to specify a custom table for the atkEventLog. [Yury]
 * Fixed INSERT of time attribute value. [Yury]
+* Made it possible to search on values of the atkShuttleRelation
+  while adding/editting. [Boy]
+* If debugging is on, ATK will set document.__debugging to true. [Boy]
 
 Changed in ATK 5.7
 ------------------
