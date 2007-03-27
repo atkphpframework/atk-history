@@ -22,6 +22,8 @@ Changed in ATK 5.7 PHOENIX
 * Made it possible to search on values of the atkShuttleRelation
   while adding/editting. [Boy]
 * If debugging is on, ATK will set document.__debugging to true. [Boy]
+* atkManyToOneRelation: Populate record when destination has an 
+  atkOneToOneRelation, for use in descriptor. [Yury]
 
 Changed in ATK 5.7
 ------------------
