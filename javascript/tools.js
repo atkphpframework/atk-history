@@ -1,11 +1,11 @@
-if (!ATK) {  var ATK = {}; }
+if (!window.ATK) {  var ATK = {}; }
 
-ATK.Tools = {
+window.ATK.Tools = {
   debug: function(txt)
   {
     if (document.__debugging)
     {
-      if (console) console.log(txt);
+      if (window.console) console.log(txt);
       else $('atk_js_debugdiv').innerHTML+=txt+'<br />';
     }
   },
@@ -14,7 +14,7 @@ ATK.Tools = {
   {
     if (document.__debugging)
     {
-      if (console) console.log(txt+'= ',dumpvar);
+      if (window.console) console.log(txt+'= ',dumpvar);
       else $('atk_js_debugdiv').innerHTML+=txt+'= '+dumpvar.toString()+'<br />';
     }
   }
