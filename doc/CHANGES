@@ -24,6 +24,8 @@ Changed in ATK 5.7 PHOENIX
 * If debugging is on, ATK will set document.__debugging to true. [Boy]
 * atkManyToOneRelation: Populate record when destination has an 
   atkOneToOneRelation, for use in descriptor. [Yury]
+* atkOneToOneRelation: Update foreign key in source node when
+  updating. [Boy]
 
 Changed in ATK 5.7
 ------------------
