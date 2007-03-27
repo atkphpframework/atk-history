@@ -26,6 +26,9 @@ Changed in ATK 5.7 PHOENIX
   atkOneToOneRelation, for use in descriptor. [Yury]
 * atkOneToOneRelation: Update foreign key in source node when
   updating. [Boy]
+* atkImportHandler: Check the primary key wether value needs to be
+  quoted on import.[Boy]
+* atkImportHandler: Autocommit after every update and/or add.[Boy]
 
 Changed in ATK 5.7
 ------------------

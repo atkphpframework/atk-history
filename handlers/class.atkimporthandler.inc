@@ -1040,7 +1040,10 @@
 
       if (method_exists($attr, "createDestination") && $attr->createDestination() && !in_array($attributename,$allFields))
       {
-        $relationselect = $attr->m_destInstance->selectDb($attr->m_destInstance->m_table.".".$attr->m_destInstance->primaryKeyField().' = \''.escapeSQL($value)."'");
+        $primkey = $attr->m_destInstance->getAttribute($attr->m_destInstance->primaryKeyField());
+        $quote = ($primkey->hasFlag(AF_NO_QUOTES)?"":"'");
+        $relationselect = $attr->m_destInstance->selectDb($attr->m_destInstance->m_table.".".$primkey->fieldName().' = '.
+        $quote.$primkey->value2db(array($primkey->fieldName()=>$value)).$quote);
         if (count($relationselect)==0 || count($relationselect)>1)
         {
           $searchresults = $attr->m_destInstance->searchDb($value);
@@ -1120,8 +1123,13 @@
             foreach ($validrec['atkerror'] as $atkerror)
             {
               $importerrors[$counter][] = array("msg"=>"Fouten gedetecteerd op rij $counter: ",
-              "spec"=>$atkerror['msg']);
+                                                "spec"=>$atkerror['msg']);
             }
+          }
+          else
+          {
+            $db = &atkGetDb();
+            $db->commit();
           }
           unset($validrec);
         }
