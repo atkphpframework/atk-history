@@ -462,14 +462,17 @@
 
     function populateRelations(&$record)
     {
-      $fields = $this->m_destInstance->descriptorFields();
-      foreach ($fields as $field)
+      if ($this->createDestination())
       {
-        $p_attr = &$this->m_destInstance->getAttribute($field);
-        if(is_a($p_attr,"atkonetoonerelation"))
+        $fields = $this->m_destInstance->descriptorFields();
+        foreach ($fields as $field)
         {
-          $this->populate($record);
-          break;
+          $p_attr = &$this->m_destInstance->getAttribute($field);
+          if(is_a($p_attr,"atkonetoonerelation"))
+          {
+            $this->populate($record);
+            break;
+          }
         }
       }
     }
