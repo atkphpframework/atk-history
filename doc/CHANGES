@@ -29,6 +29,7 @@ Changed in ATK 5.7 PHOENIX
 * atkImportHandler: Check the primary key wether value needs to be
   quoted on import.[Boy]
 * atkImportHandler: Autocommit after every update and/or add.[Boy]
+* Notify listeners on delete. [Yury]
 
 Changed in ATK 5.7
 ------------------
