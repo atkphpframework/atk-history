@@ -16,7 +16,7 @@
       return $this;
     }
 
-    public function replaceMultiple(Array $searches,Array $replaces)
+    public function replaceMultiple($searches,$replaces)
     {
       foreach ($searches as $key=>$search)
       {
