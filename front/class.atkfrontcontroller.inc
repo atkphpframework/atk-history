@@ -188,7 +188,7 @@ class atkFrontController
    * render_partial or render_content is called for the
    * root controller).
    */
-  function addHeader($header)
+  protected function addHeader($header)
   {
     $this->m_headers[] = $header;
   }
@@ -200,7 +200,7 @@ class atkFrontController
    *
    * @param string $contentType
    */
-  function setContentType($contentType)
+  protected function setContentType($contentType)
   {
     $this->m_contentType = $contentType;
   }
@@ -216,10 +216,15 @@ class atkFrontController
   {
     try
     {
-      $method = $this->getRequestMethod();
-      if (!is_object($method))
-        throw new Exception("Invalid action {$this->m_action} for controller {$this->m_module}/{$this->m_name}! Method returned: '$method'");
-
+      try 
+      {
+        $method = $this->getActionMethod();
+      }
+      catch (Exception $ex)
+      {
+        throw new Exception("Invalid action {$this->m_action} for controller {$this->m_module}/{$this->m_name}! (".$ex->getMessage().")");
+      }
+      
       $this->setTemplate($this->m_action);
 
       $this->m_request = new atkDataHolder($request);
@@ -269,15 +274,16 @@ class atkFrontController
    *
    * @return ReflectionMethod The method.
    */
-  public function getRequestMethod()
+  public function getActionMethod()
   {
-    $methodname = str_replace('_','',$this->m_action).'Action';
-    if(!method_exists($this, $methodname))
-      return "Method does not exist: $methodname";
+    $methodName = str_replace('_', '', $this->m_action).'Action';
+    if (!method_exists($this, $methodName))
+      throw new Exception("Action method not found!");
 
-    $method = new ReflectionMethod(get_class($this), $methodname);
-    if (!$method->isPublic() || $method->getDeclaringClass()->getName() == 'atkfrontcontroller')
-      return "Method is not public or declaring class is not atkFrontController";
+    $method = new ReflectionMethod(get_class($this), $methodName);
+    if (!$method->isPublic())
+      throw new Exception("Action method is not public!");
+      
     return $method;
   }
 
@@ -330,8 +336,10 @@ class atkFrontController
     /* @var $smarty Smarty */
     $smarty = atkinstance("atk.ui.atksmarty");
     $this->m_plugins = $smarty->_plugins;
-    $smarty->register_function('partial', array($this, '__smarty_function_partial'), false);
-    $smarty->register_function('form_vars', array($this, '__smarty_function_form_vars'), false);
+    $smarty->register_function('partial', array($this, '__smarty_function_partial'), false);    
+    $smarty->register_function('url', array($this, '__smarty_function_url'), false);
+    $smarty->register_function('form_vars', array($this, '__smarty_function_form_vars'), false);    
+    $smarty->register_block('link', array($this, '__smarty_block_link'), false);
   }
 
   /**
@@ -442,6 +450,44 @@ class atkFrontController
       return $this->getParent()->uri($controller, $action);
     }
   }
+  
+  /**
+   * Build url or return the current url.
+   *
+   * @param string $controller controller name (uses current if empty)
+   * @param string $action action name (uses current if empty and controller isn't changed, uses index if empty and other controller)
+   * @param array $vars request vars
+   * @return string url
+   */
+  public function url($controller=NULL, $action=NULL, $vars=array())
+  {
+    $uri = $this->uri($controller, $action);
+    $vars['uri'] = $uri;
+    $url = $_SERVER['PHP_SELF'].'?'.http_build_query($vars);
+    return $url;
+  }  
+  
+  /**
+   * Smarty wrapper function for the url function.
+   *
+   * @param array $params parameters
+   * @param Smarty $smarty smarty reference
+   * @return string url
+   */
+  public function __smarty_function_url($params, $smarty)
+  {
+    $controller = isset($params['controller']) ? $params['controller'] : NULL;
+    $action = isset($params['action']) ? $params['action'] : NULL;
+    $vars = isset($params['vars']) ? $params['vars'] : array();
+    
+    unset($params['controller']);
+    unset($params['action']);
+    unset($params['vars']);
+
+    $vars = array_merge($vars, $params);
+    
+    return $this->url($controller, $action, $vars);
+  }  
 
   /**
    * Smarty function for converting the controller, action etc.
@@ -473,6 +519,24 @@ class atkFrontController
 
     return $result;
   }
+  
+  /**
+   * Smarty wrapper function for the url function.
+   *
+   * @param array $params parameters
+   * @param string $content content between link tags
+   * @param Smarty $smarty smarty reference
+   * @param boolean $repeat true first time
+   */
+  public function __smarty_block_link($params, $content, $smarty, &$repeat)
+  {
+     if (!$repeat)
+    {
+      return '<a href="'.$this->__smarty_function_url($params, $smarty).'">'.$content.'</a>';
+    }
+    
+    return NULL;
+  }  
 
   /**
    * Smarty partial function, render partial template.
@@ -560,40 +624,105 @@ class atkFrontController
     if ($vars == NULL)
       $vars = $this->getVars();
 
-    if (!$partial && file_exists(moduleDir($this->m_module)."script/{$this->m_name}.js"))
+    if (!$partial && file_exists(moduleDir($this->m_module)."scripts/{$this->m_name}.js"))
     {
-      $this->registerScriptFile(moduleDir($this->m_module)."script/{$this->m_name}.js");
+      $this->registerScriptFile(moduleDir($this->m_module)."scripts/{$this->m_name}.js");
     }
-
+    
+    if (!$partial && file_exists(moduleDir($this->m_module)."styles/{$this->m_name}.js"))
+    {
+      $this->registerStyleSheet(moduleDir($this->m_module)."styles/{$this->m_name}.js");
+    }
+    
     $this->m_partial = $partial;
     $this->m_result = $this->_render($template, $vars, $partial);
     $this->m_rendered = true;
   }
 
+  /**
+   * Register stylesheet of the given media type.
+   *
+   * @param string $file stylesheet filename
+   * @param string $media media type (defaults to 'all')
+   */
   protected function registerStyleSheet($file,$media='all')
   {
-    return atkPage::register_style($file,$media);
+    atkPage::register_style($file,$media);
   }
 
+  /**
+   * Register stylesheet code.
+   *
+   * @param string $code stylesheet code
+   */
   protected function registerStyleCode($code)
   {
-    return atkPage::register_stylecode($code);
+    atkPage::register_stylecode($code);
   }
+
+  /**
+   * Register script file.
+   *
+   * @param string $file script filename
+   */
+  protected function registerScriptFile($file)
+  {
+    atkPage::register_script($file);
+  }
+  
+  /**
+   * Register JavaScript code.
+   *
+   * @param string $code
+   */
   protected function registerScriptCode($code)
   {
-    return atkPage::register_scriptcode($code);
+    atkPage::register_scriptcode($code);
   }
 
-  protected function registerScriptFile($file,$before='')
+  /**
+   * Returns the template path for the given template.
+   *
+   * @param string $template  template name
+   * @param string $directory the base template directory
+   * 
+   * @return string template path
+   */
+  protected function getTemplatePath($template, $directory='templates')
   {
-    return atkPage::register_script($file,$before='');
+    if (file_exists(atkconfig('atkroot')."$directory/$template"))
+    {
+      return atkconfig('atkroot')."$directory/$template";
+    }
+    else if (file_exists(moduleDir($this->m_module)."$directory/$template"))
+    {
+      return moduleDir($this->m_module)."$directory/$template";
+    }
+    else if (file_exists(moduleDir($this->m_module)."skel/$directory/$template"))
+    {
+      return moduleDir($this->m_module)."skel/$directory/$template";
+    }
+    else 
+    {
+      return null;
+    }
   }
-
-  protected function getTemplatePath($template,$module='atk')
+  
+  /**
+   * Returns the layout template path for this controller.
+   */
+  protected function getLayoutTemplatePath()
   {
-    atkdebug("getTemplatePath($template,$module)");
-    $theme = atkinstance('atk.ui.atktheme');
-    return $theme->tplPath(basename($template),$module);
+    $path = $this->getTemplatePath($this->m_module.'/'.$this->m_name.'.tpl', 'layouts');    
+    if ($path != null) return $path;
+    
+    $path = $this->getTemplatePath($this->m_module.'/root.tpl', 'layouts');
+    if ($path != null) return $path;
+    
+    $path = $this->getTemplatePath('root.tpl', 'layouts');
+    if ($path != null) return $path;    
+    
+    return $null;
   }
 
   /**
@@ -627,7 +756,16 @@ class atkFrontController
     $smarty->caching = false;
     $oldForceCompile = $smarty->force_compile;
     $smarty->force_compile = true;
-    $result = $smarty->fetch($this->getTemplatePath($template,$this->m_module));
+    $result = $smarty->fetch($this->getTemplatePath($template));
+    
+    $layoutTemplatePath = $this->getLayoutTemplatePath();
+    if ($this->isRoot() && !$partial && $layoutTemplatePath != null)
+    {
+      $vars['content_for_layout'] = $result;
+      $smarty->assign($vars);
+      $result = $smarty->fetch($layoutTemplatePath);
+    }
+    
     $smarty->force_compile = $oldForceCompile;
     $smarty->caching = $oldCaching;
     $smarty->assign($oldVars);
@@ -642,4 +780,3 @@ class atkFrontController
     return (!$this->isRoot() ? $this->getParent()->__toString().'/' : '').$this->getName();
   }
 }
-?>
