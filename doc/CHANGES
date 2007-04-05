@@ -9,6 +9,9 @@ Changed in ATK 5.7 PHOENIX
 + Added ATK.Tools javascript object with debug and dump_var methods. 
   Uses Firebug extension console if possible otherwise logs to div 
   above general debugging. [Boy]
++ Added override-function for day-display format, instead of the default 
+  hardcoded "weekdayname weekdaynumber" format. Supports any dayformat-
+  combination [Sandy, Jeroen]
 * atkDurationAttribute now shows 'hour' instead of 'hours' translation
   in '1 hour' option, likewise with minutes. [Boy]
 * If atkController fails to retreive the specified node, it won't die
