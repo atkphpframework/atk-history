@@ -25,7 +25,7 @@ atkimport('atk.utils.atkdataholder');
  * @author Martin Roest <martin@ibuildings.nl>
  * @author Peter C. Verhage <peter@ibuildings.nl>
  */
-class atkFrontController
+class atkFrontController implements ArrayAccess
 {
   protected $m_module;
   protected $m_name;
@@ -185,7 +185,7 @@ class atkFrontController
 
   /**
    * Add response header. (Will only be outputted when
-   * render_partial or render_content is called for the
+   * renderPartial or renderContent is called for the
    * root controller).
    */
   protected function addHeader($header)
@@ -195,7 +195,7 @@ class atkFrontController
 
   /**
    * Sets the content type (Will only be outputted when
-   * render_partial or render_content is called for the
+   * renderPartial or renderContent is called for the
    * root controller).
    *
    * @param string $contentType
@@ -312,7 +312,7 @@ class atkFrontController
     if ($this->isRoot())
     {
       atkerror($exception->__toString());
-      $this->render_content('An unknown error occured.');
+      $this->renderContent('An unknown error occured.');
     }
     else
     {
@@ -413,6 +413,49 @@ class atkFrontController
     return $this->m_vars[$name];
   }
 
+  /**
+   * Checks if a certain offset exists.
+   * 
+   * @param mixed $offset offset
+   * @return bool offset exists?
+   */
+  public function offsetExists($offset)
+  {
+    return isset($this->m_vars[$offset]);
+  }
+  
+  /**
+   * Returns the value at the given offset.
+   *
+   * @param mixed $offset
+   * @return mixed value
+   */
+  public function offsetGet($offset)
+  {
+    return $this->m_vars[$offset];
+  }
+  
+  /**
+   * Sets the given offset with the given value
+   *
+   * @param mixed $offset offset
+   * @param mixed $value  value
+   */  
+  public function offsetSet($offset, $value)
+  {
+    $this->m_vars[$offset] = $value;
+  }
+  
+  /**
+   * Unsets the given offset.
+   *
+   * @param mixed $offset offset
+   */
+  public function offsetUnset($offset)
+  {
+    unset($this->m_vars[$offset]);
+  }
+  
   /**
    * Build the URI for the given controller and action.
    *
@@ -584,7 +627,7 @@ class atkFrontController
    * @param string $template template name
    * @param array $vars template variables
    */
-  protected function render_partial($template=NULL, $vars=NULL)
+  protected function renderPartial($template=NULL, $vars=NULL)
   {
     $this->render($template, $vars, true);
   }
@@ -597,7 +640,7 @@ class atkFrontController
    *
    * @param string $content content to render
    */
-  protected function render_content($content)
+  protected function renderContent($content)
   {
     $this->m_partial = true;
     $this->m_result = $content;
