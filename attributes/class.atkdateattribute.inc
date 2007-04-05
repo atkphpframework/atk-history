@@ -50,6 +50,7 @@
     var $m_date_format_view;
     var $m_onchangecode = array();
     var $m_maxyears = 25;
+    var $m_daydisplayformat = null;
 
     /**
      * Format date according to a format string
@@ -514,37 +515,40 @@
           $weekdayFormat = $str_format[$i];
         }
 
-        /* weekday format */
-        elseif ($str_format[$i] == 'D' || $str_format[$i] == 'l')
-        {
-          $weekdayFormat = $str_format[$i];
-        }
-
-        /* weekday format */
-        elseif ($str_format[$i] == 'D' || $str_format[$i] == 'l')
-        {
-          $weekdayFormat = $str_format[$i];
-        }
-
         /* day input box */
         elseif ($str_format[$i] == "j" || $str_format[$i] == "d")
-        {
+        {          
           $this->registerKeyListener($fieldname.'[day]', KB_CTRLCURSOR|KB_LEFTRIGHT);
           $result .= '<select id="'.$fieldname.'[day]" name="'.$fieldname.'[day]" class="atkdateattribute" onChange="'.$str_script.'">';
           if (!$obligatory || $this->hasflag(AF_DATE_EMPTYFIELD))
             $result .= '<option value="0"'.($current === NULL ? ' selected' : '').'></option>';
+            
           if (!$pda)
           {
             for ($j = $current["d_min"]; $j <= $current["d_max"]; $j++)
             {
               $tmp_date = adodb_getdate(adodb_mktime(0,0,0, $current["mon"], $j, $current["year"]));
+              
+              if($this->m_daydisplayformat !== null)
+              {
+                $displayformat = $this->m_daydisplayformat;
+              }
+              elseif(!empty($weekdayFormat))
+              {
+                $displayformat = "$weekdayFormat {$str_format[$i]}";
+              }
+              else 
+              {
+                $displayformat = $str_format[$i];
+              }
+              
               if (($current['year']!="") && ($current['mon']!=""))
               {
-                $str_day = $this->formatDate($tmp_date, (empty($weekdayFormat) ? $str_format[$i] : "$weekdayFormat {$str_format[$i]}"), !$this->hasFlag(AF_DATE_EDIT_NO_DAY));
+                $str_day = $this->formatDate($tmp_date, $displayformat, !$this->hasFlag(AF_DATE_EDIT_NO_DAY));
               }
               else
               {
-                $str_day = $this->formatDate($tmp_date, (empty($weekdayFormat) ? $str_format[$i] : "$weekdayFormat {$str_format[$i]}"), 0);
+                $str_day = $this->formatDate($tmp_date, $displayformat, 0);
               }
               $result .= '<option value="'.$j.'" '.($current !== NULL && $j == $current["mday"] ? "selected" : "").'>'.$str_day.'</option>';
             }
@@ -608,6 +612,17 @@
       /* return result */
       return $result;
     }
+    
+    /**
+     * Override for day-display format, instead of the default hardcoded "weekdayname weekdaynumber" format
+     * Supports any dayformat-combination
+     *
+     * @param string $format
+     */
+    function setDayDisplayFormat($format)
+    {
+      $this->m_daydisplayformat = $format;
+    }    
 
     /**
     * Registers the javascripts (and 1 stylesheet) for the atkDateAttribute
