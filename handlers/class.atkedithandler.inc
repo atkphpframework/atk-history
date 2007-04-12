@@ -78,6 +78,7 @@
       if (is_array($record))
         $record = array_merge($record, $fetchedRecord);
 
+      $this->notify("edit", $record);
       if ($this->m_node->hasFlag(NF_LOCK))
       {
         if ($this->m_node->m_lock->lock($this->m_node->primaryKey($record), $this->m_node->m_table))
@@ -154,6 +155,7 @@
 
         $this->addRenderBoxVar("title", $node->actionTitle('edit', $record));
         $this->addRenderBoxVar("content", $output);
+
         return $ui->renderBox($this->m_renderBoxVars);
       }
       else
