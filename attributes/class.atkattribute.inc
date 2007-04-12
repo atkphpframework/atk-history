@@ -2248,8 +2248,13 @@
      */
     function escapeSQL($value, $wildcards=false)
     {
-      $db = &$this->getDb();
-      return $db->escapeSQL($value, $wildcards);
+      if(!$this->hasFlag(AF_NO_QUOTES))
+      {
+        $db = &$this->getDb();
+        return $db->escapeSQL($value, $wildcards);
+      }
+      
+      return $value;
     }
 
     /**
