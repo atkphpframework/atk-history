@@ -648,33 +648,99 @@
     /**
      * Generate a searchcondition that checks whether $value matches $field exactly.
      */
-    function exactCondition($field, $value)
+    function exactCondition($field, $value, $case_sensitive=false)
     {
-      if($value[0]=='!')
+      if(!$case_sensitive)
       {
-        return "UPPER(".$field.")!=UPPER('".substr($value,1,strlen($value))."')";
+        if($value[0]=='!')
+        {
+          return "UPPER(".$field.")!=UPPER('".substr($value,1,strlen($value))."')";
+        }
+        else
+        {
+          return "UPPER(".$field.")=UPPER('".$value."')";
+        }
       }
       else
       {
-        return "UPPER(".$field.")=UPPER('".$value."')";
+        if($value[0]=='!')
+        {
+          return $field."!='".substr($value,1,strlen($value))."'";
+        }
+        else
+        {
+          return $field."='".$value."'";
+        }
       }
     }
 
     /**
+     * Generate a searchcondition that checks whether $field contains $value - alias for substring - todo:must be removed .
+     */
+    function containsCondition($field, $value, $case_sensitive=false)
+    {
+      return $this->substringCondition($field, $value, $case_sensitive=false);
+    }
+    
+    
+    /**
      * Generate a searchcondition that checks whether $field contains $value .
      */
-    function substringCondition($field, $value)
+    function substringCondition($field, $value, $case_sensitive=false)
     {
-      if($value[0]=='!')
+      if(!$case_sensitive)
       {
-        return "UPPER(".$field.") NOT LIKE UPPER('%".substr($value,1,strlen($value))."%')";
+        if($value[0]=='!')
+        {
+          return "UPPER(".$field.") NOT LIKE UPPER('%".substr($value,1,strlen($value))."%')";
+        }
+        else
+        {
+          return "UPPER(".$field.") LIKE UPPER('%".$value."%')";
+        }
       }
       else
       {
-        return "UPPER(".$field.") LIKE UPPER('%".$value."%')";
+        if($value[0]=='!')
+        {
+          return $field." NOT LIKE '%".substr($value,1,strlen($value))."%'";
+        }
+        else
+        {
+          return $field." LIKE '%".$value."%'";
+        }
       }
     }
 
+    /**
+     * Generate a searchcondition that checks whether $field startwith $value .
+     */
+    function startswithCondition($field, $value, $case_sensitive=false)
+    {
+      if(!$case_sensitive)
+      {
+        if($value[0]=='!')
+        {
+          return "UPPER(".$field.") NOT LIKE UPPER('".substr($value,1,strlen($value))."%')";
+        }
+        else
+        {
+          return "UPPER(".$field.") LIKE UPPER('".$value."%')";
+        }
+      }
+      else 
+      {
+        if($value[0]=='!')
+        {
+          return $field." NOT LIKE '".substr($value,1,strlen($value))."%'";
+        }
+        else
+        {
+          return $field." LIKE '".$value."%'";
+        }
+      }
+    }
+    
     /**
      * Generate a searchcondition that accepts '*' as wildcard character.
      */

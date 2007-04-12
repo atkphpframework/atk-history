@@ -704,7 +704,7 @@
     {
     	$db = &$this->getDb();
 
-    	if ($searchmode == 'substring')
+    	if ($searchmode == 'substring' || $searchmode == 'contains')
     	{
     	  if ($value != NULL)
     	  {

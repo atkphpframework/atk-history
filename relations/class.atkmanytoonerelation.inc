@@ -952,14 +952,15 @@
      */
     function searchCondition(&$query, $table, $value, $searchmode, $fieldaliasprefix='')
     {
-      $searchcondition = $this->getSearchCondition($query, $table, $value, $searchmode, $fieldaliasprefix);
+      $searchcondition = $this->getSearchCondition($query, $table, $value, $searchmode, false, $fieldaliasprefix);
+      
       if (!empty($searchcondition))
         $query->addSearchCondition($searchcondition);
     }
 
-    function getSearchCondition(&$query, $table, $value, $searchmode, $fieldaliasprefix)
+    function getSearchCondition(&$query, $table, $value, $searchmode, $case_sensitive=false, $fieldaliasprefix='')
     {
-      if (!$this->createDestination()) return;
+      if (!$this->createDestination() || empty($value)) return;
 
     	if (!$this->hasFlag(AF_LARGE) && !$this->hasFlag(AF_RELATION_AUTOCOMPLETE))
     	{
@@ -991,7 +992,7 @@
     			  }
     			  elseif ($value[0] != "")
             {
-              return $query->exactCondition($table.".".$this->fieldName(),$this->escapeSQL($value[0]));
+              return $query->exactCondition($table.".".$this->fieldName(),$this->escapeSQL($value[0]), $case_sensitive);
             }
           }
           else // search for more values using IN()
@@ -1001,16 +1002,16 @@
         }
         else
         {
-          $cond= $query->exactCondition($table.".".$this->fieldName(),$this->escapeSQL($value));
-          atkdebug($cond, "condition");
+          $cond= $query->exactCondition($table.".".$this->fieldName(),$this->escapeSQL($value), $case_sensitive);
+          //atkdebug($cond, "condition");
           return $cond;
         }
       }
       else // AF_LARGE || AF_RELATION_AUTOCOMPLETE
       {
-        // ask the destination node for it's search condition
+        // ask the destination node for its search condition
         $alias = $fieldaliasprefix . $this->fieldName();
-        return $this->m_destInstance->getSearchCondition($query, $alias, $fieldaliasprefix, $value, $searchmode);
+        return $this->m_destInstance->getSearchCondition($query, $alias, $fieldaliasprefix, $value, $searchmode, $case_sensitive);
       }
     }
 
@@ -1751,55 +1752,19 @@
     function createSearchFilter($searchvalue)
     {
       if($this->m_autocomplete_searchfields=="")
-        $searchfields = $this->m_destInstance->descriptorFields();
+        $searchfields = $this->m_destInstance->descriptorAttributes();
       else
         $searchfields = $this->m_autocomplete_searchfields;
 
       $parts = preg_split('/\s+/', $searchvalue);
+      
+      $db = &$this->getDb();
+      $query = &$db->createQuery();
 
       $mainFilter = array();
       foreach ($parts as $part)
       {
-        $filter = array();
-        foreach($searchfields as $attribname)
-        {
-          if (strstr($attribname, '.')) $table = '';
-          else $table = $this->m_destInstance->m_table.".";
-
-          if(!$this->m_autocomplete_search_case_sensitive)
-            $tmp = "LOWER(".$table.$attribname.")";
-          else
-            $tmp = $table.$attribname;
-
-          switch($this->m_autocomplete_searchmode)
-          {
-            case "exact":
-              if(!$this->m_autocomplete_search_case_sensitive)
-                $tmp.= " = LOWER('{$part}')";
-              else
-                $tmp.= " = '{$part}'";
-              break;
-            case "startswith":
-              if(!$this->m_autocomplete_search_case_sensitive)
-                $tmp.= " LIKE LOWER('{$part}%')";
-              else
-                $tmp.= " LIKE '{$part}%'";
-              break;
-            case "contains":
-              if(!$this->m_autocomplete_search_case_sensitive)
-                $tmp.= " LIKE LOWER('%{$part}%')";
-              else
-                $tmp.= " LIKE '%{$part}%'";
-              break;
-            default:
-              $tmp.= " = LOWER('{$part}')";
-          }
-
-          $filter[] = $tmp;
-        }
-
-        if (count($filter) > 0)
-          $mainFilter[] = "(".implode(") OR (", $filter).")";
+        $mainFilter[] = $this->m_destInstance->getSearchConditionByFields($searchfields, $query, "", "", $part, $this->m_autocomplete_searchmode, $this->m_autocomplete_search_case_sensitive);        
       }
 
       if (count($mainFilter) > 0)

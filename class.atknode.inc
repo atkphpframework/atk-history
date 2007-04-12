@@ -2950,6 +2950,47 @@
     }
 
     /**
+     * Retrieve the detail list of attributes that are used in the descriptor
+     * definition.
+     * @return array The names of the attributes forming the descriptor.
+     */
+    function descriptorAttributes()
+    {
+      $fields = array();
+
+      // See if node has a custom descriptor definition.
+      if ($this->m_descTemplate != NULL || method_exists($this,"descriptor_def"))
+      {
+        if ($this->m_descTemplate != NULL)
+        $descriptordef = $this->m_descTemplate;
+        else $descriptordef = $this->descriptor_def();
+
+        // parse fields from descriptordef
+        atkimport("atk.utils.atkstringparser");
+        $parser = new atkStringParser($descriptordef);
+        $fields = $parser->getFields();
+
+        for ($i=0, $_i=count($fields);$i<$_i; $i++)
+        {
+          $elems = explode(".", $fields[$i]);
+          if (count($elems)>2)
+          {
+            // dot found. attribute is the first item.
+            $fields[$i] = $elems[0].".".$elems[1];
+          }
+        }
+        $fields = array_unique($fields);
+      }
+      else
+      {
+        // default descriptor.. (default is first attribute of a node)
+        $keys = array_keys($this->m_attribList);
+        $fields[0]=$keys[0];
+      }
+      return $fields;
+    }
+    
+    /**
      * Retrieve the list of attributes that are used in the descriptor
      * definition.
      * @return array The names of the attributes forming the descriptor.
@@ -3855,9 +3896,10 @@
      * @param unknown_type $alias
      * @param unknown_type $value
      * @param unknown_type $searchmode
+     * @param unknown_type $case_sensitive
      * @return unknown
      */
-    function getSearchCondition(&$query, $table, $alias, $value, $searchmode)
+    function getSearchCondition(&$query, $table, $alias, $value, $searchmode, $case_sensitive=false)
     {
       $usefieldalias = false;
 
@@ -3891,7 +3933,9 @@
             $attribsearchmode = $attribsearchmode[$p_attrib->m_name];
           }
           atkdebug("getSearchCondition: $table - $fieldaliasprefix");
-          $searchCondition = $p_attrib->getSearchCondition($query,$table,$value,$searchmode,$fieldaliasprefix);
+          
+          $searchCondition = $p_attrib->getSearchCondition($query,$table,$value,$searchmode,$case_sensitive,$fieldaliasprefix);
+          
           if ($searchCondition != "")
             $searchConditions[] = $searchCondition;
         }
@@ -3913,6 +3957,75 @@
       }
     }
 
+    function getSearchConditionByFields($attribs='', &$query, $table, $alias, $value, $searchmode, $case_sensitive=false)
+    {
+      if(empty($attribs)) $attribs = $this->descriptorFields();
+      
+      $usefieldalias = false;
+
+      if ($alias=="")
+      {
+        $alias = $this->m_table;
+      }
+      else
+      {
+        $usefieldalias = true;
+      }
+
+      $fieldaliasprefix = '';
+      if ($usefieldalias) $fieldaliasprefix = $alias."_AE_";
+      $searchConditions = array();
+
+      foreach($attribs as $field)
+      {
+        $searchCondition = '';
+        $elems = explode(".", $field);
+        if (count($elems)>1 ) //relation?
+        {
+          $p_attrib = &$this->getAttribute($elems[0]);
+          if(is_a($p_attrib,'atkrelation') && $p_attrib->createDestination())
+          {
+            $p_dest = &$p_attrib->m_destInstance->getAttribute($elems[1]);
+            $searchCondition = $p_dest->getSearchCondition($query, $elems[0], $value, $searchmode, $case_sensitive, $fieldaliasprefix);
+          }
+        }
+        else
+        {
+          $p_attrib = &$this->getAttribute($field);
+          if (!is_object($p_attrib)) continue;
+
+          // checking for the getSearchCondition for backwards compatibility
+          if (method_exists($p_attrib, "getSearchCondition"))
+          {
+            $attribsearchmode = $searchmode;
+            if (is_array($searchmode))
+            {
+              $attribsearchmode = $attribsearchmode[$p_attrib->m_name];
+            }
+            atkdebug("getSearchCondition: $table - $fieldaliasprefix");
+            $searchCondition = $p_attrib->getSearchCondition($query,$alias,$value,$searchmode, $case_sensitive, $fieldaliasprefix);
+          }
+          else
+          {
+            // if the attrib can't return it's searchcondition, we'll just add it to the query
+            // and hope for the best
+            $p_attrib->searchCondition($query,$alias,$value,$searchmode,$fieldaliasprefix);
+          }
+        }
+        if ($searchCondition != '')
+          $searchConditions[] = $searchCondition;
+      }
+
+      if (count($searchConditions))
+      {
+        return "(".implode(" OR ",$searchConditions).")";
+      }
+      else
+      {
+        return "";
+      }
+    }    
+    
     /**
      * Save a new record to the database.
      *

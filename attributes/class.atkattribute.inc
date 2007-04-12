@@ -1397,7 +1397,7 @@
      *                              of the supported modes, as returned by this
      *                              attribute's getSearchModes() method.
      */
-    function getSearchCondition(&$query, $table, $value, $searchmode)
+    function getSearchCondition(&$query, $table, $value, $searchmode, $case_sensitive=false)
     {
       // If we are accidentally mistaken for a relation and passed an array
       // we only take our own attribute value from the array
@@ -1408,7 +1408,7 @@
       $func = $searchmode."Condition";
       if (method_exists($query,$func) && $value)
       {
-        return $query->$func($table.".".$this->fieldName(),$this->escapeSQL($value));
+        return $query->$func($table.".".$this->fieldName(),$this->escapeSQL($value), $case_sensitive);
       }
       else
       {

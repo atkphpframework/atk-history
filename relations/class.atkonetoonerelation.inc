@@ -978,7 +978,7 @@
       $this->getSearchCondition($query, $table, $value, $searchmode);
     }
 
-    function getSearchCondition(&$query, $table, $value, $searchmode)
+    function getSearchCondition(&$query, $table, $value, $searchmode, $case_sensitive=false)
     {
       if (is_array($value))
       {
@@ -1005,7 +1005,7 @@
 
               // we need to left join the destination table into the query
               // (don't worry ATK won't add it when it's already there)
-              $query->addJoin($new_table,$new_table,($this->getJoinCondition()),false);
+              $query->addJoin($new_table,$new_table,($this->getJoinCondition($query,$new_table)),false);
             }
             $p_attrib->searchCondition($query,$new_table,$val,$searchmode);
           }
@@ -1017,7 +1017,7 @@
             $p_attrib = &$this->m_ownerInstance->m_attribList[$key];
             if (is_object($p_attrib))
             {
-              $p_attrib->searchCondition($query,$p_attrib->getTable($key),$val,$searchmode);
+              $p_attrib->searchCondition($query,$p_attrib->getTable($key),$val,$searchmode, $case_sensitive);
             }
             else atkdebug("Field $key was not found in this relation (this is very weird)");
           }
@@ -1031,6 +1031,8 @@
         if ($this->createDestination())
         {
           $descfields = $this->m_destInstance->descriptorFields();
+          $searchConditions = array();
+          
           foreach ($descfields as $key)
           {
             $p_attrib = &$this->m_destInstance->m_attribList[$key];
@@ -1048,11 +1050,24 @@
 
                 // we need to left join the destination table into the query
                 // (don't worry ATK won't add it when it's already there)
-                $query->addJoin($new_table,$new_table,($this->getJoinCondition()),false);
+                $query->addJoin($new_table,$new_table,($this->getJoinCondition($query,$table)),false);
               }
-              $p_attrib->searchCondition($query,$new_table,$value,$searchmode);
+              
+              $searchCondition = $p_attrib->getSearchCondition($query,$new_table,$value,$searchmode,$case_sensitive);
+              
+              if ($searchCondition != "")
+                $searchConditions[] = $searchCondition;
             }
           }
+          
+          if (count($searchConditions))
+          {
+            return "(".implode(" OR ",$searchConditions).")";
+          }
+          else
+          {
+            return "";
+          }          
         }
       }
     }
@@ -1064,7 +1079,10 @@
      */
     function getJoinCondition(&$query, $tablename="",$fieldalias="")
     {
-      $condition = $this->m_ownerInstance->m_table . "." . $this->fieldName();
+      if ($tablename!="") $realtablename=$tablename;
+      else $realtablename = $this->m_ownerInstance->m_table;
+      
+      $condition = $realtablename . "." . $this->fieldName();
       $condition .= "=";
       $condition .= $this->m_destInstance->m_table . "." . $this->m_destInstance->primaryKeyField();
       return $condition;
