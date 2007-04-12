@@ -689,7 +689,7 @@
      */
     function integrateAttribute($attr)
     {
-      return in_array(get_class($attr),array("atkonetoonerelation","atksecurerelation")) && $attr->hasFlag(AF_ONETOONE_INTEGRATE);
+      return in_array(strtolower(get_class($attr)),array("atkonetoonerelation","atksecurerelation")) && $attr->hasFlag(AF_ONETOONE_INTEGRATE);
     }
 
     /**
@@ -738,7 +738,7 @@
      */
     function hasRelationAttribute($attrname)
     {
-      return in_array(get_class($this->getUsableAttribute($attrname)),array("atkmanytoonerelation","atkmanytoonetreerelation"));
+      return in_array(strtolower(get_class($this->getUsableAttribute($attrname))),array("atkonetoonerelation","atkmanytoonerelation","atkmanytoonetreerelation"));      
     }
 
     /**
@@ -773,13 +773,16 @@
 
       if(!is_object($attr)) return;
 
+      $relation = $this->isRelationAttribute($attrname);
+
+      if ($relation) $record[$relation][$attrname] = $value;
+      else $record[$attrname] = $value;      
+      
       foreach($this->getIntegratedAttributes() as $intattr)
       {
         if(!isset($record[$intattr]))
           $record[$intattr] = array('mode'=>"add",'atkaction'=>"save");
       }
-
-      $record[$attrname] = $value;
     }
 
     /**
