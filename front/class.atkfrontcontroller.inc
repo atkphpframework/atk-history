@@ -60,7 +60,7 @@ class atkFrontController implements ArrayAccess
       $uri = substr($uri, 1);
 
     list($module, $name, $action) = explode('/', $uri);
-
+atkdebug("$module, $name, $action");
     if ($action == NULL)
       $action = 'index';
 
@@ -255,7 +255,10 @@ class atkFrontController implements ArrayAccess
         if (isset($this->m_contentType))
           header('Content-Type: '.$this->m_contentType);
 
-        echo $this->m_result;
+        $output = atkinstance('atk.ui.atkoutput');
+        $output->output($this->m_result);
+        $output->outputFlush();
+        
 
         die;
       }
@@ -690,7 +693,7 @@ class atkFrontController implements ArrayAccess
    */
   protected function registerStyleSheet($file,$media='all')
   {
-    atkPage::register_style($file,$media);
+    atkinstance('atk.ui.atkpage')->register_style($file,$media);
   }
 
   /**
@@ -700,7 +703,7 @@ class atkFrontController implements ArrayAccess
    */
   protected function registerStyleCode($code)
   {
-    atkPage::register_stylecode($code);
+    atkinstance('atk.ui.atkpage')->register_stylecode($code);
   }
 
   /**
@@ -710,7 +713,7 @@ class atkFrontController implements ArrayAccess
    */
   protected function registerScriptFile($file)
   {
-    atkPage::register_script($file);
+    atkinstance('atk.ui.atkpage')->register_script($file);
   }
   
   /**
@@ -720,7 +723,7 @@ class atkFrontController implements ArrayAccess
    */
   protected function registerScriptCode($code)
   {
-    atkPage::register_scriptcode($code);
+    atkinstance('atk.ui.atkpage')->register_scriptcode($code);
   }
 
   /**
