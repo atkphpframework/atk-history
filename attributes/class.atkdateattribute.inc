@@ -704,8 +704,16 @@
     {
     	$db = &$this->getDb();
 
-    	// exact mode
-    	if ($searchmode == 'exact' || $searchmode == 'substring')
+    	if ($searchmode == 'substring')
+    	{
+    	  if ($value != NULL)
+    	  {
+          $field = $db->func_datetochar($table.".".$this->fieldName());
+          $searchcondition = $query->substringCondition($field, $value);
+    	  }
+    	}    	
+    	
+    	elseif ($searchmode == 'exact')
     	{
         $field = $db->func_datetochar($table.".".$this->fieldName());
     	  $value = $this->fetchValue(array($this->fieldName() => $value));
