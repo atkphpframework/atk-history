@@ -2984,6 +2984,7 @@
 
           }
         }
+        $fields = array_unique($fields);
       }
       else
       {

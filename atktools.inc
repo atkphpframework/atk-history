@@ -639,12 +639,15 @@
 
     $arrays = func_get_args();
     for ($i = 0, $_i = count($arrays); $i < $_i; $i++)
-    {
-      for ($j = 0, $_j = count($arrays[$i]); $j < $_j; $j++)
+    {      
+      if(is_array($arrays[$i]))
       {
-        if (!in_array($arrays[$i][$j], $res))
+        foreach ($arrays[$i] as $elem)
         {
-          $res[] = $arrays[$i][$j];
+          if (!in_array($elem, $res))
+          {
+            $res[] = $elem;
+          }
         }
       }
     }

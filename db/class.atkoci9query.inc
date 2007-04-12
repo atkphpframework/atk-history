@@ -140,8 +140,10 @@
         //$this->m_joins[]= " ".$join.$table." ".$alias;
         //$this->addCondition($condition);
       }
-      $this->m_joins[]= " ".$join.$table." ".$alias." ON ".$condition." ";
-
+      
+      $newjoin= " ".$join.$table." ".$alias." ON ".$condition." ";
+      if (!in_array($newjoin, $this->m_joins)) $this->m_joins[]= $newjoin;
+      
       return $this;
     }
 
