@@ -865,23 +865,25 @@
         else $id ='atksearch'.$fieldprefix.'['. $this->fieldName().']';
 
         $this->registerKeyListener($id, KB_CTRLCURSOR|KB_UPDOWN);
+        
+        // commented AJAX code, since it doesn't work when searching [Yury]
         $result = '<input type="text" id="'.$id.'" class="'.get_class($this).'" name="'.$id.'" value="'.$record[$this->fieldName()].'"'.
-          (($this->hasFlag(AF_RELATION_AUTOCOMPLETE) && !$extended) ? ' onchange=""' : '').
+          //(($this->hasFlag(AF_RELATION_AUTOCOMPLETE) && !$extended) ? ' onchange=""' : '').
           ($this->m_searchsize > 0 ? ' size="'.$this->m_searchsize.'"' : '').
           ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>';
 
-        if ($this->hasFlag(AF_RELATION_AUTOCOMPLETE) && !$extended)
-        {
-          $page = &$this->m_ownerInstance->getPage();
-          $url = partial_url($this->m_ownerInstance->atkNodeType(), $this->m_ownerInstance->m_action, 'attribute.'.$this->fieldName().'.autocomplete_search');
-          $code = "ATK.ManyToOneRelation.completeSearch('{$id}', '{$id}_result', '{$url}', {$this->m_autocomplete_minchars});";
-          $this->m_ownerInstance->addStyle("atkmanytoonerelation.css");
-          $page->register_script(atkconfig("atkroot").'atk/javascript/prototype/prototype.js');
-          $page->register_script(atkconfig("atkroot").'atk/javascript/scriptaculous/scriptaculous.js');
-          $page->register_script(atkconfig('atkroot').'atk/javascript/class.atkmanytoonerelation.js');
-          $page->register_loadscript($code);
-          $result .= '<div id="'.$id.'_result" style="display: none" class="atkmanytoonerelation_result"></div>';
-        }
+//        if ($this->hasFlag(AF_RELATION_AUTOCOMPLETE) && !$extended)
+//        {
+//          $page = &$this->m_ownerInstance->getPage();
+//          $url = partial_url($this->m_ownerInstance->atkNodeType(), $this->m_ownerInstance->m_action, 'attribute.'.$this->fieldName().'.autocomplete_search');
+//          $code = "ATK.ManyToOneRelation.completeSearch('{$id}', '{$id}_result', '{$url}', {$this->m_autocomplete_minchars});";
+//          $this->m_ownerInstance->addStyle("atkmanytoonerelation.css");
+//          $page->register_script(atkconfig("atkroot").'atk/javascript/prototype/prototype.js');
+//          $page->register_script(atkconfig("atkroot").'atk/javascript/scriptaculous/scriptaculous.js');
+//          $page->register_script(atkconfig('atkroot').'atk/javascript/class.atkmanytoonerelation.js');
+//          $page->register_loadscript($code);
+//          $result .= '<div id="'.$id.'_result" style="display: none" class="atkmanytoonerelation_result"></div>';
+//        }
 
         return $result;
       }
