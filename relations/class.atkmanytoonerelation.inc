@@ -866,11 +866,11 @@
 
         $this->registerKeyListener($id, KB_CTRLCURSOR|KB_UPDOWN);
         $result = '<input type="text" id="'.$id.'" class="'.get_class($this).'" name="'.$id.'" value="'.$record[$this->fieldName()].'"'.
-          ($this->hasFlag(AF_RELATION_AUTOCOMPLETE) ? ' onchange=""' : '').
+          (($this->hasFlag(AF_RELATION_AUTOCOMPLETE) && !$extended) ? ' onchange=""' : '').
           ($this->m_searchsize > 0 ? ' size="'.$this->m_searchsize.'"' : '').
           ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>';
 
-        if ($this->hasFlag(AF_RELATION_AUTOCOMPLETE))
+        if ($this->hasFlag(AF_RELATION_AUTOCOMPLETE) && !$extended)
         {
           $page = &$this->m_ownerInstance->getPage();
           $url = partial_url($this->m_ownerInstance->atkNodeType(), $this->m_ownerInstance->m_action, 'attribute.'.$this->fieldName().'.autocomplete_search');
@@ -893,14 +893,16 @@
      * @param boolean $extended Whether extended search is being used
      * @return String the default searchmode for this attribute.
      */
-    function getSearchMode($extended = false)
+    function getSearchModes($extended = false)
     {
       if ($this->hasFlag(AF_LARGE))
       {
-        return parent::getSearchMode($extended);
+        return array("exact","substring","wildcard");
+        //return parent::getSearchMode($extended);
       }
-      return "exact"; // only support exact search when searching with dropdowns
-    }
+       
+      return array("exact"); // only support exact search when searching with dropdowns
+    }    
 
     /**
      * Creates a smart search condition for a given search value, and adds it

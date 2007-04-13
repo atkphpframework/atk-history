@@ -2128,11 +2128,12 @@
       // set "searchmode" value:
       if(count($searchModes)==1)
       {
-        $field["searchmode"] = '<input type="hidden" name="atksearchmode'.$fieldprefix.'['.$this->m_name.']" value="'.$searchModes[0].'">'.atktext("search_".$searchModes[0]);
+        $field["searchmode"] = '<input type="hidden" name="atksearchmode['.$this->m_name.']" value="'.$searchModes[0].'">'.atktext("search_".$searchModes[0]);
       }
       else if (count($searchModes)>1)
       {
-        $sel = '<select name="atksearchmode'.$fieldprefix.'['.$this->m_name.']">';
+        $sel = '<select name="atksearchmode['.$this->m_name.']">';
+        
         foreach (array_values($searchModes) as $searchMode)
         {
           // if supported, we select the 'like' searchmode by default
