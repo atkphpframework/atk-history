@@ -199,6 +199,27 @@
     {
       atkSmarty::addBlock($module, $tag, $tag, false);
     }
+    
+    /**
+     * Register modifier
+     */
+    function addModifier($module, $tag, $name="")
+    {
+      $smarty = &atkSmarty::getInstance();
+
+      $name = empty($name) ? $tag : $name;
+      $function = "__smarty_modifier_$name";
+
+      eval('
+        function '.$function.'($variable)
+        {
+          include_once(moduleDir("'.$module.'")."plugins/modifier.'.$name.'.php");
+          return smarty_modifier_'.$name.'(func_get_args());
+        }
+      ');
+
+      $smarty->register_modifier($tag, $function);
+    }
 
     function addOutputFilter($function)
     {
