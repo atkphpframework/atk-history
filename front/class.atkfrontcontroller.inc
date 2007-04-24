@@ -44,7 +44,7 @@ class atkFrontController implements ArrayAccess
   protected $m_result = "";
   protected $m_rendered = false;
 
-  protected $m_headers;
+  protected $m_headers = array();
   protected $m_contentType;
 
   /**
@@ -60,12 +60,12 @@ class atkFrontController implements ArrayAccess
       $uri = substr($uri, 1);
 
     list($module, $name, $action) = explode('/', $uri);
-atkdebug("$module, $name, $action");
+
     if ($action == NULL)
       $action = 'index';
 
-    $importpath = "module.{$module}.controllers.{$name}controller";
-    if (atkimport($importpath))
+    $importPath = "module.{$module}.controllers.{$name}controller";
+    if (atkimport($importPath))
     {
       $class = "{$name}controller";
       return new $class($module, $name, $action, $parent);
