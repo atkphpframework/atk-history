@@ -27,6 +27,11 @@ atkimport('atk.utils.atkdataholder');
  */
 class atkFrontController implements ArrayAccess
 {
+  private static $s_current = null;
+  private static $s_bridges = array();
+
+  protected $m_bridge;
+
   protected $m_module;
   protected $m_name;
   protected $m_action;
@@ -47,6 +52,53 @@ class atkFrontController implements ArrayAccess
   protected $m_headers = array();
   protected $m_contentType;
 
+
+  /**
+   * Dispatch request. Find the right controller, let it handle the request
+   * and return it's result.
+   *
+   * @param string $uri controller request uri
+   * @param array $vars custom variables, will be merged with the request variables
+   *                    and overwrite existing (request) variables with the same name
+   *                    unless $merge is set to false
+   * @param bool $merge merge custom and request variables?
+   *
+   * @return string controller result
+   */
+  public static function dispatchRequest($vars=array(), $merge=true)
+  {
+    $parent = self::getCurrent();
+
+    // If this is the root controller we first look if a request variable named URI
+    // is set, if so we use this URI, else we fallback to the custom (default) URI. If
+    // this is a nested controller, we should always respect the custom given URI.
+    $uri = $parent == null && isset($_REQUEST['uri']) ? $_REQUEST['uri'] : $vars['uri'];
+
+    if ($merge)
+    {
+      if (is_object($parent))
+      {
+        $request = $parent->getRequest()->toArray();
+      }
+      else
+      {
+        $request = $_REQUEST;
+      }
+
+      $vars = array_merge($request, $vars);
+    }
+
+    // Always set the URI to the real URI.
+    $vars['uri'] = $uri;
+
+    $controller = self::create($uri, $parent);
+    self::setCurrent($controller);
+    $result = $controller->handleRequest($vars);
+    self::setCurrent($parent);
+
+    return $result;
+  }
+
   /**
    * Create controller based on the given URI.
    *
@@ -54,7 +106,7 @@ class atkFrontController implements ArrayAccess
    * @param atkFrontController $parent parent controller
    * @return atkFrontController the controller
    */
-  public static function create($uri, $parent=NULL)
+  protected static function create($uri, $parent=NULL)
   {
     if ($uri{0} == '/')
       $uri = substr($uri, 1);
@@ -67,6 +119,7 @@ class atkFrontController implements ArrayAccess
     $importPath = "module.{$module}.controllers.{$name}controller";
     if (atkimport($importPath))
     {
+      atkdebug('Create '.$importPath.' controller instance');
       $class = "{$name}controller";
       return new $class($module, $name, $action, $parent);
     }
@@ -82,10 +135,38 @@ class atkFrontController implements ArrayAccess
    *
    * @return atkFrontController current controller instance
    */
-  public static function getCurrent()
+  protected static function getCurrent()
   {
-    $smarty = atkSmarty::getInstance();
-    return $smarty->__controller;
+    return self::$s_current;
+  }
+
+  /**
+   * Sets the current controller instance.
+   *
+   * @param atkFrontController $controller current controller instance
+   */
+  protected static function setCurrent($controller)
+  {
+    self::$s_current = $controller;
+  }
+
+  /**
+   * Bridge factory method. Returns the currently configured controller bridge.
+   * If an instance already exists, re-uses it, else a new bridge will be created.
+   *
+   * @return atkFrontControllerBridge front controller bridge
+   */
+  protected static function createBridge()
+  {
+    $class = atkconfig("frontcontroller_bridge", "atk.front.atkfrontcontrollerbridge");
+
+    if (!isset(self::$s_bridges[$class]))
+    {
+      atkdebug('Create '.$class.' bridge instance');
+      self::$s_bridges[$class] = atknew($class);
+    }
+
+    return self::$s_bridges[$class];
   }
 
   /**
@@ -100,6 +181,15 @@ class atkFrontController implements ArrayAccess
     $this->m_name = $name;
     $this->m_action = $action;
     $this->m_parent = $parent;
+
+    if ($parent !== null)
+    {
+      $this->m_bridge = $parent->m_bridge;
+    }
+    else
+    {
+      $this->m_bridge = self::createBridge();
+    }
   }
 
   /**
@@ -107,7 +197,7 @@ class atkFrontController implements ArrayAccess
    *
    * @return atkFrontController parent
    */
-  public function getParent()
+  protected function getParent()
   {
     return $this->m_parent;
   }
@@ -117,7 +207,7 @@ class atkFrontController implements ArrayAccess
    *
    * @return boolean is root controller?
    */
-  public function isRoot()
+  protected function isRoot()
   {
     return $this->getParent() == NULL;
   }
@@ -127,7 +217,7 @@ class atkFrontController implements ArrayAccess
    *
    * @return atkFrontController root
    */
-  public function getRoot()
+  protected function getRoot()
   {
     if ($this->isRoot()) return $this;
     else return $this->getParent()->getRoot();
@@ -138,7 +228,7 @@ class atkFrontController implements ArrayAccess
    *
    * @return atkDataHolder request parameters
    */
-  public function getRequest()
+  protected function getRequest()
   {
     return $this->m_request;
   }
@@ -148,7 +238,7 @@ class atkFrontController implements ArrayAccess
    *
    * @return atkDataHolder session
    */
-  public function getSession()
+  protected function getSession()
   {
     return $this->m_session;
   }
@@ -158,7 +248,7 @@ class atkFrontController implements ArrayAccess
    *
    * @return string controller name
    */
-  public function getName()
+  protected function getName()
   {
     return $this->m_name;
   }
@@ -168,7 +258,7 @@ class atkFrontController implements ArrayAccess
    *
    * @return string controller module
    */
-  public function getModule()
+  protected function getModule()
   {
     return $this->m_module;
   }
@@ -178,7 +268,7 @@ class atkFrontController implements ArrayAccess
    *
    * @return string action
    */
-  public function getAction()
+  protected function getAction()
   {
     return $this->m_action;
   }
@@ -212,11 +302,11 @@ class atkFrontController implements ArrayAccess
   *
   * @return result of action
   */
-  public function handleRequest($request)
+  protected function handleRequest($request)
   {
     try
     {
-      try 
+      try
       {
         $method = $this->getActionMethod();
       }
@@ -224,7 +314,7 @@ class atkFrontController implements ArrayAccess
       {
         throw new Exception("Invalid action {$this->m_action} for controller {$this->m_module}/{$this->m_name}! (".$ex->getMessage().")");
       }
-      
+
       $this->setTemplate($this->m_action);
 
       $this->m_request = new atkDataHolder($request);
@@ -255,10 +345,7 @@ class atkFrontController implements ArrayAccess
         if (isset($this->m_contentType))
           header('Content-Type: '.$this->m_contentType);
 
-        $output = atkinstance('atk.ui.atkoutput');
-        $output->output($this->m_result);
-        $output->outputFlush();
-        
+        echo $this->m_result;
 
         die;
       }
@@ -277,7 +364,7 @@ class atkFrontController implements ArrayAccess
    *
    * @return ReflectionMethod The method.
    */
-  public function getActionMethod()
+  protected function getActionMethod()
   {
     $methodName = str_replace('_', '', $this->m_action).'Action';
     if (!method_exists($this, $methodName))
@@ -286,7 +373,7 @@ class atkFrontController implements ArrayAccess
     $method = new ReflectionMethod(get_class($this), $methodName);
     if (!$method->isPublic())
       throw new Exception("Action method is not public!");
-      
+
     return $method;
   }
 
@@ -339,10 +426,10 @@ class atkFrontController implements ArrayAccess
     /* @var $smarty Smarty */
     $smarty = atkinstance("atk.ui.atksmarty");
     $this->m_plugins = $smarty->_plugins;
-    $smarty->register_function('partial', array($this, '__smarty_function_partial'), false);    
-    $smarty->register_function('url', array($this, '__smarty_function_url'), false);
-    $smarty->register_function('form_vars', array($this, '__smarty_function_form_vars'), false);    
-    $smarty->register_block('link', array($this, '__smarty_block_link'), false);
+    $smarty->register_function('_partial', array($this, 'partialFunctionTag'), false);
+    $smarty->register_function('_url', array($this, 'urlFunctionTag'), false);
+    $smarty->register_function('_form_vars', array($this, 'formVarsFunctionTag'), false);
+    $smarty->register_block('_link', array($this, 'linkBlockTag'), false);
   }
 
   /**
@@ -418,7 +505,7 @@ class atkFrontController implements ArrayAccess
 
   /**
    * Checks if a certain offset exists.
-   * 
+   *
    * @param mixed $offset offset
    * @return bool offset exists?
    */
@@ -426,7 +513,7 @@ class atkFrontController implements ArrayAccess
   {
     return isset($this->m_vars[$offset]);
   }
-  
+
   /**
    * Returns the value at the given offset.
    *
@@ -437,18 +524,18 @@ class atkFrontController implements ArrayAccess
   {
     return $this->m_vars[$offset];
   }
-  
+
   /**
    * Sets the given offset with the given value
    *
    * @param mixed $offset offset
    * @param mixed $value  value
-   */  
+   */
   public function offsetSet($offset, $value)
   {
     $this->m_vars[$offset] = $value;
   }
-  
+
   /**
    * Unsets the given offset.
    *
@@ -458,7 +545,7 @@ class atkFrontController implements ArrayAccess
   {
     unset($this->m_vars[$offset]);
   }
-  
+
   /**
    * Build the URI for the given controller and action.
    *
@@ -496,7 +583,19 @@ class atkFrontController implements ArrayAccess
       return $this->getParent()->uri($controller, $action);
     }
   }
-  
+
+  /**
+   * Build url using the given URI and variables.
+   *
+   * @param string $uri The controller URI.
+   * @param array $vars Request vars.
+   * @return string url
+   */
+  protected function buildUrl($uri, $vars)
+  {
+    return $this->m_bridge->buildUrl($uri, $vars);
+  }
+
   /**
    * Build url or return the current url.
    *
@@ -505,14 +604,12 @@ class atkFrontController implements ArrayAccess
    * @param array $vars request vars
    * @return string url
    */
-  public function url($controller=NULL, $action=NULL, $vars=array())
+  protected function url($controller=NULL, $action=NULL, $vars=array())
   {
     $uri = $this->uri($controller, $action);
-    $vars['uri'] = $uri;
-    $url = $_SERVER['PHP_SELF'].'?'.http_build_query($vars);
-    return $url;
-  }  
-  
+    return $this->buildUrl($uri, $vars);
+  }
+
   /**
    * Smarty wrapper function for the url function.
    *
@@ -520,20 +617,20 @@ class atkFrontController implements ArrayAccess
    * @param Smarty $smarty smarty reference
    * @return string url
    */
-  public function __smarty_function_url($params, $smarty)
+  public function urlFunctionTag($params, $smarty)
   {
     $controller = isset($params['controller']) ? $params['controller'] : NULL;
     $action = isset($params['action']) ? $params['action'] : NULL;
     $vars = isset($params['vars']) ? $params['vars'] : array();
-    
+
     unset($params['controller']);
     unset($params['action']);
     unset($params['vars']);
 
     $vars = array_merge($vars, $params);
-    
+
     return $this->url($controller, $action, $vars);
-  }  
+  }
 
   /**
    * Smarty function for converting the controller, action etc.
@@ -543,7 +640,7 @@ class atkFrontController implements ArrayAccess
    * @param Smarty $smarty smarty reference
    * @return string hidden form vars html
    */
-  public function __smarty_function_form_vars($params, $smarty)
+  public function formVarsFunctionTag($params, $smarty)
   {
     $controller = isset($params['controller']) ? $params['controller'] : NULL;
     $action = isset($params['action']) ? $params['action'] : NULL;
@@ -565,7 +662,7 @@ class atkFrontController implements ArrayAccess
 
     return $result;
   }
-  
+
   /**
    * Smarty wrapper function for the url function.
    *
@@ -574,15 +671,15 @@ class atkFrontController implements ArrayAccess
    * @param Smarty $smarty smarty reference
    * @param boolean $repeat true first time
    */
-  public function __smarty_block_link($params, $content, $smarty, &$repeat)
+  public function linkBlockTag($params, $content, $smarty, &$repeat)
   {
      if (!$repeat)
     {
-      return '<a href="'.$this->__smarty_function_url($params, $smarty).'">'.$content.'</a>';
+      return '<a href="'.$this->urlFunctionTag($params, $smarty).'">'.$content.'</a>';
     }
-    
+
     return NULL;
-  }  
+  }
 
   /**
    * Smarty partial function, render partial template.
@@ -591,11 +688,43 @@ class atkFrontController implements ArrayAccess
    * @param Smarty $smarty smarty instance
    * @return string rendered partial
    */
-  public function __smarty_function_partial($params, $smarty)
+  public function partialFunctionTag($params, $smarty)
   {
     $template = $params[0];
     unset($params[0]);
     return $this->_render($template, $params, true);
+  }
+
+  /**
+   * Redirect to the given url.
+   *
+   * @param string $url The URL.
+   */
+  protected function doRedirect($url)
+  {
+    $this->m_bridge->doRedirect($url);
+  }
+
+  /**
+   * Redirect to the given url.
+   *
+   * @param string $controller controller name (uses current if empty)
+   * @param string $action action name (uses current if empty and controller isn't changed, uses index if empty and other controller)
+   * @param array $vars request vars
+   * @return string url
+   */
+  protected function redirect($controller=NULL, $action=NULL, $vars=array(), $force=FALSE)
+  {
+    if ($this->isRoot() || $force)
+    {
+      $this->doRedirect($this->url($controller, $action, $vars));
+    }
+    else
+    {
+      $vars['uri'] = $this->uri($controller, $action);
+      $content = self::dispatchRequest($vars, false);
+      $this->renderContent($content);
+    }
   }
 
   /**
@@ -619,6 +748,47 @@ class atkFrontController implements ArrayAccess
       default:
         setlocale(LC_ALL, "nl_NL");
     }
+  }
+
+  /**
+   * Register stylesheet of the given media type.
+   *
+   * @param string $file stylesheet filename
+   * @param string $media media type (defaults to 'all')
+   */
+  protected function registerStyleSheet($file, $media='all')
+  {
+    $this->m_bridge->registerStyleSheet($file, $media);
+  }
+
+  /**
+   * Register stylesheet code.
+   *
+   * @param string $code stylesheet code
+   */
+  protected function registerStyleCode($code)
+  {
+    $this->m_bridge->registerStyleCode($code);
+  }
+
+  /**
+   * Register script file.
+   *
+   * @param string $file script filename
+   */
+  protected function registerScriptFile($file)
+  {
+    $this->m_bridge->registerScriptFile($file);
+  }
+
+  /**
+   * Register JavaScript code.
+   *
+   * @param string $code
+   */
+  protected function registerScriptCode($code)
+  {
+    $this->m_bridge->registerScriptCode($code);
   }
 
   /**
@@ -660,7 +830,7 @@ class atkFrontController implements ArrayAccess
    * @param array $vars template variables
    * @param boolean $partial render partial?
    */
-  public function render($template=NULL, $vars=NULL, $partial=false)
+  protected function render($template=NULL, $vars=NULL, $partial=false)
   {
     if ($this->m_rendered) return;
 
@@ -674,56 +844,15 @@ class atkFrontController implements ArrayAccess
     {
       $this->registerScriptFile(moduleDir($this->m_module)."scripts/{$this->m_name}.js");
     }
-    
+
     if (!$partial && file_exists(moduleDir($this->m_module)."styles/{$this->m_name}.js"))
     {
       $this->registerStyleSheet(moduleDir($this->m_module)."styles/{$this->m_name}.js");
     }
-    
+
     $this->m_partial = $partial;
     $this->m_result = $this->_render($template, $vars, $partial);
     $this->m_rendered = true;
-  }
-
-  /**
-   * Register stylesheet of the given media type.
-   *
-   * @param string $file stylesheet filename
-   * @param string $media media type (defaults to 'all')
-   */
-  protected function registerStyleSheet($file,$media='all')
-  {
-    atkinstance('atk.ui.atkpage')->register_style($file,$media);
-  }
-
-  /**
-   * Register stylesheet code.
-   *
-   * @param string $code stylesheet code
-   */
-  protected function registerStyleCode($code)
-  {
-    atkinstance('atk.ui.atkpage')->register_stylecode($code);
-  }
-
-  /**
-   * Register script file.
-   *
-   * @param string $file script filename
-   */
-  protected function registerScriptFile($file)
-  {
-    atkinstance('atk.ui.atkpage')->register_script($file);
-  }
-  
-  /**
-   * Register JavaScript code.
-   *
-   * @param string $code
-   */
-  protected function registerScriptCode($code)
-  {
-    atkinstance('atk.ui.atkpage')->register_scriptcode($code);
   }
 
   /**
@@ -731,7 +860,7 @@ class atkFrontController implements ArrayAccess
    *
    * @param string $template  template name
    * @param string $directory the base template directory
-   * 
+   *
    * @return string template path
    */
   protected function getTemplatePath($template, $directory='templates')
@@ -748,26 +877,26 @@ class atkFrontController implements ArrayAccess
     {
       return moduleDir($this->m_module)."skel/$directory/$template";
     }
-    else 
+    else
     {
       return null;
     }
   }
-  
+
   /**
    * Returns the layout template path for this controller.
    */
   protected function getLayoutTemplatePath()
   {
-    $path = $this->getTemplatePath($this->m_module.'/'.$this->m_name.'.tpl', 'layouts');    
+    $path = $this->getTemplatePath($this->m_module.'/'.$this->m_name.'.tpl', 'layouts');
     if ($path != null) return $path;
-    
+
     $path = $this->getTemplatePath($this->m_module.'/root.tpl', 'layouts');
     if ($path != null) return $path;
-    
+
     $path = $this->getTemplatePath('root.tpl', 'layouts');
-    if ($path != null) return $path;    
-    
+    if ($path != null) return $path;
+
     return $null;
   }
 
@@ -795,15 +924,19 @@ class atkFrontController implements ArrayAccess
     $template = "{$template}.tpl";
 
     /* @var $smarty Smarty */
-    $smarty = atkinstance("atk.ui.atksmarty");
+    $smarty = atkinstance('atk.ui.atksmarty');
+
     $oldVars = $smarty->get_template_vars();
-    $smarty->assign($vars);
+    $oldSerials = $smarty->_cache_serials;
     $oldCaching = $smarty->caching;
-    $smarty->caching = false;
     $oldForceCompile = $smarty->force_compile;
+
+    $smarty->assign($vars);
+    $smarty->caching = false;
     $smarty->force_compile = true;
+
     $result = $smarty->fetch($this->getTemplatePath($template));
-    
+
     $layoutTemplatePath = $this->getLayoutTemplatePath();
     if ($this->isRoot() && !$partial && $layoutTemplatePath != null)
     {
@@ -811,10 +944,12 @@ class atkFrontController implements ArrayAccess
       $smarty->assign($vars);
       $result = $smarty->fetch($layoutTemplatePath);
     }
-    
+
     $smarty->force_compile = $oldForceCompile;
     $smarty->caching = $oldCaching;
+    $smarty->_cache_serials = $oldSerials;
     $smarty->assign($oldVars);
+
     return $result;
   }
 
