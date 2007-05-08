@@ -36,29 +36,39 @@
     {
       $page = &$this->getPage();
 
-      list($type, $attribute, $partial) = explode('.', $this->m_partial);
-      if ($type == 'attribute')
+      if (isset($this->m_partial) && $this->m_partial!="")
       {
-        $attr =& $this->m_node->getAttribute($attribute);
-        if ($attr == NULL)
+        list($type, $attribute, $partial) = explode('.', $this->m_partial);
+        if ($type == 'attribute')
         {
-          atkerror("Unknown / invalid attribute '$attribute' for node '".$this->m_node->atkNodeType()."'");
+          $attr =& $this->m_node->getAttribute($attribute);
+          if ($attr == NULL)
+          {
+            atkerror("Unknown / invalid attribute '$attribute' for node '".$this->m_node->atkNodeType()."'");
+            return;
+          }
+
+          $result = $attr->partial($partial, 'edit');
+          $page->addContent($result);
           return;
         }
-
-        $result = $attr->partial($partial, 'edit');
-        $page->addContent($result);
-        return;
-      }      
+      }
 
       list($record) = $this->m_node->selectDb($this->m_postvars['atkselector'],"","","","","edit");
       
-      // check if there are postvars set that overwrite the record contents, this can happen when a 
+      // allowed to edit record?
+      if (!$this->allowed($record))
+      {
+        $this->renderAccessDeniedPage();
+        return;
+      }
+
+      // check if there are postvars set that overwrite the record contents, this can happen when a
       // new selection is made using the select handler etc.
       $fetchedRecord = $this->m_node->updateRecord('', NULL, NULL, true);
       if (is_array($record))
         $record = array_merge($record, $fetchedRecord);
-      
+
       if ($this->m_node->hasFlag(NF_LOCK))
       {
         if ($this->m_node->m_lock->lock($this->m_node->primaryKey($record), $this->m_node->m_table))
@@ -90,7 +100,7 @@
     {
       $node = &$this->m_node;
       $page = &$this->getPage();
-      $page->register_script(atkconfig('atkroot').'atk/javascript/prototype/prototype.js');      
+      $page->register_script(atkconfig('atkroot').'atk/javascript/prototype/prototype.js');
       $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");
       $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
       $page->register_loadscript("placeFocus();");
@@ -98,10 +108,16 @@
       $node->addStyle("style.css");
 
       $params = $node->getDefaultActionParams($locked);
+      $controller = &atkcontroller::getInstance();
+      $controller->setNode($this->m_node);
 
-      $params["formstart"] = '<form id="entryform" name="entryform" enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?'.SID.'"'.
+      $formstart = '<form id="entryform" name="entryform" enctype="multipart/form-data" action="'.$controller->getPhpFile().'?'.SID.'"'.
                                    ' method="post" onsubmit="return globalSubmit(this)">'.
                                    session_form();
+
+      $formstart .= $controller->getHiddenVarsString();
+
+      $params["formstart"] = $formstart;
 
       $ui = &$node->getUi();
 
@@ -125,8 +141,9 @@
 
         $output = $ui->renderAction("edit", $params);
 
-        return $ui->renderBox(array("title"=>$node->actionTitle('edit', $record),
-                                      "content"=>$output));
+        $this->addRenderBoxVar("title", $node->actionTitle('edit', $record));
+        $this->addRenderBoxVar("content", $output);
+        return $ui->renderBox($this->m_renderBoxVars);
       }
       else
       {
@@ -178,7 +195,7 @@
             $type = (empty($error["node"]) ? $node->m_type : $error["node"]);
 
             if (count($node->getTabs($node->m_action)) > 1 && $error["tab"])
-              $error_tab = ' ('.atktext("error_tab").' '.'<a href="javascript:showTab(\''.$error["tab"].'\');">'.atktext("tab_".$error["tab"],$node->m_module).'</a> )';
+              $error_tab = ' ('.atktext("error_tab").' '.'<a href="javascript:showTab(\''.$error["tab"].'\');">'.atktext(array("tab_".$error["tab"], $error["tab"]),$node->m_module, $node->m_type).'</a> )';
             else $error_tab = "";
 
             if(!is_array($error['attrib_name']))
@@ -303,8 +320,8 @@
             $tplfield["tooltip"] = $tooltip;
             $editsrc.=$tooltip."&nbsp;";
           }
-          
-          $tplfield['id']=str_replace('.','_',$node->atknodetype().'_'.$field["name"]);
+
+          $tplfield['id']=str_replace('.','_',$node->atknodetype().'_'.$field["id"]);
 
           $tplfield["full"] = $editsrc;
         }
@@ -330,7 +347,7 @@
       if (!$template) $template = $node->getTemplate($mode, $record, $tab);
       $result.= $ui->render($template, $params);
 
-	  return $result;
+	    return $result;
     }
 
     /**

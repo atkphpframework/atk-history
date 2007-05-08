@@ -28,6 +28,12 @@
    */
   class atkAddHandler extends atkActionHandler
   {
+    function atkAddHandler()
+    {
+      $this->atkActionHandler();
+      $this->setReturnBehaviour(ATK_ACTION_BACK);
+    }
+    
     /**
      * The action handler.
      */
@@ -35,24 +41,30 @@
     {
       $page = &$this->getPage();
 
-      list($type, $attribute, $partial) = explode('.', $this->m_partial);
-      if ($type == 'attribute')
+      if (isset($this->m_partial) && $this->m_partial!="")
       {
-        $attr =& $this->m_node->getAttribute($attribute);
-        if ($attr == NULL)
+        list($type, $attribute, $partial) = explode('.', $this->m_partial);
+        if ($type == 'attribute')
         {
-          atkerror("Unknown / invalid attribute '$attribute' for node '".$this->m_node->atkNodeType()."'");
+          $attr =& $this->m_node->getAttribute($attribute);
+          if ($attr == NULL)
+          {
+            atkerror("Unknown / invalid attribute '$attribute' for node '".$this->m_node->atkNodeType()."'");
+            return;
+          }
+
+          $result = $attr->partial($partial, 'add');
+          $page->addContent($result);
           return;
         }
-        
-        $result = $attr->partial($partial, 'add');
-        $page->addContent($result);
-        return;
-      }      
+      }
       
-      $page->addContent($this->m_node->renderActionPage("add", $this->invoke("addPage")));
-    }
+      // we could get here because of a reject.
+      $record = $this->getRejectInfo();     
 
+      $page->addContent($this->m_node->renderActionPage("add", $this->invoke("addPage", $record)));
+    }
+    
     /**
      * Creates an add page.
      *
@@ -67,29 +79,30 @@
 
       // Utility.
       $edithandler = &$node->getHandler("edit");
-      
-      // check if there are postvars set for filling the record, this 
+
+      // check if there are postvars set for filling the record, this
       // can happen when a new selection is made using the select handler etc.
       if ($record == NULL)
       {
-        $record = $this->m_node->updateRecord('', NULL, NULL, true);        
+        $record = $this->m_node->updateRecord('', NULL, NULL, true);
       }
 
-      $page->register_script(atkconfig('atkroot').'atk/javascript/prototype/prototype.js');            
+      $page->register_script(atkconfig('atkroot').'atk/javascript/prototype/prototype.js');
       $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");
       $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
       $page->register_loadscript("placeFocus();");
       $node->addStyle("style.css");
+      $controller = &atkcontroller::getInstance();
+      $controller->setNode($this->m_node);
 
       $params = $node->getDefaultActionParams();
 
-      $formstart ='<form id="entryform" name="entryform" enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?'.SID.'"'.
+      $formstart ='<form id="entryform" name="entryform" enctype="multipart/form-data" action="'.$controller->getPhpFile().'?'.SID.'"'.
                      ' method="post" onsubmit="return globalSubmit(this)">';
+      
+      $formstart.=session_form(SESSION_NESTED, $this->getReturnBehaviour());      
 
-      /* if we are on an admin page we would like to stay on the admin page after adding a new record 
-         if we are on level 0, we want to present the user with a new (empty!) addition form when (s)he gets back */
-      if ($node->m_action == "admin" || atkLevel() == 0) $formstart.=session_form(SESSION_NESTED);
-      else $formstart.=session_form();
+      $formstart .= $controller->getHiddenVarsString();
 
       if (isset($node->m_postvars['atkfilter']))
       {
@@ -115,8 +128,9 @@
 
         $output = $ui->renderAction("add", $params);
 
-        $total = $ui->renderBox(array("title"=>$node->actionTitle('add'),
-                                      "content"=>$output));
+        $this->addRenderBoxVar("title", $node->actionTitle('add'));
+        $this->addRenderBoxVar("content", $output);
+        $total = $ui->renderBox($this->m_renderBoxVars);
 
         return $total;
       }

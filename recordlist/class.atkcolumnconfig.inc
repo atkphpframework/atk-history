@@ -48,7 +48,7 @@
     {
       $this->m_node = &$node;
     }
-    
+
     function &getNode()
     {
       return $this->m_node;
@@ -193,8 +193,6 @@
           $min = min($min, $config["sortorder"]);
         }
       }
-      //echo $min;
-      atkdebug("min is ".$min);
       return $min;
     }
 
@@ -400,8 +398,13 @@
       $i = 0;
       foreach ($elems as $elem)
       {
-        $elem = trim($elem,",");  
-        list($part1, $part2) = explode(".", $elem, 2);
+        $elem = trim($elem,",");
+        $part1 = "";
+        $part2 = "";
+
+        if(strpos($elem,".")!==false)
+          list($part1, $part2) = explode(".", $elem, 2);
+
         if (isset($this->m_node->m_attribList[$elem]))
         {
           // attribute reference
@@ -435,7 +438,7 @@
             $this->addOrderByField($field, "asc", "", ++$i);
           }
         }
-      }    
+      }
     }
   }
 ?>

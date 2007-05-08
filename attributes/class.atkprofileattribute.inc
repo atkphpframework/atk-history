@@ -93,13 +93,15 @@
       {
 
         $checked = $record[$this->fieldName()];
-
+        
         $children = array();
         if (!empty($this->m_parentAttrName))
           $children = $this->getChildGroups($db, $record[$this->m_ownerInstance->primaryKeyField()]);
 
         foreach ($checked as $node => $actions)
         {
+          $actions = array_unique($actions);
+          
           $nodeModule = getNodeModule($node);
           $nodeType = getNodeType($node);
 

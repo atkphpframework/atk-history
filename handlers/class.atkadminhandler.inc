@@ -35,20 +35,52 @@
      * The action method
      */
     function action_admin()
-    {
+    {      
       $page = &$this->getPage();
 
+      if (isset($this->m_partial) && $this->m_partial!="")
+      {
+        list($type, $attribute, $partial) = explode('.', $this->m_partial);
+        if ($type == 'attribute')
+        {
+          $attr =& $this->m_node->getAttribute($attribute);
+          if ($attr == NULL)
+          {
+            atkerror("Unknown / invalid attribute '$attribute' for node '".$this->m_node->atkNodeType()."'");
+            return;
+          }
+
+          $result = $attr->partial($partial, 'admin');
+          $page->addContent($result);
+          return;
+        }
+      }
+
+      $res = $this->renderAdminPage();
+      $page->addContent($this->m_node->renderActionPage("admin", $res));
+    }
+    
+    /**
+     * Render the adminpage, including addpage if necessary
+     *
+     * @param array $record
+     * @return array with result of adminPage and addPage
+     */
+    function renderAdminPage()
+    {
       $res = array();
       if ($this->m_node->hasFlag(NF_NO_ADD)==false&&$this->m_node->allowed("add"))
       {
         if (!$this->m_node->hasFlag(NF_ADD_LINK)) // otherwise, in adminPage, an add link will be added.
         {
-          $res[]=$this->invoke("addPage");
+          // we could get here because of a reject.
+          $record = $this->getRejectInfo(); 
+          
+          $res[]=$this->invoke("addPage", $record);
         }
       }
       $res[] = $this->invoke("adminPage");
-
-      $page->addContent($this->m_node->renderActionPage("admin", $res));
+      return $res;
     }
 
     /**
@@ -58,12 +90,13 @@
      *
      * @return String A box containing the add page.
      */
-    function addPage()
+    function addPage($record=NULL)
     {
       // Reuse the atkAddHandler for the addPage.
-      $handler = atknew("atk.handlers.atkaddhandler");
+      $handler = $this->m_node->getHandler("add");
       $handler->setNode($this->m_node);
-      return $handler->invoke("addPage");
+      $handler->setReturnBehaviour(ATK_ACTION_STAY); // have the save action stay on the admin page      
+      return $handler->invoke("addPage", $record);
     }
 
     /**
@@ -84,11 +117,6 @@
       {
         $output = $ui->renderBox(array("title"=>$this->m_node->actionTitle('admin'),
                                     "content"=>$this->renderAdminList()));
-        if ($this->m_node->hasFlag(NF_CACHE_RECORDLIST))
-        {
-          $recordlistcache = $this->getRecordlistCache();
-          $recordlistcache->writeCache($output, $recordlist->m_actionloader);
-        }
       }
       else
       {
@@ -110,7 +138,7 @@
 
       $recordlistcache = $this->getRecordlistCache();
       $cached = "";
-      if ($this->m_node->hasFlag(NF_CACHE_RECORDLIST) && $recordlistcache)
+      if ($node->hasFlag(NF_CACHE_RECORDLIST) && $recordlistcache)
       {
         $cached = $recordlistcache->getCache();
       }
@@ -181,12 +209,12 @@
           $params["index"] = $navigator->buildIndex($node, (count($recordset)>0?$recordset[0][$node->m_index]:""));
         }
 
-        $navigation = $navigator->getNavigationUrls($this->m_node, "admin");
+        $navigation = $navigator->getNavigationUrls($node, "admin");
 
         if ($navigation)
         {
           if (isset($params["index"])) $params["index"].="<br />";
-          $params["navbar"] = $navigator->buildNavigation($this->m_node, "admin", $navigation);
+          $params["navbar"] = $navigator->buildNavigation($node, "admin", $navigation);
         }
 
         if(!is_array($actions))
@@ -199,7 +227,12 @@
 
         $params["footer"] = $this->invoke("adminFooter");
 
-        $output.= $ui->renderList("admin", $params);
+        $output = $ui->renderList("admin", $params);
+
+        if ($node->hasFlag(NF_CACHE_RECORDLIST)) 
+        {
+          $recordlistcache->writeCache($output, $recordlist->m_actionloader);
+        }
       }
       return $output;
     }
