@@ -33,7 +33,10 @@
   
   // registered node listeners
   $g_nodeListeners = array();
-
+  
+  // registered node controllers
+  $g_nodeControllers = array();
+  
   /**
    * Gets the node type of a node string
    * @param $node the node string
@@ -111,9 +114,15 @@
     return $org;
   }
 
-  function &getModule($modname)
+  function atkGetModules()
   {
-    global $g_moduleRepository, $g_modules;
+    global $g_modules;
+    return $g_modules;
+  }
+  
+  function &atkGetModule($modname)
+  {
+    global $g_moduleRepository;
     
     atkimport("atk.atknode");
     
@@ -164,16 +173,22 @@
     }
     return $g_moduleRepository[$modname];
   }
+  
+  function &getModule($modname)
+  {
+    return atkGetModule($modname);
+  }
 
   function nodeFile($node)
   {
-    global $g_modules, $config_atkroot, $config_classroot, $config_module_path;
-
+    global $config_classroot, $config_module_path;
+    $modules = atkGetModules();
+    
     /* module and type */
     $module = getNodeModule($node);
     $type = getNodeType($node);
     $file = "class.$type.inc";
-
+    
     /* filename */
     if (empty($module))
     {
@@ -181,10 +196,10 @@
     }
     else
     {
-      if (is_array($g_modules)&&in_array($module, array_keys($g_modules)))
+      if (is_array($modules)&&in_array($module, array_keys($modules)))
       {
 
-        $file = $g_modules[$module]."/class.$type.inc";
+        $file = $modules[$module]."/class.$type.inc";
       }
       else
       {
@@ -212,7 +227,7 @@
     }
     else
     {
-      $module_inst = &getModule(getNodeModule($node));
+      $module_inst = &getModule($module);
     }
     if (is_object($module_inst))
     {
@@ -254,10 +269,10 @@
    */
   function moduleDir($module)
   {
-    global $g_modules;
-    if (isset($g_modules[$module]))
+    $modules = atkGetModules();
+    if (isset($modules[$module]))
     {
-      $dir = $g_modules[$module];
+      $dir = $modules[$module];
       if (substr($dir,-1)!='/') return $dir."/";
       return $dir;
     }
@@ -278,22 +293,48 @@
 
   function moduleExists($module)
   {
-    global $g_modules;
-    return (is_array($g_modules)&&in_array($module, array_keys($g_modules)));
+    $modules = atkGetModules();
+    return (is_array($modules)&&in_array($module, array_keys($modules)));
   }
 
   /**
    * Returns a registered node action handler.
+   * @deprecated Use atkGetNodeHandler instead
    * @param $node the name of the node
    * @param $action the node action
-   * @return handler functionname or
+   * @return handler functionname or object (is_subclass_of atkActionHandler) or
    *         NULL if no handler exists for the specified action
    */
-  function getNodeHandler($node, $action)
+  function &getNodeHandler($node, $action)
   {
-    global $g_nodeHandler;
-    if (isset($g_nodeHandler[$node][$action])) return $g_nodeHandler[$node][$action];
-    elseif (isset($g_nodeHandler["*"][$action])) return $g_nodeHandler["*"][$action];
+    return atkGetNodeHandler($node, $action);
+  }
+
+  /**
+   * Registers a new node action handler.
+   * @deprecated Use atkRegisterNodeHandler instead
+   * @param $node the name of the node (* matches all)
+   * @param $action the node action
+   * @param $handler handler functionname or object (is_subclass_of atkActionHandler)
+   * @return true if there is no known handler
+   */
+  function registerNodeHandler($node, $action, &$handler)
+  {
+    return atkRegisterNodeHandler($node, $action, $handler);
+  }
+  
+  /**
+   * Returns a registered node action handler.
+   * @param $node the name of the node
+   * @param $action the node action
+   * @return handler functionname or object (is_subclass_of atkActionHandler) or
+   *         NULL if no handler exists for the specified action
+   */
+  function &atkGetNodeHandler($node, $action)
+  {
+    global $g_nodeHandlers;
+    if (isset($g_nodeHandlers[$node][$action])) return $g_nodeHandlers[$node][$action];
+    elseif (isset($g_nodeHandlers["*"][$action])) return $g_nodeHandlers["*"][$action];
     else return NULL;
   }
 
@@ -301,17 +342,45 @@
    * Registers a new node action handler.
    * @param $node the name of the node (* matches all)
    * @param $action the node action
-   * @param $handler handler functionname
+   * @param $handler handler functionname or object (is_subclass_of atkActionHandler)
    * @return true if there is no known handler
    */
-  function registerNodeHandler($node, $action, $handler)
+  function atkRegisterNodeHandler($node, $action, &$handler)
   {
-    global $g_nodeHandler;
-    if (isset($g_nodeHandler[$node][$action])) return FALSE;
-    else $g_nodeHandler[$node][$action] = $handler;
+    global $g_nodeHandlers;
+    if (isset($g_nodeHandlers[$node][$action])) return FALSE;
+    else $g_nodeHandlers[$node][$action] = &$handler;
     return TRUE;
   }
+  
+  /**
+   * Returns a registered node controller.
+   * @param $node the name of the node
+   * @return object (is_subclass_of atkController)
+   *         NULL if no controller exists for the specified node
+   */
+  function &atkGetNodeController($node)
+  {
+    global $g_nodeControllers;
+    if (isset($g_nodeControllers[$node])) return $g_nodeControllers[$node];
+    elseif (isset($g_nodeControllers["*"])) return $g_nodeControllers["*"];
+    else return NULL;
+  }
 
+  /**
+   * Registers a new node controller.
+   * @param $node the name of the node (* matches all)
+   * @param $controller object (is_subclass_of atkController)
+   * @return true if there is no known handler
+   */
+  function atkRegisterNodeController($node, &$controller)
+  {
+    global $g_nodeControllers;
+    if (isset($g_nodeControllers[$node])) return FALSE;
+    else $g_nodeControllers[$node] = &$controller;
+    return TRUE;
+  }
+  
   /**
    * Perform a member function on all active modules, and return the
    * collective result.
@@ -336,9 +405,8 @@
    */
   function atkHarvestModules($function, $param="", $associative=false)
   {
-    global $g_modules;
-
-    $modulekeys = array_keys($g_modules);
+    $modules = atkGetModules();
+    $modulekeys = array_keys($modules);
     $total = array();
 
     foreach ($modulekeys as $modname)
@@ -412,9 +480,10 @@
    */
   function atkPreloadModules()
   {
-    global $g_modules, $g_modifiers, $g_overloaders, $g_moduleflags, $g_nodeListeners;
+    global $g_modifiers, $g_overloaders, $g_moduleflags, $g_nodeListeners;
+    $modules = atkGetModules();
     
-    foreach ($g_modules as $modname => $modpath)
+    foreach ($modules as $modname => $modpath)
     {
       if ((!isset($g_moduleflags[$modname])) || (!hasFlag($g_moduleflags[$modname], MF_NO_PRELOAD)))
       {
