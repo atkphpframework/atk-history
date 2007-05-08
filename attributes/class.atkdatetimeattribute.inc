@@ -94,14 +94,13 @@
         $default_date = "";
       }
 
-
       if($default_date=="") { $default_date = ""; }
-      if($default_time=="") { $default_time = date("H:i"); }
+      if($default_time=="") { $default_time = ""; }
 
       $this->m_time = new atkTimeattribute($name,0,23,$default_steps,$default_time, $flags);
       $this->m_date = new atkDateattribute($name,'','',0,0,$flags);
 
-      $this->atkAttribute($name,$flags); // base class constructor
+      $this->atkAttribute($name,$flags|AF_SEARCHABLE); // base class constructor
     }
 
     function setDateMin($min=0)
@@ -115,7 +114,16 @@
     }    
     
     function validate(&$record, $mode)
-    {
+    {      
+      //if the datetime string is not an array, make it one to make sure the 
+      //validation functions of atkDateAttribute and atkTimeAttribute do not 
+      //cripple the data.
+      if(!is_array($record[$this->fieldName()]))
+      {
+        $stamp = strtotime($record[$this->fieldName()]);
+        $record[$this->fieldName()] = $this->datetimeArray(date("YmdHi",$stamp));
+      }
+      
       $this->m_date->validate($record,$mode);
       $this->m_time->validate($record,$mode);
     }
@@ -167,14 +175,17 @@
       else
         return "";
     }
-
+    
     function fetchValue($postvars)
     {
       $date = $this->m_date->fetchValue($postvars);
-      $time = $this->m_time->fetchValue($postvars);
       if ($date == NULL) return NULL;
-      if ($time == NULL) $time = array('hours' => 0, 'minutes' => 0, 'seconds' => 0);
-      else return array_merge($date, $time);
+      
+      $time = $this->m_time->fetchValue($postvars);
+      if ($time == NULL) 
+        $time = array('hours' => '00', 'minutes' => '00', 'seconds' => '00');
+      
+      return array_merge($date, $time);
     }
 
     /**
@@ -185,26 +196,27 @@
      */
     function edit($record="", $fieldprefix="")
     {
-      return $this->m_date->edit($record,$fieldprefix)."&nbsp;&nbsp;-&nbsp;&nbsp;".$this->m_time->edit($record,$fieldprefix);
+      $dateEdit = $this->m_date->edit($record,$fieldprefix);
+      $timeEdit = $this->m_time->edit($record,$fieldprefix);
+      return $dateEdit."&nbsp;&nbsp;-&nbsp;&nbsp;".$timeEdit;
     }
 
 
     function value2db($rec)
-    {
-      //$datetime = split(" ",$rec[$this->fieldname()]);
-      //$tmp_rec = $rec;
-      //$tmp_rec[$this->fieldname()]=$datetime[0];
-      $date=$this->m_date->value2db($rec);
-
-      //$tmp_rec = $rec;
-      //$tmp_rec[$this->fieldname()]=$datetime[1];
-      $time=$this->m_time->value2db($rec);
-
-      if($time!='NULL' && $date!='NULL')
-        $result = $date." ".$time;
-      else
-        $result = 'NULL';
-     return $result;
+    { 
+      if (is_array($rec[$this->fieldName()]))
+      {
+        $date = $this->m_date->value2db($rec);
+        $time = $this->m_time->value2db($rec);
+        if ($date != NULL && $time != NULL)
+          return $date." ".$time;
+      }
+      else if (!empty($rec[$this->fieldName()]))
+      {
+        $stamp = strtotime($rec[$this->fieldName()]);        
+        return date('Y-m-d H:m:s',$stamp);
+      }
+     return NULL;
     }
     /**
      * Convert database value to datetime array
@@ -237,7 +249,7 @@
         $tmp_rec[$this->fieldname()]=$datetime[1];
         $result_time = $this->m_time->db2value($tmp_rec);
         if ($result_time == NULL)
-          $result_time = array('hours' => 0, 'minutes' => 0, 'seconds' => 0);
+          $result_time = array('hours' => '00', 'minutes' => '00', 'seconds' => '00');
 
         return array_merge((array)$result_date,(array)$result_time);
       }
@@ -257,7 +269,7 @@
     {
       if ($mode == "add" || $mode == "update")
       {
-        if($this->value2db($rec) == '' || $this->value2db($rec) == 'NULL')
+        if($this->value2db($rec) == NULL)
         {
           $query->addField($this->fieldName(),'NULL','','',false);
         }

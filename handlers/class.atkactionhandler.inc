@@ -15,6 +15,12 @@
    * @version $Revision$
    * $Id$
    */
+  
+  /**
+   * Some defines for return behaviour
+   */
+  define("ATK_ACTION_STAY", 0);
+  define("ATK_ACTION_BACK", 1);
 
   /**
    * Generic action handler base class.
@@ -51,7 +57,13 @@
     var $m_partial = NULL;
     
     /** @access private */
-    var $m_postvars = array();
+    var $m_renderBoxVars = array();
+    
+    /** @access private */
+    var $m_rejecting = false;
+    
+    /** @access private */
+    var $m_returnbehaviour = ATK_ACTION_STAY;
 
     /**
      * Default constructor.
@@ -79,6 +91,42 @@
       $this->m_action = $action;
       $this->m_partial = $node->m_partial;
       $this->invoke("action_".$action);
+      
+      // when we're finished, cleanup any atkrejects (that we haven't set ourselves).
+      if (!$this->m_rejecting)
+      {
+        atkdebug("clearing the stuff");
+        $this->getRejectInfo(); // this will clear it.
+      }
+    }
+    
+    function getRejectInfo()
+    {      
+      atkdebug("looking for rejectinfo");
+      $sm = &atkGetSessionManager();
+      $session = &$sm->getSession();
+      if (isset($session["atkreject"]))
+      {
+        atkdebug("rejectinfo found");        
+        $result = $session["atkreject"];        
+        unset($session["atkreject"]);
+        return $result;
+      }
+      return NULL;
+    }
+    
+    function setRejectInfo($data)
+    {
+      atkdebug("setting rejectinfo");
+      /**
+       * @todo We're storing this globally in the session; each window should
+       * have its own rejection data so this should be a 'stack global' (but we 
+       * don't support that concept yet.
+       */
+      $sm = &atkGetSessionManager();
+      $session = &$sm->getSession();
+      $session["atkreject"] = $data;
+      $this->m_rejecting = true;
     }
 
     /**
@@ -164,8 +212,9 @@
       if ($this->m_node!==NULL && method_exists($this->m_node, $methodname))
       {
         atkdebug("Invoking '$methodname' override on node");
-        // We pass the original object as first parameter to the override.
+        // We pass the original object as first parameter to the override. 
         array_unshift($arguments, $this);
+        $arguments[0] = &$this; // reference copy workaround;
         return call_user_func_array(array(&$this->m_node, $methodname), $arguments);
       }
       else if (method_exists($this, $methodname))
@@ -233,6 +282,42 @@
     {
       $this->m_node->notify($action, $record);
     }
-  }
+    
+    function addRenderBoxVar($key, $value)
+    {
+      $this->m_renderBoxVars[$key] = $value;
+    }
+    
+    function setReturnBehaviour($returnbehaviour)
+    {
+      $this->m_returnbehaviour = $returnbehaviour;
+    }
+    
+    function getReturnBehaviour()
+    {
+      return $this->m_returnbehaviour;
+    }
+    
+    /**
+     * Current action allowed on the given record?
+     *
+     * @param array $record record
+     * @return boolean is action allowed on record?
+     */
+    function allowed($record)
+    {
+      return $this->m_node->allowed($this->m_action, $record);
+    }
 
+    /**
+     * Render access denied page.
+     */
+    function renderAccessDeniedPage()
+    {
+      $controller = &atkController::getInstance();
+      $controller->setNode($this->m_node);
+      $page = &$this->m_node->getPage();
+      $page->addContent($controller->accessDeniedPage());
+    }        
+  }
 ?>
