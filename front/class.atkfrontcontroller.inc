@@ -347,6 +347,7 @@ class atkFrontController implements ArrayAccess
 
         echo $this->m_result;
 
+
         die;
       }
     }
@@ -366,15 +367,29 @@ class atkFrontController implements ArrayAccess
    */
   protected function getActionMethod()
   {
-    $methodName = str_replace('_', '', $this->m_action).'Action';
+    $methodName = $this->getActionMethodName().'Action';
     if (!method_exists($this, $methodName))
       throw new Exception("Action method not found!");
 
     $method = new ReflectionMethod(get_class($this), $methodName);
     if (!$method->isPublic())
       throw new Exception("Action method is not public!");
-
+    else if ($method->getName()!==$methodName)
+    {
+      atkdebug("ERROR: ".$method->getName()."!==$methodName");
+      throw new Exception("Action method not found! Similar method found but case did not match, expected: '$methodName' but found only: '".$method->getName()."'");
+    }
     return $method;
+  }
+
+  protected function getActionMethodName()
+  {
+    $exploded = explode('_',$this->m_action);
+    foreach ($exploded as $key=>$string)
+    {
+      if ($key) $exploded[$key] = ucfirst($string);
+    }
+    return implode($exploded);
   }
 
   /**
