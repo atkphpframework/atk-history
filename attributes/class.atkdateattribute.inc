@@ -430,37 +430,8 @@
         'min' => $str_min,
         'max' => $str_max,
         'emptyfield' => $emptyfield,
-        'weekday' => !$this->hasFlag(AF_DATE_EDIT_NO_DAY)
-      );
-
-      atkimport('atk.utils.atkjson');
-      if (!$pda) $result .= '<script language="javascript">var atkdateattribute_'.$fieldname.' = '.atkJSON::encode($info).';</script>';
-
-      if ($this->hasFlag(AF_DATE_EMPTYFIELD))  $emptyfield=true;
-      else if (!$obligatory) $emptyfield=true;
-      else $emptyfield=false;
-
-      $info = array(
-        'format' => $str_format,
-        'min' => $str_min,
-        'max' => $str_max,
-        'emptyfield' => $emptyfield,
-        'weekday' => !$this->hasFlag(AF_DATE_EDIT_NO_DAY)
-      );
-
-      atkimport('atk.utils.atkjson');
-      if (!$pda) $result .= '<script language="javascript">var atkdateattribute_'.$fieldname.' = '.atkJSON::encode($info).';</script>';
-
-      if ($this->hasFlag(AF_DATE_EMPTYFIELD))  $emptyfield=true;
-      else if (!$obligatory) $emptyfield=true;
-      else $emptyfield=false;
-
-      $info = array(
-        'format' => $str_format,
-        'min' => $str_min,
-        'max' => $str_max,
-        'emptyfield' => $emptyfield,
-        'weekday' => !$this->hasFlag(AF_DATE_EDIT_NO_DAY)
+        'weekday' => !$this->hasFlag(AF_DATE_EDIT_NO_DAY),
+        'treshold' =>atkconfig('date_treshold',30)
       );
 
       atkimport('atk.utils.atkjson');
