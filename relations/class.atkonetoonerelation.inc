@@ -125,7 +125,7 @@
       $myrecord = $record[$this->fieldName()];
 
       // default result
-      $result = text("none");
+      $result = atktext("none");
 
       if ($this->createDestination())
       {

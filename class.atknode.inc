@@ -1390,7 +1390,7 @@
       $this->m_filledTabs = array();
       foreach(array_keys($this->m_attribList) as $attribname)
       {
-        $p_attrib = &$this->m_attribList[$attribname];
+        $p_attrib = &$this->getAttribute($attribname);
 
         // Only display the attribute if the attribute
         // resides on at least on visible tab
@@ -1443,8 +1443,8 @@
       {
         list($tab,$sec) = explode(".",$element);
 
-        //if this section is on an active tab, we return it.
-        if($tab == $this->getActiveTab() && $sec!==NULL)
+        //if this section is on an active tab, we return it.        
+        if($tab == $this->getActiveTab($action) && $sec!==NULL)
           $sections[] = $sec;
       }
 
@@ -1543,7 +1543,7 @@
 
       if (is_array($list))
       {
-        foreach ($list AS $tabEntry)
+        foreach ($list as $tabEntry)
         {
           if (in_array($tabEntry, $this->m_filledTabs))
           {
@@ -1566,10 +1566,18 @@
      * method will always return the name of the first tab.
      * @return String The name of the currently visible tab.
      */
-    function getActiveTab()
+    function getActiveTab($mode='')
     {
       global $ATK_VARS;
-      $tablist = $this->getTabs($ATK_VARS["atkaction"]);
+      
+      if($mode == '')
+      {
+        $tablist = $this->getTabs($ATK_VARS["atkaction"]);
+      }
+      else
+      {
+        $tablist = $this->getTabs($mode);
+      }
 
       // Note: we may not read atktab from $this->m_postvars, because $this->m_postvars is not filled if this is
       // a nested node (in a relation for example).
@@ -1869,6 +1877,11 @@
       if (!empty($record)) $defaults = $record;
       else $defaults = array();
 
+      //Yury: We must return array with standard structure or we must do isset() and is_array() regulary
+      //todo: I also think about class using, not array
+      $result["hide"] = array();
+      $result["fields"] = array();      
+      
       /* edit mode */
       if ($mode == "edit")
       {
@@ -1964,7 +1977,7 @@
        * to get HTML code for hideing the attribute's data. You can override the attribute's
        * edit() method by supplying an <attributename>_edit function in the derived classes.
        */
-      $tab = $this->getActiveTab();
+      $tab = $this->getActiveTab($mode);
 
       $this->orderAttributesBySection($mode);
 
@@ -2283,7 +2296,7 @@
       $result = array();
 
       // which tab is currently selected
-      $tab = $this->getActiveTab();
+      $tab = $this->getActiveTab($action);
 
       // build navigator
       $list = &$this->getTabs($action);
