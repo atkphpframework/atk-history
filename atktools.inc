@@ -188,17 +188,17 @@
    */
   function atkdebug($txt, $flags = 0)
   {
-    global $g_debug_msg;
     $level = atkconfig("debug");
     if ($level>=0)
     {
+      global $g_debug_msg;
       if (hasFlag($flags, DEBUG_HTML))
         $txt = htmlentities($txt);
       if (hasFlag($flags, DEBUG_WARNING))
         $txt = "<b>" . $txt . "</b>";
 
-      atkWriteLog($txt);
       $line = atkGetTimingInfo().$txt;
+      atkWriteLog($line);
 
       if ($level>2)
       {
@@ -213,11 +213,11 @@
         $g_debug_msg[]=$line;
       }
     }
-    else if ($level>-1) // at 0 we still collect the info so we
+    /*else if ($level>-1) // at 0 we still collect the info so we
                         // have it in error reports. At -1, we don't collect
     {
       $g_debug_msg[]=$txt;
-    }
+    }*/
   }
 
   /**
@@ -247,7 +247,7 @@
 
   function atkGetTimingInfo()
   {
-    return "[".elapsed().(atkconfig('debug')>0 && function_exists("memory_get_usage")?" / ".sprintf("%02.02f", (memory_get_usage()/1024/1024))."MB":"")."] ";
+    return "[".elapsed().(atkconfig('debug')>0 && function_exists("memory_get_usage")?" / ".sprintf("%02.02f", (memory_get_usage(true)/1024/1024))."MB":"")."] ";
   }
 
   /**
@@ -390,7 +390,7 @@
       $fp = @fopen(atkconfig("debuglog"),"a");
       if ($fp)
       {
-        fwrite($fp,"[".elapsed()."] ".$text."\n");
+        fwrite($fp,$text."\n");
         fclose($fp);
       }
     }

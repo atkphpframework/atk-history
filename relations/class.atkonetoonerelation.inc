@@ -1123,6 +1123,74 @@
         parent::addToSearchformFields($fields,$node,$record, $fieldprefix, $currentSearchMode);
       }
     }
+    
+   function addToExportArrayRow($record, &$row, &$totalrow, $suppressList, $mode, $decode, $empty)
+    {
+      if (!$this->hasFlag(AF_ONETOONE_INTEGRATE))
+      {
+        parent::addToExportArrayRow($record, $row, $totalrow, $mode, $decode, $empty);
+      }
+      else if ($this->createDestination())
+      {
+        // integrated version, don't add ourselves, but add all columns from the destination.
+        $p_attribList = $this->getExportDestAttribList($suppressList);
+        for ($j=0, $_j=count($p_attribList); $j<$_j; $j++)
+        {
+          $p_attribList[$j]->addToExportArrayRow($record[$this->fieldName()], $row, $totalrow, $suppressList, $mode, $decode, $empty);
+        }
+      }
+    }
+    
+    function addToExportArrayHeader(&$row, $suppressList)
+    {
+      if (!$this->hasFlag(AF_ONETOONE_INTEGRATE))
+      {
+        parent::addToExportArrayHeader($row);
+      }
+      else if ($this->createDestination())
+      {
+        // integrated version, don't add ourselves, but add all columns from the destination.
+        $p_attribList = $this->getExportDestAttribList($suppressList);
+        for ($j=0, $_j=count($p_attribList); $j<$_j; $j++)
+        {
+            $p_attribList[$j]->addToExportArrayHeader($row, $suppressList);
+        }
+      }
+    }
+    
+    function addToExportArrayTotals(&$row, $totalrow, $suppressList, $mode, $empty)
+    {
+      if (!$this->hasFlag(AF_ONETOONE_INTEGRATE))
+      {
+        parent::addToExportArrayTotals($row, $totalrow, $mode, $empty);
+      }
+      else if ($this->createDestination())
+      {
+        // integrated version, don't add ourselves, but add all columns from the destination.
+        $p_attribList = $this->getExportDestAttribList($suppressList);
+        for ($j=0, $_j=count($p_attribList); $j<$_j; $j++)
+        {
+          $p_attribList[$j]->addToExportArrayTotals($row, $totalrow, $suppressList, $mode, $empty);
+        }
+      }
+    }
+
+    function getExportDestAttribList($suppressList)
+    {
+      static $p_attribList = array();
+      if(count($p_attribList)==0)
+      {
+        foreach (array_keys($this->m_destInstance->m_attribList) as $attribname)
+        {
+          $p_attrib = &$this->m_destInstance->getAttribute($attribname);
+          if(!in_array($attribname, $suppressList) && !$p_attrib->hasFlag(AF_HIDE_LIST))
+          {
+            $p_attribList[] = &$p_attrib;
+          }
+        }
+      }
+      return $p_attribList;
+    }    
   }
 
 ?>

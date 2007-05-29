@@ -1075,11 +1075,11 @@
       $funcname = $this->m_name."_display";
       if (method_exists($this->m_ownerInstance, $funcname))
       {
-        $result.= $this->m_ownerInstance->$funcname($defaults, $mode);
+        $result = $this->m_ownerInstance->$funcname($defaults, $mode);
       }
       else
       {
-        $result.= $this->display($defaults, $mode);
+        $result = $this->display($defaults, $mode);
       }
       return $result;
     }
@@ -1192,8 +1192,6 @@
      */
     function addToListArrayHeader($action, &$arr, $fieldprefix, $flags, $atksearch, &$columnConfig)
     {
-      global $g_sessionManager, $ATK_VARS;
-
       if (!$this->hasFlag(AF_HIDE_LIST) && !($this->hasFlag(AF_HIDE_SELECT) && $action == "select"))
       {
         $key = $fieldprefix.$this->fieldName();
@@ -2416,5 +2414,37 @@
     {
       return $this->m_ownerInstance->atkNodeType()."::".$this->fieldName();
     }
+
+    function addToExportArrayRow($record, &$row, &$totalrow, $suppressList, $mode, $decode, $empty)
+    {
+      $value = $this->getView($mode, $record);
+      if (atktext("charset") != "" && $decode) $value = html_entity_decode(htmlentities($value, ENT_NOQUOTES, atktext("charset")));
+      $row[] = ($value==""?$empty:$value);
+
+      /* totalisable? */
+      if ($this->hasFlag(AF_TOTAL))
+      {
+        $sum = $this->sum($totalrow, $record);
+        $totalrow[$this->fieldName()] = $sum[$this->fieldName()];
+      }
+    }
+    
+    function addToExportArrayHeader(&$row, $suppressList)
+    {
+      $row[] = $this->label();
+    }
+    
+    function addToExportArrayTotals(&$row, $totalrow, $suppressList, $mode, $empty)
+    {
+      if ($this->hasFlag(AF_TOTAL))
+      {
+        $value = $this->getView($mode, $totalrow);
+        $row[] = ($value==""?$empty:$value);
+      }
+      else 
+      {
+        $row[] = $empty;
+      }
+    }    
   }
 ?>
