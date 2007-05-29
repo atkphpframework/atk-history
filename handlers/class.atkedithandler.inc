@@ -185,7 +185,7 @@
       $data = $node->editArray($mode, $record, $forceList, $suppressList, $fieldprefix, $ignoreTab);
       // Format some things for use in tpl.
       /* check for errors and display them */
-      $tab = $node->getActiveTab();
+      $tab = $node->getActiveTab($mode);
       $error_title = "";
       $pk_err_attrib = array();
 
@@ -206,7 +206,18 @@
             $type = (empty($error["node"]) ? $node->m_type : $error["node"]);
 
             if (count($node->getTabs($node->m_action)) > 1 && $error["tab"])
-              $error_tab = ' ('.atktext("error_tab").' '.'<a href="javascript:showTab(\''.$error["tab"].'\');">'.$this->getTabLabel($node, $error["tab"]).'</a> )';
+            {
+              $theme = &atkinstance("atk.ui.atktheme");
+              if ($theme->getAttribute("tabtype") == "dhtml")
+              {
+                $error_tab = ' ('.atktext("error_tab").' '.'<a href="javascript:showTab(\''.$error["tab"].'\');">'.$this->getTabLabel($node, $error["tab"]).'</a> )';
+              }
+              else 
+              {
+                $url = $_SERVER["PHP_SELF"]."?atknodetype=".$node->atkNodeType()."&atkaction=".$node->m_action."&atktab=".$error["tab"];
+                $error_tab = ' ('.atktext("error_tab").' '.'<a href="javascript:atkSubmit(\''.atkurlencode(session_url($url, SESSION_DEFAULT)).'\');">'.$this->getTabLabel($node, $error["tab"]).'</a> )';
+              }
+            }              
             else $error_tab = "";
 
             if(!is_array($error['attrib_name']))
