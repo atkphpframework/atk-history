@@ -148,6 +148,8 @@ class atkFrontController implements ArrayAccess
   protected static function setCurrent($controller)
   {
     self::$s_current = $controller;
+    $smarty = atkSmarty::getInstance();
+    $smarty->__controller = $controller;
   }
 
   /**
@@ -329,7 +331,7 @@ class atkFrontController implements ArrayAccess
       $this->installPlugins();
 
       $this->preFilter();
-      $method->invoke($this);
+      if (!$this->m_rendered) $method->invoke($this);
       $this->render();
       $this->postFilter();
 
@@ -418,6 +420,7 @@ class atkFrontController implements ArrayAccess
     {
       atkerror($exception->__toString());
       $this->renderContent('An unknown error occured.');
+      atkOutput::getInstance()->outputFlush();
     }
     else
     {
@@ -476,6 +479,16 @@ class atkFrontController implements ArrayAccess
   protected function setTemplate($template)
   {
     $this->m_template = $template;
+  }
+
+  /**
+   * Set wether or not the controller has rendered yet
+   *
+   * @param bool $rendered
+   */
+  protected function setRendered($rendered)
+  {
+    $this->m_rendered = $rendered;
   }
 
   /**
@@ -832,7 +845,7 @@ class atkFrontController implements ArrayAccess
   {
     $this->m_partial = true;
     $this->m_result = $content;
-    $this->m_rendered = true;
+    $this->setRendered(true);
   }
 
   /**
@@ -867,7 +880,7 @@ class atkFrontController implements ArrayAccess
 
     $this->m_partial = $partial;
     $this->m_result = $this->_render($template, $vars, $partial);
-    $this->m_rendered = true;
+    $this->setRendered(true);
   }
 
   /**
