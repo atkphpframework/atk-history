@@ -2210,7 +2210,9 @@
      */
     function edit_values($record)
     {
-      return $record;
+      //Yury: I suggest return empty array as default, because by
+      //default we don't override any value in the edit record
+      return array();      
     }
 
 
