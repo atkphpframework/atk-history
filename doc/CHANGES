@@ -33,6 +33,7 @@ Changed in ATK 5.7 PHOENIX
   quoted on import.[Boy]
 * atkImportHandler: Autocommit after every update and/or add.[Boy]
 * Notify listeners on delete. [Yury]
+* Added AF_MANYTOONE_OBLIGATORY_NULL_ITEM flag. [Boy]
 
 Changed in ATK 5.7
 ------------------

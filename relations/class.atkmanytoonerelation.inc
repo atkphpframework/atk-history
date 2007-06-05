@@ -19,10 +19,31 @@
 /**
    * flag(s) specific for atkManyToOneRelation
    */
-  define("AF_RELATION_AUTOLINK", AF_SPECIFIC_1);     // create edit/view links for the items in a manytoonerelation dropdown.
-  define("AF_RELATION_NO_NULL_ITEM", AF_SPECIFIC_2); // do not add null option ever
-  define("AF_RELATION_AUTOCOMPLETE", AF_SPECIFIC_3); // use auto-completition instead of drop-down / selection page
-  define("AF_MANYTOONE_LAZY", AF_SPECIFIC_4); // lazy load
+
+  /**
+   * Create edit/view links for the items in a manytoonerelation dropdown.
+   */
+  define("AF_RELATION_AUTOLINK", AF_SPECIFIC_1);
+
+  /**
+   * Do not add null option ever
+   */
+  define("AF_RELATION_NO_NULL_ITEM", AF_SPECIFIC_2);
+
+  /**
+   * Use auto-completition instead of drop-down / selection page
+   */
+  define("AF_RELATION_AUTOCOMPLETE", AF_SPECIFIC_3);
+
+  /**
+   * Lazy load
+   */
+  define("AF_MANYTOONE_LAZY", AF_SPECIFIC_4);
+
+  /**
+   * Add a NULL item if the MTO has AF_READONLY flag
+   */
+  define("AF_MANYTOONE_OBLIGATORY_NULL_ITEM", AF_SPECIFIC_5);
 
   /**
    * @internal include base class
@@ -619,11 +640,7 @@
           {
             $this->registerKeyListener($id, KB_CTRLCURSOR|KB_LEFTRIGHT);
             $result.= '<select id="'.$id.'" name="'.$id.'" class="atkmanytoonerelation" '.$onchange.'>';
-            if ((!$this->hasFlag(AF_OBLIGATORY) && !$this->hasFlag(AF_RELATION_NO_NULL_ITEM)) || (atkconfig("list_obligatory_null_item")&&!is_array($value)))
-            {
-              // Relation may be empty, so we must provide an empty selectable..
-              $result.= '<option value="">'.$this->getNoneLabel();
-            }
+            $result.= $this->_getEmptyListOption($value);
             // Newly added check
             $newlyadded = "";
             if (is_object($this->m_ownerInstance) && isset($this->m_ownerInstance->m_postvars[$id."_ret"]))
@@ -671,6 +688,30 @@
       }
 
       return atkerror("Could not create destination for destination: $this->m_destination!");
+    }
+
+    /**
+     * Get the HTML for an empty list option.
+     *
+     * Checks wether we need an empty list option, if so, returns the HTML
+     * else returns an empty string
+     *
+     * @param mixed $selected The currently selected value (if any)
+     * @return string The HTML with the empty list option or an empty string.
+     */
+    function _getEmptyListOption($selected)
+    {
+      $option='';
+      if (
+      (!$this->hasFlag(AF_OBLIGATORY) && !$this->hasFlag(AF_RELATION_NO_NULL_ITEM)) ||
+      // CONFIG OPTION IS DEPRECATED
+      (atkconfig("list_obligatory_null_item")&&!is_array($selected)) ||
+      ($this->hasFlag(AF_OBLIGATORY) && $this->hasFlag(AF_MANYTOONE_OBLIGATORY_NULL_ITEM)))
+      {
+        // Relation may be empty, so we must provide an empty selectable..
+        $option= '<option value="">'.$this->getNoneLabel();
+      }
+      return $option;
     }
 
 
@@ -865,7 +906,7 @@
         else $id ='atksearch'.$fieldprefix.'['. $this->fieldName().']';
 
         $this->registerKeyListener($id, KB_CTRLCURSOR|KB_UPDOWN);
-        
+
         // commented AJAX code, since it doesn't work when searching [Yury]
         $result = '<input type="text" id="'.$id.'" class="'.get_class($this).'" name="'.$id.'" value="'.$record[$this->fieldName()].'"'.
           //(($this->hasFlag(AF_RELATION_AUTOCOMPLETE) && !$extended) ? ' onchange=""' : '').
@@ -902,9 +943,9 @@
         return array("exact","substring","wildcard");
         //return parent::getSearchMode($extended);
       }
-       
+
       return array("exact"); // only support exact search when searching with dropdowns
-    }    
+    }
 
     /**
      * Creates a smart search condition for a given search value, and adds it
@@ -957,7 +998,7 @@
     function searchCondition(&$query, $table, $value, $searchmode, $fieldaliasprefix='')
     {
       $searchcondition = $this->getSearchCondition($query, $table, $value, $searchmode, false, $fieldaliasprefix);
-      
+
       if (!empty($searchcondition))
         $query->addSearchCondition($searchcondition);
     }
@@ -1761,14 +1802,14 @@
         $searchfields = $this->m_autocomplete_searchfields;
 
       $parts = preg_split('/\s+/', $searchvalue);
-      
+
       $db = &$this->getDb();
       $query = &$db->createQuery();
 
       $mainFilter = array();
       foreach ($parts as $part)
       {
-        $mainFilter[] = $this->m_destInstance->getSearchConditionByFields($searchfields, $query, "", "", $part, $this->m_autocomplete_searchmode, $this->m_autocomplete_search_case_sensitive);        
+        $mainFilter[] = $this->m_destInstance->getSearchConditionByFields($searchfields, $query, "", "", $part, $this->m_autocomplete_searchmode, $this->m_autocomplete_search_case_sensitive);
       }
 
       if (count($mainFilter) > 0)
