@@ -35,6 +35,10 @@
     {
       global $ATK_VARS;
 
+      $page = &$this->getPage();
+      $theme = &atkinstance('atk.ui.atktheme');
+      $page->register_style($theme->stylePath("style.css"));
+
       //need to keep the postdata after a AF_LARGE selection in the allfield
       if(!isset($this->m_postvars["phase"]) && isset($ATK_VARS['atkformdata']))
         foreach($ATK_VARS['atkformdata'] as $key=>$value)
@@ -352,10 +356,10 @@
     function _getSampleValue($attributename, $value)
     {
       $attr = &$this->getUsableAttribute($attributename);
-      
+
       if(method_exists($attr, "parseTime"))
         $newval = $attr->parseTime($value);
-      else  
+      else
         $newval = $attr->parseStringValue($value);
 
       if (method_exists($attr, "createDestination"))
@@ -685,7 +689,7 @@
      */
     function integrateAttribute($attr)
     {
-      return in_array(get_class($attr),array("atkonetoonerelation","atksecurerelation")) && $attr->hasFlag(AF_ONETOONE_INTEGRATE);
+      return in_array(strtolower(get_class($attr)),array("atkonetoonerelation","atksecurerelation")) && $attr->hasFlag(AF_ONETOONE_INTEGRATE);
     }
 
     /**
@@ -734,7 +738,7 @@
      */
     function hasRelationAttribute($attrname)
     {
-      return in_array(get_class($this->getUsableAttribute($attrname)),array("atkmanytoonerelation","atkmanytoonetreerelation"));
+      return in_array(strtolower(get_class($this->getUsableAttribute($attrname))),array("atkonetoonerelation","atkmanytoonerelation","atkmanytoonetreerelation"));      
     }
 
     /**
@@ -769,13 +773,16 @@
 
       if(!is_object($attr)) return;
 
+      $relation = $this->isRelationAttribute($attrname);
+
+      if ($relation) $record[$relation][$attrname] = $value;
+      else $record[$attrname] = $value;      
+      
       foreach($this->getIntegratedAttributes() as $intattr)
       {
         if(!isset($record[$intattr]))
           $record[$intattr] = array('mode'=>"add",'atkaction'=>"save");
       }
-
-      $record[$attrname] = $value;
     }
 
     /**
@@ -1036,7 +1043,10 @@
 
       if (method_exists($attr, "createDestination") && $attr->createDestination() && !in_array($attributename,$allFields))
       {
-        $relationselect = $attr->m_destInstance->selectDb($attr->m_destInstance->m_table.".".$attr->m_destInstance->primaryKeyField().' = \''.escapeSQL($value)."'");
+        $primkey = $attr->m_destInstance->getAttribute($attr->m_destInstance->primaryKeyField());
+        $quote = ($primkey->hasFlag(AF_NO_QUOTES)?"":"'");
+        $relationselect = $attr->m_destInstance->selectDb($attr->m_destInstance->m_table.".".$primkey->fieldName().' = '.
+        $quote.$primkey->value2db(array($primkey->fieldName()=>$value)).$quote);
         if (count($relationselect)==0 || count($relationselect)>1)
         {
           $searchresults = $attr->m_destInstance->searchDb($value);
@@ -1116,8 +1126,13 @@
             foreach ($validrec['atkerror'] as $atkerror)
             {
               $importerrors[$counter][] = array("msg"=>"Fouten gedetecteerd op rij $counter: ",
-              "spec"=>$atkerror['msg']);
+                                                "spec"=>$atkerror['msg']);
             }
+          }
+          else
+          {
+            $db = &atkGetDb();
+            $db->commit();
           }
           unset($validrec);
         }

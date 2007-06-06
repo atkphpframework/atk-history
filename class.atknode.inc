@@ -729,6 +729,44 @@
       $this->m_flags = $flags;
       $this->m_module = atkModule::getModuleScope();
     }
+    
+    /**
+     * Resolve section. If a section is only prefixed by
+     * a dot this means we need to add the default tab 
+     * before the dot.
+     * 
+     * @param string section name
+     * @return resolved section name
+     */
+    function resolveSection($section)
+    {
+      list($part1, $part2) = explode('.', $section);
+      if ($part2 != NULL && strlen($part2) > 0 && strlen($part1) == 0)
+        return $this->m_default_tab.".".$part2;
+      else if (strlen($part2) == 0 && strlen($part1) == 0)
+        return $this->m_default_tab;
+      else return $section;
+    }
+    
+    /**
+     * Resolve sections.
+     * 
+     * @param array $sections section list
+     * @return array resolved section list
+     * 
+     * @see resolveSection
+     */
+    function resolveSections($sections)
+    {
+      $result = array();
+      
+      foreach ($sections as $section)
+      {
+        $result[] = $this->resolveSection($section);
+      }      
+      
+      return $result;
+    }
 
     /**
      * Resolve sections, tabs and the order based on the given
@@ -760,6 +798,11 @@
       else if ($sections != "*" && !is_array($sections))
       {
         $sections = array($sections);
+      }
+      
+      if (is_array($sections))
+      {
+        $sections = $this->resolveSections($sections);
       }
 
       // Filter tabs from section names.
@@ -795,17 +838,6 @@
       if (!atkReadOptimizer())
       {
         $this->resolveSectionsTabsOrder($sections, $tabs, $order);
-
-        $secMgr = &atkGetSecurityManager();
-        if (!$secMgr->attribAllowed($this->m_type, $attribute->m_name, "edit"))
-        {
-          $attribute->m_flags |= AF_READONLY;
-
-          if (!$secMgr->attribAllowed($this->m_type, $attribute->m_name, "view"))
-          {
-            $attribute->m_flags |= AF_HIDE;
-          }
-        }
 
         // check for parent fieldname (treeview)
         if($attribute->hasFlag(AF_PARENT))
@@ -1358,7 +1390,7 @@
       $this->m_filledTabs = array();
       foreach(array_keys($this->m_attribList) as $attribname)
       {
-        $p_attrib = &$this->m_attribList[$attribname];
+        $p_attrib = &$this->getAttribute($attribname);
 
         // Only display the attribute if the attribute
         // resides on at least on visible tab
@@ -1411,8 +1443,8 @@
       {
         list($tab,$sec) = explode(".",$element);
 
-        //if this section is on an active tab, we return it.
-        if($tab == $this->getActiveTab() && $sec!==NULL)
+        //if this section is on an active tab, we return it.        
+        if($tab == $this->getActiveTab($action) && $sec!==NULL)
           $sections[] = $sec;
       }
 
@@ -1427,7 +1459,7 @@
     function addDefaultExpandedSections()
     {
       $sections = func_get_args();
-
+      $sections = $this->resolveSections($sections);
       $this->m_default_expanded_sections = array_unique(array_merge($sections, $this->m_default_expanded_sections));
     }
 
@@ -1511,7 +1543,7 @@
 
       if (is_array($list))
       {
-        foreach ($list AS $tabEntry)
+        foreach ($list as $tabEntry)
         {
           if (in_array($tabEntry, $this->m_filledTabs))
           {
@@ -1534,10 +1566,18 @@
      * method will always return the name of the first tab.
      * @return String The name of the currently visible tab.
      */
-    function getActiveTab()
+    function getActiveTab($mode='')
     {
       global $ATK_VARS;
-      $tablist = $this->getTabs($ATK_VARS["atkaction"]);
+      
+      if($mode == '')
+      {
+        $tablist = $this->getTabs($ATK_VARS["atkaction"]);
+      }
+      else
+      {
+        $tablist = $this->getTabs($mode);
+      }
 
       // Note: we may not read atktab from $this->m_postvars, because $this->m_postvars is not filled if this is
       // a nested node (in a relation for example).
@@ -1773,6 +1813,37 @@
       $params["formend"] = '</form>';
       return $params;
     }
+    
+    /**
+     * Check attribute security.
+     * 
+     * Makes some attributes read-only, or hides the attribute based
+     * on the current mode / record.
+     * 
+     * @param string $mode current mode (add, edit, view etc.)
+     * @param array $record current record (optional)
+     */
+    function checkAttributeSecurity($mode, $record=NULL)
+    {
+      // check if an attribute needs to be read-only or 
+      // even hidden based on the current record 
+      $secMgr = &atkGetSecurityManager();    
+      foreach (array_keys($this->m_attribList) as $attrName)
+      {
+        $attr = &$this->getAttribute($attrName);
+
+        if (($mode == "add" || $mode == "edit") && 
+             !$secMgr->attribAllowed($attr, $mode, $record) &&
+             $secMgr->attribAllowed($attr, "view", $record))
+        {
+          $attr->addFlag(AF_READONLY);
+        }
+        else if (!$secMgr->attribAllowed($attr, $mode, $record))
+        {
+          $attr->addFlag(AF_HIDE);
+        }
+      }
+    }
 
     /**
      * Function outputs an array with edit fields. For each field the array
@@ -1796,7 +1867,9 @@
      */
     function editArray($mode="add", $record=NULL, $forceList="", $suppressList="", $fieldprefix="", $ignoreTab=false)
     {
-
+      // update visibility of some attributes based on the current record
+      $this->checkAttributeSecurity($mode, $record);
+      
       /* read metadata */
       $this->setAttribSizes();
 
@@ -1804,6 +1877,11 @@
       if (!empty($record)) $defaults = $record;
       else $defaults = array();
 
+      //Yury: We must return array with standard structure or we must do isset() and is_array() regulary
+      //todo: I also think about class using, not array
+      $result["hide"] = array();
+      $result["fields"] = array();      
+      
       /* edit mode */
       if ($mode == "edit")
       {
@@ -1899,7 +1977,7 @@
        * to get HTML code for hideing the attribute's data. You can override the attribute's
        * edit() method by supplying an <attributename>_edit function in the derived classes.
        */
-      $tab = $this->getActiveTab();
+      $tab = $this->getActiveTab($mode);
 
       $this->orderAttributesBySection($mode);
 
@@ -1988,6 +2066,9 @@
      */
     function viewArray($mode, $record)
     {
+      // update visibility of some attributes based on the current record
+      $this->checkAttributeSecurity($mode, $record);      
+      
       $tab = $this->getActiveTab();
 
       $this->orderAttributesBySection($mode);
@@ -2129,7 +2210,9 @@
      */
     function edit_values($record)
     {
-      return $record;
+      //Yury: I suggest return empty array as default, because by
+      //default we don't override any value in the edit record
+      return array();      
     }
 
 
@@ -2215,7 +2298,7 @@
       $result = array();
 
       // which tab is currently selected
-      $tab = $this->getActiveTab();
+      $tab = $this->getActiveTab($action);
 
       // build navigator
       $list = &$this->getTabs($action);
@@ -2882,6 +2965,47 @@
     }
 
     /**
+     * Retrieve the detail list of attributes that are used in the descriptor
+     * definition.
+     * @return array The names of the attributes forming the descriptor.
+     */
+    function descriptorAttributes()
+    {
+      $fields = array();
+
+      // See if node has a custom descriptor definition.
+      if ($this->m_descTemplate != NULL || method_exists($this,"descriptor_def"))
+      {
+        if ($this->m_descTemplate != NULL)
+        $descriptordef = $this->m_descTemplate;
+        else $descriptordef = $this->descriptor_def();
+
+        // parse fields from descriptordef
+        atkimport("atk.utils.atkstringparser");
+        $parser = new atkStringParser($descriptordef);
+        $fields = $parser->getFields();
+
+        for ($i=0, $_i=count($fields);$i<$_i; $i++)
+        {
+          $elems = explode(".", $fields[$i]);
+          if (count($elems)>2)
+          {
+            // dot found. attribute is the first item.
+            $fields[$i] = $elems[0].".".$elems[1];
+          }
+        }
+        $fields = array_unique($fields);
+      }
+      else
+      {
+        // default descriptor.. (default is first attribute of a node)
+        $keys = array_keys($this->m_attribList);
+        $fields[0]=$keys[0];
+      }
+      return $fields;
+    }
+    
+    /**
      * Retrieve the list of attributes that are used in the descriptor
      * definition.
      * @return array The names of the attributes forming the descriptor.
@@ -2916,6 +3040,7 @@
 
           }
         }
+        $fields = array_unique($fields);
       }
       else
       {
@@ -3250,7 +3375,7 @@
       {
         while (list($key,$value) = each($searchArray))
         {
-          if( (($value!="") && ($mode=="admin")) || (($value!="") && in_array($key,$loadlist["query"])) )
+          if( (($value!="") && ($mode=="admin" || $mode=="export")) || (($value!="") && in_array($key,$loadlist["query"])) )
           {
             $p_attrib = &$this->getAttribute($key);
 
@@ -3496,7 +3621,7 @@
         {
           while (list($key,$value) = each($searchArray))
           {
-            if( (($value!="") && ($mode=="admin")) || (($value!="") && in_array($key,$querylist)) )
+            if( (($value!="") && ($mode=="admin" || $mode=="export")) || (($value!="") && in_array($key,$querylist)) )
             {
               $p_attrib = &$this->getAttribute($key);
 
@@ -3786,9 +3911,10 @@
      * @param unknown_type $alias
      * @param unknown_type $value
      * @param unknown_type $searchmode
+     * @param unknown_type $case_sensitive
      * @return unknown
      */
-    function getSearchCondition(&$query, $table, $alias, $value, $searchmode)
+    function getSearchCondition(&$query, $table, $alias, $value, $searchmode, $case_sensitive=false)
     {
       $usefieldalias = false;
 
@@ -3822,7 +3948,9 @@
             $attribsearchmode = $attribsearchmode[$p_attrib->m_name];
           }
           atkdebug("getSearchCondition: $table - $fieldaliasprefix");
-          $searchCondition = $p_attrib->getSearchCondition($query,$table,$value,$searchmode,$fieldaliasprefix);
+          
+          $searchCondition = $p_attrib->getSearchCondition($query,$table,$value,$searchmode,$case_sensitive,$fieldaliasprefix);
+          
           if ($searchCondition != "")
             $searchConditions[] = $searchCondition;
         }
@@ -3844,6 +3972,75 @@
       }
     }
 
+    function getSearchConditionByFields($attribs='', &$query, $table, $alias, $value, $searchmode, $case_sensitive=false)
+    {
+      if(empty($attribs)) $attribs = $this->descriptorFields();
+      
+      $usefieldalias = false;
+
+      if ($alias=="")
+      {
+        $alias = $this->m_table;
+      }
+      else
+      {
+        $usefieldalias = true;
+      }
+
+      $fieldaliasprefix = '';
+      if ($usefieldalias) $fieldaliasprefix = $alias."_AE_";
+      $searchConditions = array();
+
+      foreach($attribs as $field)
+      {
+        $searchCondition = '';
+        $elems = explode(".", $field);
+        if (count($elems)>1 ) //relation?
+        {
+          $p_attrib = &$this->getAttribute($elems[0]);
+          if(is_a($p_attrib,'atkrelation') && $p_attrib->createDestination())
+          {
+            $p_dest = &$p_attrib->m_destInstance->getAttribute($elems[1]);
+            $searchCondition = $p_dest->getSearchCondition($query, $elems[0], $value, $searchmode, $case_sensitive, $fieldaliasprefix);
+          }
+        }
+        else
+        {
+          $p_attrib = &$this->getAttribute($field);
+          if (!is_object($p_attrib)) continue;
+
+          // checking for the getSearchCondition for backwards compatibility
+          if (method_exists($p_attrib, "getSearchCondition"))
+          {
+            $attribsearchmode = $searchmode;
+            if (is_array($searchmode))
+            {
+              $attribsearchmode = $attribsearchmode[$p_attrib->m_name];
+            }
+            atkdebug("getSearchCondition: $table - $fieldaliasprefix");
+            $searchCondition = $p_attrib->getSearchCondition($query,$alias,$value,$searchmode, $case_sensitive, $fieldaliasprefix);
+          }
+          else
+          {
+            // if the attrib can't return it's searchcondition, we'll just add it to the query
+            // and hope for the best
+            $p_attrib->searchCondition($query,$alias,$value,$searchmode,$fieldaliasprefix);
+          }
+        }
+        if ($searchCondition != '')
+          $searchConditions[] = $searchCondition;
+      }
+
+      if (count($searchConditions))
+      {
+        return "(".implode(" OR ",$searchConditions).")";
+      }
+      else
+      {
+        return "";
+      }
+    }    
+    
     /**
      * Save a new record to the database.
      *
@@ -4841,5 +5038,15 @@
       if ($module==NULL) $module = $this->m_module;
       return atktext($string, $module, $this->m_type, $lng, $firstfallback, $nodefaulttext);
     }
+    
+    /**
+     * String representation for this node (PHP5 only).
+     *
+     * @return string ATK node type
+     */
+    function __toString()
+    {
+      return $this->atkNodeType();
+    }    
   }
 ?>

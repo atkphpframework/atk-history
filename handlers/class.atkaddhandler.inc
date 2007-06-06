@@ -67,6 +67,11 @@
       
       // we could get here because of a reject.
       $record = $this->getRejectInfo();     
+      
+      // If reject record don't present, we check if there are postvars set that overwrite the record contents, 
+      // this can happen when a new selection is made using the select handler etc.
+      if (!is_array($record))
+        $record = $this->m_node->updateRecord('', NULL, NULL, true);
 
       $page->addContent($this->m_node->renderActionPage("add", $this->invoke("addPage", $record)));
     }

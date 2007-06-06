@@ -569,11 +569,22 @@
       $this->addCSSClass(get_class($this));
       atkimport("atk.keyboard.atkkeyboard");
     }
+    
+
+    /**
+     * Returns the owner instance.
+     *
+     * @return atkNode owner instance
+     */
+    function &getOwnerInstance()
+    {
+      return $this->m_ownerInstance;
+    }    
 
     /**
      * Sets the owner instance.
      *
-     * @param atkNodeType $instance
+     * @param atkNode $instance
      */
     function setOwnerInstance(&$instance)
     {
@@ -1064,11 +1075,11 @@
       $funcname = $this->m_name."_display";
       if (method_exists($this->m_ownerInstance, $funcname))
       {
-        $result.= $this->m_ownerInstance->$funcname($defaults, $mode);
+        $result = $this->m_ownerInstance->$funcname($defaults, $mode);
       }
       else
       {
-        $result.= $this->display($defaults, $mode);
+        $result = $this->display($defaults, $mode);
       }
       return $result;
     }
@@ -1181,8 +1192,6 @@
      */
     function addToListArrayHeader($action, &$arr, $fieldprefix, $flags, $atksearch, &$columnConfig)
     {
-      global $g_sessionManager, $ATK_VARS;
-
       if (!$this->hasFlag(AF_HIDE_LIST) && !($this->hasFlag(AF_HIDE_SELECT) && $action == "select"))
       {
         $key = $fieldprefix.$this->fieldName();
@@ -1386,7 +1395,7 @@
      *                              of the supported modes, as returned by this
      *                              attribute's getSearchModes() method.
      */
-    function getSearchCondition(&$query, $table, $value, $searchmode)
+    function getSearchCondition(&$query, $table, $value, $searchmode, $case_sensitive=false)
     {
       // If we are accidentally mistaken for a relation and passed an array
       // we only take our own attribute value from the array
@@ -1397,7 +1406,7 @@
       $func = $searchmode."Condition";
       if (method_exists($query,$func) && $value)
       {
-        return $query->$func($table.".".$this->fieldName(),$this->escapeSQL($value));
+        return $query->$func($table.".".$this->fieldName(),$this->escapeSQL($value), $case_sensitive);
       }
       else
       {
@@ -2117,11 +2126,12 @@
       // set "searchmode" value:
       if(count($searchModes)==1)
       {
-        $field["searchmode"] = '<input type="hidden" name="atksearchmode'.$fieldprefix.'['.$this->m_name.']" value="'.$searchModes[0].'">'.atktext("search_".$searchModes[0]);
+        $field["searchmode"] = '<input type="hidden" name="atksearchmode['.$this->m_name.']" value="'.$searchModes[0].'">'.atktext("search_".$searchModes[0]);
       }
       else if (count($searchModes)>1)
       {
-        $sel = '<select name="atksearchmode'.$fieldprefix.'['.$this->m_name.']">';
+        $sel = '<select name="atksearchmode['.$this->m_name.']">';
+        
         foreach (array_values($searchModes) as $searchMode)
         {
           // if supported, we select the 'like' searchmode by default
@@ -2237,8 +2247,13 @@
      */
     function escapeSQL($value, $wildcards=false)
     {
-      $db = &$this->getDb();
-      return $db->escapeSQL($value, $wildcards);
+      if(!$this->hasFlag(AF_NO_QUOTES))
+      {
+        $db = &$this->getDb();
+        return $db->escapeSQL($value, $wildcards);
+      }
+      
+      return $value;
     }
 
     /**
@@ -2389,5 +2404,47 @@
     {
       return $this->m_initial_hidden;
     }
+    
+    /**
+     * String representation for this attribute (PHP5 only).
+     *
+     * @return string attribute name prefixed with node type
+     */
+    function __toString()
+    {
+      return $this->m_ownerInstance->atkNodeType()."::".$this->fieldName();
+    }
+
+    function addToExportArrayRow($record, &$row, &$totalrow, $suppressList, $mode, $decode, $empty)
+    {
+      $value = $this->getView($mode, $record);
+      if (atktext("charset") != "" && $decode) $value = html_entity_decode(htmlentities($value, ENT_NOQUOTES, atktext("charset")));
+      $row[] = ($value==""?$empty:$value);
+
+      /* totalisable? */
+      if ($this->hasFlag(AF_TOTAL))
+      {
+        $sum = $this->sum($totalrow, $record);
+        $totalrow[$this->fieldName()] = $sum[$this->fieldName()];
+      }
+    }
+    
+    function addToExportArrayHeader(&$row, $suppressList)
+    {
+      $row[] = $this->label();
+    }
+    
+    function addToExportArrayTotals(&$row, $totalrow, $suppressList, $mode, $empty)
+    {
+      if ($this->hasFlag(AF_TOTAL))
+      {
+        $value = $this->getView($mode, $totalrow);
+        $row[] = ($value==""?$empty:$value);
+      }
+      else 
+      {
+        $row[] = $empty;
+      }
+    }    
   }
 ?>

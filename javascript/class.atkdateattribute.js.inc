@@ -75,7 +75,7 @@ function AdjustDate(el, arr, newDate)
   }
   
   var info = eval('atkdateattribute_' + arr);
-  setTimeout(function() { RealAdjustDate(el, arr, info.format, info.min, info.max, info.emptyfield, info.weekday, newDate) }, 1);
+  setTimeout(function() { RealAdjustDate(el, arr, info.format, info.min, info.max, info.emptyfield, info.weekday, newDate, info.treshold) }, 1);
 }
 
 /**
@@ -87,7 +87,7 @@ function AdjustDate(el, arr, newDate)
  * @param str_max the maximum valid date
  * @param obligatory is the date field obligatory
  */
-function RealAdjustDate(el, arr, format, str_min, str_max, emptyfield, weekday, newDate)
+function RealAdjustDate(el, arr, format, str_min, str_max, emptyfield, weekday, newDate, treshold)
 {
   var format_month, format_day, array_months, format_weekday;
   var frm = el.form;
@@ -171,6 +171,9 @@ function RealAdjustDate(el, arr, format, str_min, str_max, emptyfield, weekday, 
 
   if (current["d"] != 0 && current["y"] != 0 && current["m"] != 0)
   {
+    if (current["y"] <= treshold) current["y"] += 2000;
+    else if(current["y"] > treshold && current["y"] <= 99) current["y"] += 1900;
+    
     date_current = new Date(current["y"], current["m"]-1, current["d"]);
 
     /* check dates */

@@ -301,6 +301,8 @@
       $res.= '  <meta http-equiv="Content-Type" content="text/html; charset='.atktext("charset","atk").'" />'."\n";
       if ($extra_header != "") $res.= $extra_header."\n";
 
+      if (atkconfig("debug")>0) $res.="  <script>document.__debugging=true;</script>\n";
+
       $this->addScripts($res);
       $this->addStyles($res);
 
@@ -404,7 +406,7 @@
     {
       $this->m_content.=$content;
     }
-    
+
     /**
      * Returns the current page content.
      *
@@ -414,7 +416,7 @@
     {
       return $this->m_content;
     }
-    
+
     /**
      * Sets the page content (overwriting current content).
      *
@@ -450,7 +452,7 @@
      *                      to set this to false only when rendering content
      *                      that either already had its own <body></body>
      *                      statement, or content that needs no body
-     *                      statements, like a frameset. (DEPRICATED !!)
+     *                      statements, like a frameset. (DEPRECATED !!)
      * @param int $flags Flags for the render function
      * @param string $extrabodyprops  Extra attributes to add to the <body> tag.
      * @return String The HTML page, including <html> and </html> tags.

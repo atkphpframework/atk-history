@@ -19,10 +19,31 @@
 /**
    * flag(s) specific for atkManyToOneRelation
    */
-  define("AF_RELATION_AUTOLINK", AF_SPECIFIC_1);     // create edit/view links for the items in a manytoonerelation dropdown.
-  define("AF_RELATION_NO_NULL_ITEM", AF_SPECIFIC_2); // do not add null option ever
-  define("AF_RELATION_AUTOCOMPLETE", AF_SPECIFIC_3); // use auto-completition instead of drop-down / selection page
-  define("AF_MANYTOONE_LAZY", AF_SPECIFIC_4); // lazy load
+
+  /**
+   * Create edit/view links for the items in a manytoonerelation dropdown.
+   */
+  define("AF_RELATION_AUTOLINK", AF_SPECIFIC_1);
+
+  /**
+   * Do not add null option ever
+   */
+  define("AF_RELATION_NO_NULL_ITEM", AF_SPECIFIC_2);
+
+  /**
+   * Use auto-completition instead of drop-down / selection page
+   */
+  define("AF_RELATION_AUTOCOMPLETE", AF_SPECIFIC_3);
+
+  /**
+   * Lazy load
+   */
+  define("AF_MANYTOONE_LAZY", AF_SPECIFIC_4);
+
+  /**
+   * Add a NULL item if the MTO has AF_READONLY flag
+   */
+  define("AF_MANYTOONE_OBLIGATORY_NULL_ITEM", AF_SPECIFIC_5);
 
   /**
    * @internal include base class
@@ -460,6 +481,23 @@
         $this->m_destInstance->selectDb($this->m_destInstance->primaryKey($record[$this->fieldName()]), "", "", "", $includes);
     }
 
+    function populateRelations(&$record)
+    {
+      if ($this->createDestination())
+      {
+        $fields = $this->m_destInstance->descriptorFields();
+        foreach ($fields as $field)
+        {
+          $p_attr = &$this->m_destInstance->getAttribute($field);
+          if(is_a($p_attr,"atkonetoonerelation"))
+          {
+            $this->populate($record);
+            break;
+          }
+        }
+      }
+    }
+
     /**
      * Returns a displayable string for this value.
      * @param $record Record
@@ -471,6 +509,8 @@
       {
         if (count($record[$this->fieldName()])==count($this->m_refKey))
           $this->populate($record);
+
+        $this->populateRelations($record);
 
         if(!$this->isEmpty($record))
         {
@@ -542,6 +582,7 @@
      */
     function edit($record, $fieldprefix="", $mode="edit")
     {
+      $this->populateRelations($record);
       // Two variances.. one with a dropdownbox containing all records,
       // and one with a dropdownbox that contains the last 10 used records,
       // with a link to a selector with all records. This second one is for
@@ -599,11 +640,7 @@
           {
             $this->registerKeyListener($id, KB_CTRLCURSOR|KB_LEFTRIGHT);
             $result.= '<select id="'.$id.'" name="'.$id.'" class="atkmanytoonerelation" '.$onchange.'>';
-            if ((!$this->hasFlag(AF_OBLIGATORY) && !$this->hasFlag(AF_RELATION_NO_NULL_ITEM)) || (atkconfig("list_obligatory_null_item")&&!is_array($value)))
-            {
-              // Relation may be empty, so we must provide an empty selectable..
-              $result.= '<option value="">'.$this->getNoneLabel();
-            }
+            $result.= $this->_getEmptyListOption($value);
             // Newly added check
             $newlyadded = "";
             if (is_object($this->m_ownerInstance) && isset($this->m_ownerInstance->m_postvars[$id."_ret"]))
@@ -651,6 +688,30 @@
       }
 
       return atkerror("Could not create destination for destination: $this->m_destination!");
+    }
+
+    /**
+     * Get the HTML for an empty list option.
+     *
+     * Checks wether we need an empty list option, if so, returns the HTML
+     * else returns an empty string
+     *
+     * @param mixed $selected The currently selected value (if any)
+     * @return string The HTML with the empty list option or an empty string.
+     */
+    function _getEmptyListOption($selected)
+    {
+      $option='';
+      if (
+      (!$this->hasFlag(AF_OBLIGATORY) && !$this->hasFlag(AF_RELATION_NO_NULL_ITEM)) ||
+      // CONFIG OPTION IS DEPRECATED
+      (atkconfig("list_obligatory_null_item")&&!is_array($selected)) ||
+      ($this->hasFlag(AF_OBLIGATORY) && $this->hasFlag(AF_MANYTOONE_OBLIGATORY_NULL_ITEM)))
+      {
+        // Relation may be empty, so we must provide an empty selectable..
+        $option= '<option value="">'.$this->getNoneLabel();
+      }
+      return $option;
     }
 
 
@@ -845,23 +906,25 @@
         else $id ='atksearch'.$fieldprefix.'['. $this->fieldName().']';
 
         $this->registerKeyListener($id, KB_CTRLCURSOR|KB_UPDOWN);
+
+        // commented AJAX code, since it doesn't work when searching [Yury]
         $result = '<input type="text" id="'.$id.'" class="'.get_class($this).'" name="'.$id.'" value="'.$record[$this->fieldName()].'"'.
-          ($this->hasFlag(AF_RELATION_AUTOCOMPLETE) ? ' onchange=""' : '').
+          //(($this->hasFlag(AF_RELATION_AUTOCOMPLETE) && !$extended) ? ' onchange=""' : '').
           ($this->m_searchsize > 0 ? ' size="'.$this->m_searchsize.'"' : '').
           ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>';
 
-        if ($this->hasFlag(AF_RELATION_AUTOCOMPLETE))
-        {
-          $page = &$this->m_ownerInstance->getPage();
-          $url = partial_url($this->m_ownerInstance->atkNodeType(), $this->m_ownerInstance->m_action, 'attribute.'.$this->fieldName().'.autocomplete_search');
-          $code = "ATK.ManyToOneRelation.completeSearch('{$id}', '{$id}_result', '{$url}', {$this->m_autocomplete_minchars});";
-          $this->m_ownerInstance->addStyle("atkmanytoonerelation.css");
-          $page->register_script(atkconfig("atkroot").'atk/javascript/prototype/prototype.js');
-          $page->register_script(atkconfig("atkroot").'atk/javascript/scriptaculous/scriptaculous.js');
-          $page->register_script(atkconfig('atkroot').'atk/javascript/class.atkmanytoonerelation.js');
-          $page->register_loadscript($code);
-          $result .= '<div id="'.$id.'_result" style="display: none" class="atkmanytoonerelation_result"></div>';
-        }
+//        if ($this->hasFlag(AF_RELATION_AUTOCOMPLETE) && !$extended)
+//        {
+//          $page = &$this->m_ownerInstance->getPage();
+//          $url = partial_url($this->m_ownerInstance->atkNodeType(), $this->m_ownerInstance->m_action, 'attribute.'.$this->fieldName().'.autocomplete_search');
+//          $code = "ATK.ManyToOneRelation.completeSearch('{$id}', '{$id}_result', '{$url}', {$this->m_autocomplete_minchars});";
+//          $this->m_ownerInstance->addStyle("atkmanytoonerelation.css");
+//          $page->register_script(atkconfig("atkroot").'atk/javascript/prototype/prototype.js');
+//          $page->register_script(atkconfig("atkroot").'atk/javascript/scriptaculous/scriptaculous.js');
+//          $page->register_script(atkconfig('atkroot').'atk/javascript/class.atkmanytoonerelation.js');
+//          $page->register_loadscript($code);
+//          $result .= '<div id="'.$id.'_result" style="display: none" class="atkmanytoonerelation_result"></div>';
+//        }
 
         return $result;
       }
@@ -873,13 +936,15 @@
      * @param boolean $extended Whether extended search is being used
      * @return String the default searchmode for this attribute.
      */
-    function getSearchMode($extended = false)
+    function getSearchModes($extended = false)
     {
       if ($this->hasFlag(AF_LARGE))
       {
-        return parent::getSearchMode($extended);
+        return array("exact","substring","wildcard");
+        //return parent::getSearchMode($extended);
       }
-      return "exact"; // only support exact search when searching with dropdowns
+
+      return array("exact"); // only support exact search when searching with dropdowns
     }
 
     /**
@@ -932,14 +997,15 @@
      */
     function searchCondition(&$query, $table, $value, $searchmode, $fieldaliasprefix='')
     {
-      $searchcondition = $this->getSearchCondition($query, $table, $fieldaliasprefix, $value, $searchmode);
+      $searchcondition = $this->getSearchCondition($query, $table, $value, $searchmode, false, $fieldaliasprefix);
+
       if (!empty($searchcondition))
         $query->addSearchCondition($searchcondition);
     }
 
-    function getSearchCondition(&$query, $table, $fieldaliasprefix, $value, $searchmode)
+    function getSearchCondition(&$query, $table, $value, $searchmode, $case_sensitive=false, $fieldaliasprefix='')
     {
-      if (!$this->createDestination()) return;
+      if (!$this->createDestination() || empty($value)) return;
 
     	if (!$this->hasFlag(AF_LARGE) && !$this->hasFlag(AF_RELATION_AUTOCOMPLETE))
     	{
@@ -971,7 +1037,7 @@
     			  }
     			  elseif ($value[0] != "")
             {
-              return $query->exactCondition($table.".".$this->fieldName(),$this->escapeSQL($value[0]));
+              return $query->exactCondition($table.".".$this->fieldName(),$this->escapeSQL($value[0]), $case_sensitive);
             }
           }
           else // search for more values using IN()
@@ -981,16 +1047,16 @@
         }
         else
         {
-          $cond= $query->exactCondition($table.".".$this->fieldName(),$this->escapeSQL($value));
-          atkdebug($cond, "condition");
+          $cond= $query->exactCondition($table.".".$this->fieldName(),$this->escapeSQL($value), $case_sensitive);
+          //atkdebug($cond, "condition");
           return $cond;
         }
       }
       else // AF_LARGE || AF_RELATION_AUTOCOMPLETE
       {
-        // ask the destination node for it's search condition
+        // ask the destination node for its search condition
         $alias = $fieldaliasprefix . $this->fieldName();
-        return $this->m_destInstance->getSearchCondition($query, $alias, $fieldaliasprefix, $value, $searchmode);
+        return $this->m_destInstance->getSearchCondition($query, $alias, $fieldaliasprefix, $value, $searchmode, $case_sensitive);
       }
     }
 
@@ -1244,9 +1310,9 @@
     function isSelectableRecord($record=array(), $mode="select")
     {
       if ($record[$this->fieldName()] == NULL) return false;
-      
+
       $this->createDestination();
-      
+
       // if the value is set directly in the record field we first
       // need to convert the value to an array
       if (!is_array($record[$this->fieldName()]))
@@ -1440,7 +1506,7 @@
       if (!$this->createDestination() || count($this->m_listColumns) == 0) return;
 
       foreach ($this->m_listColumns as $attribname)
-      {        
+      {
         $p_attrib = &$this->m_destInstance->getAttribute($attribname);
         $p_attrib->m_flags |= AF_HIDE_LIST;
         $p_attrib->m_flags ^= AF_HIDE_LIST;
@@ -1570,7 +1636,7 @@
 
       return $order;
     }
-    
+
     /**
      * Creates and registers the on change handler caller function.
      * This method will be used to message listeners for a change
@@ -1590,27 +1656,27 @@
         ";
 
         $this->m_onchangehandler_init = "newvalue = el.value;\n";
-        $page = &$this->m_ownerInstance->getPage();        
+        $page = &$this->m_ownerInstance->getPage();
         $page->register_scriptcode($js);
         $this->_renderChangeHandler($fieldPrefix);
-      }   
-      
-      return $function;   
+      }
+
+      return $function;
     }
-    
+
     /**
      * Draw the auto-complete box.
      */
     function drawAutoCompleteBox($record, $fieldPrefix, $mode)
     {
       $this->createDestination();
-      
-      // register base JavaScript code and stylesheet
-      $page = &$this->m_ownerInstance->getPage();              
-      $page->register_script(atkconfig('atkroot').'atk/javascript/class.atkmanytoonerelation.js');
-      $this->m_ownerInstance->addStyle("atkmanytoonerelation.css");      
 
-      // validate is this is a selectable record and if so 
+      // register base JavaScript code and stylesheet
+      $page = &$this->m_ownerInstance->getPage();
+      $page->register_script(atkconfig('atkroot').'atk/javascript/class.atkmanytoonerelation.js');
+      $this->m_ownerInstance->addStyle("atkmanytoonerelation.css");
+
+      // validate is this is a selectable record and if so
       // retrieve the display label and hidden value
       if ($this->_isSelectableRecord($record, 'select'))
       {
@@ -1618,7 +1684,7 @@
         $label = $this->m_destInstance->descriptor($record[$this->fieldName()]);
         $value = $this->m_destInstance->primaryKey($record[$this->fieldName()]);
       }
-      else 
+      else
       {
         $current = NULL;
         $label = '';
@@ -1633,14 +1699,14 @@
         '<input type="hidden" id="'.$id.'" name="'.$id.'" value="'.$value.'" />
          <input type="text" id="'.$id.'_search" value="'.htmlentities($label).'" class="atkmanytoonerelation_search" size="40" onfocus="this.select()" />
          <img id="'.$id.'_spinner" src="atk/images/spinner.gif" style="vertical-align: middle; display: none"> '.$links.'<br />
-         <div id="'.$id.'_result" style="display: none" class="atkmanytoonerelation_result"></div>';      
-        
+         <div id="'.$id.'_result" style="display: none" class="atkmanytoonerelation_result"></div>';
+
       // register JavaScript code that attaches the auto-complete behaviour to the search box
       $url = partial_url($this->m_ownerInstance->atkNodeType(), $mode, 'attribute.'.$this->fieldName().'.autocomplete');
-      $function = $this->createOnChangeCaller($id, $fieldPrefix);      
-      $code = "ATK.ManyToOneRelation.completeEdit('{$id}_search', '{$id}_result', '$id', '{$id}_spinner', '$url', $function, 1);";            
+      $function = $this->createOnChangeCaller($id, $fieldPrefix);
+      $code = "ATK.ManyToOneRelation.completeEdit('{$id}_search', '{$id}_result', '$id', '{$id}_spinner', '$url', $function, 1);";
       $page->register_loadscript($code);
-      
+
       return $result;
     }
 
@@ -1731,55 +1797,19 @@
     function createSearchFilter($searchvalue)
     {
       if($this->m_autocomplete_searchfields=="")
-        $searchfields = $this->m_destInstance->descriptorFields();
+        $searchfields = $this->m_destInstance->descriptorAttributes();
       else
         $searchfields = $this->m_autocomplete_searchfields;
 
       $parts = preg_split('/\s+/', $searchvalue);
 
+      $db = &$this->getDb();
+      $query = &$db->createQuery();
+
       $mainFilter = array();
       foreach ($parts as $part)
       {
-        $filter = array();
-        foreach($searchfields as $attribname)
-        {
-          if (strstr($attribname, '.')) $table = '';
-          else $table = $this->m_destInstance->m_table.".";
-
-          if(!$this->m_autocomplete_search_case_sensitive)
-            $tmp = "LOWER(".$table.$attribname.")";
-          else
-            $tmp = $table.$attribname;
-
-          switch($this->m_autocomplete_searchmode)
-          {
-            case "exact":
-              if(!$this->m_autocomplete_search_case_sensitive)
-                $tmp.= " = LOWER('{$part}')";
-              else
-                $tmp.= " = '{$part}'";
-              break;
-            case "startswith":
-              if(!$this->m_autocomplete_search_case_sensitive)
-                $tmp.= " LIKE LOWER('{$part}%')";
-              else
-                $tmp.= " LIKE '{$part}%'";
-              break;
-            case "contains":
-              if(!$this->m_autocomplete_search_case_sensitive)
-                $tmp.= " LIKE LOWER('%{$part}%')";
-              else
-                $tmp.= " LIKE '%{$part}%'";
-              break;
-            default:
-              $tmp.= " = LOWER('{$part}')";
-          }
-
-          $filter[] = $tmp;
-        }
-
-        if (count($filter) > 0)
-          $mainFilter[] = "(".implode(") OR (", $filter).")";
+        $mainFilter[] = $this->m_destInstance->getSearchConditionByFields($searchfields, $query, "", "", $part, $this->m_autocomplete_searchmode, $this->m_autocomplete_search_case_sensitive);
       }
 
       if (count($mainFilter) > 0)

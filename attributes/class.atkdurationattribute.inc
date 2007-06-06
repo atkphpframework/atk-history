@@ -92,7 +92,7 @@
           {
             $result .= '<option value="'.$h.'" ';
             if ($curhours==$h) $result.= "selected";
-            $result .='>'.$h.' '.atktext('hours','atk');
+            $result .='>'.$h.' '.($h===1?atktext('hour','atk'):atktext('hours','atk'));
             if ($this->m_resolution_min<=60)
             {
               $h++;
@@ -113,7 +113,7 @@
           {
             $result .= '<option value="'.$m.'" ';
             if ($curminutes==$m) $result.= "selected";
-            $result .='>'.$m.' '.atktext('minutes','atk');
+            $result .='>'.$m.' '.($m===1?atktext('minute','atk'):atktext('minutes','atk'));
             if ($this->m_resolution_min<=1)
             {
               $m++;
@@ -134,16 +134,6 @@
                 ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').'>';
       }
       return $result;
-    }
-
-    /**
-     * Returns a piece of html code that can be used in a form to search values.
-     * @param array $record Array of records, with for each record 2 fields (hours, minutes)
-     * @return String Piece a of HTML Code
-     */
-    function search($record="")
-    {
-      return "&nbsp;"; // currently not searchable.
     }
 
     /**
@@ -243,6 +233,5 @@
         return $rec[$this->fieldName()]["hours"]*60 + $rec[$this->fieldName()]["minutes"];
       }
     }
-
   }
 ?>

@@ -19,22 +19,22 @@
   /**
    * flags specific for atkOneToOneRelation
    */
-  
+
   /**
    * Override the default no add flag
    */
   define("AF_ONETOONE_ADD",             AF_SPECIFIC_1);
-  
+
   /**
    * Enable error notifications / triggers
    */
   define("AF_ONETOONE_ERROR",           AF_SPECIFIC_2);
-  
+
   /**
    * Invisibly integrate a onetoonerelation as if the fields where part of the current node.
    */
   define("AF_ONETOONE_INTEGRATE",       AF_SPECIFIC_3);
-  
+
   /**
    * Use lazy loading instead of query addition.
    */
@@ -125,7 +125,7 @@
       $myrecord = $record[$this->fieldName()];
 
       // default result
-      $result = text("none");
+      $result = atktext("none");
 
       if ($this->createDestination())
       {
@@ -236,7 +236,7 @@
         // When storing, we don't add to the query.. we have our own store() method..
         // With one exception. If the foreign key is in the source node, we also need to update
         // the refkey value.
-        if ($this->m_refKey=="" && $mode=="add")
+        if ($this->m_refKey=="" && ($mode=="add" || $mode=="update"))
         {
           $query->addField($this->fieldName(),$rec[$this->fieldName()][$this->m_destInstance->m_primaryKey[0]],"","",!$this->hasFlag(AF_NO_QUOTES));
         }
@@ -338,7 +338,7 @@
        // Foreign key is in the source node.
        $condition = $rel->m_table.'.'.$rel->m_primaryKey[0]."=".$record[$this->fieldName()][$this->m_ownerInstance->primaryKeyField()];
       }
-      
+
       return $rel->deleteDb($condition);
     }
 
@@ -759,12 +759,12 @@
               $arr["fields"][] = array("html"=>"-", "tabs"=>$this->m_tabs);
               $arr["fields"][] = array("line"=>"<b>".atktext($this->m_name, $this->m_ownerInstance->m_module, $this->m_ownerInstance->m_type)."</b>", "tabs"=>$this->m_tabs);
             }
-            
+
             if (is_array($a["fields"]))
             {
               $arr["fields"] = array_merge($arr["fields"], $a["fields"]);
             }
-            
+
             if (!$this->hasFlag(AF_ONETOONE_INTEGRATE) && !$this->hasFlag(AF_NOLABEL) && !(count($a["fields"]) == 1 && $a["fields"][0]["name"] == $this->m_name))
             {
               /* separator */
@@ -806,12 +806,12 @@
       {
         if ($this->createDestination())
 	      {
-          $this->m_destInstance->validate($record[$this->fieldName()], $mode, array($this->m_refKey));          
-          
+          $this->m_destInstance->validate($record[$this->fieldName()], $mode, array($this->m_refKey));
+
           // only add 'atkerror' record when 1:1 relation contains error
           if (isset($record[$this->fieldName()]["atkerror"]))
           {
-            $record["atkerror"] = array_merge((array)$record["atkerror"], (array)$record[$this->fieldName()]["atkerror"]);          
+            $record["atkerror"] = array_merge((array)$record["atkerror"], (array)$record[$this->fieldName()]["atkerror"]);
           }
 	      }
       }
@@ -978,7 +978,7 @@
       $this->getSearchCondition($query, $table, $value, $searchmode);
     }
 
-    function getSearchCondition(&$query, $table, $value, $searchmode)
+    function getSearchCondition(&$query, $table, $value, $searchmode, $case_sensitive=false)
     {
       if (is_array($value))
       {
@@ -1005,7 +1005,7 @@
 
               // we need to left join the destination table into the query
               // (don't worry ATK won't add it when it's already there)
-              $query->addJoin($new_table,$new_table,($this->getJoinCondition()),false);
+              $query->addJoin($new_table,$new_table,($this->getJoinCondition($query,$table)),false);
             }
             $p_attrib->searchCondition($query,$new_table,$val,$searchmode);
           }
@@ -1017,7 +1017,7 @@
             $p_attrib = &$this->m_ownerInstance->m_attribList[$key];
             if (is_object($p_attrib))
             {
-              $p_attrib->searchCondition($query,$p_attrib->getTable($key),$val,$searchmode);
+              $p_attrib->searchCondition($query,$p_attrib->getTable($key),$val,$searchmode, $case_sensitive);
             }
             else atkdebug("Field $key was not found in this relation (this is very weird)");
           }
@@ -1031,6 +1031,8 @@
         if ($this->createDestination())
         {
           $descfields = $this->m_destInstance->descriptorFields();
+          $searchConditions = array();
+          
           foreach ($descfields as $key)
           {
             $p_attrib = &$this->m_destInstance->m_attribList[$key];
@@ -1048,11 +1050,24 @@
 
                 // we need to left join the destination table into the query
                 // (don't worry ATK won't add it when it's already there)
-                $query->addJoin($new_table,$new_table,($this->getJoinCondition()),false);
+                $query->addJoin($new_table,$new_table,($this->getJoinCondition($query,$table)),false);
               }
-              $p_attrib->searchCondition($query,$new_table,$value,$searchmode);
+              
+              $searchCondition = $p_attrib->getSearchCondition($query,$new_table,$value,$searchmode,$case_sensitive);
+              
+              if ($searchCondition != "")
+                $searchConditions[] = $searchCondition;
             }
           }
+          
+          if (count($searchConditions))
+          {
+            return "(".implode(" OR ",$searchConditions).")";
+          }
+          else
+          {
+            return "";
+          }          
         }
       }
     }
@@ -1064,7 +1079,10 @@
      */
     function getJoinCondition(&$query, $tablename="",$fieldalias="")
     {
-      $condition = $this->m_ownerInstance->m_table . "." . $this->fieldName();
+      if ($tablename!="") $realtablename=$tablename;
+      else $realtablename = $this->m_ownerInstance->m_table;
+      
+      $condition = $realtablename . "." . $this->fieldName();
       $condition .= "=";
       $condition .= $this->m_destInstance->m_table . "." . $this->m_destInstance->primaryKeyField();
       return $condition;
@@ -1105,6 +1123,74 @@
         parent::addToSearchformFields($fields,$node,$record, $fieldprefix, $currentSearchMode);
       }
     }
+    
+   function addToExportArrayRow($record, &$row, &$totalrow, $suppressList, $mode, $decode, $empty)
+    {
+      if (!$this->hasFlag(AF_ONETOONE_INTEGRATE))
+      {
+        parent::addToExportArrayRow($record, $row, $totalrow, $mode, $decode, $empty);
+      }
+      else if ($this->createDestination())
+      {
+        // integrated version, don't add ourselves, but add all columns from the destination.
+        $p_attribList = $this->getExportDestAttribList($suppressList);
+        for ($j=0, $_j=count($p_attribList); $j<$_j; $j++)
+        {
+          $p_attribList[$j]->addToExportArrayRow($record[$this->fieldName()], $row, $totalrow, $suppressList, $mode, $decode, $empty);
+        }
+      }
+    }
+    
+    function addToExportArrayHeader(&$row, $suppressList)
+    {
+      if (!$this->hasFlag(AF_ONETOONE_INTEGRATE))
+      {
+        parent::addToExportArrayHeader($row);
+      }
+      else if ($this->createDestination())
+      {
+        // integrated version, don't add ourselves, but add all columns from the destination.
+        $p_attribList = $this->getExportDestAttribList($suppressList);
+        for ($j=0, $_j=count($p_attribList); $j<$_j; $j++)
+        {
+            $p_attribList[$j]->addToExportArrayHeader($row, $suppressList);
+        }
+      }
+    }
+    
+    function addToExportArrayTotals(&$row, $totalrow, $suppressList, $mode, $empty)
+    {
+      if (!$this->hasFlag(AF_ONETOONE_INTEGRATE))
+      {
+        parent::addToExportArrayTotals($row, $totalrow, $mode, $empty);
+      }
+      else if ($this->createDestination())
+      {
+        // integrated version, don't add ourselves, but add all columns from the destination.
+        $p_attribList = $this->getExportDestAttribList($suppressList);
+        for ($j=0, $_j=count($p_attribList); $j<$_j; $j++)
+        {
+          $p_attribList[$j]->addToExportArrayTotals($row, $totalrow, $suppressList, $mode, $empty);
+        }
+      }
+    }
+
+    function getExportDestAttribList($suppressList)
+    {
+      static $p_attribList = array();
+      if(count($p_attribList)==0)
+      {
+        foreach (array_keys($this->m_destInstance->m_attribList) as $attribname)
+        {
+          $p_attrib = &$this->m_destInstance->getAttribute($attribname);
+          if(!in_array($attribname, $suppressList) && !$p_attrib->hasFlag(AF_HIDE_LIST))
+          {
+            $p_attribList[] = &$p_attrib;
+          }
+        }
+      }
+      return $p_attribList;
+    }    
   }
 
 ?>
