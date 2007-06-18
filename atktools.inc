@@ -1344,7 +1344,7 @@
       header("Content-Length: ".filesize($file));
       header('Content-Disposition:  '.$disp.'; filename="'.$filename.'"');
       if(eregi("ie", $browser["browser"])) header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
-      if ($_SERVER["SERVER_PORT"] == "443" AND eregi("msie", $_SERVER["HTTP_USER_AGENT"]))
+      if (($_SERVER["SERVER_PORT"] == "443" || $_SERVER['HTTP_X_FORWARDED_PROTO' ]==='https') && eregi("msie", $_SERVER["HTTP_USER_AGENT"]))
       {
         header('Pragma: public');
       }
