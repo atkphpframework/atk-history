@@ -31,6 +31,20 @@
    * clearly visible.
    */
   define("DEBUG_WARNING", 2);
+  
+  /**
+   * Hides the debug unless in level 2.
+   * This should be used for debug you only really want to see if you
+   * are developping (like deprecated warnings).
+   */
+  define("DEBUG_NOTICE", 4);
+
+  /**
+   * Hides the debug unless in level 2.
+   * This should be used for debug you only really want to see if you
+   * are developping (like deprecated warnings).
+   */
+  define("DEBUG_NOTICE", 4);
 
   /**
    * Function atkErrorHandler
@@ -74,13 +88,13 @@
     if ($errtype==E_NOTICE || error_reporting()==0)
     {
       // Just show notices in the debug log, but don't influence the program flow
-      //atkdebug("[$errortypestring] $errstr in $errfile (line $errline)");
+      atkdebug("[$errortypestring] $errstr in $errfile (line $errline)",DEBUG_NOTICE);
       return;
     }
     else if (($errtype & (E_WARNING|E_USER_WARNING)) > 0)
     {
       // This is something we should pay attention to, but we don't need to die.
-      atkerror("[$errortypestring] $errstr in $errfile (line $errline)");
+//      atkerror("[$errortypestring] $errstr in $errfile (line $errline)");
       return;
     }
     else
@@ -118,7 +132,7 @@
       $output=atkOutput::getInstance();
       $res ="<html>";
       $res.='<body bgcolor="#ffffff" color="#000000">';
-      $res.="<font color=\"$level_color\"><b>".atktext($level,"atk")."</b></font>: $msg.<br>\n";
+      $res.="<font color=\"$level_color\"><b>".atktext($level,"atk")."</b></font>: $msg.<br />\n";
       $res.="<b>Halted</b>";
       $output->output($res);
       $output->outputFlush();
@@ -201,7 +215,7 @@
           $g_debug_msg[]=$line;
         }
       }
-      else
+      else if (!hasFlag($flags,DEBUG_NOTICE))
       {
         $g_debug_msg[]=$line;
       }
@@ -211,6 +225,31 @@
     {
       $g_debug_msg[]=$txt;
     }
+  }
+  
+  /**
+   * Send a notice to the debug log.
+   * A notice doesn't get show unless your debug level is 3 or higher.
+   *
+   * @param String $txt The text that will be added to the log
+   */
+  function atknotice($txt)
+  {
+    return atkdebug($txt,DEBUG_NOTICE);
+  }
+
+  /**
+   * Send a warning to the debug log.
+   * A warning gets shown more prominently than a normal debug line.
+   * However it does not trigger a mailreport
+   * or anything else that an atkerror triggers.
+   *
+   * @param unknown_type $txt
+   * @return unknown
+   */
+  function atkwarning($txt)
+  {
+    return atkdebug($txt,DEBUG_WARNING);
   }
 
   function atkGetTimingInfo()
@@ -246,12 +285,14 @@
    */
   function atk_get_trace($format="html")
   {
+    return "";
     // Return if the debug_backtrace function doesn't exist
     if(!function_exists("debug_backtrace"))
       return "Incorrect php-version for atk_get_trace()";
 
     // Get the debug backtrace
-    $traceArr = debug_backtrace();
+    return '';
+    $traceArr = debug_backtrace(); //This function crashes the PHP binary, until we have a solid solution this function is disabled.
 
     // Remove the call of atk_get_trace
     array_shift($traceArr);
@@ -309,7 +350,7 @@
                 $valArr[] = $name;
               else
               {
-                $valArr[] = $name."=".$value;
+                $valArr[] = $name."=".(is_object($value) ? "object" : $value);
               }
             }
             $stringval = "array(".implode(", ", $valArr).")";
@@ -410,7 +451,8 @@
   function atktext($string, $module="",$node="", $lng="", $firstfallback="", $nodefaulttext=false, $modulefallback=false)
   {
     atkimport("atk.atklanguage");
-    return atkLanguage::text($string, $module, $node, $lng, $firstfallback, $nodefaulttext,$modulefallback);
+    $text = atkLanguage::text($string, $module, $node, $lng, $firstfallback, $nodefaulttext,$modulefallback);
+    return $text;
   }
 
   /**
@@ -468,12 +510,14 @@
    * Function session_form
    *
    * Adds session information to a form
-   * @param var $sessionstatus the session flags
+   * @param int $sessionstatus the session flags
    *            (SESSION_DEFAULT (default)|SESSION_NEW|SESSION_REPLACE|
    *             SESSION_NESTED|SESSION_BACK)
+   * @param int $returnbehaviour When SESSION_NESTED is used, this is used to
+   *            indicate where to return to.
    * @return string the HTML formcode with the session info
    */
-  function session_form($sessionstatus=SESSION_DEFAULT)
+  function session_form($sessionstatus=SESSION_DEFAULT, $returnbehaviour=NULL)
   {
     global $g_stickyurl;
 
@@ -490,6 +534,11 @@
     if ($sessionstatus!=SESSION_NEW)
     {
       $res.='<input type="hidden" name="atkstackid" value="'.atkStackID().'">';
+    }
+        
+    if (!is_null($returnbehaviour))
+    {      
+      $res.= '<input type="hidden" name="atkreturnbehaviour" value="'.$returnbehaviour.'">';
     }
 
     $res .= '<input type="hidden" name="'.session_name().'" value="'.session_id().'">';
@@ -597,10 +646,6 @@
   {
     if ($saveform)
     {
-      //$str = "javascript:atkSubmit('".session_url($url,$sessionstatus)."')";
-    //echo $url."-".base64_encode(session_url($url,$sessionstatus))."<br>";
-      //$str = 'javascript:atkSubmit("'.session_url($url,$sessionstatus).'")';
-    //echo $url."-<br>";
       $str = 'javascript:atkSubmit("'.atkurlencode(session_url($url,$sessionstatus)).'")';
     }
     else
@@ -611,15 +656,14 @@
     // note, we use single quotes instead of doublequotes in the href='',
     // because we otherwise have a problem with internet explorers buggy
     // javascript parser..
-  //echo $str;
     return "<a href='".$str."' ".$extraprops.">".$name."</a>";
   }
 
 
   /**
-   * Same as array_merge from php, but without duplicates.. 
+   * Same as array_merge from php, but without duplicates..
    * Supports unlimited number of arrays as arguments.
-   * 
+   *
    * @param Array $array1 the first array
    * @param Array $array2 the second array
    * @return Array The result of the merge between $array1 and $array2
@@ -627,7 +671,7 @@
   function atk_array_merge($array1, $array2)
   {
     $res = Array();
-    
+
     $arrays = func_get_args();
     for ($i = 0, $_i = count($arrays); $i < $_i; $i++)
     {
@@ -639,8 +683,30 @@
         }
       }
     }
-    
+
     return $res;
+  }
+
+  /**
+   * Same as array_merge from php, but this function preserves key=>index
+   * association in case of numerical indexes. Supports unlimited number
+   * of arrays as arguments.
+   *
+   * @param Array $array unlimited number of arrays
+   * @return Array The result of the merge between the given arrays
+   */
+  function atk_array_merge_keys()
+  {
+    $args = func_get_args();
+    $result = array();
+    foreach($args as $array)
+    {
+      foreach($array as $key=>$value)
+      {
+        $result[$key] = $value;
+      }
+    }
+    return $result;
   }
 
   /**
@@ -784,7 +850,8 @@
       $value = &$vars[$varname];
       // We must strip all slashes from the input, since php puts slashes
       // in front of quotes that are passed by the url. (magic_quotes_gpc)
-      atk_stripslashes($value);
+      if ($value !== NULL)
+        atk_stripslashes($value);
 
       AE_decode($vars, $varname);
 
@@ -807,19 +874,6 @@
           $vars[strtolower($dimension1)][strtolower($dimension2)] = $value;
         }
       }
-
-/*    elseif (strpos(strtoupper($varname),'_BMDAE_')>0) // Now I *know* that strpos could return 0 if _AMDAE_ *is* found
-                                    // at the beginning of the string.. but since that's not a valid
-                                    // encoded var, we do nothing with it.
-      {
-        // This string is encoded.
-        list($dimension1,$dimension2) = split("_BMDAE_",strtoupper($varname));
-        // Multidimensional thing
-        while (list($key,$val) = each($value))
-        {
-          $vars[strtolower($dimension1)][strtolower($dimension2)][$key] = $val;
-        }
-      }*/
     }
   }
 
@@ -1137,10 +1191,10 @@
    * @param String $conn The name of the connection to retrieve
    * @return atkDb Database connection instance
    */
-  function &atkGetDb($conn="default", $reset=false)
+  function &atkGetDb($conn='default', $reset=false, $mode="r")
   {
     atkimport("atk.db.atkdb");
-    $db = &atkDb::getInstance($conn, $reset);
+    $db = &atkDb::getInstance($conn, $reset, $mode);
     return $db;
   }
 
@@ -1227,10 +1281,11 @@
     if (atkconfig("debug")>0) // atkdebug checks this, but if we check it here too, it saves us
                               // a call to var_export.
     {
-      if (function_exists("var_export"))
-      {
-        atkdebug("vardump: ".($d!=""?$d." = ":"")."<pre>".var_export($a, true)."</pre>");
-      }
+      ob_start();
+      var_dump($a);
+      $data = ob_get_contents();
+      atkdebug("vardump: ".($d!=""?$d." = ":"")."<pre>".$data."</pre>");
+      ob_end_clean();
     }
   }
 
@@ -1341,9 +1396,9 @@
       $disp = 'attachment';
     }
     if($mimetype!="") $mime=$mimetype;
-    else if ($mimetype=="" && $detectmime && function_exists('mime_content_type')) 
+    else if ($mimetype=="" && $detectmime && function_exists('mime_content_type'))
       $mime = mime_content_type($file);
-    
+
     $fp = @fopen($file,"rb");
     if ($fp!=NULL)
     {
@@ -1363,7 +1418,7 @@
 
       header("Content-Description: File Transfer");
       header("Content-Transfer-Encoding: binary");
-      
+
       fpassthru($fp);
       return true;
     }
@@ -1504,7 +1559,7 @@
       foreach ($ATK_VARS as $key => $val)
       {
         if (!in_array($key, $excludes))
-          $str .= "<input type='hidden' name=\"$key\" value=\"".htmlentities($val)."\">\n";
+          $str .= "<input type='hidden' name=\"$key\" value=\"".htmlentities(strval($val))."\">\n";
       }
       return $str;
     }
@@ -1562,17 +1617,27 @@
    * @param string $node the (module.)node name
    * @param string $action the atk action the link will perform
    * @param string $params: A key/value array with extra options for the url
-   * @param string $phpfile The php file to use for dispatching, defaults to dispatch.php
+   * @param string $phpfile The php file to use for dispatching, if not set we look at the theme for the dispatchfile
    * @return string url for the node with the action
    */
-  function dispatch_url($node, $action, $params="",$phpfile='dispatch.php')
+  function dispatch_url($node, $action, $params=array(),$phpfile='')
   {
-    $url = $phpfile."?atknodetype=".$node."&atkaction=".$action;
+    $theme = &atkinstance('atk.ui.atktheme');
+    if (!$phpfile) $phpfile =  $theme->getAttribute('dispatcher',atkconfig("dispatcher",'dispatch.php'));
+    $url = $phpfile;
+    $atkparams = array();
+    if($node!="")
+      $atkparams["atknodetype"] = $node;
+    if($action!="")
+      $atkparams["atkaction"] = $action;
+    $params = array_merge($atkparams, $params);
+
     if ($params != "" && is_array($params) && count($params) > 0)
-      $url .= '&'.buildQueryString($params);
+      $url .= '?'.buildQueryString($params);
+
     return $url;
   }
-  
+
   /**
    * Generate a partial url.
    *
@@ -1589,7 +1654,7 @@
     $params['atkpartial'] = $partial;
 
     return session_url(dispatch_url($node, $action, $params), SESSION_PARTIAL);
-  }   
+  }
 
   /**
    * Writes trace file to system tmp directory
@@ -1674,6 +1739,7 @@
       $filename = getClassPath($fullclassname);
     else
       $filename = $fullclassname;
+
     if (file_exists($filename))
     {
       if ($failsafe)
@@ -1685,6 +1751,62 @@
     else
       return false;
   }
+
+  /**
+   * Imports a zend-file
+   * @param string $classname Name of class in zend-format (starting with a Capital)
+   */
+  function zendimport($classname)
+  {
+    $current_path = getcwd();
+    chdir(atkConfig('atkroot')."atk/ext/zend/");
+
+    $filename = 'Zend/'.$classname.'.php';
+
+    if (file_exists($filename))
+    {
+      require_once $filename;
+    }
+
+    chdir($current_path);
+  }
+  
+  /**
+   * Clean-up the given path.
+   *
+   * @param string $path
+   * @return cleaned-up path
+   * 
+   * @see http://nl2.php.net/manual/en/function.realpath.php (comment of 21st of September 2005)
+   */
+  function atkCleanPath($path)
+  {
+    $result = array();
+    
+    $pathArray = explode('/', $path);    
+    if (empty($pathArray[0]))
+      $result[] = '';
+    
+    foreach ($pathArray AS $key => $dir) 
+    {
+      if ($dir == '..') 
+      {
+        if (end($result) == '..' || !array_pop($result)) 
+        {
+          $result[] = '..';
+        } 
+      } 
+      elseif ($dir && $dir != '.') 
+      {
+        $result[] = $dir;
+      }
+    }
+    
+    if (!end($pathArray))
+      $result[] = '';
+    
+    return implode('/', $result);
+  }   
 
   /**
    * Converts an ATK classname ("map1.map2.classname")
@@ -1721,6 +1843,7 @@
    */
   function getClassName($classpath, $class=true)
   {
+    $classpath = atkCleanPath($classpath);
     $elems = explode("/", strtolower($classpath));
     for($counter=0; $counter<=count($elems);$counter++)
     {
@@ -1740,8 +1863,7 @@
       $last = &$elems[count($elems)-2].$elems[count($elems)-1];
     }
 
-    $first = array_shift($elems);
-    $classname = $first. implode(".", $elems);
+    $classname = implode(".", $elems);
 
     return $classname;
   }
@@ -1942,6 +2064,23 @@
     }
   }
 
+  /*
+   * Returns the postvars
+   * Returns a value or an array with all values
+   */
+  function atkGetPostVar($key="")
+  {
+    if(empty($key) || $key=="")
+    {
+      return $_REQUEST;
+    }
+    else
+    {
+      if (array_key_exists($key,$_REQUEST) && $_REQUEST[$key]!="") return $_REQUEST[$key];
+      return "";
+    }
+  }
+
   /**
    * ATK version of the PHP htmlentities function. Works just like PHP's
    * htmlentities function, but falls back to the in the language file
@@ -1996,7 +2135,7 @@
     }
     return false;
   }
-  
+
   /**
    * Remove a class overloader for a class
    *
@@ -2013,7 +2152,7 @@
     }
     return false;
   }
-  
+
   /**
    * Checks wether or not a class has an overloader defined
    *
@@ -2029,7 +2168,7 @@
     }
     return false;
   }
-  
+
   /**
    * Returns the IP of the remote client.
    *
@@ -2038,7 +2177,7 @@
   function atkGetClientIp()
   {
     static $s_ip = NULL;
-    
+
     if ($s_ip === NULL)
     {
       if (getenv("HTTP_CLIENT_IP"))
@@ -2046,10 +2185,28 @@
       elseif (getenv("HTTP_X_FORWARDED_FOR"))
         $s_ip = getenv("HTTP_X_FORWARDED_FOR");
       elseif (getenv("REMOTE_ADDR"))
-        $s_ip = getenv("REMOTE_ADDR");    
+        $s_ip = getenv("REMOTE_ADDR");
       else $s_ip = 'x.x.x.x';
     }
-    
+
     return $s_ip;
   }
+
+  /**
+   * Function checks php version and clones the
+   * given attribute in the right way
+   *
+   * @param object $attribute The attribute to clone
+   * @return object $attr
+   */
+  function atkClone($attribute)
+  {
+    if (intval(substr(phpversion(),0,1))<5)
+      $attr = $attribute;
+    else
+      $attr = clone($attribute);
+
+    return $attr;
+  }
+
 ?>

@@ -37,8 +37,17 @@
     function action_update()
     {
       $record = $this->m_node->updateRecord();
+      
+      // allowed to update record?
+      if (!$this->allowed($record))
+      {
+        $this->renderAccessDeniedPage();
+        return;
+      }
 
-      if (isset($this->m_postvars['atknoclose'])||isset($this->m_postvars['atksaveandclose']))
+      if (isset($this->m_postvars['atknoclose'])||
+          isset($this->m_postvars['atksaveandclose']) ||
+          isset($this->m_postvars['atkwizardaction']))
       {
 
         // just before we validate the record we call the preUpdate() to check if the record needs to be modified
@@ -92,7 +101,7 @@
             {
               // 'save and close' was clicked
               $location = $this->m_node->feedbackUrl("update", ACTION_SUCCESS, $record, "");
-              $this->m_node->redirect($location, $record);
+              $this->m_node->redirect($location);
             }
             else
             {

@@ -30,6 +30,8 @@
    */
   class atkNavigator
   {
+    var $m_displayShowAll = true;
+
     function buildNavigation(&$node, $mode="", $navurls="", $embedded=false)
     {
       if ($navurls=="")
@@ -51,15 +53,13 @@
     function getSummary(&$node, $mode="")
     {
       $count = $this->getCount($node, $mode);
-  	  $curpage = $this->getCurrentPage($node);
-  	  $start = (($curpage-1)*atkconfig("recordsperpage"))+1;
-  	  $end = min($start+atkconfig("recordsperpage")-1, $count);
+      $curpage = $this->getCurrentPage($node);
+      $start = (($curpage-1)*atkconfig("recordsperpage"))+1;
+      $end = min($start+atkconfig("recordsperpage")-1, $count);
 
-  	  $total = "(".atktext("record","atk")."&nbsp;".$start."-".$end."/".$count.")";
-
-  	  atkimport("atk.utils.atkstringparser");
-  	  $str = &new atkStringParser(atktext("recordlistsummary", "atk"));
-  	  return "(".$str->parse(array("start"=>$start, "end"=>$end, "count"=>$count)).") ";
+      atkimport("atk.utils.atkstringparser");
+      $str = &new atkStringParser(atktext("recordlistsummary", "atk"));
+      return "(".$str->parse(array("start"=>$start, "end"=>$end, "count"=>$count)).") ";
     }
 
     function getCount(&$node, $mode="", $filter="")
@@ -202,8 +202,11 @@
         if ($i!=$count-1) $nav.=" ";
       }
 
-      if (isset($node->m_postvars['atksearch']))
-        $nav.=" - ".href(dispatch_url("{$node->m_module}.{$node->m_type}", $node->m_action,array("atksearch"=>"")), atktext("view_all", "atk"));
+      if ($this->m_displayShowAll == true)
+      {
+        if (isset($node->m_postvars['atksearch']))
+          $nav.=" - ".href(dispatch_url("{$node->m_module}.{$node->m_type}", $node->m_action,array("atksearch"=>"")), atktext("view_all", "atk"));
+      }
 
       return $nav;
     }
