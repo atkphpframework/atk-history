@@ -6,7 +6,6 @@
    * included in the distribution.
    *
    * @package atk
-   * @subpackage handlers
    *
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
@@ -15,7 +14,7 @@
    * $Id$
    */
 
-  /**
+ /**
    * Class that handles userinterface internationalization.
    *
    * This class is used to retrieve the proper translations for any string
@@ -226,8 +225,11 @@
       }
 
       // Otherwise we check the headers
-      $headerlng = atkLanguage::getLanguageFromHeaders();
-      if ($headerlng && in_array($headerlng,$supported)) return $headerlng;
+      if (atkconfig('use_browser_language', false))
+      {
+        $headerlng = atkLanguage::getLanguageFromHeaders();
+        if ($headerlng && in_array($headerlng,$supported)) return $headerlng;
+      }
 
       // We give up and just return the default language
       return atkconfig('language');

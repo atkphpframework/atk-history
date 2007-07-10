@@ -39,7 +39,7 @@
       if(!isset($this->m_postvars["phase"]) && isset($ATK_VARS['atkformdata']))
         foreach($ATK_VARS['atkformdata'] as $key=>$value)
           $this->m_postvars[$key] = $value;
-      
+
       $keys = array();
       //need to keep the selected item after an importerror
       if (is_array($ATK_VARS['allFields'])) $keys = array_keys($ATK_VARS['allFields']);
@@ -48,7 +48,7 @@
         if(!isset($ATK_VARS[$ATK_VARS['allFields'][$key]."_newsel"]))
           $ATK_VARS[$ATK_VARS['allFields'][$key]."_newsel"] = $ATK_VARS[$ATK_VARS['allFields'][$key]];
       }
-      
+
 
       $phase = ($this->m_postvars["phase"]!=""?$this->m_postvars["phase"]:"init");
 
@@ -352,7 +352,11 @@
     function _getSampleValue($attributename, $value)
     {
       $attr = &$this->getUsableAttribute($attributename);
-      $newval = $attr->parseStringValue($value);
+      
+      if(method_exists($attr, "parseTime"))
+        $newval = $attr->parseTime($value);
+      else  
+        $newval = $attr->parseStringValue($value);
 
       if (method_exists($attr, "createDestination"))
       {
@@ -386,12 +390,12 @@
       $content.= '<br /><table id="importoptions">';
       $content.= '  <tr>';
       $content.= '    <td>';
-      
+
       foreach ($allFields as $allfield)
       {
         if (!$this->m_postvars[$allfield]) $noallfieldvalue=true;
       }
-      
+
       if (empty($allFields) || !$noallfieldvalue) $allFields[] = '';
       foreach ($allFields as $allField)
       {
@@ -414,7 +418,7 @@
       $content.= '</td></tr><tr><td>';
       $content.= atktext("import_doupdate").': </td><td> <input type="checkbox" name="doupdate" value="1" '.($doupdate?"CHECKED":"").'/>';
       $content.= '</td></tr><tr><td>';
-      $content.= atktext("import_update_key").': </td><td>'.$this->getAttributeSelector(0,$updatekey1,"updatekey1",0).'</td>';
+      $content.= atktext("import_update_key").': </td><td>'.$this->getAttributeSelector(0,$updatekey1,"updatekey1",2).'</td>';
       $content.= '</td></tr><tr><td>';
       $content.= atktext("import_onfalseidentifier").': </td><td> <input type="checkbox" name="onfalseid" value="1" '.($onfalseidentifier?"CHECKED":"").'/>';
       $content.= '</td></tr><tr><td>';
@@ -640,7 +644,7 @@
     function _usableForImport($obligatoryOnly, &$attrib)
     {
       return ((!$obligatoryOnly || $this->isObligatory($attrib))
-              && $attrib->storageType("add")==ADDTOQUERY && !$attrib->hasFlag(AF_AUTOINCREMENT) && !$this->isHide($attrib));
+              && !$attrib->hasFlag(AF_AUTOINCREMENT) && !$this->isHide($attrib));
     }
 
     /**
@@ -927,14 +931,14 @@
     {
       ini_set('max_execution_time',300);
       $fileid =       $this->m_postvars["fileid"];
-      $file =         $this->getTmpFileDestination($fileid);  
-      
+      $file =         $this->getTmpFileDestination($fileid);
+
       $validated = $this->getValidatedRecords($file);
       $this->addRecords($validated['importerrors'], $validated['validatedrecs'], $validated['fp'], $file);
       if (!$nopost) $this->postImport();
       else $this->m_node->redirect();
     }
-    
+
     function postImport()
     {
       $this->clearCache();
@@ -948,7 +952,7 @@
 
       $this->m_node->redirect();
     }
-    
+
     function getValidatedRecords($file)
     {
       $enclosure =    $this->m_postvars["enclosure"];
@@ -960,7 +964,7 @@
 
       $allFieldsValues = $this->getAllFieldsValues($col_map);
       $initial_values = $this->m_node->initial_values();
-      
+
       $validatedrecs = array();
       $validatedrecs["add"]=array();
       $validatedrecs["update"] = array();
@@ -973,7 +977,7 @@
       {
         $importerrors[0][] = $allfielderror;
       }
-      
+
       //copy the csv in a record and add it to the db
       $fp = fopen($file, "r");
       if($skipfirstrow == "1") $line = fgets($fp);
@@ -989,9 +993,12 @@
         set_time_limit(60);
         atkdebug('set_time_limit(60)');
 
+        if (atktext('charset') != '' && function_exists("mb_convert_encoding")) $line = mb_convert_encoding($line, atktext('charset'));
+
         $data = $this->fgetcsvfromline($line, $columncount, $delimiter, $enclosure);
 
         $rec = $initial_values;
+        atkimport("atk.utils.atkstringparser");
 
         for ($i=0, $_i=count($col_map); $i<$_i; $i++)
         {
@@ -1085,10 +1092,10 @@
 
     /**
      * Adds the validated records but checks for errors first
-     * @param Array  $importerrors    Errors that occurred during validation of importfile
+     * @param Array  $importerrors   Errors that occurred during validation of importfile
      * @param Array  $validatedrecs  Records that were validated
      * @param Object $fp             Pointer to the importfile
-     * @param String $file           Filenmae
+     * @param String $file           Filename
      */
     function addRecords(&$importerrors, &$validatedrecs, $fp, $file)
     {
@@ -1266,7 +1273,7 @@
 
         $record = array();
         $this->addToRecord($record,$field,$values[$field]);
-        
+
         $result = $attr->display($record);
 
         if(!$result)

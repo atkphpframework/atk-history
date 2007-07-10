@@ -36,6 +36,11 @@
     var $m_fields;
 
     /**
+     * Array with expressions.
+     */
+    var $m_expressions;
+    
+    /**
     * Array with tables
     */
     var $m_tables;
@@ -135,6 +140,7 @@
     function atkquery()
     {
       $this->m_fields = array();
+      $this->m_expressions = array();
       $this->m_tables = array();
       $this->m_conditions = array();
       $this->m_searchconditions = array();
@@ -181,6 +187,30 @@
         $this->m_aliasLookup["al_".$this->m_generatedAlias] = $fieldaliasprefix.$name;
         $this->m_fieldaliases[$fieldname] = "al_".$this->m_generatedAlias;
 
+        $this->m_generatedAlias++;
+      }
+    }
+    
+    /**
+     * Add's an expression to the select query
+     * 
+     * @param $fieldName        string expression field name
+     * @param $expression       string expression value
+     * @param $table            string table name
+     * @param $fieldAliasPrefix string field alias prefix 
+     * @param $quoteFieldName   bool   wether or not to quote the expression field name
+     */    
+    function addExpression($fieldName, $expression, $fieldAliasPrefix="", $quoteFieldName=false)
+    {
+      if ($quoteFieldName)
+        $this->m_quotedfields[] = $fieldName;
+        
+      $this->m_expressions[] = array('name' => $fieldName, 'expression' => $expression);
+
+      if (!empty($fieldAliasPrefix))
+      {
+        $this->m_aliasLookup["al_".$this->m_generatedAlias] = $fieldAliasPrefix.$fieldName;
+        $this->m_fieldaliases[$fieldAliasPrefix.$fieldName] = "al_".$this->m_generatedAlias;
         $this->m_generatedAlias++;
       }
     }
@@ -285,13 +315,18 @@
         if ($fieldalias!="") $result.=" AS ".$fieldalias;
         if ($i < count($this->m_fields)-1) $result.=", ";
       }
-      $result.= " FROM ";
-      for ($i=0;$i<count($this->m_tables);$i++)
+
+      foreach ($this->m_expressions as $i => $entry)
       {
-        $result.= $this->quoteField($this->m_tables[$i]);
-        if ($this->m_aliases[$i]!="") $result.=" ".$this->m_aliases[$i];
-        if ($i < count($this->m_tables)-1) $result.=", ";
+        if (count($this->m_fields) > 0 || $i > 0) $result .= ", ";        
+        $fieldName = $entry['name'];
+        $expression = $entry['expression'];
+        $fieldAlias = isset($this->m_fieldaliases[$fieldName]) ? $this->m_fieldaliases[$fieldName] : $this->quoteField($fieldName);
+        $result .= "($expression) AS $fieldAlias";
+        $first = false;
       }
+      
+      $this->_addFrom($result);
 
       for ($i=0;$i<count($this->m_joins);$i++)
       {
@@ -333,6 +368,21 @@
       }
 
       return $result;
+    }
+    
+    /**
+     * Add FROM clause to query.     
+     */
+    function _addFrom(&$query)
+    {
+      $query.= " FROM ";
+      for ($i=0;$i<count($this->m_tables);$i++)
+      {
+        $query.= $this->quoteField($this->m_tables[$i]);
+        if ($this->m_aliases[$i]!="") $query.=" ".$this->m_aliases[$i];
+        if ($i < count($this->m_tables)-1) $query.=", ";
+      }
+      $query.= " ";
     }
 
     /**
@@ -660,9 +710,12 @@
       }
     }
 
-    function betweenCondition($field, $value1, $value2)
+    function betweenCondition($field, $value1, $value2, $quote=true)
     {
-      return $field." BETWEEN '".$value1."' AND '".$value2."'";
+      if($quote)
+        return $field." BETWEEN '".$value1."' AND '".$value2."'";
+      else
+        return $field." BETWEEN ".$value1." AND ".$value2;
     }
 
     /**

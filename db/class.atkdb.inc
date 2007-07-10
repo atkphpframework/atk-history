@@ -90,13 +90,13 @@
      * @var String
      */
     var $m_port = "";
-    
+
     /**
      * The character set.
      * @access private
      * @var String
      */
-    var $m_charset = "";    
+    var $m_charset = "";
 
     /**
      * The mode for the connection.
@@ -236,6 +236,85 @@
     var $m_errorLookup = array();
 
     /**
+     * Set database sequence value.
+     *
+     * @param string $seqname sequence name
+     * @param int $value sequence value
+     *
+     * @abstract
+     */
+    function setSequenceValue($seqname, $value)
+    {
+    	atkerror('WARNING: '.get_class($this).'.setSequenceValue NOT IMPLEMENTED!');
+    }
+
+    /**
+     * Use the given mapping to translate database requests
+     * from one database to another database. This can be
+     * used for test purposes.
+     *
+     * @param array $mapping database mapping
+     * @static
+     */
+    function useMapping($mapping)
+    {
+      atkDb::_getOrUseMapping($mapping);
+    }
+
+    /**
+     * Returns the current database mapping.
+     * NULL if no mapping is active.
+     *
+     * @return mixed current database mapping (null if inactive)
+     * @static
+     */
+    function getMapping()
+    {
+      return atkDb::_getOrUseMapping();
+    }
+
+    /**
+     * Clear the current database mapping.
+     *
+     * @static
+     */
+    function clearMapping()
+    {
+      atkDb::_getOrUseMapping(NULL);
+    }
+
+    /**
+     * Returns the real database name. If a mapping
+     * exists the mapping is used to translate the
+     * database name to it's real database name. If
+     * the database name is not part of the mapping or
+     * no mapping is set the given name will be returned.
+     *
+     * @param string $name database name
+     * @static
+     */
+    function getTranslatedDatabaseName($name)
+    {
+      $mapping = atkDb::getMapping();
+      return $mapping === NULL || !isset($mapping[$name]) ? $name : $mapping[$name];
+    }
+
+    /**
+     * Get or set the database mapping
+     *
+     * @param array $mapping database mapping
+     * @return mixed current database mapping (null if inactive)
+     * @static
+     */
+    function _getOrUseMapping($mapping="get")
+    {
+      static $s_mapping = NULL;
+      if ($mapping !== "get")
+        $s_mapping = $mapping;
+      else return $s_mapping;
+    }
+
+    /**
      * Get the database driver type.
      * @return String driver type
      */
@@ -321,12 +400,16 @@
      */
     function getQueryMode($query)
     {
-      $type = strtolower(substr($query,0,7));
-      if($type!="select " || strpos(strtolower($query),'into')!==false)
+      $query = strtolower($query);
+
+      $regexes = array('^\\s*select(?!\\s+into)','^\\s*show');
+      foreach ($regexes as $regex)
+      if (preg_match("/$regex/",$query))
       {
-        return "w";
+        return 'r';
       }
-      return "r";
+      atkdebug('Query mode not detected! Using write mode.');
+      return 'w';
     }
 
     /**
@@ -394,7 +477,7 @@
      * place the error in atkdebug and continue.
      * @access protected
      */
-    function halt()
+    function halt($message="")
     {
       if ($this->m_haltonerror)
       {
@@ -428,7 +511,7 @@
      */
     function connect($mode="rw")
     {
-      atkdebug("atkdb::connect -> mode = $mode");
+      atknotice("atkdb::connect -> request mode = $mode | current mode: ".$this->m_mode);
       if($this->m_mode=="r" &&
          ($mode=="w" || $mode=="rw"))
       {
@@ -445,21 +528,20 @@
         $this->m_dbcluster = $tmp_db->m_dbcluster;
         atkdebug("atkdb::connect -> New mode = ".$this->m_mode);
 
-        $this->doConnect($this->m_host,$this->m_user,$this->m_password,$this->m_charset);
+        return $this->doConnect($this->m_host,$this->m_user,$this->m_password,$this->m_database,$this->m_port,$this->m_charset);
       }
       elseif($this->m_link_id==NULL)
       {
         atkdebug("atkdb::connect -> Don't switch use current db");
-        $this->doConnect($this->m_host,$this->m_user,$this->m_password,$this->m_charset);
+        return $this->doConnect($this->m_host,$this->m_user,$this->m_password,$this->m_database,$this->m_port,$this->m_charset);
       }
-
     }
 
     /**
      * Connect to the database
      * @abstract
      */
-    function doConnect()
+    function doConnect($host, $user, $password, $database, $port, $charset)
     {
 
     }
@@ -496,10 +578,24 @@
     }
 
     /**
-     * Rollback the current transaction.
+     * Set savepoint with the given name.
+     * 
+     * @param $name savepoint name
      * @abstract
      */
-    function rollback()
+    function savepoint($name)
+    {
+    }
+
+    /**
+     * Rollback the current transaction.
+     * (If a savepoint is given to the given savepoint.)
+     * 
+     * @param $savepoint savepoint name
+     * 
+     * @abstract
+     */
+    function rollback($savepoint="")
     {
     }
 
@@ -613,7 +709,6 @@
      */
     function metadata($table, $full=false)
     {
-
       return array();
     }
 
@@ -677,7 +772,7 @@
     {
       if (!isset($this->m_tableMeta[$table]))
       {
-        $meta = $this->metadata($table);
+        $meta = $this->metadata($table, false);
         $this->m_tableMeta[$table] = array();
         for ($i = 0, $_i = count($meta); $i < $_i; $i++)
         {
@@ -725,7 +820,7 @@
     function func_datetochar($fieldname, $format="")
     {
       if ($format=="") $format = atkconfig("date_to_char", "Y-m-d");
-      return "TO_CHAR($fieldname, ".$this->vendorDateFormat($format).")";
+      return "TO_CHAR($fieldname, '".$this->vendorDateFormat($format)."')";
     }
 
     /**
@@ -789,7 +884,78 @@
       $query->m_db = &$this;
       return $query;
     }
+    
+    /**
+     * Enable/disable all foreign key constraints.
+     * 
+     * @param boolean $enable enable/disable foreign keys?
+     */
+    function toggleForeignKeys($enable)
+    {
+      atkdebug('WARNING: '.get_class($this).'::toggleForeignKeys not implemented!');
+    }
 
+    /**
+     * Empty all database tables.
+     */
+    function deleteAll()
+    {
+      $tables = $this->table_names();
+      $count = count($tables);
+
+      do
+      {
+        $prevCount = $count;
+        $count = 0;
+
+        foreach($tables as $table)
+        {
+          if (!$this->query("DELETE FROM ".$table['table_name']))
+          {
+            $count++;
+          }
+        }
+      }
+      while ($count < $prevCount && $count > 0);
+
+      if ($count > 0)
+      {
+        atkerror('atkDb::deleteAll failed, probably because of circular dependencies');
+      }
+    }
+
+    /**
+     * Drop all database tables.
+     */
+    function dropAll()
+    {
+      $tables = $this->table_names();
+      foreach($tables as $table)
+      {
+        $this->query("DROP TABLE ".$table['table_name']);
+      }
+    }
+
+    /**
+     * Clones the database structure of the given database
+     * to this database. This also means the complete database
+     * is emptied beforehand.
+     *
+     * @param atkDb $otherDb other database instance
+     */
+    function cloneAll(&$otherDb)
+    {
+      $this->dropAll();
+      $tables = $otherDb->table_names();
+      foreach($tables as $table)
+      {
+        $ddl = $this->createDDL();
+        $metadata = $otherDb->metadata($table["table_name"]);
+        $ddl->loadMetaData($metadata);
+        $query = $ddl->buildCreate();
+        $this->query($query);
+      }
+    }
 
     /**
      * Create an atkDDL object for constructing ddl queries.
@@ -817,6 +983,9 @@
     function &getInstance($conn="default", $reset=false, $mode="rw")
     {
       global $g_dbinstances;
+
+      // translate connection name
+      $conn = atkDb::getTranslatedDatabaseName($conn);
 
       if (!isset($g_dbinstances[$conn]) || $reset || !atkdb::hasMode($g_dbinstances[$conn],$mode))
       {
@@ -872,11 +1041,11 @@
     {
       $dbconfig = atkconfig("db");
       $dbcluster = atkconfig("db_cluster");
+      $connections = array();
 
       if(is_array($dbcluster) && isset($dbcluster[$conn]))
       {
          atkdebug("Database Cluster found with name: $conn");
-         atk_var_dump($dbcluster,"Cluster members");
          foreach($dbcluster[$conn] as $db)
          {
            if($dbconfig[$db]["mode"]==$mode)
@@ -903,7 +1072,6 @@
          {
            $random = rand(0,($total_connections-1));
            atkdebug("<h1>Random server (".$connections[$random].") choosen from cluster $conn for mode: $mode</h1>");
-           atk_var_dump($connections,"Cluster connections pool");
            return $connections[$random];
          }
          else
@@ -929,6 +1097,10 @@
     function &setInstance($name, &$db)
     {
       global $g_dbinstances;
+
+      // translate connection name
+      $name = atkDb::getTranslatedDatabaseName($name);
+
       $olddb = &$g_dbinstances[$name];
       $g_dbinstances[$name] = &$db;
       return $olddb;

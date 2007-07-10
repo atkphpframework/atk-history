@@ -116,11 +116,36 @@
       }
 
       /* no overloader */
-      else 
+      else
       {
         $tmp = NULL;
         return $tmp;
       }
+    }
+    
+    /**
+     * Returns the node file for the given node.
+     *
+     * @param string $node the node type
+     * @return string node filename
+     */
+    function getNodeFile($node)
+    {
+      return nodeFile($node);
+    }
+    
+    /**
+     * Returns the fixture path for the given fixture.
+     * 
+     * @param string $fixture <module.fixture> string
+     * @return string path to fixture without extension
+     */
+    function getFixturePath($fixture)
+    {
+      $module = getNodeModule($fixture);
+      $fixture = getNodeType($fixture);
+      $path = moduleDir($module).'testcases/fixtures/'.$fixture;
+      return $path;
     }
 
     /**
@@ -142,7 +167,7 @@
       }
 
       /* check for file */
-      $file = nodeFile($node);
+      $file = $this->getNodeFile($node);
       if (!file_exists($file))
       {
         atkimport("atk.utils.atkclassloader");
@@ -189,8 +214,13 @@
     function nodeExists($node)
     {
       // check for file
-      $file = nodeFile($node);
+      $file = $this->getNodeFile($node);
       return file_exists($file);
+    }
+
+    function getModifierFunctions(&$node)
+    {
+      return array($node->m_type . "_modifier", str_replace(".", "_", $node->atknodetype()) . "_modifier");
     }
 
     /**
@@ -201,7 +231,7 @@
     function modifier(&$node)
     {
       // Determine the modifier name and existance for modifiers that modify any node having the this node's type in any module
-      $specificmodifiers = array($node->m_type . "_modifier", str_replace(".", "_", $node->atknodetype()) . "_modifier");
+      $specificmodifiers = $this->getModifierFunctions($node);
 
       // Set the number of applied modifiers to zero
       $appliedmodifiers = 0;

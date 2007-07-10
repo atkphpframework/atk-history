@@ -127,14 +127,18 @@ class atkMetaPolicy
       $type = "atk.attributes.atkemailattribute";
       $params = array(false);
     }
-    else if ($name==='country')
+    else if ($name == 'country')
     {
-      $type='atkcountryattribute';
+      $type = 'atk.attributes.atkcountryattribute';
     }
-    else if ($meta['type']==='int' && $meta['len']===1 && 
-             (substr($name,0,3)==='is_' ||substr($name,0,4)==='has_'))
+    else if ($name == 'timezone')
     {
-      $type='atkboolattribute';
+      $type = 'atk.attributes.atktimezoneattribute';
+    }
+    else if ($meta['type'] == 'int' && $meta['len'] == 1 && 
+             (substr($name, 0, 3) == 'is_' || substr($name, 0, 4) == 'has_'))
+    {
+      $type = 'atk.attributes.atkboolattribute';
     }
     else
     {
@@ -743,7 +747,7 @@ class atkMetaPolicy
 
     $flags = $this->_getFlags($name, $meta);
 
-    $this->m_attrs[$name] = $typeAndParams + array("flags" => $flags, "tabs" => NULL, "order" => ($meta['num'] + 1) * 100, "forceUpdate" => false);
+    $this->m_attrs[$name] = $typeAndParams + array("flags" => $flags, "tabs" => NULL, "order" => ($meta['num'] + 1) * 100, "forceUpdate" => NULL);
   }
 
   /**
@@ -815,7 +819,8 @@ class atkMetaPolicy
     eval($call);
     
     $attr = &$this->m_node->add($attr, $tabs, $order);
-    $attr->setForceUpdate($forceUpdate);
+    if ($forceUpdate !== NULL)
+      $attr->setForceUpdate($forceUpdate);
     return $attr;
   }  
 
@@ -833,7 +838,7 @@ class atkMetaPolicy
         isset($data["flags"]) ? $data["flags"] : '', 
         isset($data["tabs"]) ? $data["tabs"] : '', 
         isset($data["order"]) ? $data["order"] : '',
-        isset($data["forceUpdate"]) ? $data["forceUpdate"] : false
+        isset($data["forceUpdate"]) ? $data["forceUpdate"] : NULL
       );
     }
     

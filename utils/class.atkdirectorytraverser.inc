@@ -100,6 +100,8 @@
         }
         return true;
       }
+      elseif (@is_link($path)) return true;
+
       return false;
     }
 
@@ -114,6 +116,7 @@
       $dir = opendir($path);
       while (($file = readdir($dir)) !== false) $result[] = $file;
       closedir($dir);
+      sort($result);
       return $result;
     }
 
