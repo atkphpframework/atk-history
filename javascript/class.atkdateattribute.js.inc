@@ -306,7 +306,7 @@ function dateAttribute_setValue(id, year, month, day)
   // I need to call this to calculate the correct months and days
   // after setting the year.
   // TODO FIXME: I don't have the arr ('enddate') and format parameters here!!
-  AdjustDate(yearel, id, format, 0, 0, false);
+  AdjustDate(yearel, id, format, 0, 0, false, true);
 
   // set month
   for (i=0; i<monthel.options.length;  i++)
@@ -320,7 +320,7 @@ function dateAttribute_setValue(id, year, month, day)
   // I need to call this to calculate the correct days
   // after setting the month.
   // TODO FIXME: I don't have the arr ('enddate') and format parameters here!!
-  AdjustDate(monthel, id, format, 0, 0, false);
+  AdjustDate(monthel, id, format, 0, 0, false, true);
 
   // set day
   for (i=0; i<dayel.options.length;  i++)
