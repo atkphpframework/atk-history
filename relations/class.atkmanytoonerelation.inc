@@ -1511,7 +1511,23 @@
 
               $arr['heading'][$key]['order'] = $order;
             }
+            else 
+            {
+              if (!stristr(get_class($p_attrib), 'manytoonerelation')) $order = $this->fieldName().'.'.$attribname;
+              else $order = $attribname.'.code';
+
+              if (is_object($atkorderby) &&
+                  isset($atkorderby->m_colcfg[$this->fieldName()]) &&
+                  $atkorderby->m_colcfg[$this->fieldName()]['extra'] == $attribname)
+              {
+                $direction = $atkorderby->getDirection($this->fieldName());
+                if ($direction=="asc") $order.=" desc";
+              }
+
+              $arr['heading'][$key]['order'] = $order;
+            }
           }
+          $arr['heading'][$key]['url'] = str_replace('atkorderby='.$attribname, 'atkorderby='.$order, $arr['heading'][$key]['url']);
 
           // fix search box
           $fieldPointer = &$arr["search"][$key];
