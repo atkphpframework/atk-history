@@ -139,8 +139,8 @@
               // is called.            
               $value=$p_attrib->display($recordset[$i], $mode);
             }
-            if (atktext("charset") != "" && $decode) $value = html_entity_decode(htmlentities($value, ENT_NOQUOTES, atktext("charset")));
-            $output.=$sof.($value==""?$empty:$value).$eof;
+            if (atktext("charset") != "" && $decode && preg_match('/[ëáéèïßàáâãäçêüûúùòóôõöñ]/i', $value)) $value = html_entity_decode(htmlentities($value, ENT_NOQUOTES, atktext("charset")));
+            $output.=$sof.($value==""?$empty:$value).$eof; 
 
             // Calculate totals..
             if ($p_attrib->hasFlag(AF_TOTAL))
