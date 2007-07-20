@@ -295,7 +295,7 @@
      */
     function &addCondition($condition)
     {
-      if ($condition!="") $this->m_conditions[] = $condition;
+      if ($condition!="" AND !in_array($condition,$this->m_conditions)) $this->m_conditions[] = $condition;
       return $this;
     }
 

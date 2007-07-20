@@ -1745,7 +1745,7 @@
         for ($i=max(0, $cnt-3), $_i=$cnt; $i<$_i; $i++)
         {
           $desc = $descriptortrace[$i];
-          $descrtrace.= htmlentities($desc, ENT_COMPAT,atktext('charset'))." - ";
+          $descrtrace.= atk_htmlentities($desc)." - ";
         }
         $res= $descrtrace . $res;
       }
@@ -1777,12 +1777,15 @@
         $page = &$this->getPage();
         $page->register_script(atkconfig("atkroot")."atk/javascript/dhtml_tabs.js.php?stateful=".(atkconfig('dhtml_tabs_stateful') ? 1 : 0));
 
+        // currently selected tab must be first is array, or js part may works wrong
+        $tab = $this->getActiveTab($action);
+  
+        $list = array_merge(array($tab),array_diff($list,array($tab)));
 
-        $fulltabs = $this->buildTabs($action);
         $tabscript = "var tabs = new Array();\n";
-        foreach($fulltabs as $tab)
+        foreach($list as $tab)
         {
-          $tabscript.="tabs[tabs.length] = '".$tab['tab']."';\n";
+          $tabscript.="tabs[tabs.length] = '$tab';\n";
         }
         $page->register_scriptcode($tabscript);
       }

@@ -1447,10 +1447,10 @@
       return parent::addToEditArray($mode, $arr, $defaults, $error, $fieldprefix);
     }
 
-    function getOrderByStatement($extra='')
+    function getOrderByStatement($extra='', $direction='')
     {
       if (!$this->createDestination())
-        return parent::getOrderByStatement();
+        return parent::getOrderByStatement($extra, $direction);
 
       if (!empty($extra) && in_array($extra, $this->m_listColumns))
       {
@@ -1464,7 +1464,7 @@
         if (strpos($order, $this->m_destInstance->m_table.'.') !== FALSE)
           $order = str_replace($this->m_destInstance->m_table.'.', $this->fieldName().'.', $order);
         else $order = $this->fieldName().".".$order;
-        return $order;
+        return $order . ($direction=='' ? '' : " ".$direction);
       }
       else
       {
@@ -1474,7 +1474,7 @@
 
         $order = "";
         foreach ($fields as $field)
-          $order .= (empty($order) ? '' : ', ').$this->fieldName().".".$field;
+          $order .= (empty($order) ? '' : ', ').$this->fieldName().".".$field. ($direction=='' ? '' : " ".$direction);
 
         return $order;
       }

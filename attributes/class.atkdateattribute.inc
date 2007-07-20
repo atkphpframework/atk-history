@@ -253,7 +253,7 @@
      *
      * @param String $format_view The format (see format for date() function)
      */
-    function setFormatView()
+    function setFormatView($format_view)
     {
       $txt_date_format_view = atktext("date_format_view","atk","","","",true);
 
@@ -981,7 +981,7 @@
     /**
      * Function display's the date
      * @param $record array with date
-     * @return formatted date string
+     * @return string with formatted date 
      */
     function display($record)
     {

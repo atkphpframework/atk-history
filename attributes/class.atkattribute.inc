@@ -2209,9 +2209,9 @@
       return $order;
     }
 
-    function getOrderByStatement()
+    function getOrderByStatement($extra="",$direction="")
     {
-      return $this->m_ownerInstance->m_table.".".$this->fieldName();
+      return $this->m_ownerInstance->m_table.".".$this->fieldName().$direction;
     }
 
     /**
