@@ -280,13 +280,17 @@
     function _addEmptyListOption()
     {
       $ret='';
-      if ((!$this->hasFlag(AF_OBLIGATORY) && !$this->hasFlag(AF_LIST_NO_NULL_ITEM)) ||
+      
+      // use a different (more descriptive) text for obligatory items
+      $text_key = $this->hasFlag(AF_OBLIGATORY) ? "list_null_value_obligatory" : "list_null_value";
+      
+      if (!$this->hasFlag(AF_LIST_NO_NULL_ITEM) ||
            ($this->hasFlag(AF_OBLIGATORY) &&
            // CONFIG IS DEPRECATED
           ((atkconfig("list_obligatory_null_item")&&!$this->hasFlag(AF_LIST_NO_OBLIGATORY_NULL_ITEM))||
            ($this->hasFlag(AF_LIST_OBLIGATORY_NULL_ITEM)))))
       {
-        $ret = '<option value="'.$this->m_emptyvalue.'">'.atktext("list_null_value", "", is_object($this->m_ownerInstance) ? $this->m_ownerInstance->m_type : "");
+        $ret = '<option value="'.$this->m_emptyvalue.'">'.atktext($text_key, "", is_object($this->m_ownerInstance) ? $this->m_ownerInstance->m_type : "");
       }
       return $ret;
     }
@@ -402,7 +406,11 @@
 
     /**
      * Sets the selected listitem
+     * 
      * @param string $selected the listitem you want to have selected
+     * 
+     * @deprecated 
+     * @see atkNode::initial_values
      */
     function setSelected($selected)
     {
@@ -411,7 +419,11 @@
 
     /**
      * Gets the selected listattribute
+     * 
      * @return string the selected listitem
+     * 
+     * @deprecated 
+     * @see atkNode::initial_values
      */
     function getSelected()
     {
@@ -486,6 +498,50 @@
     {
       return $this->m_width;
     }
+    
+    /**
+     * Add option/value to dropdown
+     *
+     * @param string $option
+     * @param string $value
+     */
+    function addOption($option, $value="")
+    {
+      if (empty($value)) $value = $option;
+      
+      $currentOptions = $this->_get("options");
+      $currentOptions[] = $option;
+      $this->_set("options", $currentOptions);
+            
+      $currentValues = $this->_get("values");
+      $currentValues[] = $value;
+      $this->_set("values", $currentValues);
+      
+      $this->createLookupArray($currentOptions,$currentValues);
+      atkdebug("atkListAttribute::addOption | added option '$option' and value '$value' to dropdown");
+    }
+    
+    /**
+     * Remove option from dropdown
+     *
+     * @param string $option
+     */
+    function removeOption($option)
+    {
+      $currentOptions = $this->_get("options");
+      $currentValues = $this->_get("values");      
+      
+      $index = array_search($option, $currentOptions);
+      $value = $currentValues[$index];
+      
+      array_splice($currentOptions, $index, 1); // remove option
+      array_splice($currentValues, $index, 1);  // remove value
+      
+      $this->_set("options",$currentOptions);
+      $this->_set("values",$currentValues);
+
+      atkdebug("atkListAttribute::removeOption | remove option '$option' and corresponding value '$value' at index = $index");
+    }  
   }
 
 ?>

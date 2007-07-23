@@ -559,6 +559,7 @@
      */
     function buildInsert()
     {
+      
       $result = "INSERT INTO ".$this->quoteField($this->m_tables[0])." (";
 
       for ($i=0;$i<count($this->m_fields);$i++)
@@ -579,7 +580,7 @@
 
       return $result;
     }
-
+    
     /**
      * Builds the SQL Delete query
      * @return String a SQL Delete Query

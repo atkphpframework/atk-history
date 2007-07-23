@@ -108,7 +108,7 @@
 
       $content = "";
 
-      $adminHeader = $handler->adminHeader();
+      $adminHeader = $handler->invoke("adminHeader");
       if ($adminHeader!="")
       {
         $content.= $adminHeader."<br><br>";
@@ -150,6 +150,12 @@
 
       $content.= $this->GraphTreeRender();
       $content.= "</table><br>";
+
+      $adminFooter = $handler->invoke("adminFooter");
+      if ($adminFooter!="")
+      {
+        $content.= "<br>" . $adminFooter;
+      }
 
       atkdebug("Generated treeview");
 
@@ -430,6 +436,7 @@
                   $i++;
                 }
                 if($this->extraparams) $params=$params.$this->extraparams;
+
                 if($this->m_tree[$cnt]["isleaf"]==1)
                 {
                   if($cnt!=0) $res.= "<td>".href($PHP_SELF."?atknodetype=".$this->atknodetype()."&atkaction=".$this->m_action."&".$params,"<img src=\"".$img_end_plus."\" border=0>")."</td>\n";

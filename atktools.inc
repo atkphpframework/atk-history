@@ -40,6 +40,11 @@
   define("DEBUG_NOTICE", 4);
 
   /**
+   * Error message.
+   */
+  define("DEBUG_ERROR", 8);  
+  
+  /**
    * Function atkErrorHandler
    * This function catches PHP parse errors etc, and passes
    * them to atkerror(), so errors can be mailed and output
@@ -54,30 +59,44 @@
    */
   function atkErrorHandler($errtype, $errstr, $errfile, $errline)
   {
-    // Compose an array of possible error types
     $errortype = array (
-      E_ERROR           => "Error",
-      E_WARNING         => "Warning",
-      E_PARSE           => "Parsing Error",
-      E_NOTICE          => "Notice",
-      E_CORE_ERROR      => "Core Error",
-      E_CORE_WARNING    => "Core Warning",
-      E_COMPILE_ERROR   => "Compile Error",
-      E_COMPILE_WARNING => "Compile Warning",
-      E_USER_ERROR      => "User Error",
-      E_USER_WARNING    => "User Warning",
-      E_USER_NOTICE     => "User Notice",
+      E_ERROR              => "Error",
+      E_WARNING            => "Warning",
+      E_PARSE              => "Parsing Error",
+      E_NOTICE             => "Notice",
+      E_CORE_ERROR         => "Core Error",
+      E_CORE_WARNING       => "Core Warning",
+      E_COMPILE_ERROR      => "Compile Error",
+      E_COMPILE_WARNING    => "Compile Warning",
+      E_USER_ERROR         => "User Error",
+      E_USER_WARNING       => "User Warning",
+      E_USER_NOTICE        => "User Notice",
     );
-    if (version_compare(phpversion(), "5.0.0")>=0) $errortype[E_STRICT] = "Strict Notice";
+
+    //E_STRICT is available since 5.0.0
+    if (version_compare(phpversion(), "5.0.0")>=0)
+    {
+      $errortype[E_STRICT] = "Strict Notice";
+      //Ignore strict notices for now.
+      return;
+    }
+
+    //E_RECOVERABLE is available since 5.2.0
+    if (version_compare(phpversion(), "5.2.0")>=0)
+    {
+      $errortype[E_RECOVERABLE_ERROR] = "Catchable Fatal Error";
+    }
+
 
     // Translate the given errortype into a string
     $errortypestring = $errortype[$errtype];
 
-    if ((version_compare(phpversion(), "5.0.0")>=0 && $errtype==E_STRICT))
+    if ((version_compare(phpversion(), "5.0.0")>=0) && $errtype==E_STRICT)
     {
-      // Ignore strict notices for now
+      //Ignore strict notices for now.
       return;
     }
+
     if ($errtype==E_NOTICE || error_reporting()==0)
     {
       // Just show notices in the debug log, but don't influence the program flow
@@ -151,32 +170,24 @@
   /**
    * Handy function that displays the time since it was last called
    *
-   * You use it as follows:
-   * first you set the time once by using elapsed()
-   * (or elapsed(true) if you want to be sure you reset the time)
-   * and echo() or atkdebug() elapsed() every time you want to know
-   * how much time has gone by.
-   *
-   * @param bool $reset if true it will reset the time
-   * @return string elapsed or current time in microseconds
+   * @return string elapsed time in microseconds
    */
-  function elapsed($reset = false)
+  function elapsed()
   {
-    static $offset="", $previous="";
-    if ($offset=="" || $reset)
+    global $g_startTime;
+    
+    static $offset=null, $previous=null;
+    
+    if ($offset === null)
     {
-      $offset = getmicrotime();
+      $offset = $g_startTime;
       $previous = $offset;
-      return strftime("%H:%M:%S")."h / 0.00000s";
     }
-    else
-    {
-      $new = getmicrotime();
-      $res = "+".sprintf("%02.05f",$new-$offset)."s / ".sprintf("%02.05f", $new-$previous)."s";
-      $previous = $new;
-      return $res;
-    }
-
+    
+    $new = getmicrotime();
+    $res = "+".sprintf("%02.05f",$new-$offset)."s / ".sprintf("%02.05f", $new-$previous)."s";
+    $previous = $new;
+    return $res;
   }
 
   /**
@@ -200,6 +211,11 @@
       atkWriteLog($txt);
       $line = atkGetTimingInfo().$txt;
 
+      if (hasFlag($flags, DEBUG_ERROR))
+      {
+        $line = '<span class="atkDebugError">'.$line.'</span>';
+      }
+      
       if ($level>2)
       {
         atkimport("atk.utils.atkdebugger");
@@ -264,10 +280,10 @@
     global $g_error_msg;
     $g_error_msg[]="[".elapsed()."] ".$txt;
 
-    if(function_exists("debug_backtrace"))
-    {
-      atkdebug("Trace:".atk_get_trace());
-    }
+    atkdebug($txt, DEBUG_ERROR);
+     
+    if (function_exists('debug_backtrace'))
+      atkdebug("Trace:".atk_get_trace(), DEBUG_ERROR);
   }
 
   /**
@@ -341,7 +357,10 @@
                 $valArr[] = $name;
               else
               {
-                $valArr[] = $name."=".(is_object($value) ? "object" : $value);
+                if (is_object($value))
+                  $valArr[] = sprintf("%s=Object(%s)", $name, get_class($val));
+                else
+                  $valArr[] = $name."=".$value;
               }
             }
             $stringval = "array(".implode(", ", $valArr).")";
@@ -1017,7 +1036,7 @@
       $from = atkconfig("mail_sender", $defaultfrom);
 
       $body = "Hello,\n\nAn error seems to have occurred in the atk application named '$txt_app_title'.\n";
-      $body.= "\nThe errormessage was:\n\n".implode("\n",$g_error_msg)."\n";
+      $body.= "\nThe errormessage was:\n\n".implode("\n",is_array($g_error_msg)?$g_error_msg:array())."\n";
       $body.= "\nA detailed report follows:\n";
       $body.= "\nPHP Version: ".phpversion()."\n\n";
 
@@ -1030,16 +1049,7 @@
       }
       $body.= implode("\n",$lines);
 
-      if (count($_GET)>0)
-      {
-        $body.= "\n\n_GET\n".str_repeat("-",70)."\n";
-        foreach ($_GET as $key=>$value)
-        {
-          $body.=_wordwrap($key.str_repeat(" ",max(1,20-strlen($key)))." = ".var_export($value,1))."\n";
-        }
-      }
-
-      if (count($_GET)>0)
+      if (is_array($_GET))
       {
         $body.= "\n\n_GET\n".str_repeat("-",70)."\n";
         foreach ($_GET as $key=>$value)
@@ -1061,7 +1071,7 @@
         }
       }
 
-      if (count($_POST)>0)
+      if (is_array($_POST))
       {
         $body.= "\n\n_POST\n".str_repeat("-",70)."\n";
         foreach ($_POST as $key=>$value)
@@ -1069,6 +1079,16 @@
           $body.=_wordwrap($key.str_repeat(" ",max(1,20-strlen($key)))." = ".var_export($value,1))."\n";
         }
       }
+
+      if (is_array($_COOKIE))
+      {
+        $body.= "\n\n_COOKIE\n".str_repeat("-",70)."\n";
+        foreach ($_COOKIE as $key=>$value)
+        {
+          $body.=_wordwrap($key.str_repeat(" ",max(1,20-strlen($key)))." = ".var_export($value,1))."\n";
+        }
+      }
+      
       $body.= "\n\nATK CONFIGURATION\n".str_repeat("-",70)."\n";
       foreach ($GLOBALS as $key=>$value)
       {
@@ -1214,13 +1234,46 @@
    * @param string $err multilanguage error string
    * @param string $msg optinal error string
    */
-  function triggerError(&$rec, $attrib, $err, $msg="", $tab="")
+  function triggerError(&$rec, $attrib, $err, $msg="", $tab="", $label='')
   {
     if($msg=="")  $msg = atktext($err, "atk");
 
-    $rec['atkerror'][] = array( "attrib_name"=> $attrib, "err" => $err, "msg" => $msg, "tab"=>$tab);
+    $rec['atkerror'][] = array( "attrib_name"=> $attrib, "err" => $err, "msg" => $msg, "tab" => $tab, "label" => $label);
   }
 
+  /**
+   * Adds new element to the record error array. When no message
+   * is given the multi-language error string is used.
+   *
+   * @param array              $record  record
+   * @param atkAttribute|array $attrib attribute or array of attributes
+   * @param string             $error multi-language error string
+   * @param string             $message error message (optional)
+   */
+  function atkTriggerError(&$record, &$attrib, $error, $message='')
+  {
+    if (is_array($attrib))
+    {
+      $attribName = array();
+      $label = array();
+      
+      for ($i = 0; $i < count($attrib); $i++)
+      {
+        $attribName[$i] = $attrib[$i]->fieldName();
+        $label[$i] = $attrib[$i]->getLabel($record);
+      }
+      
+      $tab = $attrib[0]->m_tabs[0];
+    }
+    else 
+    {
+      $attribName = $attrib->fieldName();
+      $label = $attrib->getLabel($record);
+      $tab = $attrib->m_tabs[0];
+    }
+      
+    triggerError($record, $attribName, $error, $message, $tab, $label);
+  }
 
   /**
    * Adds var_export function to PHP versions older then PHP4.2
@@ -1268,15 +1321,11 @@
    */
   function atk_var_dump($a, $d="")
   {
-    if (atkconfig("debug")>0) // atkdebug checks this, but if we check it here too, it saves us
-                              // a call to var_export.
-    {
-      ob_start();
-      var_dump($a);
-      $data = ob_get_contents();
-      atkdebug("vardump: ".($d!=""?$d." = ":"")."<pre>".$data."</pre>");
-      ob_end_clean();
-    }
+    ob_start();
+    var_dump($a);
+    $data = ob_get_contents();
+    atkdebug("vardump: ".($d!=""?$d." = ":"")."<pre>".$data."</pre>");
+    ob_end_clean();
   }
 
   /**
@@ -1373,7 +1422,7 @@
     if (eregi("ie", $browser["browser"]))
     {
       $mime = "application/octetstream";
-      $disp = 'inline';
+      $disp = 'attachment';
     }
     else if (eregi("opera",$browser["browser"]))
     {
@@ -1396,7 +1445,7 @@
       header("Content-Length: ".filesize($file));
       header('Content-Disposition:  '.$disp.'; filename="'.$filename.'"');
       if(eregi("ie", $browser["browser"])) header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
-      if ($_SERVER["SERVER_PORT"] == "443" AND eregi("msie", $_SERVER["HTTP_USER_AGENT"]))
+      if (($_SERVER["SERVER_PORT"] == "443" || $_SERVER['HTTP_X_FORWARDED_PROTO' ]==='https') && eregi("msie", $_SERVER["HTTP_USER_AGENT"]))
       {
         header('Pragma: public');
       }
@@ -1706,7 +1755,10 @@
     $page->register_script(atkconfig("atkroot")."atk/javascript/formsubmit.js");
     static $cnt=0;
 
-    if ($cssclass != "") $cssclass = ' class="'.$cssclass.'"';
+    if ($cssclass == "")
+      $cssclass = "btn";
+      
+    $cssclass = ' class="'.$cssclass.'"';
     $script = 'atkSubmit("'.atkurlencode(session_url($url,$sessionstatus)).'")';
     $button = '<input type="button" name="atkbtn'.(++$cnt).'" value="'.$text.'" onClick=\''.$script.'\''.$cssclass.'>';
 
@@ -2180,5 +2232,4 @@
 
     return $attr;
   }
-
 ?>

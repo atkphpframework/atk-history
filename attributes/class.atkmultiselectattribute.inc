@@ -133,8 +133,14 @@
 
       $result .="\n<table><tr>\n";
 
-      $values = $this->getValues($record);
-      $recordvalue = atkArrayNvl($record, $this->fieldName());
+
+      
+      $values = $this->getValues($record);     
+      if(!is_array($record[$this->fieldname()]))
+        $recordvalue = $this->db2value($record);
+      else 
+        $recordvalue = $record[$this->fieldName()];
+      
       for ($i=0;$i<count($values);$i++)
       {
         if (!$this->hasFlag(AF_CHECK_ALL))
@@ -198,11 +204,11 @@
       if (count($this->m_values)>4 && !hasFlag($this->m_flags,AF_NO_TOGGLELINKS))
       {
         return '<div align="left"><font size="-2">
-                  [<a href="javascript:profile_checkAll(\''.$fieldprefix.$this->fieldName().'\')">'.
+                  [<a href="javascript:void(0)" onclick="profile_checkAll(\''.$fieldprefix.$this->fieldName().'\'); return false;">'.
                        atktext("check_all").
-                  '</a> <a href="javascript:profile_checkNone(\''.$fieldprefix.$this->fieldName().'\')">'.
+                  '</a> <a href="javascript:void(0)" onclick="profile_checkNone(\''.$fieldprefix.$this->fieldName().'\'); return false;">'.
                        atktext("check_none").
-                  '</a> <a href="javascript:profile_checkInvert(\''.$fieldprefix.$this->fieldName().'\')">'.
+                  '</a> <a href="javascript:void(0)" onclick="profile_checkInvert(\''.$fieldprefix.$this->fieldName().'\'); return false;">'.
                        atktext("invert_selection").'</a>]</font></div>';
       }
     }

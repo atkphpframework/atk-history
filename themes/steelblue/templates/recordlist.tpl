@@ -2,7 +2,7 @@
 <table cellspacing="0" cellpadding="0" class="recordListContainer">
   <tr>
     <td>
-        <table id="{$listid}" class="recordList" cellpadding="0" cellspacing="0">        
+        <table id="{$listid}" class="recordList" cellpadding="0" cellspacing="0">
             <!-- header -->
             <tr>
               {section name=headerloop loop=$header}
@@ -25,7 +25,7 @@
               {$sortend}
               </tr>
             {/if}
-            
+
             {if count($search)}
               <!-- search row -->
               <tr>
@@ -41,19 +41,18 @@
 
             <!-- records -->
             {$liststart}
-
             {foreach from=$rows item=row}
               <tr id="{$row.id}" class="row{if $row.rownum % 2 == 0 }1{else}2{/if}" {if $row.background!=""}style="background-color:{$row.background}" {/if}
                    onmouseover="highlightrow(this, '{$row.highlight}')"
                    onmouseout="resetrow(this)"
                    onclick="selectrow(this, '{$listid}', {$row.rownum})">
                {section name=colloop loop=$row.cols}
-               <{if $row.type == "subtotal"}th{else}td{/if} 
-                    {if $smarty.section.colloop.index===0}class="recordListTdFirst"{else}class="recordListTd"{/if} 
+               <{if $row.type == "subtotal"}th{else}td{/if}
+                    {if $smarty.section.colloop.index===0}class="recordListTdFirst"{else}class="recordListTd"{/if}
                     valign="{$vorientation}"  {if isset($row.cols[colloop].htmlattributes)}{$row.cols[colloop].htmlattributes}{/if}
-                    {if $row.cols[colloop].type == "data"} onclick="rl_try('{$listid}', {$row.rownum}, ['select', 'edit', 'view'], false);"{/if}>
+                    {if $row.cols[colloop].type == "data"} onclick="rl_try('{$listid}', event, {$row.rownum}, ['select', 'edit', 'view'], false);"{/if}>
                   {if $row.cols[colloop].content != ""}{$row.cols[colloop].content}{else}&nbsp;{/if}
-                </{if $row.type == "subtotal"}th{else}td{/if}>               
+                </{if $row.type == "subtotal"}th{else}td{/if}>
               {/section}
             </tr>
             {/foreach}

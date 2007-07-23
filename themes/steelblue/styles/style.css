@@ -7,7 +7,7 @@ body
   font-family: Lucida Sans, Lucida Sans Unicode, Tahoma, Trebuchet MS, Arial, Verdana;
 }
 
-a:link, a:visited, a:active, td
+a:link, a:visited, a:active
 {
   color: #414141;
   font-size: 12px;
@@ -128,8 +128,12 @@ ul, ol, li
 
 .actionpageWrapper
 {
-  padding: 8px 18px 0 18px;
   width: 93%;
+}
+
+.panel
+{
+  margin: 8px 18px 0px 18px;
 }
 
 .panelTitle
@@ -139,7 +143,7 @@ ul, ol, li
 
 .panelTitleText
 {
-  
+
   margin: 0;
   padding: 7px 4px 0px 12px;
   height: 19px;
@@ -334,6 +338,11 @@ input.btn_saveandclose
 	margin-bottom: 8px;
 }
 
+#loginform-content
+{
+  width: 220px;
+}
+
 .loginformField
 {
 	vertical-align: middle;
@@ -364,7 +373,7 @@ input.btn_saveandclose
   text-align: center;
 }
 
-.btn_saveandclose, .btn_save, .btn_cancel
+.btn_saveandclose, .btn_save, .btn_ok, .btn_cancel
 {
   padding: 2px !important;
   margin: 0px !important;

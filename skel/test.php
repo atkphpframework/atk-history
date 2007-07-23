@@ -9,23 +9,30 @@
    * @package atk
    * @subpackage skel
    *
-   * @copyright (c)2005 Ivo Jansch   
+   * @copyright (c)2005 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
    * @version $Revision$
    * $Id$
-   */  
+   */
 
   /**
    * @internal includes 
    */
   $config_atkroot = "./";
   include_once("atk.inc");
-  
+
+  // Start session
   atksession();
-  atksecure();
-  
-  $suite = &atknew("atk.test.atktestsuite");  
-  $suite->run("html", $_REQUEST["atkmodule"]); 
+
+  // Require ATK authentication if not running in text mode
+  if(PHP_SAPI != "cli")
+  {
+    atksecure();
+  }
+
+  // Let the atktestsuite run the requested tests in an appropriate format
+  $suite = &atknew("atk.test.atktestsuite");
+  $suite->run((PHP_SAPI != "cli") ? "html" : "text", atkArrayNvl($_REQUEST, "atkmodule"));
 
 ?>

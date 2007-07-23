@@ -40,16 +40,15 @@
 
       return $page->render("Menu", true);
     }
-    
+
     function getMenu()
     {
        global $ATK_VARS, $g_menu, $g_menu_parent;
-       $atkmenutop = $ATK_VARS["atkmenutop"];
+       $atkmenutop = atkArrayNvl($ATK_VARS, "atkmenutop", "main");
        $theme = &atkinstance('atk.ui.atktheme');
        $page = &atkinstance('atk.atkpage');
-       if($atkmenutop=="") $atkmenutop="main";
 
-       $menu.=$this->getHeader($atkmenutop);
+       $menu = $this->getHeader($atkmenutop);
         if (is_array($g_menu[$atkmenutop]))
         {
           usort($g_menu[$atkmenutop],array("atkplainmenu","menu_cmp"));
@@ -146,13 +145,13 @@
 
     function getScrollable()
     {
-      return MENU_UNSCROLLABLE;
+      return MENU_SCROLLABLE;
     }
 
-		function getMultilevel()
-		{
-			return MENU_MULTILEVEL;
-		}
+    function getMultilevel()
+    {
+      return MENU_MULTILEVEL;
+    }
   }
 
 ?>

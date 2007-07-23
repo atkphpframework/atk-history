@@ -159,6 +159,16 @@
   define("NF_NO_SORT",           4194304);
 
   /**
+   * Use the dialog popup box when adding a new record for this node.
+   */
+  define("NF_ADD_DIALOG",        8388608);
+
+  /**
+   * Use the dialog add-or-copy popup box when adding a new record for this node.
+   */
+  define("NF_ADDORCOPY_DIALOG", 16777216);
+
+  /**
    * Specific node flag 1
    */
   define("NF_SPECIFIC_1",       33554432);
@@ -710,6 +720,28 @@
     var $m_mraSelectionMode = MRA_MULTI_SELECT;
 
     /**
+     * A list of mra actions that need to be accessed through
+     * a dialog.
+     *
+     * @todo: This code needs to be removed/replaced when we have support for all MRA
+     * actions for using dialogs. In which case we could make all the actions in a
+     * MRA dropdown open an atkDialog.
+     *
+     * @var array
+     */
+    var $m_dialog_mra = null;
+
+    /**
+     * Determines wether a node has a clickable recordlist.
+     * When this variable is true, the class atkRecordList will pass a variable onClick for each row
+     * to the recordlist.tpl template which can be used as $col.onclick to render the onCLick
+     * javascript code.
+     *
+     * @var Boolean
+     */
+    var $m_has_clickable_recordlist = true;
+
+    /**
      * Constructor.
      *
      * This initialises the node. Derived classes should always call their
@@ -820,7 +852,7 @@
      *                   If ommitted, this defaults to 100 for the first
      *                   attribute, and 100 more for each next attribute that
      *                   is added.
-     * @return mixed the attribute just added
+     * @return atkAttribute the attribute just added
      */
     function &add($attribute,$sections=NULL,$order=0)
     {
@@ -1662,6 +1694,7 @@
      * @param array $record The record currently displayed/edited in the form.
      *                      This param can be used to define record specific
      *                      buttons.
+     * @return array
      */
     function getFormButtons($mode, $record)
     {
@@ -1838,6 +1871,22 @@
     }
 
     /**
+     * The preAddToEditArray method is called from within the editArray
+     * method prior to letting the attributes add themselves to the edit
+     * array, but after the edit record values have been collected (a
+     * combination of the current record, initial/edit values and the forced
+     * values). This makes it possible to do some last-minute modifications to
+     * the record data and possibily add some last-minute attributes etc.
+     *
+     * @param array $record the edit record
+     * @param string $mode edit mode (add or edit)
+     */
+    function preAddToEditArray(&$record, $mode="add")
+    {
+      // do nothing
+    }
+
+    /**
      * Function outputs an array with edit fields. For each field the array
      * contains the name, edit HTML code etc. (name, html, obligatory,
      * error, label)
@@ -1953,6 +2002,8 @@
           }
         }
       }
+
+      $this->preAddToEditArray($defaults, $mode);
 
       /* extra submission data */
       //$result["hide"][] = '<input type="hidden" name="'.$fieldprefix.'atkescape">';
@@ -2230,6 +2281,7 @@
         case "view": return "viewform.tpl";
         case "search": return "searchform.tpl";
         case "smartsearch": return "smartsearchform.tpl";
+        case "admin": return "recordlist.tpl";
       }
     }
 
@@ -2479,7 +2531,7 @@
       }
 
       $buttons = array();
-      $buttons[] = '<input name="confirm" class="btn" type="submit" value="'.atktext('yes').'">';
+      $buttons[] = '<input name="confirm" type="submit" class="btn_ok" value="'.atktext('yes').'">';
       $buttons[] = '<input name="cancel" type="submit" class="btn_cancel" value="'.atktext('no').'">';
 
       $content = "";
@@ -2827,7 +2879,9 @@
       // The actual redirect.
       if (atkconfig("debug")>=2)
       {
-        atkdebug('nondebug version would have redirected to <a href="'.$location.'">'.$location.'</a>');
+        $debugger = &atkinstance('atk.utils.atkdebugger');
+        $debugger->setRedirectUrl($location);
+        atkdebug('Non-debug version would have redirected to <a href="'.$location.'">'.$location.'</a>');
         if ($exit)
         {
           $output = &atkOutput::getInstance();
@@ -3225,7 +3279,7 @@
               || (is_array($excludeList) && !in_array($attribname,$excludeList)))
               || (!is_array($excludeList) && !is_array($includeList))
               || ($this->m_attribList[$attribname]->hasFlag(AF_FORCE_LOAD))
-              );
+            );
     }
 
     /**
@@ -4012,9 +4066,9 @@
 
         $return = $this->$trigger($record, $mode);
 
-        if ($return == NULL)
+        if ($return === NULL)
         {
-          atkdebug("Undefined return:".$this->atkNodeType().".$trigger doesn't return anything, it should return a boolean!", DEBUG_WARNING);
+          atkdebug("Undefined return: ".$this->atkNodeType().".$trigger doesn't return anything, it should return a boolean!", DEBUG_WARNING);
           $return = true;
         }
 
@@ -4029,7 +4083,7 @@
           $listener = &$this->m_triggerListeners[$i];
           $return = $listener->notify($trigger, $record, $mode);
 
-          if ($return == NULL)
+          if ($return === NULL)
           {
             atkdebug("Undefined return: ".$this->atkNodeType().", ".get_class($listener).".notify('$trigger', ...) doesn't return anything, it should return a boolean!", DEBUG_WARNING);
             $return = true;
@@ -4499,18 +4553,27 @@
     function helpUrl()
     {
       $language = atkconfig("language");
-      $file   = "help/".$language."/help.".$this->m_type.".inc";
-      if (!file_exists($file))
+      $node = $this->m_type;
+
+      $file   = moduleDir($this->m_module)."help/".$language."/help.".$node.".inc";
+      $helpmodule = "";
+      if (file_exists($file))
       {
-        // no help available..
-        return "";
+        $helpmodule = $this->m_module;
       }
       else
       {
-       $name = atktext("help");
-       $node = $this->m_type;
-       return atkPopup('atk/popups/help.inc','node='.$node,$name,650,650,'yes','no');
+        // bwc
+        $file   = "help/".$language."/help.".$node.".inc";
+        if (!file_exists($file))
+        {
+          // no help available..
+          return "";
+        }
       }
+
+      $name = atktext("help");
+      return atkPopup('atk/popups/help.inc','node='.$node.($helpmodule!=""?"&module=".$helpmodule:""),$name,650,650,'yes','no');
     }
 
     /**
@@ -4674,7 +4737,7 @@
       {
         $p_attrib = &$this->m_attribList[$attribname];
         // Only search in fields that aren't explicitly hidden from search
-        if (!$p_attrib->hasFlag(AF_HIDE_SEARCH) && in_array($p_attrib->dbFieldType(), array("string", "text")))
+        if (!$p_attrib->hasFlag(AF_HIDE_SEARCH) && (in_array($p_attrib->dbFieldType(), array("string", "text"))||$p_attrib->hasFlag(AF_SEARCHABLE)))
         {
            $this->m_postvars['atksearch'][$attribname]=$expression;
         }
@@ -4918,6 +4981,51 @@
     function __toString()
     {
       return $this->atkNodeType();
+    }
+
+    /**
+     * Add an mra action that need to be accessed through a dialog.
+     *
+     * @todo: This code needs to be removed/replaced when we have support for all MRA
+     * actions for using dialogs. In which case we could make all the actions in a
+     * MRA dropdown open an atkDialog. For now this code just generates another button.
+     *
+     * @param String $action
+     */
+    function addDialogMRA($action)
+    {
+      $this->m_dialog_mra[] = $action;
+    }
+
+    /**
+     * Retrieve the mra actions that need to be accessed through a dialog.
+     *
+     * @todo: This code needs to be removed/replaced when we have support for all MRA
+     * actions for using dialogs. In which case we could make all the actions in a
+     * MRA dropdown open an atkDialog. For now this code just generates another button.
+     */
+    function getDialogMRA()
+    {
+      return $this->m_dialog_mra;
+    }
+
+    /**
+     * Retrieve wether this node has a clickable recordlist
+     *
+     */
+    function getHasClickableRecordList()
+    {
+      return $this->m_has_clickable_recordlist;
+    }
+
+    /**
+     * Set wether this node has a clickable recordlist
+     *
+     * @param Boolean $boolean
+     */
+    function setHasClickableRecordList($boolean)
+    {
+      $this->m_has_clickable_recordlist = $boolean;
     }
   }
 ?>

@@ -62,11 +62,12 @@
   // SEVERELY FLAMED!
   // $config_mailreport = "ivo@ibuildings.net";
 
-    // The debug level.
-  // 0 - No debug information
-  // 1 - Print some debug information at the bottom of each screen
-  // 2 - Print debug information, and pause before redirects
-  // 3 - Like 2, but also adds trace information to each statement
+  // The debug level.
+  // -1 - No debug information
+  //  0 - No debug information, but still stored for atk errormails
+  //  1 - Print some debug information at the bottom of each screen
+  //  2 - Print debug information, and pause before redirects
+  //  3 - Like 2, but also adds trace information to each statement
   $config_debug = 0;
 
   // Smart debug parameters. Is used to dynamically enable debugging for
@@ -84,7 +85,7 @@
 
   // The theme defines the layout of your application. You can see which
   // themes there are in the directory atk/themes.
-  $config_defaulttheme = "outlook";
+  $config_defaulttheme = "steelblue";
 
   // The language of the application. You can use any language for which
   // a language file is present in the atk/languages directory.

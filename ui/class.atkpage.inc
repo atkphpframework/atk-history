@@ -57,7 +57,7 @@
      * @access private
      * @var array
      */
-    var $m_scriptcode = array();
+    var $m_scriptcode = array("before"=>array(),"after"=>array());
 
     /**
      * List of javascript code statements to execute when a form on
@@ -179,11 +179,6 @@
      */
     function register_scriptcode($code,$before=false)
     {
-      if(count($this->m_scriptcode)==0)
-      {
-        $this->m_scriptcode['before']=array();
-        $this->m_scriptcode['after']=array();
-      }
       $element = ($before?'before':'after');
       if (!in_array($code, $this->m_scriptcode[$element])) $this->m_scriptcode[$element][] = $code;
     }
@@ -329,19 +324,30 @@
      */
     function addScripts(&$res, $partial=false)
     {
-      
       $count_scriptcode = count($this->m_scriptcode['before']);
       if($count_scriptcode>0) $res .= '  <script type="text/javascript">'."\n";
-      for ($i=0, $_i=$count_scriptcode; $i<$_i; $i++)
-      {
-        $res.= $this->m_scriptcode['before'][$i]."\n";
-      }
+      $res.= $this->renderScriptCode("before");
+
       if($count_scriptcode>0) $res .= "  </script>\n";
       
       if (!$partial)
       {
         for ($i = 0; $i < count($this->m_scriptfiles); $i++)
           $res .= '  <script type="text/javascript" src="'.$this->m_scriptfiles[$i].'"></script>'."\n";
+      }
+      else 
+      {
+        
+        $files = '';
+        for ($i = 0; $i < count($this->m_scriptfiles); $i++)
+        {
+          $files .= "ATK.Tools.loadScript('".$this->m_scriptfiles[$i]."');\n";
+        }          
+        
+        if (!empty($files))
+        {
+          $res .= '<script type="text/javascript">'.$files.'</script>';
+        }
       }
 
       $res .= '  <script type="text/javascript">';
@@ -350,12 +356,27 @@
       $res.=$this->_getGlobalLoadScriptCode($partial);
 
       // javascript code.
-      for ($i=0, $_i=count($this->m_scriptcode['after']); $i<$_i; $i++)
-      {
-        $res.= $this->m_scriptcode['after'][$i]."\n";
-      }
+      $res.=$this->renderScriptCode("after");
 
       $res .= "  </script>\n\n";
+    }
+    
+    /**
+     * Renders the registered javascripts, if $position is set to "before" the scripts will be
+     * placed before the scripts that are already present. Otherwise they will be appended
+     * at the end.
+     *
+     * @param string $position ("before" or "after")
+     * @return string 
+     */
+    function renderScriptCode($position)
+    {
+      $res = "";
+      for ($i=0, $_i=count($this->m_scriptcode[$position]); $i<$_i; $i++)
+      {
+        $res.= $this->m_scriptcode[$position][$i]."\n";
+      }
+      return $res;
     }
 
     function _getGlobalSubmitScriptCode($partial=false)
@@ -503,7 +524,7 @@
       $page.= $this->renderHiddenVars();
       if (hasFlag($flags,HTML_BODY)) $page.= "</body>\n";
       $page.= "</html>\n";
-
+      
       return $page;
     }
 
@@ -544,6 +565,9 @@
     function atkPage()
     {
       global $ATK_VARS;
+
+      // Initialize some variables.
+ 
       /** @todo: Move this to the places where the tabscript is registered. */
       // Load default tab show script.
       $this->register_loadscript('if ( window.showTab ) {showTab(\''.(isset($ATK_VARS['atktab'])?$ATK_VARS['atktab']:'').'\');}');

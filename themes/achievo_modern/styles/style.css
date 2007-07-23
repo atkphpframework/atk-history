@@ -20,7 +20,8 @@ body {
 
 		}
 
-	#box-content {
+	#box-content, .box-dispatch
+	{
 		background:#eeeeee;
    	margin-left: 211px;
  	}
@@ -80,8 +81,8 @@ padding: .5em;
 color: #333;
 background-color: #ddd;
 border-top: 1px solid gray;
-}    
-    
+}
+
 
 
 A:link,
@@ -228,7 +229,7 @@ INPUT.btn_saveandclose
 
 /* nieuwe stylen ivm theme */
 
-.tableHeader
+.tableHeader, .box-dispatch-title
 {
   height: 23px;
   background: url(../images/tabBg2.gif) repeat-x left top;
@@ -261,7 +262,7 @@ INPUT.btn_saveandclose
   position: relative;
 }
 
-.contentBlock
+.contentBlock, .box-dispatch-content
 {
   background: #fff url(../images/contentBlockBg.gif) repeat-x left bottom;
   padding: 12px;
@@ -369,7 +370,7 @@ INPUT.btn_saveandclose
 }
 
 
-.btn_saveandclose, .btn_save, .btn_cancel, .btn_saveandcontinue
+.btn_saveandclose, .btn_save, .btn_ok, .btn_cancel, .btn_saveandcontinue
 {
   padding: 2px !important;
   margin: 0px !important;
@@ -444,4 +445,12 @@ input[type="checkbox"]
 .atkAttrRowHidden
 {
   display: none !important;
+}
+
+#box-menu
+{
+  float:left;
+  width: 14em;
+  padding: 1em 0px 1em 0px;
+  position: relative;
 }
