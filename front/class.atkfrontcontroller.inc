@@ -30,6 +30,9 @@ class atkFrontController implements ArrayAccess
   private static $s_current = null;
   private static $s_bridges = array();
 
+  /**
+   * @var atkFrontControllerBridge
+   */
   protected $m_bridge;
 
   protected $m_module;
@@ -52,7 +55,14 @@ class atkFrontController implements ArrayAccess
   protected $m_headers = array();
   protected $m_contentType;
 
-
+  protected $m_cacheableActions = array();
+  
+  protected $m_styleSheets = array();
+  protected $m_styleCodes = array();
+  
+  protected $m_scriptFiles = array();
+  protected $m_scriptCodes = array();
+  
   /**
    * Dispatch request. Find the right controller, let it handle the request
    * and return it's result.
@@ -148,8 +158,6 @@ class atkFrontController implements ArrayAccess
   protected static function setCurrent($controller)
   {
     self::$s_current = $controller;
-    $smarty = atkSmarty::getInstance();
-    $smarty->__controller = $controller;
   }
 
   /**
@@ -183,6 +191,11 @@ class atkFrontController implements ArrayAccess
     $this->m_name = $name;
     $this->m_action = $action;
     $this->m_parent = $parent;
+    
+    if (isset($this->cacheableActions))
+    {
+      $this->m_cacheableActions = $this->cacheableActions;
+    }
 
     if ($parent !== null)
     {
@@ -296,6 +309,107 @@ class atkFrontController implements ArrayAccess
   {
     $this->m_contentType = $contentType;
   }
+  
+  /**
+   * Sets the cacheable actions.
+   * 
+   * @param array|string $actions cacheable actions
+   * @param ... 
+   */
+  protected function setCacheableActions($actions)
+  {
+    if (!is_array($actions))
+      $actions = func_get_args();
+    $this->m_cacheableActions = $actions;
+  }
+  
+  /**
+   * Get action cache key.
+   */
+  protected function getActionCacheKey()
+  {
+    return '';
+  }
+  
+  /**
+   * Get action cache file.
+   * 
+   * @return atkTmpFile
+   */
+  private function getActionCacheFile()
+  {
+    atkimport('atk.utils.atktmpfile');
+    $path = 'frontcontrollers/'.$this->m_module.'/'.$this->m_name.'/'.$this->m_action;
+    $filename = md5($this->getActionCacheKey()).'.cache';
+    $file = new atkTmpFile($path.'/'.$filename);
+    return $file;    
+  }
+  
+  /**
+   * Is this action cached?
+   */
+  private function isActionCached()
+  {
+    // action is never cached
+    if (!in_array($this->m_action, $this->m_cacheableActions)) return false;
+
+    $file = $this->getActionCacheFile();
+    return $file->exists();
+  }
+  
+  /**
+   * Load from action cache.
+   */
+  private function loadFromActionCache()
+  {
+    $file = $this->getActionCacheFile();
+    
+    include($file->getPath());
+
+    $this->m_result      = $data['result'];
+    $this->m_headers     = $data['headers'];
+    $this->m_styleSheets = $data['styleSheets'];
+    $this->m_styleCodes  = $data['styleCodes'];
+    $this->m_scriptFiles = $data['scriptFiles'];
+    $this->m_scriptCodes = $data['scriptCodes'];
+  }
+
+  /**
+   * Store current action results in cache.
+   */
+  private function storeInActionCache()
+  {
+    // action is never cached
+    if (!in_array($this->m_action, $this->m_cacheableActions)) return;
+    
+    $data = array(
+      'result'      => $this->m_result,
+      'headers'     => $this->m_headers,
+      'styleSheets' => $this->m_styleSheets,
+      'styleCodes'  => $this->m_styleCodes,
+      'scriptFiles' => $this->m_scriptFiles,
+      'scriptCodes' => $this->m_scriptCodes
+    );
+    
+    $file = $this->getActionCacheFile();
+    $file->writeAsPhp('data', $data);
+    $file->close();
+  }
+  
+  /**
+   * Register styles and scripts using the bridge.
+   */
+  private function registerStylesAndScripts()
+  {
+    foreach ($this->m_styleSheets as $entry)
+      $this->m_bridge->registerStyleSheet($entry['file'], $entry['media']);
+    foreach ($this->m_styleCodes as $entry)
+      $this->m_bridge->registerStyleCode($entry['code']);
+    foreach ($this->m_scriptFiles as $entry)
+      $this->m_bridge->registerScriptFile($entry['file']);
+    foreach ($this->m_scriptCodes as $entry)
+      $this->m_bridge->registerScriptCode($entry['code']);
+  }
 
   /**
   * Handle action.
@@ -308,15 +422,6 @@ class atkFrontController implements ArrayAccess
   {
     try
     {
-      try
-      {
-        $method = $this->getActionMethod();
-      }
-      catch (Exception $ex)
-      {
-        throw new Exception("Invalid action {$this->m_action} for controller {$this->m_module}/{$this->m_name}! (".$ex->getMessage().")");
-      }
-
       $this->setTemplate($this->m_action);
 
       $this->m_request = new atkDataHolder($request);
@@ -328,14 +433,40 @@ class atkFrontController implements ArrayAccess
       $this->request =  $this->m_request;
       $this->session =  $this->m_session;
 
-      $this->installPlugins();
-
+      $this->init();      
+      
       $this->preFilter();
-      if (!$this->m_rendered) $method->invoke($this);
-      $this->render();
-      $this->postFilter();
 
-      $this->uninstallPlugins();
+      if ($this->isActionCached())
+      {
+        $this->loadFromActionCache();
+      }
+      else
+      {
+        $this->installPlugins();
+        
+        try
+        {
+          $method = $this->getActionMethod();
+        }
+        catch (Exception $ex)
+        {
+          throw new Exception("Invalid action {$this->m_action} for controller {$this->m_module}/{$this->m_name}! (".$ex->getMessage().")");
+        }      
+        
+        $method->invoke($this);
+        
+        $this->render();
+        
+        $this->storeInActionCache();
+        
+        $this->uninstallPlugins();        
+      }
+      
+      // register styles and scripts in bridge
+      $this->registerStylesAndScripts();
+      
+      $this->postFilter();
 
       if ($this->m_partial && $this->isRoot())
       {
@@ -348,7 +479,6 @@ class atkFrontController implements ArrayAccess
           header('Content-Type: '.$this->m_contentType);
 
         echo $this->m_result;
-
 
         die;
       }
@@ -369,29 +499,15 @@ class atkFrontController implements ArrayAccess
    */
   protected function getActionMethod()
   {
-    $methodName = $this->getActionMethodName().'Action';
+    $methodName = str_replace('_', '', $this->m_action).'Action';
     if (!method_exists($this, $methodName))
       throw new Exception("Action method not found!");
 
     $method = new ReflectionMethod(get_class($this), $methodName);
     if (!$method->isPublic())
       throw new Exception("Action method is not public!");
-    else if ($method->getName()!==$methodName)
-    {
-      atkdebug("ERROR: ".$method->getName()."!==$methodName");
-      throw new Exception("Action method not found! Similar method found but case did not match, expected: '$methodName' but found only: '".$method->getName()."'");
-    }
-    return $method;
-  }
 
-  protected function getActionMethodName()
-  {
-    $exploded = explode('_',$this->m_action);
-    foreach ($exploded as $key=>$string)
-    {
-      if ($key) $exploded[$key] = ucfirst($string);
-    }
-    return implode($exploded);
+    return $method;
   }
 
   /**
@@ -399,6 +515,13 @@ class atkFrontController implements ArrayAccess
    * to the right method.
    */
   protected function preFilter()
+  {}
+  
+  /**
+   * Init will be called just after preFilter and just before
+   * the request is dispatched to the right method.
+   */
+  protected function init()
   {}
 
   /**
@@ -420,7 +543,6 @@ class atkFrontController implements ArrayAccess
     {
       atkerror($exception->__toString());
       $this->renderContent('An unknown error occured.');
-      atkOutput::getInstance()->outputFlush();
     }
     else
     {
@@ -479,16 +601,6 @@ class atkFrontController implements ArrayAccess
   protected function setTemplate($template)
   {
     $this->m_template = $template;
-  }
-
-  /**
-   * Set wether or not the controller has rendered yet
-   *
-   * @param bool $rendered
-   */
-  protected function setRendered($rendered)
-  {
-    $this->m_rendered = $rendered;
   }
 
   /**
@@ -786,7 +898,7 @@ class atkFrontController implements ArrayAccess
    */
   protected function registerStyleSheet($file, $media='all')
   {
-    $this->m_bridge->registerStyleSheet($file, $media);
+    $this->m_styleSheets[] = array('file' => $file, 'media' => $media);
   }
 
   /**
@@ -796,7 +908,7 @@ class atkFrontController implements ArrayAccess
    */
   protected function registerStyleCode($code)
   {
-    $this->m_bridge->registerStyleCode($code);
+    $this->m_styleCodes[] = array('code' => $code);
   }
 
   /**
@@ -806,7 +918,7 @@ class atkFrontController implements ArrayAccess
    */
   protected function registerScriptFile($file)
   {
-    $this->m_bridge->registerScriptFile($file);
+    $this->m_scriptFiles[] = array('file' => $file);
   }
 
   /**
@@ -816,7 +928,7 @@ class atkFrontController implements ArrayAccess
    */
   protected function registerScriptCode($code)
   {
-    $this->m_bridge->registerScriptCode($code);
+    $this->m_scriptCodes[] = array('code' => $code);
   }
 
   /**
@@ -845,7 +957,7 @@ class atkFrontController implements ArrayAccess
   {
     $this->m_partial = true;
     $this->m_result = $content;
-    $this->setRendered(true);
+    $this->m_rendered = true;
   }
 
   /**
@@ -880,7 +992,7 @@ class atkFrontController implements ArrayAccess
 
     $this->m_partial = $partial;
     $this->m_result = $this->_render($template, $vars, $partial);
-    $this->setRendered(true);
+    $this->m_rendered = true;
   }
 
   /**
