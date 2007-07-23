@@ -689,7 +689,7 @@
      */
     function integrateAttribute($attr)
     {
-      return in_array(strtolower(get_class($attr)),array("atkonetoonerelation","atksecurerelation")) && $attr->hasFlag(AF_ONETOONE_INTEGRATE);
+      return in_array(strtolower(get_class($attr)),array("atkdbcryptrelation","atkonetoonerelation","atksecurerelation")) && $attr->hasFlag(AF_ONETOONE_INTEGRATE);
     }
 
     /**
@@ -738,7 +738,7 @@
      */
     function hasRelationAttribute($attrname)
     {
-      return in_array(strtolower(get_class($this->getUsableAttribute($attrname))),array("atkonetoonerelation","atkmanytoonerelation","atkmanytoonetreerelation"));      
+      return in_array(strtolower(get_class($this->getUsableAttribute($attrname))),array("atkdbcryptrelation","atkonetoonerelation","atkmanytoonerelation","atkmanytoonetreerelation"));      
     }
 
     /**
