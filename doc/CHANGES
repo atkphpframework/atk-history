@@ -7,6 +7,11 @@ Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 Changed in galactus branch
 ------------------
 * atkMailer now sets language to current application language. [Boy]
+* Modified atkFrontController:
+  - Added setRendered method
+  - Action method is no longer invoked in controller if we've already rendered
+  - Flush debugging at the end of request
+  - Set Smarty with controller. [Boy]
 
 Changed in ATK 6.1
 ------------------
