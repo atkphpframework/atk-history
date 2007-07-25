@@ -18,7 +18,6 @@
   /**
    * include
    */
-  include_once(atkconfig("atkroot")."atk/atkbrowsertools.inc");
   atkimport("atk.attributes.atkattribute");
 
   /**
@@ -225,6 +224,7 @@
      */
     function doAutoAdjust($data, &$rows, &$cols)
     {
+      require_once(atkconfig("atkroot")."atk/atkbrowsertools.inc");
     	$browser = new browserInfo;
     	$maxlinechars = 0;
     	for ($counter = 0, $linecharacters=0, $rowsrequired=1;
@@ -236,7 +236,7 @@
 
     		// If we encounter a newline character or the number of characters
     		// equals the number of columns we have (with IE)...
-    		if ($character == chr(13) || ($linecharacters==$cols && $browser->browser == "MSIE"))
+    		if (in_array($character,array(chr(13),chr(10))) || ($linecharacters==$cols && $browser->browser == "MSIE"))
     		{
     			if ($linecharacters>$maxlinechars) $maxlinechars = $linecharacters;
     			// We start another line
@@ -245,6 +245,7 @@
     			$rowsrequired++;
     		}
     	}
+
     	// If we need more rows, we set them
   	  if ($rowsrequired>$rows) $rows= $rowsrequired;
   	  // IE wraps characters, other don't, so if we're not dealing with IE
