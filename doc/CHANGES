@@ -6,9 +6,7 @@ Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 
 Changed in galactus branch
 ------------------
-+ Added atkvardump modifier. [Boy]
-* atkTime now only returns integers for getHours, getMinutes, etc. [Boy]
-* Added ability to register modifiers. [Boy]
+* atkMailer now sets language to current application language. [Boy]
 
 Changed in ATK 6.1
 ------------------
@@ -40,7 +38,8 @@ Changed in ATK 6.1
   atkManyToOneRelations for now). In recordlists a user can click on the value
   of the attribute and a dialog appears, which makes it possible to changes only
   the value of that attribute. This functionality can be activated with the
-  AF_RELATION_EDITDIALOG flag. [Dennis]
+  AF_RELATION_EDITDIALOG flag. After saving the attribute, ONLY the altered cell
+  in the recordlist will be updated. [Dennis]
 + Added action caching support to atkFrontController. [Peter]
 + Added command line support for test.php file in atk skel. [Guido]
 + Implemented caching of query results by node and filter in
@@ -54,6 +53,7 @@ Changed in ATK 6.1
   argument, which will render an extra button next to the MRA dropdown [Dennis].
 + Made it possible to extend atkTimeZoneAttribute by calling it's methods non-
   static. [Tjeerd]
++ Added atkvardump modifier. [Boy]
 * atkTmpFile now is able to recursively create the directory structure for
   the temporary file if the directory doesn't already exist. [Peter]
 * Fixed debug output in atkTestReporter. [Patrick]
@@ -76,6 +76,9 @@ Changed in ATK 6.1
 * Columns in a recordlist now have an onclick parameter in the recordlist.tpl
   ($col.onclick). This onclick parameter can be activated with the methods get-
   and setHasClickableRecordList() in atkNode. [Dennis]
+* atkTime datatype returns time array by default with leading zero. [Boy]
+* atkDateTimeAttribute does not have a AF_SEARCHABLE flag anymore at default.
+  [Peter, Dennis]
 
 Changed in ATK 6.0
 ------------------
