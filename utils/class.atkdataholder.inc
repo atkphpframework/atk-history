@@ -60,6 +60,15 @@ class atkDataHolder
     return $this->m_vars[$name];
   }
 
+  protected function merge(&$vars)
+  {
+    $vars = $this->toArray(false);
+    foreach ($vars as $key=>&$value)
+    {
+      $this->m_vars[$key]=$value;
+    }
+  }
+
   /**
    * Convert to array, by default returns a copy
    * of the original array. If $copy is set to false

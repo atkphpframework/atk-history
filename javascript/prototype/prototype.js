@@ -17,7 +17,7 @@
  *   if (typeof headers[name] != 'function')
  *     this.transport.setRequestHeader(name, headers[name]);
  *
- * Because it was causing problems with rico.js! 
+ * Because it was causing problems with rico.js!
  * For more information, visit: http://forum.openrico.org/topic/2228
  *
  *--------------------------------------------------------------------------*/
@@ -166,7 +166,7 @@ String.interpret = function(value){
 }
 
 Object.extend(String.prototype, {
-  gsub: function(pattern, replacement) {
+  gsub2: function(pattern, replacement) {
     var result = '', source = this, match;
     replacement = arguments.callee.prepareReplacement(replacement);
 
@@ -183,17 +183,17 @@ Object.extend(String.prototype, {
   },
 
   sub: function(pattern, replacement, count) {
-    replacement = this.gsub.prepareReplacement(replacement);
+    replacement = this.gsub2.prepareReplacement(replacement);
     count = count === undefined ? 1 : count;
 
-    return this.gsub(pattern, function(match) {
+    return this.gsub2(pattern, function(match) {
       if (--count < 0) return match[0];
       return replacement(match);
     });
   },
 
   scan: function(pattern, iterator) {
-    this.gsub(pattern, iterator);
+    this.gsub2(pattern, iterator);
     return this;
   },
 
@@ -307,7 +307,7 @@ Object.extend(String.prototype, {
   }
 });
 
-String.prototype.gsub.prepareReplacement = function(replacement) {
+String.prototype.gsub2.prepareReplacement = function(replacement) {
   if (typeof replacement == 'function') return replacement;
   var template = new Template(replacement);
   return function(match) { return template.evaluate(match) };
@@ -324,7 +324,7 @@ Template.prototype = {
   },
 
   evaluate: function(object) {
-    return this.template.gsub(this.pattern, function(match) {
+    return this.template.gsub2(this.pattern, function(match) {
       var before = match[1];
       if (before == '\\') return match[2];
       return before + String.interpret(object[match[3]]);
