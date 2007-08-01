@@ -15,7 +15,7 @@ Changed in galactus branch
   - Set Smarty with controller. [Boy]
 * Made atkTextAttribute autoadjust feature compatible 
   with UNIX lineends. [Boy]
-* Added merge method that allowd merging of one dataholder 
+* Added merge method that allowes merging of one atkDataHolder 
   with another. [Boy]
 
 Changed in ATK 6.1
