@@ -66,7 +66,11 @@ function rl_doAndReturn(rlId, rownum, action, confirmtext)
 
   if (rl_a[rlId][rownum][action] && (!confirmtext || confirmed))
   {
-    if (!rl_a[rlId]['embed'])
+    if (typeof(rl_a[rlId][rownum][action]) == 'function')
+    {
+      rl_a[rlId][rownum][action]();
+    }
+    else if (!rl_a[rlId]['embed'])
     {
       document.location.href = rl_a[rlId][rownum][action]+'&'+rl_a[rlId]['base']+extra;
     }

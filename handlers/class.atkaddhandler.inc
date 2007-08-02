@@ -109,21 +109,20 @@
     function getAddParams($record=NULL)
     {
       $node = &$this->m_node;
-      $params = $node->getDefaultActionParams();
-      $params["formstart"] = $this->getFormStart();
-
       $ui = &$node->getUi();
-      if (is_object($ui))
-      {
-        $params["content"] = $this->getContent($record);
-        $params["buttons"] = $this->getFormButtons($record);
-        $params["formend"] = '</form>';
 
-        return $params;
+      if (!is_object($ui))
+      {
+        atkerror("ui object failure");
+        return false;
       }
 
-      atkerror("ui object failure");
-      return false;
+      $params               = $node->getDefaultActionParams();
+      $params["formstart"]  = $this->getFormStart();
+      $params["content"]    = $this->getContent($record);
+      $params["buttons"]    = $this->getFormButtons($record);
+      $params["formend"]    = $this->getFormEnd();
+      return $params;
     }
 
     function getFormStart()
@@ -162,6 +161,16 @@
       return $node->tabulate("add", $form);
     }
 
+    /**
+     * Get the end of the form.
+     *
+     * @return String HTML The forms' end
+     */
+    function getFormEnd()
+    {
+      return '</form>';
+    }
+
     function getFormButtons($record=null)
     {
       if ($this->m_partial == 'dialog')
@@ -192,12 +201,12 @@
         $output = $ui->renderAction("add", $params);
         $this->addRenderBoxVar("title", $node->actionTitle('add'));
         $this->addRenderBoxVar("content", $output);
-        
+
         if ($this->getRenderMode() == "dialog")
         {
           $total = $ui->renderDialog($this->m_renderBoxVars);
         }
-        else 
+        else
         {
           $total = $ui->renderBox($this->m_renderBoxVars);
         }
@@ -213,7 +222,7 @@
      */
     function partial_attribute($partial)
     {
-      list($type, $attribute, $partial) = explode('.', $partial);        
+      list($type, $attribute, $partial) = explode('.', $partial);
 
       $attr = &$this->m_node->getAttribute($attribute);
       if ($attr == NULL)
@@ -222,8 +231,7 @@
         return '';
       }
 
-      $result = $attr->partial($partial, 'add');
-      return $result;
+      return $attr->partial($partial, 'add');
     }
 
     /**
@@ -234,7 +242,7 @@
       atkimport("atk.session.atkstate");
       atkState::set(array("nodetype"=>$this->m_node->atknodetype(),"section"=>$this->m_postvars['atksectionname']),$this->m_postvars['atksectionstate']);
     }
-    
+
     /**
      * Render add dialog.
      *
@@ -245,9 +253,9 @@
     {
       $this->setRenderMode('dialog');
       $result = $this->m_node->renderActionPage("add", $this->invoke("addPage", $record));
-      return $result;    
+      return $result;
     }
-    
+
     /**
      * Handle the dialog partial.
      *
@@ -258,11 +266,11 @@
     {
       return $this->renderAddDialog();
     }
-    
-    
+
+
     /**
      * Returns the dialog save URL.
-     * 
+     *
      * @return string dialog save URL
      */
     function getDialogSaveUrl()
@@ -271,12 +279,12 @@
       {
         return $this->m_dialogSaveUrl;
       }
-      else 
+      else
       {
-        return partial_url($this->m_node->atkNodeType(), 'save', 'dialog');            
+        return partial_url($this->m_node->atkNodeType(), 'save', 'dialog');
       }
     }
-    
+
     /**
      * Returns the dialog save params. These are the same params that are part of the
      * dialog save url, but they will be appended at the end of the query string to
@@ -290,7 +298,7 @@
       parse_str($query, $params);
       return $params;
     }
-    
+
     /**
      * Override the default dialog save URL.
      *
@@ -299,6 +307,6 @@
     function setDialogSaveUrl($url)
     {
       $this->m_dialogSaveUrl = $url;
-    }     
+    }
   }
 ?>
