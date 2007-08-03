@@ -62,7 +62,7 @@ class atkDataHolder
 
   protected function merge(&$vars)
   {
-    $vars = $this->toArray(false);
+    $vars = $vars->toArray(false);
     foreach ($vars as $key=>&$value)
     {
       $this->m_vars[$key]=$value;
