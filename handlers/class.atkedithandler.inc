@@ -84,7 +84,7 @@
     function getRecord()
     {
       $node = &$this->m_node;
-
+atkdebug('ATKSELECTOR PRE');
       list($record) = $node->selectDb(atkArrayNvl($this->m_postvars, 'atkselector', ""),"","","","","edit");
 
       return $record;
@@ -570,8 +570,7 @@
 
     function partial_dialog()
     {
-      $record = $this->getRecord();
-      return $this->renderEditDialog($record);
+      return $this->renderEditDialog();
     }
 
     /**
@@ -582,6 +581,8 @@
      */
     function renderEditDialog($record=null)
     {
+      if ($record == null)
+        $record = $this->getRecord();
       $this->setRenderMode('dialog');
       $result = $this->m_node->renderActionPage("edit", $this->invoke("editPage", $record));
       return $result;

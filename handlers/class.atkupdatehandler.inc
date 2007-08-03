@@ -172,7 +172,7 @@
      * Handle the update of a dialog.
      *
      */
-    function handleUpdateDialog()
+    function handleUpdate($attrRefreshUrl=null)
     {
       $record = $this->getRecord();
 
@@ -185,7 +185,7 @@
       }
 
       // In the dialog we only support saving and closing
-      $this->handleProcessDialog($record);
+      $this->handleProcessDialog($record, $attrRefreshUrl);
     }
 
     /**
@@ -193,7 +193,7 @@
      *
      * @param array $record
      */
-    function handleProcessDialog($record)
+    function handleProcessDialog($record, $attrRefreshUrl=null)
     {
       $db = &$this->m_node->getDb();
       if (!$this->m_node->executeTrigger("preUpdate", $record) ||
@@ -218,7 +218,7 @@
         return;
       }
 
-      $this->handleUpdateSuccessDialog($db, $record);
+      $this->handleUpdateSuccessDialog($db, $record, $attrRefreshUrl);
     }
 
     /**
@@ -232,17 +232,28 @@
      * @param atkDb $db
      * @param array $record
      */
-    function handleUpdateSuccessDialog(&$db, $record)
+    function handleUpdateSuccessDialog(&$db, $record, $attrRefreshUrl=null)
     {
       $db->commit();
       $this->notify("update", $record);
       $this->clearCache();
 
       atkimport("atk.ui.atkdialog");
+      
+      $page = &$this->getPage();
 
+      atkimport("atk.ui.atkdialog");
       $script = atkDialog::getCloseCall();
 
-      $script .= "document.location.href = document.location.href;";
+      if ($attrRefreshUrl == null)
+      {
+        $script .= "document.location.href = document.location.href;";
+      }
+      else
+      {
+        $page->register_script(atkconfig('atkroot').'atk/javascript/class.atkattribute.js');
+        $script .= "ATK.Attribute.refresh('".$attrRefreshUrl."');";
+      }
 
       $page = &$this->getPage();
       $page->register_loadscript($script);
@@ -361,7 +372,7 @@
      */
     function partial_dialog($mode)
     {
-      $this->handleUpdateDialog();
+      $this->handleUpdate();
     }
 
 
