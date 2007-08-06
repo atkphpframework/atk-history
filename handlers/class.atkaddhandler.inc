@@ -99,7 +99,6 @@
     {
       $page = &$this->getPage();
       $ui = &$this->getUi();
-      $page->register_script(atkconfig('atkroot').'atk/javascript/prototype/prototype.js');
       $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");
       $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
       $page->register_loadscript("placeFocus();");

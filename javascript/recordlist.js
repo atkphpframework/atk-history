@@ -46,7 +46,8 @@ function rl_try(recordListId, clickEvent, rowNum, actions, confirmText)
   // Ignore click events on the checkbox because they will be  forwarded already
   // by the toggleRecord method. We only have to do this for Firefox because
   // Internet Explorer will only call the onClick method on the checkbox and not both.
-  if (clickEvent != null && clickEvent.target && (clickEvent.target.tagName == 'INPUT' || clickEvent.target.tagName == 'SELECT' || clickEvent.target.tagName == 'OPTION')) return;
+  var target = clickEvent == null ? null : clickEvent.target || clickEvent.srcElement;
+  if (target != null && $A(['INPUT', 'SELECT', 'OPTION', 'A']).indexOf(target.tagName) >= 0) return;
 
   actions.each(function(action) {
     if (rl_doAndReturn(recordListId, rowNum, action, confirmText)) {

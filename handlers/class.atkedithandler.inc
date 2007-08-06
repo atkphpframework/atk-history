@@ -84,7 +84,7 @@
     function getRecord()
     {
       $node = &$this->m_node;
-atkdebug('ATKSELECTOR PRE');
+
       list($record) = $node->selectDb(atkArrayNvl($this->m_postvars, 'atkselector', ""),"","","","","edit");
 
       return $record;
@@ -110,7 +110,6 @@ atkdebug('ATKSELECTOR PRE');
     {
       $page = &$this->getPage();
       $ui   = &$this->getUi();
-      $page->register_script(atkconfig('atkroot').'atk/javascript/prototype/prototype.js');
       $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");
       $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
       $page->register_loadscript("placeFocus();");
@@ -582,7 +581,10 @@ atkdebug('ATKSELECTOR PRE');
     function renderEditDialog($record=null)
     {
       if ($record == null)
+      {
         $record = $this->getRecord();
+      }
+      
       $this->setRenderMode('dialog');
       $result = $this->m_node->renderActionPage("edit", $this->invoke("editPage", $record));
       return $result;

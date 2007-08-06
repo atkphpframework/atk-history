@@ -608,7 +608,6 @@
             }
 
             $page = &$this->m_node->getPage();
-            $page->register_script(atkconfig('atkroot').'atk/javascript/prototype/prototype.js');
             $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");
             $page->register_script(atkconfig('atkroot').'atk/javascript/class.atkattributeedithandler.js');
 
