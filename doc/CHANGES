@@ -19,6 +19,9 @@ Changed in galactus branch
   with another. [Boy]
 * Added very basic execQueries method for blindly executing multiple
   queries in atkMysqliDb driver. [Boy] 
+* Decomposed atkTestSuite into seperate atkTestTraverser and abstract 
+  atkTestCaseCollector. Enabling adding of atkPHPUnitTestCaseCollector to
+  atkTestTraverser to run PHPUnit testcases. [Boy] 
 
 Changed in ATK 6.1
 ------------------
