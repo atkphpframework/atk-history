@@ -116,7 +116,7 @@
        $query .= " LIMIT $offset, $limit";
 
      if (atkconfig("debug")>=0)
-     {       
+     {
        atkimport("atk.utils.atkdebugger");
        atkDebugger::addQuery($query);
      }
@@ -165,6 +165,16 @@
        return true;
      }
      return false;
+   }
+
+   /**
+    * Performs multiple queries
+    *
+    * @param string $queries Queries to execute
+    */
+   function execQueries($queries)
+   {
+     mysqli_multi_query($this->m_link_id,$queries);
    }
 
    /**
@@ -252,13 +262,13 @@
      {
        /* lock */
        $query = "lock tables $table $mode";
-       
+
        if (atkconfig("debug")>=0)
        {
          atkimport("atk.utils.atkdebugger");
          atkDebugger::addQuery($query);
        }
-       
+
        $result = @mysqli_query($this->m_link_id, $query);
        if (!$result) $this->halt("$mode lock on $table failed.");
 

@@ -17,6 +17,8 @@ Changed in galactus branch
   with UNIX lineends. [Boy]
 * Added merge method that allowes merging of one atkDataHolder 
   with another. [Boy]
+* Added very basic execQueries method for blindly executing multiple
+  queries in atkMysqliDb driver. [Boy] 
 
 Changed in ATK 6.1
 ------------------
