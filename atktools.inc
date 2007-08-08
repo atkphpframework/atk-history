@@ -1825,11 +1825,12 @@
 
   /**
    * Clean-up the given path.
+   * Removes or ../ or ./ references.
    *
-   * @param string $path
-   * @return cleaned-up path
+   * @param string $path Dirty path (with ../ or ./ references)
+   * @return string cleaned-up path
    *
-   * @see http://nl2.php.net/manual/en/function.realpath.php (comment of 21st of September 2005)
+   * @see http://www.php.net/manual/en/function.realpath.php#57016
    */
   function atkCleanPath($path)
   {
