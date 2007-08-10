@@ -1787,21 +1787,8 @@
    */
   function atkimport($fullclassname, $failsafe=true, $path = false)
   {
-    if (!$path)
-      $filename = getClassPath($fullclassname);
-    else
-      $filename = $fullclassname;
-
-    if (file_exists($filename))
-    {
-      if ($failsafe)
-        require_once($filename);
-      else
-        include_once($filename);
-      return true;
-    }
-    else
-      return false;
+    include_once(atkconfig('atkroot').'atk/utils/class.atkclassloader.inc');
+    return atkClassLoader::loadClass($fullclassname,$failsafe,$path);
   }
 
   /**
@@ -1928,32 +1915,11 @@
    */
   function &atknew($fullclassname)
   {
-    $fullclassname = atkResolveClass($fullclassname);
-    atkimport($fullclassname, true);
+    $arguments = func_get_args();
+    unset($arguments[0]);
 
-    $elems = explode(".", strtolower($fullclassname));
-    $classname = $elems[count($elems)-1];
-
-    if (class_exists($classname))
-    {
-      $args = func_get_args();
-      unset($args[0]);
-      if (!empty($args))
-      {
-        foreach ($args as $key=>$arg) $arguments[]="\$args[$key]";
-        $arguments = implode(',',$arguments);
-        eval("\$obj = &new $classname($arguments);");
-      }
-      else $obj = &new $classname();
-
-      return $obj;
-    }
-    else
-    {
-      atkerror("Class $fullclassname not found.");
-      $tmp = NULL;
-      return $tmp;
-    }
+    atkimport('atk.utils.atkclassloader');
+    return atkClassLoader::createClass($fullclassname,$arguments);
   }
 
   /**
@@ -1968,13 +1934,18 @@
   {
     static $s_instances = array();
     $fullclassname = atkResolveClass($fullclassname);
+    if (is_object($fullclassname)) return $fullclassname;
+
     if (!isset($s_instances[$fullclassname]) || $reset)
     {
       atkimport($fullclassname);
       $elems = explode(".", strtolower($fullclassname));
       $classname = $elems[count($elems)-1];
       atkdebug("Getting singleton instance $fullclassname");
-      eval("\$s_instances[\$fullclassname] = &".$classname."::getInstance($reset);");
+
+      if (!$classname) atkerror("atkinstance($fullclassname,$reset) did not resolve to a class...?!?");
+      else if (!is_callable(array($classname,"getInstance"))) atkerror("Class '$classname' does not have a getInstance method, cannot instantiate it with atkinstance");
+      else eval("\$s_instances[\$fullclassname] = &".$classname."::getInstance($reset);");
     }
     return $s_instances[$fullclassname];
   }
@@ -2186,7 +2157,7 @@
    * (if any).
    *
    * @param String $class The name of the class to resolve
-   * @return String The resolved classname
+   * @return mixed The resolved classname or the object
    */
   function atkResolveClass($class)
   {

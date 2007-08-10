@@ -22,6 +22,10 @@ Changed in galactus branch
 * Decomposed atkTestSuite into seperate atkTestTraverser and abstract 
   atkTestCaseCollector. Enabling adding of atkPHPUnitTestCaseCollector to
   atkTestTraverser to run PHPUnit testcases. [Boy] 
+* Moved functionality of atknew and atkimport to atkClassLoader. [Boy]
+* Added ability to add already instantiated object as an overloader,
+  specifically so you can mock using dynamically created mock classes by
+  PHPUnit. [Boy]
 
 Changed in ATK 6.1
 ------------------

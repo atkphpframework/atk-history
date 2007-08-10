@@ -23,24 +23,83 @@
    * @package atk
    * @subpackage utils
    *
-   * @todo atknew() and atkimport() function should be moved to this
-   *       class.
-   *
    */
   class atkClassLoader
   {
     /**
-     * Resolve a classname to its final classname.
+     * Returns a new instance of a class
+     * @param string  $fullclassname  the ATK classname of the class ("map1.map2.classname")
+     * @param array   $arguments      Arguments to pass to creation of class
+     * @return obj instance of the class
+     */
+    function &createClass($fullclassname, $arguments=array())
+    {
+      $resolved = atkClassLoader::resolveClass($fullclassname);
+      if (is_object($resolved)) return atkClone($resolved);
+
+      atkimport($resolved, true);
+
+      $elems = explode(".", strtolower($resolved));
+      $classname = $elems[count($elems)-1];
+
+      if (class_exists($classname))
+      {
+        if (!empty($arguments))
+        {
+          foreach ($arguments as $key=>$arg) $arg_list[]="\$arguments[$key]";
+          $arg_list = implode(',',$arg_list);
+          eval("\$obj = &new $classname($arg_list);");
+        }
+        else $obj = &new $classname();
+
+        return $obj;
+      }
+      else
+      {
+        atkerror("Class $resolved not found.");
+        $tmp = NULL;
+        return $tmp;
+      }
+    }
+
+    /**
+     * Includes files.
+     *
+     * @param string $fullclassname Name of class in atkformat (map1.map2.classfile)
+     * @param bool   $failsafe      Determines wether a class is included
+     *                                or made required. Defaults to true.
+     * @param bool   $path          Wether or not it is NOT an ATK classname
+     *                                 ("map.class"), if true it will interpret classname
+     *                                 as: "map/class.classname.inc", default false.
+     * @return bool wether the file we want to import was actually imported or not
+     */
+    function loadClass($fullclassname, $failsafe=true, $path="")
+    {
+      if (!$path) $filename = getClassPath($fullclassname);
+      else        $filename = $fullclassname;
+
+      if (file_exists($filename))
+      {
+        if ($failsafe) require_once($filename);
+        else           include_once($filename);
+        return true;
+      }
+      else return false;
+    }
+
+    /**
+     * Resolve a classname to its final classname or object.
      *
      * An application can overload a class with a custom version. This
      * method resolves the initial classname to its overloaded version
      * (if any).
+     * May even return an object, if overloaded with one.
      *
      * @static
      * @param String $class The name of the class to resolve
-     * @return String The resolved classname
+     * @return mixed The resolved classname or object
      */
-    function resolveClass($class)
+    function &resolveClass($class)
     {
       global $g_overloaders;
       if (isset($g_overloaders[$class])) return $g_overloaders[$class];
@@ -48,11 +107,15 @@
     }
 
     /**
-     * Add a class overloader
+     * Add a class overloader, forcing ATK to use that class instead of
+     * the original.
+     *
+     * @example atkClassLoader::addOverloader('module.mymod.class','module.mymod.mocks.mockclass');
+     * @example atkClassLoader::addOverloader('module.mymod.class',new MockClass('param'));
      *
      * @static
      * @param String $original
-     * @param String $overload
+     * @param mixed $overload
      * @param bool $overwrite
      * @return bool Wether or not we added the overloader
      */
@@ -95,11 +158,7 @@
     function hasOverloader($original)
     {
       global $g_overloaders;
-      if (array_key_exists($original, $g_overloaders))
-      {
-        return true;
-      }
-      return false;
+      return array_key_exists($original, $g_overloaders);
     }
 
     /**
