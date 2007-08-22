@@ -26,6 +26,8 @@ Changed in galactus branch
 * Added ability to add already instantiated object as an overloader,
   specifically so you can mock using dynamically created mock classes by
   PHPUnit. [Boy]
+* First debugline is now shown by default, see also:
+  http://www.achievo.org/forum/viewtopic.php?t=3091. [Boy]
 
 Changed in ATK 6.1
 ------------------
