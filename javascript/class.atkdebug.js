@@ -38,3 +38,10 @@ ATK.Debug = {
     }
   }
 };
+
+if (typeof Prototype!=='undefined') {
+	Event.observe(window,'load', function (){
+		var debugs = document.getElementsByClassName("atkDebugToggle"); 
+		if (debugs && debugs[0]) ATK.Debug.toggle(debugs[0]);
+	});
+}
