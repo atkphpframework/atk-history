@@ -538,6 +538,31 @@
     var $m_initial_hidden = false;
 
     /**
+     * Storage type.
+     * @access private
+     * @var int
+     * @see setStorageType
+     */
+    var $m_storageType = array();
+
+
+    /**
+     * Load type.
+     * @access private
+     * @var int
+     * @see setLoadType
+     */
+    var $m_loadType = array();
+
+    /**
+     * Initial value.
+     * @access private
+     * @var mixed
+     * @see setInitialValue
+     */
+    var $m_initialValue = NULL;
+
+    /**
      * Constructor
      *
      * <b>Example:</b>
@@ -776,6 +801,19 @@
     }
 
     /**
+     * Set initial value for this attribute.
+     *
+     * NOTE: the initial value only works if there is no initial_values override
+     *       in the node or if the override properly calls parent::initial_values!
+     *
+     * @param mixed $value initial value
+     */
+    function setInitialValue($value)
+    {
+      $this->m_initialValue = $value;
+    }
+
+    /**
      * Initial value. Returns the initial value for this attribute
      * which will be used in the add form etc.
      *
@@ -783,7 +821,7 @@
      */
     function initialValue()
     {
-      return NULL;
+      return $this->m_initialValue;
     }
 
     /**
@@ -871,6 +909,7 @@
                                       ".implode("\n", $this->m_onchangecode)."
                                     }\n");
       }
+
     }
 
     /**
@@ -979,6 +1018,8 @@
       /* edit */
       else
       {
+        global $ATK_VARS;
+
         $this->_registerDependees($mode, $fieldprefix);
 
         $entry = array("name" => $this->m_name, "obligatory" => $this->hasFlag(AF_OBLIGATORY), "attribute" => &$this);
@@ -987,7 +1028,7 @@
         /* label? */
         $entry["label"] = $this->getLabel($defaults);
         /* error? */
-        $entry["error"] = $this->getError($error);
+        $entry["error"] = $this->getError($error) || (isset($ATK_VARS["atkerrorfields"]) && atk_in_array($entry['id'], $ATK_VARS['atkerrorfields']));
         // on which tab?
         $entry["tabs"] = $this->getTabs($mode);
         //on which sections?
@@ -1927,6 +1968,19 @@
               );
     }
 
+    /**
+     * Sets the storage type.
+     *
+     * @param int $type Bitmask containg information about storage requirements.
+     * @param string $mode The storage mode ("add", "update" or null for all)
+     *
+     * @see storageType
+     */
+    function setStorageType($type, $mode=null)
+    {
+      $this->m_storageType[$mode] = $type;
+    }
+
     /*
      * Determine the storage type of this attribute.
      *
@@ -1956,11 +2010,29 @@
      */
     function storageType($mode)
     {
+      if (isset($this->m_storageType[$mode]) && $this->m_storageType[$mode] !== null)
+        return $this->m_storageType[$mode];
+      else if (isset($this->m_storageType[null]) && $this->m_storageType[null] !== null)
+        return $this->m_storageType[null];
       // Default backwardscompatible behaviour:
-      if (method_exists($this,"store"))
+      else if (method_exists($this,"store"))
         return POSTSTORE;
       else
         return ADDTOQUERY;
+    }
+
+
+    /**
+     * Sets the load type.
+     *
+     * @param int $type Bitmask containg information about load requirements.
+     * @param string $mode The load mode ("view", "admin" etc. or null for all)
+     *
+     * @see loadType
+     */
+    function setLoadType($type, $mode=null)
+    {
+      $this->m_loadType[$mode] = $type;
     }
 
     /*
@@ -1992,8 +2064,12 @@
      */
     function loadType($mode, $searching=false)
     {
+      if (isset($this->m_loadType[$mode]) && $this->m_loadType[$mode] !== null)
+        return $this->m_loadType[$mode];
+      else if (isset($this->m_loadType[null]) && $this->m_loadType[null] !== null)
+        return $this->m_loadType[null];
       // Default backwardscompatible behaviour:
-      if (method_exists($this,"load"))
+      else if (method_exists($this,"load"))
         return POSTLOAD;
       else
         return ADDTOQUERY;
@@ -2170,7 +2246,7 @@
       {
         // if we are not the sumcolumn itself, but there are totalcolumns present, we can perform subtotalling
         $cmd = ($columnConfig->hasSubTotal($this->fieldName())?"unsubtotal":"subtotal");
-        return href('dispatch.php?'.$columnConfig->getUrlCommand($this->fieldName(), $cmd), atktext("column_".$cmd)).' ';
+        return href(getDispatchFile().'?'.$columnConfig->getUrlCommand($this->fieldName(), $cmd), atktext("column_".$cmd)).' ';
       }
       return "";
     }
@@ -2184,7 +2260,7 @@
       if ($currentOrder>0)
       {
         $direction = ($columnConfig->getSortDirection($this->fieldName())=="desc" ? "asc":"desc");
-        $res= href('dispatch.php?'.$columnConfig->getUrlCommand($fieldname, $direction), atktext("column_".$direction)).' ';
+        $res= href(getDispatchFile().'?'.$columnConfig->getUrlCommand($fieldname, $direction), atktext("column_".$direction)).' ';
       }
 
       $res.= '<select name="atkcolcmd[][setorder]['.$fieldname.']">';
@@ -2287,12 +2363,13 @@
       $defaults = &$record;
       $error = array();
 
-      $this->addToEditArray($mode, $arr, $defaults, $error, '');
+      $this->addToEditArray($mode, $arr, $defaults, $error, $fieldprefix);
 
       $script = '';
       foreach ($arr['fields'] as $field)
       {
-        $script .= "\$('".str_replace('.', '_', $this->m_ownerInstance->atkNodeType().'_'.$field['id'])."').innerHTML = '".addslashes(atk_htmlentities($field['html']))."'.unescapeHTML();\r\n";
+        atkimport('atk.utils.atkjson');
+        $script .= "\$('".str_replace('.', '_', $this->m_ownerInstance->atkNodeType().'_'.$field['id'])."').innerHTML = ".atkJSON::encode($field['html']).";\r\n";
       }
 
       $this->_registerDependees($mode, $fieldprefix);

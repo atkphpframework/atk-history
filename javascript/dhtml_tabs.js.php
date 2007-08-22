@@ -146,7 +146,11 @@ function makeFCKEditable()
 	for (i = 0; i < iframes.length; i++)
 	{
 	  obj = frames[iframes[i].id];
-	  if (obj && obj.FCK && obj.FCK.MakeEditable) obj.FCK.MakeEditable();
+	  if (obj && obj.FCK && obj.FCK.MakeEditable) 
+	  {
+	    obj.FCK.StartEditor();
+	    obj.FCK.MakeEditable();
+	  }
 	}
 }
 
@@ -171,6 +175,7 @@ function setCurrentTab(value)
     if (form.atktab != null)
     {
       form.atktab.value = value;
+      form.atktab.defaultValue = value;
     }
     else
     {
@@ -178,6 +183,7 @@ function setCurrentTab(value)
       input.setAttribute('type', 'hidden');
       input.setAttribute('name', 'atktab');
       input.setAttribute('value', value);
+      input.defaultValue = value;
       form.appendChild(input);
       form.atktab = input;
     }

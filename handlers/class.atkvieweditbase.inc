@@ -82,7 +82,7 @@
       $url = partial_url($this->m_node->atknodetype(), $mode, "sectionstate",array("atksectionname"=>$name));
 
       // create onclick statement.
-      $onClick = " onClick=\"javascript:handleSectionToggle(this,null,'{$url}');\"";
+      $onClick = " onClick=\"javascript:handleSectionToggle(this,null,'{$url}'); return false;\"";
       $initClass = "openedSection";
 
       //if the section is not active, we close it on load.
@@ -97,7 +97,7 @@
       }
 
       // create the clickable link
-      return '<a href="javascript:void(0)" id="'.$name.'" class="atksection '.$initClass.'"'.$onClick.'>'.$label.'</a>';
+      return '<span class="atksectionwr"><a href="javascript:void(0)" id="'.$name.'" class="atksection '.$initClass.'"'.$onClick.'>'.$label.'</a></span>';
     }
 
     /**

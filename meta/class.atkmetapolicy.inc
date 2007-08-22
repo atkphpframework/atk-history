@@ -37,6 +37,7 @@ class atkMetaPolicy
   var $m_includes = NULL;
   var $m_excludes = NULL;
 
+  var $m_tableAttrs = array();
   var $m_attrs = array();
 
   /**
@@ -134,6 +135,14 @@ class atkMetaPolicy
     else if ($name == 'timezone')
     {
       $type = 'atk.attributes.atktimezoneattribute';
+    }
+    else if ($name == 'created_at' || $name == 'created_on')
+    {
+      $type = 'atk.attribute.atkcreatestampattribute';
+    }
+    else if ($name == 'updated_at' || $name == 'updated_on')
+    {
+      $type = 'atk.attribute.atkupdatestampattribute';
     }
     else if ($meta['type'] == 'int' && $meta['len'] == 1 && 
              (substr($name, 0, 3) == 'is_' || substr($name, 0, 4) == 'has_'))
@@ -264,6 +273,9 @@ class atkMetaPolicy
 
   /**
    * Set includes. Implicitly sets the order.
+   * 
+   * Attributes manually added through the policy 
+   * will always be included!
    */
   function setIncludes($attrs)
   {
@@ -278,6 +290,9 @@ class atkMetaPolicy
 
   /**
    * Set excludes.
+   * 
+   * Attributes manually added through the policy 
+   * will always be included!
    */
   function setExcludes($attrs)
   {
@@ -416,6 +431,12 @@ class atkMetaPolicy
       if (array_key_exists($attr, $this->m_attrs))
         $this->m_attrs[$attr]["tabs"] = $tabs;
   }
+  
+  /**
+   * Set the sections/tabs for the given attribute or list of attributes.
+   */
+  function setSection($attrs, $tab) { $params = func_get_args(); $this->_call("setTabs", $params); }
+  function setSections($attrs, $tabs)  { $params = func_get_args(); $this->_call("setTabs", $params); }
 
   /**
    * Sets the attribute type. All extra arguments after the two
@@ -423,9 +444,9 @@ class atkMetaPolicy
    * attribute. If you need to pass arguments by reference you can
    * better use the setTypeAndParams method.
    *
-   * @param $attr  the attribute name
-   * @param $type  full ATK attribute class (e.g. atk.attributes.atkboolattribute)
-   * @param $...   all other arguments will be threated as parameters
+   * @param string|array $attr  the attribute name or a list of attributes
+   * @param string $type        full ATK attribute class (e.g. atk.attributes.atkboolattribute)
+   * @param mixed ...           all other arguments will be threated as parameters
    */
   function setType($attr, $type)
   {
@@ -437,14 +458,18 @@ class atkMetaPolicy
   /**
    * Sets the attribute type and parameters.
    *
-   * @param $attr    the attribute name
-   * @param $type    full ATK attribute class (e.g. atk.attributes.atkboolattribute)
-   * @param $params  parameters for the attribute (optional)
+   * @param string|array $attr the attribute name or a list of attributes
+   * @param string $type       full ATK attribute class (e.g. atk.attributes.atkboolattribute)
+   * @param array $params      parameters for the attribute (optional)
    */
   function setTypeAndParams($attr, $type, $params=array())
   {
-    $this->m_attrs[$attr]["type"] = $type;
-    $this->m_attrs[$attr]["params"] = $params;
+    $attrs = is_array($attr) ? $attr : array($attr);
+    foreach ($attrs as $attr)
+    {
+      $this->m_attrs[$attr]["type"] = $type;
+      $this->m_attrs[$attr]["params"] = $params;
+    }
   }
 
   /**
@@ -605,6 +630,10 @@ class atkMetaPolicy
         case 'boolean':
           $type = "atk.meta.relations.atkmetamanyboolrelation";
           break;
+        case 'eshuttle':
+        case 'extendableshuttle':
+          $type = "atk.meta.relations.atkmetaextendableshuttlerelation";
+          break;
         case 'shuttle':
         default:
           $type = "atk.meta.relations.atkmetashuttlerelation";          
@@ -704,28 +733,42 @@ class atkMetaPolicy
   /**
    * Add / replace (custom) attribute.
    * 
-   * @param $name    attribute name
-   * @param $type    attribute type
-   * @param $params  attribute parameters, excluding flags (optional)
-   * @param $flags   attribute flags (optional)
-   * @param $tabs    tabs to display the attribute on
-   * @param $order   order of the attribute
+   * @param string|array $name  attribute name or list of attributes
+   * @param string $type        attribute type
+   * @param array $params       attribute parameters, excluding flags (optional)
+   * @param int $flags          attribute flags (optional)
+   * @param string|array $tabs  tabs to display the attribute on
+   * @param int $order          order of the attribute
    */
   function add($name, $type, $params=array(), $flags=0, $tabs=NULL, $order=NULL)
   {
-    if ($order === NULL && isset($this->m_attrs[$name]))
-      $order = $this->m_attrs[$name]['order']; 
-    else if ($order === NULL) 
-      $order = $this->_getMaxOrder() + 100;
-
-    $this->m_attrs[$name] =
-      array(
-        "type" => $type,
-        "params" => $params,
-        "flags" => $flags,
-        "tabs" => $tabs,
-        "order" => $order
-      );   
+    $names = is_array($name) ? $name : array($name);
+    foreach ($names as $name)
+    {
+      if ($order === NULL && isset($this->m_attrs[$name]))
+        $order = $this->m_attrs[$name]['order']; 
+      else if ($order === NULL) 
+        $order = $this->_getMaxOrder() + 100;
+  
+      $this->m_attrs[$name] =
+        array(
+          "type" => $type,
+          "params" => $params,
+          "flags" => $flags,
+          "tabs" => $tabs,
+          "order" => $order
+        );   
+    }
+  }
+  
+  /**
+   * Remove attribute.
+   * 
+   * @param $name attribute name
+   */
+  function remove($name)
+  {
+    unset($this->m_attrs[$name]);
   }
 
   /**
@@ -757,6 +800,7 @@ class atkMetaPolicy
   {
     $db = &$this->m_node->getDb();
     $cols = $db->tableMeta($this->m_node->getTable());
+    $this->m_tableAttrs = array_keys($cols);
     foreach ($cols as $name => $meta)
       $this->_initAttribute($name, $meta);
   }
@@ -770,6 +814,7 @@ class atkMetaPolicy
    */
   function _isAttributeIncluded($name)
   {
+    if (!in_array($name, $this->m_tableAttrs)) return true;
     if ($this->m_includes !== NULL && in_array($name, $this->m_includes)) return true;
     if ($this->m_excludes !== NULL && in_array($name, $this->m_excludes)) return false;
 

@@ -4,11 +4,108 @@
 Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 [names] are references to people in the AUTHORS file.
 
-Changed in ATK 5.7
+Changed in galactus branch
 ------------------
-+ Sessionmanager can set a cookie which spawns multiple subdomains
-  (eg .ibuildings.nl so you can be logged on to a.ibuildings.nl and to
-  b.ibuildings.nl). Param set with $config_cookiedomain.
+* atkMailer now sets language to current application language. [Boy]
+* Modified atkFrontController:
+  - Added setRendered method
+  - Action method is no longer invoked in controller 
+    if we've already rendered
+  - Flush debugging at the end of request
+  - Set Smarty with controller. [Boy]
+* Made atkTextAttribute autoadjust feature compatible 
+  with UNIX lineends. [Boy]
+* Added merge method that allowes merging of one atkDataHolder 
+  with another. [Boy]
+* Added very basic execQueries method for blindly executing multiple
+  queries in atkMysqliDb driver. [Boy] 
+* Decomposed atkTestSuite into seperate atkTestTraverser and abstract 
+  atkTestCaseCollector. Enabling adding of atkPHPUnitTestCaseCollector to
+  atkTestTraverser to run PHPUnit testcases. [Boy] 
+* Moved functionality of atknew and atkimport to atkClassLoader. [Boy]
+* Added ability to add already instantiated object as an overloader,
+  specifically so you can mock using dynamically created mock classes by
+  PHPUnit. [Boy]
+* First debugline is now shown by default, see also:
+  http://www.achievo.org/forum/viewtopic.php?t=3091. [Boy]
+
+Changed in ATK 6.1
+------------------
++ Added feature that skips the addOrCopyDialog when there is no record
+  to copy from. The add link will go directly to the add page instead.[Edgar]
++ Added support for usage of custom templates in the admin actions. [Ruud]
++ Added generic Ajax DHTML dialog support to ATK (see atkDialog). [Peter]
++ Added support for add dialogs. If you set the NF_ADD_DIALOG on a node you
+  will be presented with a DHTML popup dialog for entering a new record
+  instead of a separate page. Can also be used for atkOneToManyRelations and
+  replaces the AF_ONETOMANY_EMBED functionality. Works automatically if the
+  NF_ADD_DIALOG flag is set on the destination node but can also be enabled
+  using the AF_ONETOMANY_ADD_DIALOG flag. Please note that this functionality
+  should only be used for simple nodes with only a few attributes and no tabs
+  or sections. [Dennis,Patrick,Peter]
++ Added support for "add or copy" dialogs. This special type of dialog makes it
+  possible for the user to select whatever he/she want to create a new
+  record or copy an existing record. The user is presented with a dropdown of
+  records to select from and can also select nested atkOneToManyRelations that
+  need to be included in the copy process (or not). This functionality can
+  be enabled by setting the NF_ADDORCOPY_DIALOG flag on the node or by
+  specifying it using the AF_ONETOMANY_ADDORCOPY_DIALOG flag on an
+  atkOneToManyRelation. [Dennis,Patrick,Peter,Tjeerd]
++ Added atkExtendableShuttleRelation; a shuttle relation which can be extended
+  with so called controls. Base classes for these controls are included.
+  Controls can be used, for example, to filter content in fields. Will in the
+  near future replace the normal atkShuttleRelation. [Tjeerd,Peter]
++ Added support for "edit" dialogs for only 1 attribute (only supported for
+  atkManyToOneRelations for now). In recordlists a user can click on the value
+  of the attribute and a dialog appears, which makes it possible to changes only
+  the value of that attribute. This functionality can be activated with the
+  AF_RELATION_EDITDIALOG flag. After saving the attribute, ONLY the altered cell
+  in the recordlist will be updated. [Dennis]
++ Added action caching support to atkFrontController. [Peter]
++ Added command line support for test.php file in atk skel. [Guido]
++ Implemented caching of query results by node and filter in
+  atkmanytomanyrelation to prevent multiple identical query executions
+  during a single request. [Patrick, Tjeerd]
++ Added functions addOption and removeOption to 'atklistattribute' for easy
+  adding and removing options from a dropdown [Jeroen]
++ Added the actionhandler attributeEditHandler which provides a dialog for editing
+  one attribute for multiple records at the same time. The new action can be used
+  by calling the new atkNode method addDialogMRA() with 'attributeedit' as its
+  argument, which will render an extra button next to the MRA dropdown [Dennis].
++ Made it possible to extend atkTimeZoneAttribute by calling it's methods non-
+  static. [Tjeerd]
++ Added atkvardump modifier. [Boy]
+* atkTmpFile now is able to recursively create the directory structure for
+  the temporary file if the directory doesn't already exist. [Peter]
+* Fixed debug output in atkTestReporter. [Patrick]
+* Fixed non-object error in atkTextAttribute. [Patrick]
+* Fixed example test module in atk skel. [Guido]
+* Fixed "Cannot convert object to string" error in php 5.2+ in the atkDb
+  testcase. [Guido]
+* Fixed error in atkNode testcase ($node->m_module should be a string, not an
+  object). [Guido]
+* Fixed PHP Notice in atkGetUser(). [Guido]
+* Added class="btn_ok" to confirm button in atkNode class by default, similar
+  to the cancel button, which has class="btn_cancel". Included the class
+  "btn_ok" into the style.css of the achievo_modern and steelblue themes.
+  [Patrick]
+* Fixed memory leak when config_debug is -1. Added debug level -1 to
+  comments in config.inc.php [Jeroen,Sandy]
+* Fixed italian language file. [Fabio]
+* Fixed visibility of attributes on add screen when using a O2M relation.
+  In some cases all attributes were always hidden. [Dennis, Guido]
+* Columns in a recordlist now have an onclick parameter in the recordlist.tpl
+  ($col.onclick). This onclick parameter can be activated with the methods get-
+  and setHasClickableRecordList() in atkNode. [Dennis]
+* atkTime datatype returns time array by default with leading zero. [Boy]
+* atkDateTimeAttribute does not have a AF_SEARCHABLE flag anymore at default.
+  [Peter, Dennis]
+
+Changed in ATK 6.0
+------------------
++ Added a method to enable/disable the halt_on_error method so database
+  errors can also handled by a custom errorhandler. [Wim,Martin]
++ Added atkFrontController and atkDataHolder. [Peter,Martin,Boy,Tjeerd]
 + Added wizard functionality. A wizard can be constructed containing atkNode
   classes. Class atkWizard supports all atkActions but it is mainly tested
   for add, edit and admin actions. [Maurice]
@@ -190,6 +287,9 @@ Changed in ATK 5.7
 + Introduced new SESSION_PARTIAL flag to indicate for partial URL's where
   the current stack level data must be re-used without overwriting certain
   fields. [Dennis,Peter]
++ Sessionmanager can set a cookie which spawns multiple subdomains
+  (eg .ibuildings.nl so you can be logged on to a.ibuildings.nl and to
+  b.ibuildings.nl). Param set with $config_cookiedomain. [Wim]
 + Added script for restoring the focus after Ajax requests. [Peter]
 + Added setTabIndex function to atkNode for changing
   the tab order. [Sandy]
@@ -215,7 +315,7 @@ Changed in ATK 5.7
 + Added selected record override to atkManyToOneRelation and Usage: create
   a function named <attribname>_selected($record, $mode) in your node,
   enable AF_MANYTOONE_LAZY and return the selected record. [Peter]
-+ Added true test database support incl. support for fixtures. [Rene,Peter]
++ Added true test database support incl. support for fixtures. [RenevO, Peter]
 + Added auto-completion support for many-to-one relation search. [Peter]
 + Added atkGetMimeTypeFromFileExtension to atkFileTools - to get the right
   mimetype for the given filename. [Harrie]
@@ -329,10 +429,70 @@ Changed in ATK 5.7
   forget to include them. (php5 only). [Boy]
 + The atkcustomrecordlist attribute is extended to support some standard
   export types (csv, excelcsv, html). [Patrick]
-+ Added setComment function to atkradioattribute. This can be used for comments 
++ Added setComment function to atkradioattribute. This can be used for comments
   per option and are placed beneath each option. [Lineke]
 + Added Japanese translation (partial). (bug #506) [James]
-* Added file_exists() check to atkFileAttribute before calling the filesize() 
++ Added atk.datatypes.atkarray with multidimensional replace function. [Patrick]
++ Added support for saving entered datetimes in UTC. [Peter]
++ Added atkNode::preAddToEditArray method:
+  The preAddToEditArray method is called from within the editArray
+  method prior to letting the attributes add themselves to the edit
+  array, but after the edit record values have been collected (a
+  combination of the current record, initial/edit values and the forced
+  values). This makes it possible to do some last-minute modifications
+  to the record data and possibly add some last-minute attributes etc.
+  [Peter]
++ Added cookie data to the debug information. Also did some code cleaning.
+  [Guido, Dennis]
++ Added atkTriggerError method, improves upon triggerError by extracting
+  some of the fields directly from the attribute object and by reading
+  the attribute's label from the attribute which makes for better
+  translations in error messages. [Peter]
++ Added setInitialValue method to atkAttribute which makes it possible
+  to set the intial value for an attribute without the need to implement
+  the initial_values method or overriding the attribute itself. [Peter]
++ Added atkMetaPolicy::remove method to remove automatically added
+  attributes. Doesn't work for manually added attributes! [Peter]
++ Added atkRegisterNodeHandlerClass which acts as a small wrapper
+  around atkRegisterNodeHandler because if you want to specify a class
+  you don't want to pass a reference. [Peter]
++ Added support for externaly setting the storage / load type of an
+  attribute. This makes it possible to use real attributes as dummies
+  (no loading or saving) in add/edit forms. [Peter]
++ Added support for showing a warning message when leaving the
+  page without saving or cancelling. To enable this functionality
+  please set $config_lose_changes_warning to true. [Peter]
++ Added new lesson (10) to the demo application to demonstrate ajax
+  dependencies. [Ivo]
++ Added atkManyToOneRelation::setUseFilterForAddlink method to control
+  whatever the destination filter should be added to the add link when
+  the NF_RELATION_AUTOLINK flag is set. [Peter]
++ Added theme resource, allows you to include other Smarty theme templates
+  using {include file="theme:template.tpl} syntax. The resource will make
+  sure you get the correct file from the correct directory (even works for
+  overrides at the theme level). [Peter]
++ Added support for showing debug messages for Ajax requests. [Peter]
++ Added support for module specific help files (in help/ subdir of module).
+  [Rene, Ivo]
+* Fixed CSV row count in atkImportHandler. [Peter]
+* atkMetaPolicy::add, atkMetaPolicy::setType now support an array of
+  attribute names as argument for the attribute name parameter. [Peter]
+* atkManyToOneRelation now shows the none label when viewing the value
+  read-only and nothing is selected. [Peter]
+* Fixed path handling in atkTestCase when running single tests. [Patrick]
+* Fixed bug in atkcustomrecordlist. When a field has the flag AF_HIDE_LIST
+  it will not be visible in the csv export. [dennisjan]
+* Fixed issue with O2M and M2O relations where sometimes not all possible
+  values were shown. [Peter,Boy,Tjeerd]
+* atkTime now only returns integers for getHours, getMinutes, etc. [Boy]
+* Added ability to register modifiers. [Boy]
+* Changed function exportFile for IE7. If IE => inline to attachment [Koen]
+* Fixed atkSaveHandler rollback/commit behaviour. [Peter]
+* Fixed atkOci8Db/atkOci9Db rollback/commit behaviour. [Peter]
+* ZendPlatform 3.x session clustering id compatibility. ZP3.x uses a hyphen
+  in their session id which conflicted with the isValidSessionId function.
+  [Martin]
+* Added file_exists() check to atkFileAttribute before calling the filesize()
   function to prevent unnecessary error messages. [Patrick]
 * Fixed calendar-runner. Two different types of date field (one where you input
   the date and another one where you input the date using the date selection
@@ -358,7 +518,7 @@ Changed in ATK 5.7
   normally continue to run after the redirect. [Peter]
 * atkDb::selectDb/countDb don't set distinct on by default. In most
   cases this is not needed. And the cases which do need this can turn it
-  on manually using an attribute which does so. [Peter]
+  on manually using an attribute which does so. (bug #755) [Peter]
 * atkTestCase:: clear node repository etc. between each test method
   because test methods may *never* influence each other. [Peter]
 * If there is not selection possible for an atkManyToOneAttribute
@@ -574,7 +734,8 @@ Changed in ATK 5.7
   $config_debug_translations to enable them. [Peter]
 * Changed hardcoded 'userid' to use auth_userfield config in reloadUser method
   of atkSecurityManager. [Boy]
-* Updated prototype and scriptaculous to latest stable version. [Lineke]
+* Updated prototype and scriptaculous to latest stable version (1.5 and 1.7).
+  [Lineke,Peter]
 * atkFileAttribute: fixed bug in atkFileAttribute; if AF_OBLIGATORY and
   AF_FILE_NO_SELECT flags where both set you always had to upload a new
   image. [Bart, Peter]
@@ -953,9 +1114,28 @@ Changed in ATK 5.7
 * Added ability to specify interval instead of steps in atkTimeAttribute.
   [Boy]
 * NF_LOCK now works when a database is used that supports transactions. [Ivo]
-* Remove stripslashes from db2value in atkAttribute. It is no longer needed and 
+* Remove stripslashes from db2value in atkAttribute. It is no longer needed and
   selectDb's went wrong when fields contain slashes [Ivo, Jeroen]
 * Updated FCK editor to latest version (2.41). [Harrie]
+* Fixed corrupted images of outlook theme. [Dennis]
+* ATK buttons now have a default class of "btn" if no explicit class has
+  been specified. [Peter]
+* Fixed detection of database type for atkTextAttribute. [Peter]
+* Improved binding of variables in atkOci9Db driver. [Peter]
+* Improved atkAttribute::partial_refresh method, now only refreshes
+  if a new value has been selected for the depended field and a field
+  will be still marked as erroneous after a refresh. [Peter]
+* Updated some of atkImportHandler's code to the 21st century. [Peter]
+* atkMessageQueue::addMessage now supports a second parameter $type
+  which can be set to AMQ_SUCCESS, AMQ_FAILURE or the default
+  AMQ_GENERAL depending on the kind of message. [Peter]
+* {atkmessages} Smarty plug-in now fills $atkmessages with an array
+  for each entry containing the message and the type (as string, e.g
+  'success', 'failure' or 'general'). Updated themes to reflect this
+  change. [Peter]
+- Deprecated method to set the selected value for an atkListAttribute.
+  Please use the setInitialValue method or the already existing
+  intial_value meachanism instead. [Peter]
 - Removed old treeicon code from atkTreeNode. [Guido]
 - Temporarily removed the 'generate title row' checkbox in atkExportHandler as
   it isn't yet implemented. [Guido]

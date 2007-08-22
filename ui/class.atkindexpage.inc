@@ -26,23 +26,47 @@
      * @var Array
      */
     var $m_user;
+    
+    var $m_topsearchpiece;
+    var $m_topcenterpiecelinks;
+    var $m_title;
+    var $m_username;
+    var $m_defaultDestination;
+
+    var $m_topsearchpiece;
+    var $m_topcenterpiecelinks;
+    var $m_title;
+    var $m_username;
+    var $m_defaultDestination;
+    var $m_flags;
 
     function atkIndexPage()
     {
+      global $ATK_VARS;    
       $this->m_page =   &atkinstance("atk.ui.atkpage");
       $this->m_ui =     &atkinstance("atk.ui.atkui");
       $this->m_theme =  &atkinstance('atk.ui.atktheme');
       $this->m_output = &atkinstance('atk.ui.atkoutput');
       $this->m_user =   getUser();
+      $this->m_flags = array_key_exists("atkpartial", $ATK_VARS) ? HTML_PARTIAL : HTML_STRICT;
+    }
+    
+    function hasFlag($flag)
+    {
+      return hasFlag($this->m_flags, $flag);
     }
 
     function generate()
     {
-      $this->atkGenerateTop();
-      $this->atkGenerateMenu();
+      if (!$this->hasFlag(HTML_PARTIAL))
+      {
+        $this->atkGenerateTop();
+        $this->atkGenerateMenu();
+      }
+      
       $this->atkGenerateDispatcher();
 
-      $this->m_output->output($this->m_page->render(atkText('app_title')), true);
+      $this->m_output->output($this->m_page->render(($this->m_title!=""?$this->m_title:atkText("app_title")), $this->m_flags));
       $this->m_output->outputFlush();
     }
 
@@ -54,7 +78,7 @@
       $menu = &atkMenu::getMenu();
 
       if (is_object($menu)) $this->m_page->addContent($menu->getMenu());
-      else atkerror("no menu object created!");;
+      else atkerror("no menu object created!");
     }
 
     function atkGenerateTop()
@@ -66,19 +90,59 @@
       //Backwards compatible $content, that is what will render when the box.tpl is used instead of a top.tpl
       $loggedin = atkText("logged_in_as", "atk").": <b>".($this->m_user["name"]?$this->m_user['name']:'administrator')."</b>";
       $content = '<br />'.$loggedin.' &nbsp; <a href="index.php?atklogout=1">'.ucfirst(atkText("logout")).' </a>&nbsp;<br /><br />';
-
+     
       $top = $this->m_ui->renderBox(array("content"=> $content,
       "logintext" => atktext("logged_in_as"),
       "logouttext" => ucfirst(atkText("logout", "atk")),
       "logoutlink" => "index.php?atklogout=1",
       "logouttarget"=>"_top",
-      "centerpiece"=>"",
-      "searchpiece"=>"",
-      "title" => atkText("app_title"),
-      "user"   => $this->m_user["name"]),
+      "centerpiece_links"=>$this->m_topcenterpiecelinks,
+      "searchpiece"=>$this->m_topsearchpiece,
+      "title" => ($this->m_title!=""?$this->m_title:atkText("app_title")),
+      "user"   => ($this->m_username?$this->m_username:$this->m_user["name"])),
       "top");
-
       $this->m_page->addContent($top);
+    }
+
+    function setTopCenterPieceLinks($centerpiecelinks)
+    {
+      $this->m_topcenterpiecelinks=$centerpiecelinks;
+    }
+
+    function setTopSearchPiece($searchpiece)
+    {
+      $this->m_topsearchpiece = $searchpiece;
+    }
+
+    function setTitle($title)
+    {
+      $this->m_title = $title;
+    }
+
+    function setUsername($username)
+    {
+      $this->m_username = $username;
+    }
+    
+    function setTopCenterPieceLinks($centerpiecelinks)
+    {
+      $this->m_topcenterpiecelinks=$centerpiecelinks;
+      atk_var_dump($this->m_topcenterpiecelinks,"CENTER PIECE LINKS");
+    }
+    
+    function setTopSearchPiece($searchpiece)
+    {
+      $this->m_topsearchpiece = $searchpiece;
+    }
+    
+    function setTitle($title)
+    {
+      $this->m_title = $title;
+    }
+    
+    function setUsername($username)
+    {
+      $this->m_username = $username;
     }
 
     function atkGenerateDispatcher()
@@ -128,13 +192,28 @@
         }
         else
         {
-          $this->m_page->register_style($this->m_theme->stylePath("style.css"));
-          $box = $this->m_ui->renderBox(array("title"=>atkText("app_shorttitle"),
-          "content"=>"<br /><br />".atkText("app_description")."<br /><br />"));
 
-          $this->m_page->addContent($box);
+          if(is_array($this->m_defaultDestination))
+          {
+            $controller = &atkinstance("atk.atkcontroller");
+            $controller->invoke("loadDispatchPage", $this->m_defaultDestination);
+          }
+          else
+          {
+            $this->m_page->register_style($this->m_theme->stylePath("style.css"));
+            $box = $this->m_ui->renderBox(array("title"=>atkText("app_shorttitle"),
+            "content"=>"<br /><br />".atkText("app_description")."<br /><br />"));
+
+            $this->m_page->addContent($box);
+          }
         }
       }
+    }
+
+    function setDefaultDestination($destination)
+    {
+      if(is_array($destination))
+        $this->m_defaultDestination = $destination;
     }
   }
 

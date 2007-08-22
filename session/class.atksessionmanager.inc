@@ -572,7 +572,7 @@
         $descriptor = atkArrayNvl($stack[$i], "descriptor", "");
         if ($i<count($stack)-1)
         {
-          $res[]=array("url"=>session_url('dispatch.php?atklevel='.$i),
+          $res[]=array("url"=>session_url(getDispatchFile().'?atklevel='.$i),
                        "title"=>$title,
                        "descriptor"=>$descriptor);
         }
@@ -719,7 +719,8 @@
     $g_sessionManager = new atkSessionManager($namespace, $usestack);
 
     atkDataDecode($_REQUEST);
-    $ATK_VARS = $_REQUEST;
+    $ATK_VARS = array_merge($_GET, $_POST);
+    atkDataDecode($ATK_VARS);
 
     $g_sessionManager->session_read($ATK_VARS);
 
@@ -898,7 +899,7 @@
 
     for ($position=0; $position<strlen($sessionid); $position++)
     {
-      if (!eregi('[a-zA-Z0-9:]', $sessionid[$position])) return false;
+      if (!eregi('[a-zA-Z0-9:-]', $sessionid[$position])) return false;
     }
     return true;
   }

@@ -31,6 +31,8 @@
    */
   class atkEditHandler extends atkViewEditBase
   {
+    var $m_dialogSaveUrl = null;
+
     /**
      * The action handler method.
      */
@@ -78,6 +80,7 @@
       if (is_array($record))
         $record = array_merge($record, $fetchedRecord);
 
+      $this->notify("edit", $record);
       if ($this->m_node->hasFlag(NF_LOCK))
       {
         if ($this->m_node->m_lock->lock($this->m_node->primaryKey($record), $this->m_node->m_table))
@@ -117,16 +120,8 @@
       $node->addStyle("style.css");
 
       $params = $node->getDefaultActionParams($locked);
-      $controller = &atkcontroller::getInstance();
-      $controller->setNode($this->m_node);
 
-      $formstart = '<form id="entryform" name="entryform" enctype="multipart/form-data" action="'.$controller->getPhpFile().'?'.SID.'"'.
-                                   ' method="post" onsubmit="return globalSubmit(this)">'.
-                                   session_form();
-
-      $formstart .= $controller->getHiddenVarsString();
-
-      $params["formstart"] = $formstart;
+      $params["formstart"] = $this->getFormStart();
 
       $ui = &$node->getUi();
 
@@ -148,18 +143,219 @@
 
         $params["content"] = $node->tabulate("edit", $form);
 
-        $params["buttons"] = $node->getFormButtons("edit", $record);
+        $params["buttons"] = $this->getFormButtons($record);
 
         $output = $ui->renderAction("edit", $params);
 
         $this->addRenderBoxVar("title", $node->actionTitle('edit', $record));
         $this->addRenderBoxVar("content", $output);
+
         return $ui->renderBox($this->m_renderBoxVars);
       }
       else
       {
         atkerror("Failed to create ui object");
       }
+    }
+
+
+    /**
+     * Get the start of the form.
+     *
+     * @return String HTML The forms' start
+     */
+    function getFormStart()
+    {
+      $controller = &atkcontroller::getInstance();
+      $controller->setNode($this->m_node);
+
+      $formIdentifier = ((isset($this->m_partial) && $this->m_partial!="")) ? "dialogform" : "entryform";
+      $formstart = '<form id="'.$formIdentifier.'" name="'.$formIdentifier.'" enctype="multipart/form-data" action="'.$controller->getPhpFile().'?'.SID.'"'.
+                                   ' method="post" onsubmit="return globalSubmit(this)">'.
+                                   session_form();
+
+      $formstart .= $controller->getHiddenVarsString();
+
+      return $formstart;
+    }
+
+    /**
+     * Get the end of the form.
+     *
+     * @return String HTML The forms' end
+     */
+    function getFormEnd()
+    {
+      return '</form>';
+    }
+
+    /**
+     * Get the buttons for the current action form.
+     *
+     * @param array $record
+     * @return array Array with buttons
+     */
+    function getFormButtons($record=null)
+    {
+      if ($this->m_partial == 'dialog' || $this->m_partial == 'editdialog')
+      {
+        $controller = &atkController::getInstance();
+        $result = array();
+        $result[] = $controller->getDialogButton('save', null, $this->getDialogSaveUrl(), $this->getDialogSaveParams());
+        $result[] = $controller->getDialogButton('cancel');
+        return $result;
+      }
+
+      // If no custom button source is given, get the default atkController.
+      if ($this->m_buttonsource===null)
+      {
+        $this->m_buttonsource = &$this->m_node;
+      }
+
+      return $this->m_buttonsource->getFormButtons("edit", $record);
+    }
+
+    /**
+     * Create template field array for the given edit field.
+     *
+     * @param array  $fields all fields
+     * @param int    $index  field index
+     * @param string $mode   mode (add/edit)
+     * @param string $tab    active tab
+     *
+     * @return array template field
+     */
+    function createTplField(&$fields, $index, $mode, $tab)
+    {
+      $field = &$fields[$index];
+
+	    // visible sections, both the active sections and the tab names (attribute that are
+	    // part of the anonymous section of the tab)
+	    $visibleSections = array_merge($this->m_node->getActiveSections($tab, $mode), $this->m_node->getTabs($mode));
+
+      $tplfield = array();
+
+      $classes = isset($field['class']) ? explode(" ", $field['class']) : array();
+      if ($field["sections"] == "*")
+      {
+        $classes[] = "alltabs";
+      }
+      else if ($field["html"] == "section")
+      {
+        // section should only have the tab section classes
+        foreach ($field["tabs"] as $section)
+          $classes[] = "section_".str_replace('.', '_', $section);
+        if ($this->isSectionInitialHidden($field['name'], $fields))
+          $classes[] = "atkAttrRowHidden";
+      }
+      else if (is_array($field["sections"]))
+      {
+        foreach ($field["sections"] as $section)
+          $classes[] = "section_".str_replace('.', '_', $section);
+      }
+
+      if (isset($field["initial_hidden"]) && $field["initial_hidden"])
+      {
+        $classes[] = "atkAttrRowHidden";
+      }
+
+      $tplfield["class"] = implode(" ", $classes);
+	    $tplfield["tab"] = $tplfield["class"]; // for backwards compatibility
+
+	    // Todo fixme: initial_on_tab kan er uit, als er gewoon bij het opstarten al 1 keer showTab aangeroepen wordt (is netter dan aparte initial_on_tab check)
+	    // maar, let op, die showTab kan pas worden aangeroepen aan het begin.
+  		$tplfield["initial_on_tab"] =
+  		   ($field["tabs"] == "*" || in_array($tab, $field["tabs"])) &&
+         (!is_array($field["sections"]) || count(array_intersect($field['sections'], $visibleSections)) > 0);
+
+      // ar_ stands voor 'attribrow'.
+	    $tplfield["rowid"] = "ar_".($field['id']!=''?$field['id']:getUniqueID("anonymousattribrows")); // The id of the containing row
+
+	    /* check for separator */
+      if ($field["html"] == "-" && $index > 0 && $data["fields"][$index-1]["html"] != "-")
+      {
+        $tplfield["type"] = "line";
+        $tplfield["line"] = "<hr>";
+      }
+      /* double separator, ignore */
+      elseif ($field["html"] == "-")
+      {
+      }
+      /* sections */
+      elseif($field["html"] == "section")
+      {
+        $tplfield["type"] = "section";
+        list($tab, $section) = explode('.', $field["name"]);
+        $tplfield["section_name"] = "section_{$tab}_{$section}";
+        $tplfield["line"] = $this->getSectionControl($field, $mode);
+      }
+      /* only full HTML */
+      elseif (isset($field["line"]))
+      {
+        $tplfield["type"] = "custom";
+        $tplfield["line"] = $field["line"];
+      }
+      /* edit field */
+      else
+      {
+        $tplfield["type"] = "attribute";
+
+        if ($field["attribute"]->m_ownerInstance->getNumbering())
+        {
+          $this->_addNumbering($field, $tplfield, $index);
+        }
+
+        /* does the field have a label? */
+        if ((isset($field["label"]) && $field["label"]!=="AF_NO_LABEL") || !isset($field["label"]))
+        {
+          if (!isset($field["label"]) || empty($field["label"]))
+          {
+            $tplfield["label"] = "";
+          }
+          else
+          {
+            $tplfield["label"] = $field["label"];
+            if ($field["error"]) // TODO KEES
+            {
+              $tplfield["error"] = $field["error"];
+            }
+          }
+        }
+        else
+        {
+        	$tplfield["label"]="AF_NO_LABEL";
+        }
+
+        /* obligatory indicator */
+        if ($field["obligatory"])
+        {
+          // load images
+          $theme = &atkinstance("atk.ui.atktheme");
+          $reqimg = '<img align="top" src="'.$theme->imgPath("required_field.gif").'" border="0"
+                     alt="'.atktext("field_obligatory").'" title="'.atktext("field_obligatory").'">';
+
+          $tplfield["label"];
+          $tplfield["obligatory"] = $reqimg;
+        }
+
+        /* html source */
+        $tplfield["widget"] = $field["html"];
+        $editsrc = $field["html"];
+
+        /* tooltip */
+        $tooltip = $field["attribute"]->getToolTip();
+        if($tooltip)
+        {
+          $tplfield["tooltip"] = $tooltip;
+          $editsrc.=$tooltip."&nbsp;";
+        }
+
+        $tplfield['id']=str_replace('.','_',$this->m_node->atknodetype().'_'.$field["id"]);
+
+        $tplfield["full"] = $editsrc;
+      }
+
+      return $tplfield;
     }
 
     /**
@@ -206,20 +402,34 @@
             $type = (empty($error["node"]) ? $node->m_type : $error["node"]);
 
             if (count($node->getTabs($node->m_action)) > 1 && $error["tab"])
-              $error_tab = ' ('.atktext("error_tab").' '.'<a href="javascript:showTab(\''.$error["tab"].'\');">'.$this->getTabLabel($node, $error["tab"]).'</a> )';
+              $error_tab = ' ('.atktext("error_tab").' '.'<a href="javascript:void(0)" onclick="showTab(\''.$error["tab"].'\'); return false;">'.$this->getTabLabel($node, $error["tab"]).'</a> )';
             else $error_tab = "";
 
-            if(!is_array($error['attrib_name']))
+            if (is_array($error['label']))
             {
-              $label = atktext($error['attrib_name'], $node->m_module, $type);
+              $label = implode(', ', $error['label']);
+            }
+            else if (!empty($error['label']))
+            {
+              $label = $error['label'];
+            }
+            else if (!is_array($error['attrib_name']))
+            {
+              $label = $error['label'];
+            }
+            else if (!is_array($error['attrib_name']))
+            {
+              $label = $node->text($error['attrib_name']);
             }
             else
             {
               $label = array();
               foreach($error['attrib_name'] as $attrib)
-                $label[] = atktext($attrib, $node->m_module, $type);
+              {
+                $label[] = $node->text($attrib);
+              }
 
-              $label= implode(", ", $label);
+              $label = implode(", ", $label);
             }
 
             $errors[] = array("msg"=>$error['msg'].$error_tab, "label"=>$label);
@@ -238,138 +448,44 @@
 
       }
 
-      // Handle fields
-      // load images
-      $theme = &atkinstance("atk.ui.atktheme");
-      $tipimg = $theme->imgPath("help.gif");
-      $reqimg = '<img align="top" src="'.$theme->imgPath("required_field.gif").'" border="0"
-                  alt="'.atktext("field_obligatory").'" title="'.atktext("field_obligatory").'">';
-
       /* display the edit fields */
       $fields = array();
+      $errorFields = array();
       for ($i = 0, $_i= count($data["fields"]); $i<$_i; $i++)
       {
         $field = &$data["fields"][$i];
-        $tplfield = array();
-
-        $classes = array();
-        if ($field["sections"] == "*")
-        {
-          $classes[] = "alltabs";
-        }
-        else if ($field["html"] == "section")
-        {
-          // section should only have the tab section classes
-          foreach ($field["tabs"] as $section)
-            $classes[] = "section_".str_replace('.', '_', $section);
-          if ($this->isSectionInitialHidden($field['name'], $data['fields']))
-            $classes[] = "atkAttrRowHidden";
-        }
-        else if (is_array($field["sections"]))
-        {
-          foreach ($field["sections"] as $section)
-            $classes[] = "section_".str_replace('.', '_', $section);
-        }
-
-        if (isset($field["initial_hidden"]) && $field["initial_hidden"])
-        {
-          $classes[] = "atkAttrRowHidden";
-        }
-
-        $tplfield["class"] = implode(" ", $classes);
-		    $tplfield["tab"] = $tplfield["class"]; // for backwards compatibility
-
-		    // visible sections, both the active sections and the tab names (attribute that are
-		    // part of the anonymous section of the tab)
-		    $visibleSections = array_merge($this->m_node->getActiveSections($tab, $mode), $this->m_node->getTabs($mode));
-
-		    // Todo fixme: initial_on_tab kan er uit, als er gewoon bij het opstarten al 1 keer showTab aangeroepen wordt (is netter dan aparte initial_on_tab check)
-		    // maar, let op, die showTab kan pas worden aangeroepen aan het begin.
-    		$tplfield["initial_on_tab"] =
-    		   ($field["tabs"] == "*" || in_array($tab, $field["tabs"])) &&
-           (!is_array($field["sections"]) || count(array_intersect($field['sections'], $visibleSections)) > 0);
-
-        // ar_ stands voor 'attribrow'.
-		    $tplfield["rowid"] = "ar_".($field['id']!=''?$field['id']:getUniqueID("anonymousattribrows")); // The id of the containing row
-
-		    /* check for separator */
-        if ($field["html"] == "-" && $i > 0 && $data["fields"][$i-1]["html"] != "-")
-        {
-          $tplfield["line"] = "<hr>";
-        }
-        /* double separator, ignore */
-        elseif ($field["html"] == "-")
-        {
-        }
-        /* sections */
-        elseif($field["html"] == "section")
-        {
-          $tplfield["line"] = $this->getSectionControl($field, $mode);
-        }
-        /* only full HTML */
-        elseif (isset($field["line"]))
-        {
-          $tplfield["line"] = $field["line"];
-        }
-        /* edit field */
-        else
-        {
-          if ($field["attribute"]->m_ownerInstance->getNumbering())
-          {
-            $this->_addNumbering($field, $tplfield, $i);
-          }
-
-          /* does the field have a label? */
-          if ((isset($field["label"]) && $field["label"]!=="AF_NO_LABEL") || !isset($field["label"]))
-          {
-            if (!isset($field["label"]) || empty($field["label"]))
-            {
-              $tplfield["label"] = "";
-            }
-            else
-            {
-              $tplfield["label"] = $field["label"];
-              if ($field["error"]) // TODO KEES
-              {
-                $tplfield["error"] = $field["error"];
-              }
-            }
-          }
-          else
-          {
-          	$tplfield["label"]="AF_NO_LABEL";
-          }
-
-          /* obligatory indicator */
-          if ($field["obligatory"])
-          {
-            $tplfield["label"];
-            $tplfield["obligatory"] = $reqimg;
-          }
-
-          /* html source */
-          $tplfield["widget"] = $field["html"];
-          $editsrc = $field["html"];
-
-          /* tooltip */
-          $tooltip = $field["attribute"]->getToolTip();
-          if($tooltip)
-          {
-            $tplfield["tooltip"] = $tooltip;
-            $editsrc.=$tooltip."&nbsp;";
-          }
-
-          $tplfield['id']=str_replace('.','_',$node->atknodetype().'_'.$field["id"]);
-
-          $tplfield["full"] = $editsrc;
-        }
+        $tplfield = $this->createTplField($data["fields"], $i, $mode, $tab);
         $fields[] = $tplfield; // make field available in numeric array
         $params[$field["name"]] = $tplfield; // make field available in associative array
+
+        if ($field['error'])
+          $errorFields[] = $field['id'];
       }
 
       $ui = &$this->getUi();
       $page = &$this->getPage();
       $page->register_script(atkconfig("atkroot")."atk/javascript/formsubmit.js");
+
+      // register fields that contain errornous values
+      atkimport('atk.utils.atkjson');
+      $page->register_scriptcode("var atkErrorFields = ".atkJSON::encode($errorFields).";");
+
+      if (atkconfig('lose_changes_warning', true))
+      {
+        // If we are in the save or update action the user has added a nested record, has done
+        // a selection using the select handler or generated an error, in either way we assume
+        // the form has been changed, so we always warn the user when leaving the page.
+        $isChanged = 'false';
+        if ((isset($record['atkerror']) && count($record['atkerror']) > 0) ||
+            (isset($this->m_node->m_postvars['__atkunloadhelper']) && $this->m_node->m_postvars['__atkunloadhelper']))
+        {
+          $isChanged = 'true';
+        }
+
+        $unloadText = addslashes($this->m_node->text('lose_changes_warning'));
+        $page->register_script(atkconfig("atkroot")."atk/javascript/class.atkunloadhelper.js");
+        $page->register_loadscript("new ATK.UnloadHelper('entryform', '{$unloadText}', {$isChanged});");
+      }
 
       $result = "";
 
@@ -395,6 +511,66 @@
     function editHeader()
     {
       return "";
+    }
+
+    function partial_dialog()
+    {
+      $record = $this->m_node->updateRecord($this->m_node->m_postvars);
+      return $this->renderEditDialog($record);
+    }
+
+    /**
+     * Render add dialog.
+     *
+     * @param array $record
+     * @return string html
+     */
+    function renderEditDialog($record=null)
+    {
+      $this->setRenderMode('dialog');
+      $result = $this->m_node->renderActionPage("edit", $this->invoke("editPage", $record));
+      return $result;
+    }
+
+    /**
+     * Override the default dialog save URL.
+     *
+     * @param string $url dialog save URL
+     */
+    function setDialogSaveUrl($url)
+    {
+      $this->m_dialogSaveUrl = $url;
+    }
+
+    /**
+     * Returns the dialog save URL.
+     *
+     * @return string dialog save URL
+     */
+    function getDialogSaveUrl()
+    {
+      if ($this->m_dialogSaveUrl != null)
+      {
+        return $this->m_dialogSaveUrl;
+      }
+      else
+      {
+        return partial_url($this->m_node->atkNodeType(), 'update', 'dialog');
+      }
+    }
+
+    /**
+     * Returns the dialog save params. These are the same params that are part of the
+     * dialog save url, but they will be appended at the end of the query string to
+     * override any form variables with the same name!
+     */
+    function getDialogSaveParams()
+    {
+      $parts = parse_url($this->getDialogSaveUrl());
+      $query = $parts['query'];
+      $params = array();
+      parse_str($query, $params);
+      return $params;
     }
   }
 ?>

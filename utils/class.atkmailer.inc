@@ -43,6 +43,11 @@
     var $Mailer   = "mail";
     var $WordWrap = 75;
 
+    function atkMailer()
+    {
+      $this->SetLanguage(atkLanguage::getLanguage(),atkconfig('atkroot').'atk/ext/phpmailer/language/');
+    }
+
     /**
      * Override error handler.
      *
