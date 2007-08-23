@@ -31,6 +31,10 @@ Changed in galactus branch
 
 Changed in ATK 6.1
 ------------------
++ Added select method to atkNode which returns an instance of the
+  atkSelector class which can be used to fluently build a selectDb
+  expression to retrieve a single row, all rows or the row count.
+  (PHP5 only!) [Peter]
 + Added feature that skips the addOrCopyDialog when there is no record
   to copy from. The add link will go directly to the add page instead.[Edgar]
 + Added support for usage of custom templates in the admin actions. [Ruud]
@@ -55,12 +59,6 @@ Changed in ATK 6.1
   with so called controls. Base classes for these controls are included.
   Controls can be used, for example, to filter content in fields. Will in the
   near future replace the normal atkShuttleRelation. [Tjeerd,Peter]
-+ Added support for "edit" dialogs for only 1 attribute (only supported for
-  atkManyToOneRelations for now). In recordlists a user can click on the value
-  of the attribute and a dialog appears, which makes it possible to changes only
-  the value of that attribute. This functionality can be activated with the
-  AF_RELATION_EDITDIALOG flag. After saving the attribute, ONLY the altered cell
-  in the recordlist will be updated. [Dennis]
 + Added action caching support to atkFrontController. [Peter]
 + Added command line support for test.php file in atk skel. [Guido]
 + Implemented caching of query results by node and filter in
@@ -74,7 +72,30 @@ Changed in ATK 6.1
   argument, which will render an extra button next to the MRA dropdown [Dennis].
 + Made it possible to extend atkTimeZoneAttribute by calling it's methods non-
   static. [Tjeerd]
-+ Added atkvardump modifier. [Boy]
++ Added atkvardump Smarty modifier. [Boy]
++ Added setLanguage method to atkLanguage. [Ivo]
++ Ported string resource from WDE to ATK. [Boy]
++ Added support for editing records using a DHTML popup dialog. [Dennis]
++ Added support for JavaScript record actions (specify javascript: at
+  the beginning of the action URL). [Peter]
++ Override prototype.js's String.evalScripts method so that JavaScript 
+  gets executed in the window context. [Peter]
++ Added query execution time info to the debug for more accurate performance
+  data in db/class.atkoci9db.inc. [Patrick]
++ Added getAttributeNames() method to atkNode. [Peter]  
++ Added support for menu images in atkmodernmenu class. [Lineke]
++ Added a new class atkTableRendererGrouped. Renders a table with collapsable/
+  expandable groups. First used in the weektimereg module to organise projects.
+  [Edgar]
++ Added atkDataNode which can be used for nodes that don't retrieve their
+  data from the database. [Peter]
++ Added atkManyToManyListRelation, a new view for the many-to-many relation
+  where the selection is done using a multiple-select select element. [Peter]
++ Added full_rmdir to atkFileUtils to 'rm -rf' any given directory [Jeroen]
+* Improved the way sections are injected into add, edit and view fields. [Peter]
+* Improved read-only mode of atkOneToOneRelation (don't display as table
+  but display in-line, also check destination NF_READONLY flag). [Peter]
+* Improved view mode of atkOneToOneRelation (display in-line). [Peter]
 * atkTmpFile now is able to recursively create the directory structure for
   the temporary file if the directory doesn't already exist. [Peter]
 * Fixed debug output in atkTestReporter. [Patrick]
@@ -100,6 +121,18 @@ Changed in ATK 6.1
 * atkTime datatype returns time array by default with leading zero. [Boy]
 * atkDateTimeAttribute does not have a AF_SEARCHABLE flag anymore at default.
   [Peter, Dennis]
+* atkDurationAttribute now supports the AF_OBLIGATORY flag again. [Ivo]
+* Improved detection of clicks on the recordlist row or clicks on inputs,
+  etc.in the recordlist row. [Peter]
+* Moved prototype.js overrides to separate JavaScript file. [Peter]
+* Removed the first preUpdate call (it was called twice due to a merge error). 
+  This fixes the problem that in the preUpdate the atkorgrec is not filled with
+  nodes with the NF_TRACK_CHANGES flag. [Boy,Lineke]
+* Refactored the atktablerenderer (backwards compatible). Functionally
+  decomposed the render method. Done to make groupedRenderer possible. [Edgar]
+* Added getAttributeNames() method to atkMetaPolicy. [Peter]  
+* Altered storage type for atkmultiselectattribute from 'string' to 'text'
+  because 'string' appeared to be too small. [Patrick]
 
 Changed in ATK 6.0
 ------------------

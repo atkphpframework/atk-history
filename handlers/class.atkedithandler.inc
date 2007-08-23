@@ -33,6 +33,7 @@
   {
     var $m_dialogSaveUrl = null;
 
+
     /**
      * The action handler method.
      */
@@ -42,30 +43,14 @@
 
       if (isset($this->m_partial) && $this->m_partial!="")
       {
-        list($type, $attribute, $partial) = explode('.', $this->m_partial);
-        if ($type == 'attribute')
-        {
-          $attr =& $this->m_node->getAttribute($attribute);
-          if ($attr == NULL)
-          {
-            atkerror("Unknown / invalid attribute '$attribute' for node '".$this->m_node->atkNodeType()."'");
-            return;
-          }
-
-          $result = $attr->partial($partial, 'edit');
-          $page->addContent($result);
-          return;
-        }
-        elseif($type == 'sectionstate')
-        {
-        	atkimport("atk.session.atkstate");
-        	atkState::set(array("nodetype"=>$this->m_node->atknodetype(),"section"=>$this->m_postvars['atksectionname']),$this->m_postvars['atksectionstate']);
-        	die();
-        }
-
+        $result = $this->partial($this->m_partial);
+        $page->addContent($result);
+        return;
       }
 
-      list($record) = $this->m_node->selectDb(atkArrayNvl($this->m_postvars, 'atkselector', ""),"","","","","edit");
+      $node = &$this->m_node;
+
+      $record = $this->getRecord();
 
       // allowed to edit record?
       if (!$this->allowed($record))
@@ -74,22 +59,18 @@
         return;
       }
 
-      // check if there are postvars set that overwrite the record contents, this can happen when a
-      // new selection is made using the select handler etc.
-      $fetchedRecord = $this->m_node->updateRecord('', NULL, NULL, true);
-      if (is_array($record))
-        $record = array_merge($record, $fetchedRecord);
+      $record = $this->mergeWithPostvars($record);
 
       $this->notify("edit", $record);
-      if ($this->m_node->hasFlag(NF_LOCK))
+      if ($node->hasFlag(NF_LOCK))
       {
-        if ($this->m_node->m_lock->lock($this->m_node->primaryKey($record), $this->m_node->m_table))
+        if ($node->m_lock->lock($node->primaryKey($record), $node->m_table))
         {
           $res = $this->invoke("editPage", $record, true);
         }
         else
         {
-          $res = $this->m_node->lockPage();
+          $res = $node->lockPage();
         }
       }
       else
@@ -97,7 +78,71 @@
         $res = $this->invoke("editPage", $record, false);
       }
 
-      $page->addContent($this->m_node->renderActionPage("edit", $res));
+      $page->addContent($node->renderActionPage("edit", $res));
+    }
+
+    function getRecord()
+    {
+      $node = &$this->m_node;
+
+      list($record) = $node->selectDb(atkArrayNvl($this->m_postvars, 'atkselector', ""),"","","","","edit");
+
+      return $record;
+    }
+
+    /**
+     * check if there are postvars set that overwrite the record contents, this can
+     * happen when a new selection is made using the select handler etc.
+     *
+     * @param array $record The record
+     * @return array Record The merged record
+     */
+    function mergeWithPostvars($record)
+    {
+      $fetchedRecord = $this->m_node->updateRecord('', NULL, NULL, true);
+      if (is_array($record))
+        $record = array_merge($record, $fetchedRecord);
+
+      return $record;
+    }
+
+    function registerExternalFiles()
+    {
+      $page = &$this->getPage();
+      $ui   = &$this->getUi();
+      $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");
+      $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
+      $page->register_loadscript("placeFocus();");
+      $page->register_script(atkconfig("atkroot")."atk/javascript/dhtml_formtools.js");
+      $page->register_style($ui->stylePath("style.css"));
+    }
+
+    function editPage($record, $locked=FALSE)
+    {
+      $result = $this->getEditPage($record, $locked);
+
+      if ($result !== false)
+        return $result;
+    }
+
+    function getEditParams($record, $locked=FALSE)
+    {
+      $node = &$this->m_node;
+      $ui   = &$node->getUi();
+
+      if (!is_object($ui))
+      {
+        atkerror("ui object failure");
+        return false;
+      }
+
+      $params               = $node->getDefaultActionParams($locked);
+      $params["formstart"]  = $this->getFormStart();
+      $params["header"]     = $this->invoke("editHeader");
+      $params["content"]    = $this->getContent($record);
+      $params["buttons"]    = $this->getFormButtons($record);
+      $params["formend"]    = $this->getFormEnd();
+      return $params;
     }
 
     /**
@@ -108,54 +153,264 @@
      *                        current user.
      * @return String The rendered page as a string.
      */
-    function editPage($record, $locked=FALSE)
+    function getEditPage($record, $locked=FALSE)
     {
       $node = &$this->m_node;
       $page = &$this->getPage();
-      $page->register_script(atkconfig('atkroot').'atk/javascript/prototype/prototype.js');
-      $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");
-      $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
-      $page->register_loadscript("placeFocus();");
-      $page->register_script(atkconfig("atkroot")."atk/javascript/dhtml_formtools.js");
-      $node->addStyle("style.css");
 
-      $params = $node->getDefaultActionParams($locked);
+      $this->registerExternalFiles();
 
-      $params["formstart"] = $this->getFormStart();
+      $params = $this->getEditParams($record, $locked);
 
+      if ($params === false)
+        return false;
+
+      return $this->renderEditPage($params);
+    }
+
+    function getContent($record)
+    {
+      $node = &$this->m_node;
+
+      $forceList = array();
+      if (isset($node->m_postvars['atkfilter']))
+      {
+        $forceList = decodeKeyValueSet($node->m_postvars['atkfilter']);
+      }
+
+      $suppressList = array();
+      if (isset($node->m_postvars['atksuppress']))
+      {
+        $suppressList = $node->m_postvars['atksuppress'];
+      }
+
+      $form = $this->editForm("edit",$record,$forceList,$suppressList);
+
+      return $node->tabulate("edit", $form);
+    }
+
+    function renderEditPage($params)
+    {
+      $node = &$this->m_node;
       $ui = &$node->getUi();
 
       if (is_object($ui))
       {
-        $forceList = array();
-        if (isset($node->m_postvars['atkfilter']))
-        {
-          $forceList = decodeKeyValueSet($node->m_postvars['atkfilter']);
-        }
-        $suppressList = array();
-        if (isset($node->m_postvars['atksuppress']))
-        {
-          $suppressList = $node->m_postvars['atksuppress'];
-        }
-        $form =$this->editForm("edit",$record,$forceList,$suppressList);
-
-        $params["header"] = $this->invoke("editHeader");
-
-        $params["content"] = $node->tabulate("edit", $form);
-
-        $params["buttons"] = $this->getFormButtons($record);
-
         $output = $ui->renderAction("edit", $params);
-
         $this->addRenderBoxVar("title", $node->actionTitle('edit', $record));
         $this->addRenderBoxVar("content", $output);
 
-        return $ui->renderBox($this->m_renderBoxVars);
+        if ($this->getRenderMode() == "dialog")
+        {
+          $total = $ui->renderDialog($this->m_renderBoxVars);
+        }
+        else
+        {
+          $total = $ui->renderBox($this->m_renderBoxVars);
+        }
+
+        return $total;
       }
+    }
+
+
+    /**
+     * Get the start of the form.
+     *
+     * @return String HTML The forms' start
+     */
+    function getFormStart()
+    {
+      $controller = &atkcontroller::getInstance();
+      $controller->setNode($this->m_node);
+
+      $formIdentifier = ((isset($this->m_partial) && $this->m_partial!="")) ? "dialogform" : "entryform";
+      $formstart = '<form id="'.$formIdentifier.'" name="'.$formIdentifier.'" enctype="multipart/form-data" action="'.$controller->getPhpFile().'?'.SID.'"'.
+                                   ' method="post" onsubmit="return globalSubmit(this)">'.
+                                   session_form();
+
+      $formstart .= $controller->getHiddenVarsString();
+
+      return $formstart;
+    }
+
+    /**
+     * Get the end of the form.
+     *
+     * @return String HTML The forms' end
+     */
+    function getFormEnd()
+    {
+      return '</form>';
+    }
+
+    /**
+     * Get the buttons for the current action form.
+     *
+     * @param array $record
+     * @return array Array with buttons
+     */
+    function getFormButtons($record=null)
+    {
+      if ($this->m_partial == 'dialog' || $this->m_partial == 'editdialog')
+      {
+        $controller = &atkController::getInstance();
+        $result = array();
+        $result[] = $controller->getDialogButton('save', null, $this->getDialogSaveUrl(), $this->getDialogSaveParams());
+        $result[] = $controller->getDialogButton('cancel');
+        return $result;
+      }
+
+      // If no custom button source is given, get the default atkController.
+      if ($this->m_buttonsource===null)
+      {
+        $this->m_buttonsource = &$this->m_node;
+      }
+
+      return $this->m_buttonsource->getFormButtons("edit", $record);
+    }
+
+    /**
+     * Create template field array for the given edit field.
+     *
+     * @param array  $fields all fields
+     * @param int    $index  field index
+     * @param string $mode   mode (add/edit)
+     * @param string $tab    active tab
+     *
+     * @return array template field
+     */
+    function createTplField(&$fields, $index, $mode, $tab)
+    {
+      $field = &$fields[$index];
+
+	    // visible sections, both the active sections and the tab names (attribute that are
+	    // part of the anonymous section of the tab)
+	    $visibleSections = array_merge($this->m_node->getActiveSections($tab, $mode), $this->m_node->getTabs($mode));
+
+      $tplfield = array();
+
+      $classes = isset($field['class']) ? explode(" ", $field['class']) : array();
+      if ($field["sections"] == "*")
+      {
+        $classes[] = "alltabs";
+      }
+      else if ($field["html"] == "section")
+      {
+        // section should only have the tab section classes
+        foreach ($field["tabs"] as $section)
+          $classes[] = "section_".str_replace('.', '_', $section);
+        if ($this->isSectionInitialHidden($field['name'], $fields))
+          $classes[] = "atkAttrRowHidden";
+      }
+      else if (is_array($field["sections"]))
+      {
+        foreach ($field["sections"] as $section)
+          $classes[] = "section_".str_replace('.', '_', $section);
+      }
+
+      if (isset($field["initial_hidden"]) && $field["initial_hidden"])
+      {
+        $classes[] = "atkAttrRowHidden";
+      }
+
+      $tplfield["class"] = implode(" ", $classes);
+	    $tplfield["tab"] = $tplfield["class"]; // for backwards compatibility
+
+	    // Todo fixme: initial_on_tab kan er uit, als er gewoon bij het opstarten al 1 keer showTab aangeroepen wordt (is netter dan aparte initial_on_tab check)
+	    // maar, let op, die showTab kan pas worden aangeroepen aan het begin.
+  		$tplfield["initial_on_tab"] =
+  		   ($field["tabs"] == "*" || in_array($tab, $field["tabs"])) &&
+         (!is_array($field["sections"]) || count(array_intersect($field['sections'], $visibleSections)) > 0);
+
+      // ar_ stands voor 'attribrow'.
+	    $tplfield["rowid"] = "ar_".($field['id']!=''?$field['id']:getUniqueID("anonymousattribrows")); // The id of the containing row
+
+	    /* check for separator */
+      if ($field["html"] == "-" && $index > 0 && $data["fields"][$index-1]["html"] != "-")
+      {
+        $tplfield["type"] = "line";
+        $tplfield["line"] = "<hr>";
+      }
+      /* double separator, ignore */
+      elseif ($field["html"] == "-")
+      {
+      }
+      /* sections */
+      elseif($field["html"] == "section")
+      {
+        $tplfield["type"] = "section";
+        list($tab, $section) = explode('.', $field["name"]);
+        $tplfield["section_name"] = "section_{$tab}_{$section}";
+        $tplfield["line"] = $this->getSectionControl($field, $mode);
+      }
+      /* only full HTML */
+      elseif (isset($field["line"]))
+      {
+        $tplfield["type"] = "custom";
+        $tplfield["line"] = $field["line"];
+      }
+      /* edit field */
       else
       {
-        atkerror("Failed to create ui object");
+        $tplfield["type"] = "attribute";
+
+        if ($field["attribute"]->m_ownerInstance->getNumbering())
+        {
+          $this->_addNumbering($field, $tplfield, $index);
+        }
+
+        /* does the field have a label? */
+        if ((isset($field["label"]) && $field["label"]!=="AF_NO_LABEL") || !isset($field["label"]))
+        {
+          if (!isset($field["label"]) || empty($field["label"]))
+          {
+            $tplfield["label"] = "";
+          }
+          else
+          {
+            $tplfield["label"] = $field["label"];
+            if ($field["error"]) // TODO KEES
+            {
+              $tplfield["error"] = $field["error"];
+            }
+          }
+        }
+        else
+        {
+        	$tplfield["label"]="AF_NO_LABEL";
+        }
+
+        /* obligatory indicator */
+        if ($field["obligatory"])
+        {
+          // load images
+          $theme = &atkinstance("atk.ui.atktheme");
+          $reqimg = '<img align="top" src="'.$theme->imgPath("required_field.gif").'" border="0"
+                     alt="'.atktext("field_obligatory").'" title="'.atktext("field_obligatory").'">';
+
+          $tplfield["label"];
+          $tplfield["obligatory"] = $reqimg;
+        }
+
+        /* html source */
+        $tplfield["widget"] = $field["html"];
+        $editsrc = $field["html"];
+
+        /* tooltip */
+        $tooltip = $field["attribute"]->getToolTip();
+        if($tooltip)
+        {
+          $tplfield["tooltip"] = $tooltip;
+          $editsrc.=$tooltip."&nbsp;";
+        }
+
+        $tplfield['id']=str_replace('.','_',$this->m_node->atknodetype().'_'.$field["id"]);
+
+        $tplfield["full"] = $editsrc;
       }
+
+      return $tplfield;
     }
 
 
@@ -515,8 +770,7 @@
 
     function partial_dialog()
     {
-      $record = $this->m_node->updateRecord($this->m_node->m_postvars);
-      return $this->renderEditDialog($record);
+      return $this->renderEditDialog();
     }
 
     /**
@@ -527,6 +781,11 @@
      */
     function renderEditDialog($record=null)
     {
+      if ($record == null)
+      {
+        $record = $this->getRecord();
+      }
+      
       $this->setRenderMode('dialog');
       $result = $this->m_node->renderActionPage("edit", $this->invoke("editPage", $record));
       return $result;
@@ -572,5 +831,36 @@
       parse_str($query, $params);
       return $params;
     }
+
+    /**
+     * Attribute handler.
+     *
+     * @param string $partial full partial
+     */
+    function partial_attribute($mode="")
+    {
+      // We already know type is attribute, so we do not check it again.
+      list($type, $attribute, $partial) = explode('.', $this->m_partial);
+
+      $attr = &$this->m_node->getAttribute($attribute);
+      if ($attr == NULL)
+      {
+        atkerror("Unknown / invalid attribute '$attribute' for node '".$this->m_node->atkNodeType()."'");
+        return;
+      }
+
+      return $attr->partial($partial, 'edit');
+    }
+
+    /**
+     * Section state handler.
+     */
+    function partial_sectionstate()
+    {
+      atkimport("atk.session.atkstate");
+    	atkState::set(array("nodetype"=>$this->m_node->atknodetype(),"section"=>$this->m_postvars['atksectionname']),$this->m_postvars['atksectionstate']);
+    	die();
+    }
+
   }
 ?>

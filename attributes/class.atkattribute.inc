@@ -645,6 +645,15 @@
     function addFlag($flag)
     {
       $this->m_flags |= $flag;
+      if (hasFlag($flag, AF_HIDE_LIST)&&!$this->hasFlag(AF_PRIMARY)&&isset($this->m_ownerInstance)&&!in_array($this->fieldName(),$this->m_ownerInstance->m_listExcludes))
+      {
+        $this->m_ownerInstance->m_listExcludes[]=$this->fieldName();
+      }
+      if (hasFlag($flag, AF_HIDE_VIEW)&&!$this->hasFlag(AF_PRIMARY)&&isset($this->m_ownerInstance)&&!in_array($this->fieldName(),$this->m_ownerInstance->m_viewExcludes))
+      {
+        $this->m_ownerInstance->m_viewExcludes[]=$this->fieldName();
+      }
+      return $this;
     }
 
     /**
@@ -671,6 +680,15 @@
     function removeFlag($flag)
     {
       if($this->hasFlag($flag)) $this->m_flags ^= $flag;
+      if ((hasFlag($flag, AF_HIDE_LIST)&&!$this->hasFlag(AF_PRIMARY))&&isset($this->m_ownerInstance)&&in_array($this->fieldName(),$this->m_ownerInstance->m_listExcludes))
+      {
+        unset($this->m_ownerInstance->m_listExcludes[array_search($this->fieldName(), $this->m_ownerInstance->m_listExcludes)]);
+      }
+      if ((hasFlag($flag, AF_HIDE_VIEW)&&!$this->hasFlag(AF_PRIMARY))&&isset($this->m_ownerInstance)&&in_array($this->fieldName(),$this->m_ownerInstance->m_viewExcludes))
+      {
+        unset($this->m_ownerInstance->m_viewExcludes[array_search($this->fieldName(), $this->m_ownerInstance->m_viewExcludes)]);
+      }
+      return $this;
     }
 
     /**
@@ -890,7 +908,7 @@
     function addOnChangeHandler($jscode)
     {
       $this->m_onchangecode[] = $jscode;
-      return true;
+      return $this;
     }
 
     /**
@@ -903,11 +921,12 @@
       if (count($this->m_onchangecode))
       {
         $page = &$this->m_ownerInstance->getPage();
-        $page->register_scriptcode("function ".$this->getHtmlId($fieldprefix)."_onChange(el)
-                                    {
-                                      {$this->m_onchangehandler_init}
-                                      ".implode("\n", $this->m_onchangecode)."
-                                    }\n");
+        $page->register_scriptcode("
+    function ".$this->getHtmlId($fieldprefix)."_onChange(el)
+    {
+      {$this->m_onchangehandler_init}
+      ".implode("\n      ", $this->m_onchangecode)."
+    }\n");
       }
 
     }
@@ -1692,6 +1711,7 @@
     function setForceInsert($force)
     {
       $this->m_forceinsert = $force;
+      return $this;
     }
 
     /**
@@ -1710,6 +1730,7 @@
     function setForceUpdate($force)
     {
       $this->m_forceupdate = $force;
+      return $this;
     }
 
     /**
@@ -2383,6 +2404,7 @@
     function addDependee($attribName)
     {
       $this->m_dependees[] = $attribName;
+      return $this;
     }
 
     /**

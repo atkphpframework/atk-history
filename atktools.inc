@@ -42,8 +42,8 @@
   /**
    * Error message.
    */
-  define("DEBUG_ERROR", 8);
-
+  define("DEBUG_ERROR", 8);  
+  
   /**
    * Function atkErrorHandler
    * This function catches PHP parse errors etc, and passes
@@ -175,15 +175,15 @@
   function elapsed()
   {
     global $g_startTime;
-
+    
     static $offset=null, $previous=null;
-
+    
     if ($offset === null)
     {
       $offset = $g_startTime;
       $previous = $offset;
     }
-
+    
     $new = getmicrotime();
     $res = "+".sprintf("%02.05f",$new-$offset)."s / ".sprintf("%02.05f", $new-$previous)."s";
     $previous = $new;
@@ -215,7 +215,7 @@
       {
         $line = '<span class="atkDebugError">'.$line.'</span>';
       }
-
+      
       if ($level>2)
       {
         atkimport("atk.utils.atkdebugger");
@@ -281,7 +281,7 @@
     $g_error_msg[]="[".elapsed()."] ".$txt;
 
     atkdebug($txt, DEBUG_ERROR);
-
+     
     if (function_exists('debug_backtrace'))
       atkdebug("Trace:".atk_get_trace(), DEBUG_ERROR);
   }
@@ -1088,7 +1088,7 @@
           $body.=_wordwrap($key.str_repeat(" ",max(1,20-strlen($key)))." = ".var_export($value,1))."\n";
         }
       }
-
+      
       $body.= "\n\nATK CONFIGURATION\n".str_repeat("-",70)."\n";
       foreach ($GLOBALS as $key=>$value)
       {
@@ -1256,22 +1256,22 @@
     {
       $attribName = array();
       $label = array();
-
+      
       for ($i = 0; $i < count($attrib); $i++)
       {
         $attribName[$i] = $attrib[$i]->fieldName();
         $label[$i] = $attrib[$i]->getLabel($record);
       }
-
+      
       $tab = $attrib[0]->m_tabs[0];
     }
-    else
+    else 
     {
       $attribName = $attrib->fieldName();
       $label = $attrib->getLabel($record);
       $tab = $attrib->m_tabs[0];
     }
-
+      
     triggerError($record, $attribName, $error, $message, $tab, $label);
   }
 
@@ -1311,10 +1311,7 @@
   }
 
   /**
-   * Does a var dump of an array. Makes use of atkdebug for displaying the values
-   *
-   * Note, this method uses var_export to output the data. If using a php
-   * version older than 4.2, atk_var_dump will output nothing.
+   * Does a var dump of an array. Makes use of atkdebug for displaying the values.
    *
    * @param $a data to be displayed
    * @param $d name of the data that's being displayed.
@@ -1675,6 +1672,17 @@
 
     return $url;
   }
+  
+  /**
+   * Return the dispatch file
+   *
+   * @return string Dispatch file
+   */
+  function getDispatchFile()
+  {
+    $theme = &atkinstance('atk.ui.atktheme');
+    return $theme->getAttribute('dispatcher',atkconfig("dispatcher",'dispatch.php'));
+  }
 
   /**
    * Return the dispatch file
@@ -1757,7 +1765,7 @@
 
     if ($cssclass == "")
       $cssclass = "btn";
-
+      
     $cssclass = ' class="'.$cssclass.'"';
     $script = 'atkSubmit("'.atkurlencode(session_url($url,$sessionstatus)).'")';
     $button = '<input type="button" name="atkbtn'.(++$cnt).'" value="'.$text.'" onClick=\''.$script.'\''.$cssclass.'>';
@@ -2134,7 +2142,7 @@
 
     return htmlentities($string, $quote_style, $charset);
   }
-
+  
   /**
    * Looks up a value using the given key in the given array and returns
    * the value if found or a default value if not found.

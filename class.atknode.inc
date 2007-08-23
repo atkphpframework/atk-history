@@ -813,7 +813,7 @@
       // Because sections/tabs will probably be used more than the order override option
       // the API for this method now favours the $sections argument. For backwards
       // compatibility we still support the old API ($attribute,$order=0).
-      if (!($sections === NULL) && is_int($sections))
+      if ($sections !== NULL && is_int($sections))
       {
         $order = $sections;
         $sections = array($this->m_default_tab);
@@ -1129,7 +1129,16 @@
         return $this->m_attribList;
       else return NULL;
     }
-
+    
+    /**
+     * Returns a list of attribute names.
+     *
+     * @return array attribute names
+     */
+    function getAttributeNames()
+    {
+      return array_keys($this->m_attribList);
+    }
 
     /**
      * Gets the attribute order.
@@ -1139,6 +1148,14 @@
       return $this->m_attribIndexList[$this->m_attribList[$name]->m_index]["order"];
     }
 
+    /**
+     * Sets an attributes order
+     */
+    function setAttributeOrder($name, $order)
+    {
+      $this->m_attribList[$name]->m_order = $order;
+      $this->m_attribIndexList[$this->m_attribList[$name]->m_index]["order"] = $order;
+    }
 
     /**
      * Checks if the node has a certain flag set.
@@ -1802,6 +1819,8 @@
         $page = &$this->getPage();
         $page->register_script(atkconfig("atkroot")."atk/javascript/dhtml_tabs.js.php?stateful=".(atkconfig('dhtml_tabs_stateful') ? 1 : 0));
 
+        // Load default tab show script.
+        $page->register_loadscript('if ( window.showTab ) {showTab(\''.(isset($this->m_postvars['atktab'])?$this->m_postvars['atktab']:'').'\');}');    
 
         $fulltabs = $this->buildTabs($action);
         $tabscript = "var tabs = new Array();\n";
@@ -1906,7 +1925,7 @@
      * @return array List of edit fields (per field ( name, html, obligatory,
      *               error, label })
      */
-    function editArray($mode="add", $record=NULL, $forceList="", $suppressList="", $fieldprefix="", $ignoreTab=false)
+    function editArray($mode="add", $record=NULL, $forceList="", $suppressList="", $fieldprefix="", $ignoreTab=false, $injectSections=true)
     {
       // update visibility of some attributes based on the current record
       $this->checkAttributeSecurity($mode, $record);
@@ -2017,9 +2036,6 @@
        */
       $tab = $this->getActiveTab();
 
-      $this->orderAttributesBySection($mode);
-
-      $addedSections = array();
       foreach (array_keys($this->m_attribIndexList) as $r)
       {
         $attribname = $this->m_attribIndexList[$r]["name"];
@@ -2053,34 +2069,18 @@
             $p_attrib->m_flags |= ($mode == "add" ? AF_HIDE_ADD : AF_HIDE_EDIT);
           }
 
-          /* we add the section link before the first attribute that is in it */
-          foreach ($this->m_sectionList[$mode] as $section)
-          {
-            $attribSections = $p_attrib->getSections();
-            if (!is_array($attribSections)) $attribSections = array($attribSections);
-
-            //if the section is not allready added, check if it needs to be added.
-            if (!in_array($section, $addedSections) &&
-                in_array($section, $attribSections) &&
-                strpos($section, '.') !== FALSE)
-            {
-              // our name/id
-              list($tabname, $sectionname) = explode('.', $section);
-              $id = "section_{$tabname}_{$sectionname}";
-
-              $result["fields"][] = array("html" => "section", "id" => $id, "name" => $section, "tabs" => $p_attrib->getTabs($mode));
-              $addedSections[] = $section;
-            }
-          }
-
           /* we let the attribute add itself to the edit array */
-
           $p_attrib->addToEditArray($mode, $result, $defaults, $record['atkerror'], $fieldprefix);
         }
         else
         {
           atkerror("Attribute $attribname not found!");
         }
+      }
+      
+      if ($injectSections)
+      {
+        $this->injectSections($result['fields'], $mode);
       }
 
       /* check for errors */
@@ -2089,7 +2089,6 @@
       /* return the result array */
       return $result;
     }
-
 
     /**
      * Function outputs an array with view fields. For each field the array
@@ -2102,18 +2101,15 @@
      * @return array List of edit fields (per field ( name, html, obligatory,
      *               error, label })
      */
-    function viewArray($mode, $record)
+    function viewArray($mode, $record, $injectSections=true)
     {
       // update visibility of some attributes based on the current record
       $this->checkAttributeSecurity($mode, $record);
 
       $tab = $this->getActiveTab();
 
-      $this->orderAttributesBySection($mode);
-
-      $addedSections = array();
       $result = array();
-
+      
       foreach (array_keys($this->m_attribIndexList) as $r)
       {
         $attribname = $this->m_attribIndexList[$r]["name"];
@@ -2135,24 +2131,7 @@
             $notOnTab = !$p_attrib->showOnTab($tab);
           }
 
-          /* we add the section link before the first attribute that is in it */
-          foreach ($this->m_sectionList[$mode] as $section)
-          {
-            $attribSections = $p_attrib->getSections();
-            if (!is_array($attribSections)) $attribSections = array($attribSections);
-
-            //if the section is not allready added, check if it needs to be added.
-            if (!in_array($section, $addedSections) &&
-                in_array($section, $attribSections) &&
-                strpos($section, '.') !== FALSE)
-            {
-              $result["fields"][] = array("html" => "section", "name" => $section, "tabs" => $p_attrib->getTabs($mode));
-              $addedSections[] = $section;
-            }
-          }
-
           /* we let the attribute add itself to the view array */
-
           $p_attrib->addToViewArray($mode, $result, $record);
         }
         else
@@ -2160,52 +2139,94 @@
           atkerror("Attribute $attribname not found!");
         }
       }
+      
+      /* inject sections */
+      if ($injectSections)
+      {
+        $this->injectSections($result['fields'], $mode);
+      }      
+      
       /* return the result array */
       return $result;
     }
+    
+    /**
+     * Add sections to the edit/view fields array.
+     *
+     * @param array $fields fields array (will be modified in-place)
+     */
+    function injectSections(&$fields)
+    {
+      $this->groupFieldsBySection($fields);
+      
+      $addedSections = array();
+      $result = array();
+      foreach ($fields as $field)
+      {
+        /// we add the section link before the first attribute that is in it
+        $fieldSections = $field['sections'];
+        if (!is_array($fieldSections)) 
+          $fieldSections = array($fieldSections);
+        
+        $newSections = array_diff($fieldSections, $addedSections);  
+        if (count($newSections) > 0)
+        {
+          foreach ($newSections as $section)
+          {
+            if (strpos($section, '.') !== FALSE)
+            {
+              $result[] = array("html" => "section", "name" => $section, "tabs" => $field['tabs']);
+              $addedSections[] = $section;
+            }
+          }
+        }   
+        
+        $result[] = $field;
+      }
+      
+      $fields = $result;
+    }
 
     /**
-     * Order the attribIndexList by section:
+     * Group fields by section.
      *
-     * At first we show the attribtues that have no section.
-     * Next we display the attributes with sections and group them by section.
+     * @param array $fields fields array (will be modified in-place)
      */
-    function orderAttributesBySection($mode)
+    function groupFieldsBySection(&$fields)
     {
-      $list = $this->m_attribIndexList;
-
-      $ol = array();
-
-      //first find sectionless attributes.
-      foreach ($list as $attribute)
+      $result = array();
+      $sections = array();
+      
+      // first find sectionless fields and collect all sections
+      foreach ($fields as $field)
       {
-        if ($attribute["sections"] == "*" ||
-            (count($attribute["sections"]) == 1 && $attribute["sections"][0] == $this->m_default_tab))
+        if ($field["sections"] == "*" ||
+            (count($field["sections"]) == 1 && $field["sections"][0] == $this->m_default_tab))
         {
-          $ol[] = $attribute;
+          $result[] = $field;
+        }
+        else if (is_array($field['sections']))
+        {
+          $sections = array_merge($sections, $field['sections']);
+        }
+      }
+      
+      $sections = array_unique($sections);
+
+      // loop through each section (except the default tab/section) of the mode we are currently in.
+      while (count($sections) > 0)
+      {
+        $section = array_shift($sections);
+
+        // find fields for this section
+        foreach ($fields as $field)
+        {
+          if (in_array($section, $field["sections"]))
+            $result[] = $field;
         }
       }
 
-      if(!isset($this->m_sectionList[$mode]))
-        $this->m_sectionList[$mode] = array();
-
-      $addedSections = array();
-      //loop through each section (except the default tab/section) of the mode we are currently in.
-      $sections = array_diff($this->m_sectionList[$mode], array($this->m_default_tab));
-      foreach ($sections as $section)
-      {
-        if(!in_array($section,$addedSections))
-          $addedSections[] = $section;
-
-        //find an attribute for this section
-        foreach ($list as $attribute)
-        {
-          if (in_array($section,$attribute["sections"]))
-            $ol[] = $attribute;
-        }
-      }
-
-      $this->m_attribIndexList = $ol;
+      $fields = $result;
     }
 
     /**
@@ -3157,8 +3178,6 @@
       $db = &$this->getDb();
       $query = &$db->createQuery();
 
-      if($exectrigger) $this->executeTrigger("preUpdate",$record);
-
       $query->addTable($this->m_table);
 
       // The record that must be updated is indicated by 'atkorgkey'
@@ -3483,6 +3502,19 @@
       return atkconfig("search_defaultmode");
     }
 
+    /**
+     * Retrieve records from the database using a handy helper class. PHP5 only.
+     * 
+     * @param string $selector (optional) selector string (will be used in the where clause)
+     * 
+     * @return atkSelector
+     */
+    function select($selector='')
+    {
+      atkimport('atk.utils.atkselector');
+      return new atkSelector($this, $selector);
+    }
+    
     /**
      * Retrieve records from the database.
      *

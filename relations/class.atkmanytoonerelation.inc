@@ -16,15 +16,20 @@
    * @version $Revision$
    * $Id$
    */
-/**
+   
+  /**
    * flag(s) specific for atkManyToOneRelation
    */
-  define("AF_RELATION_AUTOLINK", AF_SPECIFIC_1);     // create edit/view links for the items in a manytoonerelation dropdown.
-  define("AF_RELATION_NO_NULL_ITEM", AF_SPECIFIC_2); // do not add null option ever
-  define("AF_RELATION_AUTOCOMPLETE", AF_SPECIFIC_3); // use auto-completition instead of drop-down / selection page
+  define("AF_RELATION_AUTOLINK",  AF_SPECIFIC_1);     // create edit/view links for the items in a manytoonerelation dropdown.
+  define("AF_MANYTOONE_AUTOLINK", AF_RELATION_AUTOLINK);     // create edit/view links for the items in a manytoonerelation dropdown.
+  
+  define("AF_RELATION_NO_NULL_ITEM",  AF_SPECIFIC_2); // do not add null option ever
+  define("AF_MANYTOONE_NO_NULL_ITEM", AF_RELATION_NO_NULL_ITEM); // do not add null option ever  
+  
+  define("AF_RELATION_AUTOCOMPLETE",  AF_SPECIFIC_3); // use auto-completition instead of drop-down / selection page
+  define("AF_MANYTOONE_AUTOCOMPLETE", AF_RELATION_AUTOCOMPLETE);
+  
   define("AF_MANYTOONE_LAZY", AF_SPECIFIC_4);        // lazy load
-
-  define("AF_RELATION_EDITDIALOG", AF_SPECIFIC_5);   // edit dialog
 
   /**
    * @internal include base class
@@ -167,11 +172,6 @@
     var $m_useFilterForAddLink = true;
 
     /**
-     * editdialog filter attributes.
-     */
-    var $m_editdialog_filter_attributes = null;
-
-    /**
      * Constructor.
      * @param String $name The name of the attribute. This is the name of the
      *                     field that is the referential key to the
@@ -217,6 +217,21 @@
       {
         atkerror("AF_MANYTOONE_LAZY flag is not supported for multi-column reference key or a reference key that uses another column.");
       }
+    }
+
+    /**
+     * Adds a flag to the manyToOne relation
+     * Note that adding flags at any time after the constructor might not
+     * always work. There are flags that are processed only at
+     * constructor time.
+     *
+     * @param int $flag The flag to add to the attribute
+     */
+    function addFlag($flag)
+    {
+      parent::addFlag($flag);
+      if (atkconfig("manytoone_autocomplete_large", true) && hasFlag($flag, AF_LARGE))
+        $this->m_flags |= AF_RELATION_AUTOCOMPLETE;
     }
 
     /**
@@ -471,6 +486,42 @@
       $modulename = $this->m_destInstance->m_module;;
       return atktext('select_none', $modulename, $nodename);
     }
+    
+    /**
+     * Returns a displayable string for this value.
+     * @param $record Record
+     * @return a displayable string
+     */
+    function getDisplay($record, $mode='list')
+    {
+      if ($this->createDestination())
+      {
+        if (count($record[$this->fieldName()])==count($this->m_refKey))
+          $this->populate($record);
+
+        if(!$this->isEmpty($record))
+        {
+          $result = $this->m_destInstance->descriptor($record[$this->fieldName()]);
+          if ($this->hasFlag(AF_RELATION_AUTOLINK) && (!in_array($mode, array("csv", "plain")))) // create link to edit/view screen
+          {
+            if (($this->m_destInstance->allowed("view"))&&!$this->m_destInstance->hasFlag(NF_NO_VIEW)&&$result!="")
+            {
+              $result = href(dispatch_url($this->m_destination,"view",array("atkselector"=>$this->m_destInstance->primaryKey($record[$this->fieldName()]))), $result, SESSION_NESTED);
+            }
+          }
+        }
+        else
+        {
+          $result = $this->getNoneLabel(); // no record
+        }
+        return $result;
+      }
+      else
+      {
+       atkdebug("Can't create destination! ($this->m_destination");
+      }
+      return "";
+    }    
 
     /**
      * Populate the record with the destination record data.
@@ -496,45 +547,6 @@
       {
         list($record[$this->fieldName()]) = $result;
       }
-    }
-
-    /**
-     * Returns a displayable string for this value.
-     * @param $record Record
-     * @return a displayable string
-     */
-    function getDisplay($record, $mode='list')
-    {
-      if ($this->createDestination())
-      {
-        if (count($record[$this->fieldName()])==count($this->m_refKey))
-          $this->populate($record);
-
-        if(!$this->isEmpty($record))
-        {
-          $title = $this->m_destInstance->descriptor($record[$this->fieldName()]);
-        }
-        else
-        {
-          $title = $this->getNoneLabel(); // no record
-        }
-
-        $result = $title; // default result is just the title.
-
-        if ($this->hasFlag(AF_RELATION_AUTOLINK) && (!in_array($mode, array("csv", "plain")))) // create link to edit/view screen
-        {
-          if (($this->m_destInstance->allowed("view"))&&!$this->m_destInstance->hasFlag(NF_NO_VIEW)&&$title!="")
-          {
-            $result = href(dispatch_url($this->m_destination,"view",array("atkselector"=>$this->m_destInstance->primaryKey($record[$this->fieldName()]))), $title, SESSION_NESTED);
-          }
-        }
-        return $result;
-      }
-      else
-      {
-       atkdebug("Can't create destination! ($this->m_destination");
-      }
-      return "";
     }
 
     function display($record, $mode='list')
@@ -580,7 +592,10 @@
 
         if ($this->m_destInstance->allowed("edit") && $record[$this->fieldName()] != NULL)
         {
-          $links[] = $this->_getEditLink($id);
+          //we laten nu altijd de edit link zien, maar eigenlijk mag dat niet, want
+          //de app crasht als er geen waarde is ingevuld.
+          $editUrl = session_url(dispatch_url($this->m_destination,"edit",array("atkselector"=>"REPLACEME")),SESSION_NESTED);
+          $links[] = "<span id=\"".$id."_edit\" style=\"\"><a href='javascript:atkSubmit(mto_parse(\"".atkurlencode($editUrl)."\", document.entryform.".$id.".value))'>".atktext('edit')."</a></span>";
         }
       }
 
@@ -677,7 +692,7 @@
             {
               $pk = $this->m_destInstance->primaryKey($recordset[$i]);
               if (($newlyadded!="" && $newlyadded==$pk) || ($newlyadded=="" && $pk==$currentPk)) $sel = "selected"; else $sel = "";
-              $result.= '<option value="'.$pk.'" '.$sel.'>'.$this->m_destInstance->descriptor($recordset[$i]);
+              $result.= '<option value="'.$pk.'" '.$sel.'>'.htmlspecialchars($this->m_destInstance->descriptor($recordset[$i]));
             }
             $result.='</select>';
           }
@@ -918,8 +933,6 @@
           $url = partial_url($this->m_ownerInstance->atkNodeType(), $this->m_ownerInstance->m_action, 'attribute.'.$this->fieldName().'.autocomplete_search');
           $code = "ATK.ManyToOneRelation.completeSearch('{$id}', '{$id}_result', '{$url}', {$this->m_autocomplete_minchars});";
           $this->m_ownerInstance->addStyle("atkmanytoonerelation.css");
-          $page->register_script(atkconfig("atkroot").'atk/javascript/prototype/prototype.js');
-          $page->register_script(atkconfig("atkroot").'atk/javascript/scriptaculous/scriptaculous.js');
           $page->register_script(atkconfig('atkroot').'atk/javascript/class.atkmanytoonerelation.js');
           $page->register_loadscript($code);
           $result .= '<div id="'.$id.'_result" style="display: none" class="atkmanytoonerelation_result"></div>';
@@ -2161,59 +2174,5 @@
       else return "";
     }
 
-
-    /**
-     * Add an attribute that is to be used as a filter in the
-     * edit dialog for this atkManyToOneRelation.
-     *
-     * @param atkAttribute $attribute The attribute
-     */
-    function addEditDialogFilterAttribute(&$attribute)
-    {
-      if (is_object($attribute) && is_a($attribute,"atkattribute"))
-      {
-        $this->m_editdialog_filter_attributes[$attribute->fieldName()] = &$attribute;
-        return;
-      }
-
-      atkerror("attribute is not an object!");
-    }
-
-    /**
-     * Remove an attribute that is to be used as a filter in the
-     * edit dialog for this atkManyToOneRelation.
-     *
-     * @param String $attribute Attribute name
-     */
-    function removeEditDialogFilterAttribute($attributename)
-    {
-      if (isset($this->m_editdialog_filter_attributes[$attributename]))
-      {
-        unset($this->m_editdialog_filter_attributes[$attributename]);
-      }
-      else
-        atkdebug("attribute does not exist");
-
-    }
-
-    /**
-     * Enter description here...
-     *
-     * @param String $attributename The attribute you wish to retrieve.
-     *
-     * @return atkAttribute The atkAttribute.
-     */
-    function &getEditDialogFilterAttributes($attributename="")
-    {
-      if ($attributename != "")
-      {
-        if (isset($this->m_editdialog_filter_attributes[$attributename]))
-          return $this->m_editdialog_filter_attributes[$attributename];
-        else
-          return null;
-      }
-      else
-        return $this->m_editdialog_filter_attributes;
-    }
   }
 ?>

@@ -386,9 +386,7 @@
      */
     function _getAddLink($myrecords, $record,$saveform=true)
     {
-      atkimport('atk.handlers.atkaddorcopyhandler');
       $filter = $this->getAddFilterString($record);
-      $showDialog = atkAddOrCopyHandler::hasCopyableRecords($this->m_destInstance, $filter);
 
       $addorcopy = $this->hasFlag(AF_ONETOMANY_ADDORCOPY_DIALOG) ||
                    $this->m_destInstance->hasFlag(NF_ADDORCOPY_DIALOG);
@@ -396,11 +394,16 @@
       $add = $this->hasFlag(AF_ONETOMANY_ADD_DIALOG) ||
              $this->m_destInstance->hasFlag(NF_ADD_DIALOG);
 
-      if ($addorcopy && $showDialog)
+      if ($addorcopy)
       {
-        return $this->_getDialogAddLink($record, 'addorcopy');
+        atkimport('atk.handlers.atkaddorcopyhandler');
+        $showDialog = atkAddOrCopyHandler::hasCopyableRecords($this->m_destInstance, $filter);
+
+        if ($showDialog)
+          return $this->_getDialogAddLink($record, 'addorcopy');
       }
-      else if ($add)
+
+      if ($add)
       {
         return $this->_getDialogAddLink($record, 'add');
       }
@@ -1260,5 +1263,32 @@
         $page->register_loadscript($script);
       }
     }
+    
+    /**
+     * Edit dialog.
+     */
+    function partial_edit_dialog()
+    {
+      $this->createDestination();
+      $this->m_destInstance->m_partial = 'dialog';
+      $handler = &$this->m_destInstance->getHandler('edit');
+      $handler->m_postvars = $this->m_ownerInstance->m_postvars;
+      $handler->setDialogSaveUrl(partial_url($this->m_ownerInstance->atkNodeType(), 'edit', 'attribute.'.$this->fieldName().'.edit_process'));
+      $result = $handler->renderEditDialog();
+      $page = &$this->m_ownerInstance->getPage();
+      $page->addContent($result);
+    }
+
+    /**
+     * Process edit dialog update action.
+     */
+    function partial_edit_process()
+    {
+      $this->createDestination();
+      $handler = &$this->m_destInstance->getHandler('update');
+      $handler->m_postvars = $this->m_ownerInstance->m_postvars;
+      $handler->setDialogSaveUrl(partial_url($this->m_ownerInstance->atkNodeType(), 'edit', 'attribute.'.$this->fieldName().'.edit_process'));
+      $handler->handleUpdate(partial_url($this->m_ownerInstance->atkNodeType(), 'edit', 'attribute.'.$this->fieldName().'.refresh'));
+    }    
   }
 ?>

@@ -324,6 +324,7 @@
      */
     function addScripts(&$res, $partial=false)
     {
+      
       $count_scriptcode = count($this->m_scriptcode['before']);
       if($count_scriptcode>0) $res .= '  <script type="text/javascript">'."\n";
       $res.= $this->renderScriptCode("before");
@@ -352,11 +353,11 @@
 
       $res .= '  <script type="text/javascript">';
 
-      $res.=$this->_getGlobalSubmitScriptCode($partial);
-      $res.=$this->_getGlobalLoadScriptCode($partial);
-
       // javascript code.
       $res.=$this->renderScriptCode("after");
+
+      $res.=$this->_getGlobalSubmitScriptCode($partial);
+      $res.=$this->_getGlobalLoadScriptCode($partial);  
 
       $res .= "  </script>\n\n";
     }
@@ -564,13 +565,6 @@
      */
     function atkPage()
     {
-      global $ATK_VARS;
-
-      // Initialize some variables.
- 
-      /** @todo: Move this to the places where the tabscript is registered. */
-      // Load default tab show script.
-      $this->register_loadscript('if ( window.showTab ) {showTab(\''.(isset($ATK_VARS['atktab'])?$ATK_VARS['atktab']:'').'\');}');
     }
 
     /**

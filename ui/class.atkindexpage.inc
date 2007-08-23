@@ -40,6 +40,13 @@
     var $m_defaultDestination;
     var $m_flags;
 
+    var $m_topsearchpiece;
+    var $m_topcenterpiecelinks;
+    var $m_title;
+    var $m_username;
+    var $m_defaultDestination;
+    var $m_flags;
+
     function atkIndexPage()
     {
       global $ATK_VARS;    
@@ -76,6 +83,7 @@
       /* load menu layout */
       atkimport("atk.menu.atkmenu");
       $menu = &atkMenu::getMenu();
+
 
       if (is_object($menu)) $this->m_page->addContent($menu->getMenu());
       else atkerror("no menu object created!");
@@ -119,27 +127,6 @@
       $this->m_title = $title;
     }
 
-    function setUsername($username)
-    {
-      $this->m_username = $username;
-    }
-    
-    function setTopCenterPieceLinks($centerpiecelinks)
-    {
-      $this->m_topcenterpiecelinks=$centerpiecelinks;
-      atk_var_dump($this->m_topcenterpiecelinks,"CENTER PIECE LINKS");
-    }
-    
-    function setTopSearchPiece($searchpiece)
-    {
-      $this->m_topsearchpiece = $searchpiece;
-    }
-    
-    function setTitle($title)
-    {
-      $this->m_title = $title;
-    }
-    
     function setUsername($username)
     {
       $this->m_username = $username;

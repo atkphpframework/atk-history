@@ -117,7 +117,7 @@
       }
 
       /* query */
-      atkdebug("atkoci9db.query(): ".$query);
+      atkdebug("atkoci9db:query(): ".$query);
 
       /* connect to database */
       if ($this->connect()==DB_SUCCESS)
@@ -146,9 +146,9 @@
           {
             foreach($bindLobs as $bind => $value)
             {
-              atkdebug("atkoci9db.query(): new descriptor for :$bind");            
+              atkdebug("atkoci9db.query(): new descriptor for :$bind");
               $clobVars[$bind] = &OCINewDescriptor($this->m_link_id, OCI_D_LOB);
-              atkdebug("atkoci9db.query(): binding (clob) :".$bind);              
+              atkdebug("atkoci9db.query(): binding (clob) :".$bind);
               OCIBindByName($this->m_query_id, ":$bind", $clobVars[$bind], -1, OCI_B_CLOB);
             }
           }
@@ -158,7 +158,14 @@
             OCIBindByName($this->m_query_id, $bindVars[$i], $this->m_bindresult[$bindVars[$i]], 32);
           }
 
-          if (!@OCIExecute($this->m_query_id,OCI_DEFAULT))
+          // time the query execution
+          $start = gettimeofday();
+          $OCIexecute = @OCIExecute($this->m_query_id,OCI_DEFAULT);
+          $end = gettimeofday();
+          $secs = (($end['sec'] + $end['usec']) - ($start['sec'] + $start['usec'])) / 1000000;
+          atkdebug("atkoci9db.query(): Query execution took ".$secs." sec.");
+
+          if (!$OCIexecute)
           {
             /* error in query */
             $error = OCIError($this->m_query_id);
@@ -171,13 +178,12 @@
             {
               foreach($bindLobs as $bind => $value)
               {
-                atk_var_dump($value, "atkoci9db.query(): save value for bind :$bind");                            
                 if (!@$clobVars[$bind]->save($value))
                   atkerror("Error bind save: empty value");
               }
             }
           }
-          
+
           if (count($bindLobs) > 0)
           {
             foreach($bindLobs as $bind => $value)

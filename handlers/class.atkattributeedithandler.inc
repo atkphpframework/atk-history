@@ -288,7 +288,6 @@
     {
       $page = &$this->getPage();
       $ui = &$this->getUi();
-      $page->register_script(atkconfig('atkroot').'atk/javascript/prototype/prototype.js');
       $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");
       $page->register_script(atkconfig('atkroot').'atk/javascript/class.atkattributeedithandler.js');
       $page->register_style($ui->stylePath("style.css"));
@@ -442,8 +441,7 @@
 
       // We do not need certain attributes.
       foreach ($attributes as $index=>$attr)
-      {
-        atk_var_dump($attr->fieldName(),"<h1>attrneem</h1>");
+      {        
         // Attributes without labels will not be selectable.
         if ($attr->hasFlag(AF_NO_LABEL) ||  $attr->hasFlag(AF_BLANK_LABEL))
           continue;
