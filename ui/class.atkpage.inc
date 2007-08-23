@@ -330,21 +330,21 @@
       $res.= $this->renderScriptCode("before");
 
       if($count_scriptcode>0) $res .= "  </script>\n";
-      
+
       if (!$partial)
       {
         for ($i = 0; $i < count($this->m_scriptfiles); $i++)
           $res .= '  <script type="text/javascript" src="'.$this->m_scriptfiles[$i].'"></script>'."\n";
       }
-      else 
+      else
       {
-        
+
         $files = '';
         for ($i = 0; $i < count($this->m_scriptfiles); $i++)
         {
           $files .= "ATK.Tools.loadScript('".$this->m_scriptfiles[$i]."');\n";
-        }          
-        
+        }
+
         if (!empty($files))
         {
           $res .= '<script type="text/javascript">'.$files.'</script>';
@@ -361,14 +361,14 @@
 
       $res .= "  </script>\n\n";
     }
-    
+
     /**
      * Renders the registered javascripts, if $position is set to "before" the scripts will be
      * placed before the scripts that are already present. Otherwise they will be appended
      * at the end.
      *
      * @param string $position ("before" or "after")
-     * @return string 
+     * @return string
      */
     function renderScriptCode($position)
     {
@@ -443,7 +443,7 @@
     {
       $this->m_content.=$content;
     }
-    
+
     /**
      * Returns the current page content.
      *
@@ -453,7 +453,7 @@
     {
       return $this->m_content;
     }
-    
+
     /**
      * Sets the page content (overwriting current content).
      *
@@ -516,7 +516,7 @@
 
       $page = '';
       if(hasFlag($flags,HTML_DOCTYPE)) $page.=$theme->getAttribute('doctype',atkconfig("doctype"));
-      $page.= "\n<html>\n";
+      $page.= "\n<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='".atkconfig('language')."' lang='".atkconfig('language')."'>\n";
 
       if(hasFlag($flags,HTML_HEADER)) $page.= $this->head($title, $extra_header);
       if (hasFlag($flags,HTML_BODY)) $page.= $this->body($extrabodyprops);
@@ -525,7 +525,7 @@
       $page.= $this->renderHiddenVars();
       if (hasFlag($flags,HTML_BODY)) $page.= "</body>\n";
       $page.= "</html>\n";
-      
+
       return $page;
     }
 

@@ -14,7 +14,7 @@
  * @version $Revision$
  * $Id$
  */
- 
+
 /**
  * The basic (english) "grammar" rules.
  *
@@ -36,23 +36,24 @@ class atkMetaGrammar
    * instance is returned ($config_meta_grammar).
    *
    * @static
+   * @return atkMetaGrammar
    */
   function &getInstance($class=NULL)
   {
     static $instances = array();
-    
+
     if ($class == NULL)
       $class = atkconfig("meta_grammar");
 
     if (!isset($instances[$class]) || $instances[$class] == NULL)
       $instances[$class] = &atknew($class);
-      
+
     return $instances[$class];
-  }  
-  
+  }
+
   /**
    * Transform the given word using the given rules. As soon as
-   * a rule matches the given word, the word, transformed using 
+   * a rule matches the given word, the word, transformed using
    * the replacement, is returned.
    *
    * @param $word  word to be transformed
@@ -91,7 +92,7 @@ class atkMetaGrammar
       '/(s)tatus$/i' => '\1\2tatus',
       '/(c)hildren$/i' => '\1\2hild',
       '/(n)ews$/i' => '\1\2ews',
-      '/s$/i' => ''    
+      '/s$/i' => ''
     );
   }
 
@@ -122,18 +123,18 @@ class atkMetaGrammar
   /**
    * Singularize the given word using the singular rules.
    *
-   * @param $word word to be singularized 
+   * @param $word word to be singularized
    *
    * @return singularized word
    */
   function singularize($word)
-  { 
+  {
     static $rules = NULL;
     if ($rules == NULL)
       $rules = $this->getSingularRules();
     return $this->transform($word, $rules);
   }
-  
+
   /**
    * Pluralize the given word using the plural rules.
    *

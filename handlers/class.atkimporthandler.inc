@@ -60,21 +60,7 @@
         case "process": $this->doProcess(); break;
       }
     }
-    
-    /**
-     * Sets the node for this handler. Implicitly sets the
-     * import node too!
-     * 
-     * @param atkNode $node node instance
-     * 
-     * @see setImportNode
-     */
-    function setNode(&$node)
-    {
-      parent::setNode($node);
-      $this->setImportNode($node);
-    }
-    
+
     /**
      * Sets the node for this handler. Implicitly sets the
      * import node too!
@@ -180,84 +166,6 @@
 
       return $result;
     }
-    
-    /**
-     * Create import page for the given phase.
-     *
-     * @param string $phase import phase (init, upload, process)
-     * @param string $content page content
-     */
-    function importPage($phase, $content)
-    {
-      $controller = &atkController::getInstance();
-      $action = $controller->getPhpFile().'?'.SID;   
-  
-      $formStart = 
-        '<form id="entryform" name="entryform" enctype="multipart/form-data" action="'.$action.'" method="post">'.
-        session_form(atkLevel() == 0 ? SESSION_NESTED : SESSION_REPLACE).
-        '<input type="hidden" name="atknodetype" value="'.$this->m_node->atkNodeType().'" />'.
-        '<input type="hidden" name="atkaction" value="'.$this->m_node->m_action.'" />'.        
-        $controller->getHiddenVarsString();
-      
-      $buttons = $this->invoke('getImportButtons', $phase);
-      
-      $ui = &$this->m_node->getUi();
-      $page = &$this->m_node->getPage();
-      
-      $this->m_node->addStyle("style.css");
-      
-      $params = $this->m_node->getDefaultActionParams(false);
-      $params['header'] = $this->invoke('importHeader', $phase);
-      $params['formstart'] = $formStart;
-      $params['content'] = $content;
-      $params['buttons'] = $buttons;
-      $output = $ui->renderAction('import', $params);
-      
-      $params = array();
-      $params['title'] = $this->m_node->actionTitle('import');
-      $params['content'] = $output;
-      $output = $ui->renderBox($params);
-      
-      $output = $this->m_node->renderActionPage('import', $output);
-      $page->addContent($output);      
-    }
-    
-    /**
-     * Import header.
-     * 
-     * @param $phase import phase ('init', 'upload', 'process', 'analyze')
-     */
-    function importHeader($phase)
-    {
-      return ''; 
-    } 
-    
-    /**
-     * Get import buttons.
-     * 
-     * @param $phase
-     */
-    function getImportButtons($phase)
-    {
-      $result = array();
-      
-      if ($phase == 'init')
-      {
-        $result[] = '<input class="btn" type="submit" value="'.$this->m_node->text("import_upload").'">'; 
-      }
-      else if ($phase == 'analyze')
-      {
-        $result[] = '<input type="submit" class="btn" name="analyse" value="'.$this->m_node->text("import_analyse").'">';
-        $result[] = '<input type="submit" class="btn" name="import" value="'.$this->m_node->text("import_import").'"> ';
-      }
-      
-      if (atkLevel() > 0)     
-      {
-        $result[] = atkButton($this->m_node->text("cancel","atk"), "", SESSION_BACK, true);
-      }
-      
-      return $result;
-    }    
 
     /**
      * This function shows a form to upload a .csv
@@ -358,11 +266,6 @@
         $skipfirstrow = $matchFound;
       }
 
-      if ($skipfirstrow === null)
-      {
-        $skipfirstrow = $matchFound;
-      }
-      
       if ($columncount>count($col_map))
       {
         // fill with ignored
@@ -715,27 +618,6 @@
       fclose($fp);
       return $result;
     }
-    
-
-    /**
-     * Returns the CSV line count.
-     * 
-     * @param string $file the path to the csv-file
-     * @return int row count
-     */
-    function getRowCount($file, $skipFirstRow)
-    {
-      $count = 0;      
-      
-      $fp = fopen($file, "r");
-      while ($line = fgets($fp))
-      {
-        if (trim($line) == "") continue;
-        $count++;
-      }
-      
-      return $count - ($count > 0 && $skipFirstRow ? 1 : 0);
-    }    
 
 
     /**
@@ -1213,24 +1095,6 @@
         $messageQueue->addMessage(sprintf($this->m_node->text('successfully_imported_x_records'), $count), AMQ_SUCCESS);
       }
 
-      // register message
-      atkimport('atk.utils.atkmessagequeue');
-      $messageQueue = &atkMessageQueue::getInstance();
-      
-      $count = count((array)$validated['validatedrecs']['add']) + count((array)$validated['validatedrecs']['update']);
-      if ($count == 0)
-      {
-        $messageQueue->addMessage(sprintf($this->m_node->text('no_records_to_import'), $count), AMQ_GENERAL);                      
-      }
-      else if ($count == 1)
-      {
-        $messageQueue->addMessage($this->m_node->text('successfully_imported_one_record'), AMQ_SUCCESS);      
-      }
-      else 
-      {
-        $messageQueue->addMessage(sprintf($this->m_node->text('successfully_imported_x_records'), $count), AMQ_SUCCESS);      
-      }
-        
       $this->m_node->redirect();
     }
 
@@ -1626,6 +1490,7 @@
           {
             $attr = &$this->getUsableAttribute($error['attrib_name']);
 
+            $importerrors[$counter][] = array("msg"=>$error['msg'].": ",
                                     "spec"=>$attr->label());
           }
         }

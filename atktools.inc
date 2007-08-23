@@ -1685,17 +1685,6 @@
   }
 
   /**
-   * Return the dispatch file
-   *
-   * @return string Dispatch file
-   */
-  function getDispatchFile()
-  {
-    $theme = &atkinstance('atk.ui.atktheme');
-    return $theme->getAttribute('dispatcher',atkconfig("dispatcher",'dispatch.php'));
-  }
-
-  /**
    * Generate a partial url.
    *
    * @param string $node the (module.)node name
