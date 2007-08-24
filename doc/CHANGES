@@ -6,6 +6,7 @@ Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 
 Changed in galactus branch
 ------------------
+* Simpletest testcases cannot have 'phpunit' in the filenamed. [Marc]
 * atkMailer now sets language to current application language. [Boy]
 * Modified atkFrontController:
   - Added setRendered method
