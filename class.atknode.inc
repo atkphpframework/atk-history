@@ -1995,13 +1995,7 @@
         if ($p_attrib!=NULL)
         {
           if($p_attrib->hasDisabledMode(DISABLED_EDIT)) continue;
-          $field = array("name" => $attribname);
-          /* fields that have not yet been initialised may be overriden in the url */
-          if (!array_key_exists($p_attrib->fieldName(), $defaults) && array_key_exists($p_attrib->fieldName(), $this->m_postvars))
-          {
-            $defaults[$p_attrib->fieldName()] = $this->m_postvars[$p_attrib->fieldName()];
-          }
-
+          
           /* sometimes a field is hidden although not specified by the field itself */
           $theme = &atkinstance("atk.ui.atktheme");
           if ($theme->getAttribute("tabtype") == "dhtml" || $ignoreTab)
@@ -2011,6 +2005,14 @@
           else
           {
             $notOnTab = !$p_attrib->showOnTab($tab);
+            if($notOnTab) continue;
+          }
+          
+          $field = array("name" => $attribname);
+          /* fields that have not yet been initialised may be overriden in the url */
+          if (!array_key_exists($p_attrib->fieldName(), $defaults) && array_key_exists($p_attrib->fieldName(), $this->m_postvars))
+          {
+            $defaults[$p_attrib->fieldName()] = $this->m_postvars[$p_attrib->fieldName()];
           }
 
           if ((is_array($suppressList) && count($suppressList) > 0 && in_array($attribname,$suppressList)) || $notOnTab)
