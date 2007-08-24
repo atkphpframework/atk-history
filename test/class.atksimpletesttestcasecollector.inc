@@ -26,6 +26,13 @@
    */
   class atkSimpleTestTestCaseCollector extends atkTestCaseCollector
   {
+    function isValidTestClass($fullpath, $filename, $testclassname)
+    {
+      if (parent::isValidTestClass($fullpath,$filename,$testclassname) &&
+          !strstr($filename,'phpunit')) return true;
+      return false;
+    }
+    
     function addTestClass($fullpath, $testclassname)
     {
       include_once($fullpath);
