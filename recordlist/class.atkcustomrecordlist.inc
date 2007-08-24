@@ -49,172 +49,76 @@
      * @param Boolean $titlerow   Should titlerow be rendered or not
      * @param Boolean $decode     Should data be decoded or not (for exports)
     */
-    function render(&$node, $recordset, $sol, $sof, $eof, $eol, $type="0", $compression="", $suppressList="", $outputparams=array(), $mode="list", $titlerow=true, $decode=false)
+    function render(&$node, $recordset, $sol, $sof, $eof, $eol, $type="0", $compression="", $suppressList=array(), $outputparams=array(), $mode="list", $titlerow=true, $decode=false)
     {
       $this->setNode($node);
-      // example      html         csv
-
-      // $sol     = "<tr>"         or  ""
-      // $eof     = "</td>"        or  ";"
-      // $sof     = "<td>"         or  ""
-      // $eol     = "</tr>"        or  "\r\n"
-      //$empty  om lege tabelvelden op te vullen;
+      if(!is_array($suppressList)) $suppressList = array();
 
       // stuff for the totals row..
-      $totalisable = false;
-      $totals = array();
       if ($type=="0")
       {
-        $output = '<table border="1" cellspacing="0" cellpadding="4">';
         $empty = "&nbsp;";
       }
       if ($type=="1")
       {
-        $output="";
         $empty="";
+      }
+
+      // stuff for the totals row..
+      $totalrow = array();
+      $ar = array();
+      $p_attribList = array();
+
+      foreach (array_keys($this->m_node->m_attribList) as $attribname)
+      {
+        $p_attrib = &$this->m_node->getAttribute($attribname);
+        if (!$p_attrib->hasFlag(AF_HIDE_LIST) && !in_array($attribname,$suppressList))          
+        {
+          $p_attribList[] = &$p_attrib;
+        }
       }
 
       if ($titlerow)
       {
-        $output .= $sol;
+        $row =array();
 
         // display a headerrow with titles.
-        // Since we are looping the attriblist anyway, we also check if there
-        // are totalisable collumns.
-        foreach (array_keys($this->m_node->m_attribList) as $attribname)
+        for ($j=0, $_j=count($p_attribList); $j<$_j; $j++)
         {
-          $p_attrib = &$this->m_node->m_attribList[$attribname];
-          $musthide=(is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList));
-          if (
-            ($p_attrib->hasFlag(AF_HIDE_LIST)==false)
-            &&
-            (
-            ($p_attrib->hasFlag(AF_HIDE_SELECT)==false)
-            ||($this->m_node->m_action!="select")
-            )
-            &&$musthide==false
-          )
-          {
-            $output.=$sof.atktext($p_attrib->fieldName(), $this->m_node->m_module, $this->m_node->m_type).$eof;
-
-            // the totalisable check..
-            if ($p_attrib->hasFlag(AF_TOTAL))
-            {
-              $totalisable = true;
-            }
-          }
+          $p_attribList[$j]->addToExportArrayHeader($row, $suppressList);
         }
-
-        $output.=$eol;
+        $ar[] = $row;
       }
-
+             
       for ($i = 0, $_i = count($recordset); $i < $_i; $i++)
       {
-        $output.=$sol;
-        foreach (array_keys($this->m_node->m_attribList) as $attribname)
+        $row = array();
+        for ($j=0, $_j=count($p_attribList); $j<$_j; $j++)
         {
-          $p_attrib = &$this->m_node->m_attribList[$attribname];
-          $musthide=(is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList));
-          if (
-              ($p_attrib->hasFlag(AF_HIDE_LIST)==false)
-              &&
-              (
-                ($p_attrib->hasFlag(AF_HIDE_SELECT)==false)
-                ||($this->m_node->m_action!="select")
-              )
-              &&$musthide==false
-             )
-          {
-            // An <attributename>_display function may be provided in a derived
-            // class to display an attribute.
-            $funcname = $p_attrib->m_name."_display";
-
-            if (method_exists($this->m_node,$funcname))
-            {
-              $value=$this->m_node->$funcname($recordset[$i], $mode);
-            }
-            else
-            {
-              // otherwise, the display function of the particular attribute
-              // is called.            
-              $value=$p_attrib->display($recordset[$i], $mode);
-            }
-            if (atktext("charset") != "" && $decode) $value = html_entity_decode(htmlentities($value, ENT_NOQUOTES, atktext("charset")));
-            $output.=$sof.($value==""?$empty:$value).$eof;
-
-            // Calculate totals..
-            if ($p_attrib->hasFlag(AF_TOTAL))
-            {
-              $totals[$attribname] = $p_attrib->sum($totals[$attribname], $recordset[$i]);
-            }
-          }
+          $p_attribList[$j]->addToExportArrayRow($recordset[$i],$row, $totalrow, $suppressList, $mode, $decode, $empty);
         }
 
-        $output.=$eol;
+        $ar[] = $row;
       }
 
       // totalrow..
-      if ($totalisable)
+      if (count($totalrow)<>0)
       {
-        $totalRow = $sol;
+        $row = array();
 
         // Third loop.. this time for the totals row.
-        foreach (array_keys($this->m_node->m_attribList) as $attribname)
+        for ($j=0, $_j=count($p_attribList); $j<$_j; $j++)
         {
-          $p_attrib = &$this->m_node->m_attribList[$attribname];
-        $musthide=(is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList));
-          if (
-              ($p_attrib->hasFlag(AF_HIDE_LIST)==false)
-              &&
-              (
-                ($p_attrib->hasFlag(AF_HIDE_SELECT)==false)
-                ||($this->m_node->m_action!="select")
-              )
-              &&$musthide==false
-             )
-          {
-            if ($p_attrib->hasFlag(AF_TOTAL))
-            {              
-              $value = $p_attrib->display($totals[$attribname], $mode);
-              $totalRow.=$sof.($value==""?$empty:$value).$eof;
-
-            }
-            else
-            {
-              $totalRow.= $sof.$empty.$eof;
-            }
-          }
+          $p_attribList[$j]->addToExportArrayTotals($row,  $totalrow, $suppressList, $mode, $empty);
         }
-
-        $totalRow.=$eol;
-
-        $output.=$totalRow;
-       
-      }
-
-      // To the Screen
-      if ($type=="0")
-      {
         
-        $output .= "</table>";
-        return $output;
+        $ar[] = $row;
       }
-      // To a File
-      if ($type=="1") 
-      {
-        if (!array_key_exists("filename", $outputparams))
-          $outputparams["filename"] = "achievo";
+      
+      atkdebug("Start render");
 
-        if ($this->m_exportcsv)
-        {
-          $exporter = &atknew("atk.utils.atkfileexport");        
-          $exporter->export($output, $outputparams["filename"],"csv","csv",$compression);        
-        }
-        else 
-        {
-        	return $output;
-        }
-      }
+      $tbl = &atknew('atk.utils.atkcustomtablerenderer');
+      return $tbl->render($ar, $sol, $sof, $eof, $eol, $type, $compression, $suppressList,$outputparams, $mode, $titlerow, $decode, $this->m_exportcsv);
     }
         
     function setExportingCSVToFile($export = false)

@@ -188,17 +188,17 @@
    */
   function atkdebug($txt, $flags = 0)
   {
-    global $g_debug_msg;
     $level = atkconfig("debug");
     if ($level>=0)
     {
+      global $g_debug_msg;
       if (hasFlag($flags, DEBUG_HTML))
         $txt = htmlentities($txt);
       if (hasFlag($flags, DEBUG_WARNING))
         $txt = "<b>" . $txt . "</b>";
 
-      atkWriteLog($txt);
       $line = atkGetTimingInfo().$txt;
+      atkWriteLog($line);
 
       if ($level>2)
       {
@@ -212,11 +212,6 @@
       {
         $g_debug_msg[]=$line;
       }
-    }
-    else if ($level>-1) // at 0 we still collect the info so we
-                        // have it in error reports. At -1, we don't collect
-    {
-      $g_debug_msg[]=$txt;
     }
   }
 
@@ -247,7 +242,7 @@
 
   function atkGetTimingInfo()
   {
-    return "[".elapsed().(atkconfig('debug')>0 && function_exists("memory_get_usage")?" / ".sprintf("%02.02f", (memory_get_usage()/1024/1024))."MB":"")."] ";
+    return "[".elapsed().(atkconfig('debug')>0 && function_exists("memory_get_usage")?" / ".sprintf("%02.02f", (memory_get_usage(true)/1024/1024))."MB":"")."] ";
   }
 
   /**
@@ -390,35 +385,10 @@
       $fp = @fopen(atkconfig("debuglog"),"a");
       if ($fp)
       {
-        fwrite($fp,"[".elapsed()."] ".$text."\n");
+        fwrite($fp,$text."\n");
         fclose($fp);
       }
     }
-  }
-
-
-  /**
-   * Replaces the [vars] with the values from the language files
-   * Please note that it is important, for performance reasons,
-   * that you pass along the module where the language files can be found
-   * @param mixed $string           string or array of strings containing the name(s) of the string to return
-   *                                when an array of strings is passed, the second will be the fallback if
-   *                                the first one isn't found, and so forth
-   * @param String $module          module in which the language file should be looked for,
-   *                                defaults to core module with fallback to ATK
-   * @param String $node            the node to which the string belongs
-   * @param String $lng             ISO 639-1 language code, defaults to config variable
-   * @param String $firstfallback   the first module to check as part of the fallback
-   * @param boolean $nodefaulttext  if true, then it doesn't return a default text
-   *                                when it can't find a translation
-   * @return String the string from the languagefile
-   * @deprecated Use atktext instead
-   */
-  function text($string, $node="", $module="", $lng="", $firstfallback="", $nodefaulttext=false)
-  {
-    atkdebug("Call to deprecated text() function",DEBUG_WARNING);
-    atkimport("atk.atklanguage");
-    return atkLanguage::text($string, $module, $node, $lng, $firstfallback, $nodefaulttext);
   }
 
   /**
@@ -525,9 +495,9 @@
     {
       $res.='<input type="hidden" name="atkstackid" value="'.atkStackID().'">';
     }
-        
+
     if (!is_null($returnbehaviour))
-    {      
+    {
       $res.= '<input type="hidden" name="atkreturnbehaviour" value="'.$returnbehaviour.'">';
     }
 
@@ -664,12 +634,15 @@
 
     $arrays = func_get_args();
     for ($i = 0, $_i = count($arrays); $i < $_i; $i++)
-    {
-      for ($j = 0, $_j = count($arrays[$i]); $j < $_j; $j++)
+    {      
+      if(is_array($arrays[$i]))
       {
-        if (!in_array($arrays[$i][$j], $res))
+        foreach ($arrays[$i] as $elem)
         {
-          $res[] = $arrays[$i][$j];
+          if (!in_array($elem, $res))
+          {
+            $res[] = $elem;
+          }
         }
       }
     }
@@ -1760,43 +1733,43 @@
 
     chdir($current_path);
   }
-  
+
   /**
    * Clean-up the given path.
    *
    * @param string $path
    * @return cleaned-up path
-   * 
+   *
    * @see http://nl2.php.net/manual/en/function.realpath.php (comment of 21st of September 2005)
    */
   function atkCleanPath($path)
   {
     $result = array();
-    
-    $pathArray = explode('/', $path);    
+
+    $pathArray = explode('/', $path);
     if (empty($pathArray[0]))
       $result[] = '';
-    
-    foreach ($pathArray AS $key => $dir) 
+
+    foreach ($pathArray AS $key => $dir)
     {
-      if ($dir == '..') 
+      if ($dir == '..')
       {
-        if (end($result) == '..' || !array_pop($result)) 
+        if (end($result) == '..' || !array_pop($result))
         {
           $result[] = '..';
-        } 
-      } 
-      elseif ($dir && $dir != '.') 
+        }
+      }
+      elseif ($dir && $dir != '.')
       {
         $result[] = $dir;
       }
     }
-    
+
     if (!end($pathArray))
       $result[] = '';
-    
+
     return implode('/', $result);
-  }   
+  }
 
   /**
    * Converts an ATK classname ("map1.map2.classname")
@@ -1837,7 +1810,7 @@
     $elems = explode("/", strtolower($classpath));
     for($counter=0; $counter<=count($elems);$counter++)
     {
-      if($elems[$counter] == "../")
+      if(isset($elems[$counter]) && $elems[$counter] == "../")
       {
         array_shift($elems);
       }
@@ -1873,7 +1846,16 @@
 
     if (class_exists($classname))
     {
-      $obj = &new $classname();
+      $args = func_get_args();
+      unset($args[0]);
+      if (!empty($args))
+      {
+        foreach ($args as $key=>$arg) $arguments[]="\$args[$key]";
+        $arguments = implode(',',$arguments);
+        eval("\$obj = &new $classname($arguments);");
+      }
+      else $obj = &new $classname();
+
       return $obj;
     }
     else
@@ -1882,24 +1864,8 @@
       $tmp = NULL;
       return $tmp;
     }
-  }
-
-  /**
-   * Resolve a classname to its final classname.
-   *
-   * An application can overload a class with a custom version. This
-   * method resolves the initial classname to its overloaded version
-   * (if any).
-   *
-   * @param String $class The name of the class to resolve
-   * @return String The resolved classname
-   */
-  function atkResolveClass($class)
-  {
-    global $g_overloaders;
-    if (isset($g_overloaders[$class])) return $g_overloaders[$class];
-    return $class;
-  }
+  }  
+  
   /**
    * Return a singleton instance of the specified class.
    *
@@ -1933,7 +1899,7 @@
   function atkArrayCompare($array1, $array2)
   {
     $difference = atkArrayDiff($array1, $array2);
-    
+
     return !is_array($difference) ? false : true;
   }
 
@@ -1968,10 +1934,10 @@
         $difference[$key] = $value;
       }
     }
-    
+
     return !isset($difference) ? false : $difference;
   }
-  
+
   /**
    * Recursive function that checks an array for values
    * because sometimes arrays will be filled with other empty
@@ -2121,57 +2087,21 @@
   {
     return (isset($array[$key]) ? $array[$key] : $defaultvalue);
   }
-
+  
   /**
-   * Add a class overloader
+   * Resolve a classname to its final classname.
    *
-   * @param String $original
-   * @param String $overload
-   * @param bool $overwrite
-   * @return bool Wether or not we added the overloader
-   */
-  function addOverloader($original, $overload, $overwrite=true)
-  {
-    global $g_overloaders;
-    if (!array_key_exists($original, $g_overloaders) || $overwrite)
-    {
-      $g_overloaders[$original] = $overload;
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * Remove a class overloader for a class
+   * An application can overload a class with a custom version. This
+   * method resolves the initial classname to its overloaded version
+   * (if any).
    *
-   * @param String $original
-   * @return bool Wether or not we removed an overloader
+   * @param String $class The name of the class to resolve
+   * @return String The resolved classname
    */
-  function removeOverloader($original)
+  function atkResolveClass($class)
   {
-    global $g_overloaders;
-    if (array_key_exists($original, $g_overloaders))
-    {
-      unset($g_overloaders[$original]);
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * Checks wether or not a class has an overloader defined
-   *
-   * @param String $original The class to check for
-   * @return bool Wether or not the class has an overloader
-   */
-  function hasOverloader($original)
-  {
-    global $g_overloaders;
-    if (array_key_exists($original, $g_overloaders))
-    {
-      return true;
-    }
-    return false;
+    atkimport("atk.utils.atkclassloader");
+    return atkClassLoader::resolveClass($class);
   }
 
   /**
@@ -2212,6 +2142,32 @@
       $attr = clone($attribute);
 
     return $attr;
+  }
+
+  /** DEPRECATED FUNCTIONS **/
+
+
+  /**
+   * Replaces the [vars] with the values from the language files
+   * Please note that it is important, for performance reasons,
+   * that you pass along the module where the language files can be found
+   * @param mixed $string           string or array of strings containing the name(s) of the string to return
+   *                                when an array of strings is passed, the second will be the fallback if
+   *                                the first one isn't found, and so forth
+   * @param String $module          module in which the language file should be looked for,
+   *                                defaults to core module with fallback to ATK
+   * @param String $node            the node to which the string belongs
+   * @param String $lng             ISO 639-1 language code, defaults to config variable
+   * @param String $firstfallback   the first module to check as part of the fallback
+   * @param boolean $nodefaulttext  if true, then it doesn't return a default text
+   *                                when it can't find a translation
+   * @return String the string from the languagefile
+   * @deprecated Use atktext instead
+   */
+  function text($string, $node="", $module="", $lng="", $firstfallback="", $nodefaulttext=false)
+  {
+    atkdebug("Call to deprecated text() function",DEBUG_WARNING);
+    return atktext($string,$module,$node,$lng,$firstfallback,$nodefaulttext);
   }
 
 ?>

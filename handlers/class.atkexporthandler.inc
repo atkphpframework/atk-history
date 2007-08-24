@@ -181,6 +181,7 @@
      */
     function doExport()
     {
+      ini_set('max_execution_time',100);
       $enclosure = $this->m_postvars["enclosure"];
       $delimiter = $this->m_postvars["delimiter"];
       $source = $this->m_postvars;
@@ -218,21 +219,11 @@
       $node_bk->m_postvars = $session_back;
       $recordset = $node_bk->selectDb($session_back['atkselector'], $atkorderby, "", "", $list_includes, "export");
       if (method_exists($this->m_node, "assignExportData")) $this->m_node->assignExportData($list_includes, $recordset);
-      $recordset_new = array();
 
-      foreach($recordset as $row)
-      {
-        foreach($row as $name => $value)
-        {
-          $value = str_replace("\r\n", "\\n", $value);
-          $value = str_replace("\n", "\\n", $value);
-          $value = str_replace("\t", "\\t", $value);
-          $row[$name] = $value;
-        }
-        $recordset_new[] = $row;
-      }
+      //Yury: I disable this code, because with it command time_export=time_export*6
+//       $recordset = str_replace(array("\r\n","\n","\t"),array("\\n","\\n","\\t"), $recordset);
 
-      $rl->render($node_bk, $recordset_new, "", $enclosure, $enclosure.$delimiter, "\r\n", 1, "", "", array('filename' => 'export_'.$node->m_type), "csv", $source['generatetitlerow'], true);
+      $rl->render($node_bk, $recordset, "", $enclosure, $enclosure.$delimiter, "\r\n", 1, "", "", array('filename' => 'export_'.$node->m_type), "csv", $source['generatetitlerow'], true);
 
       return true;
     }

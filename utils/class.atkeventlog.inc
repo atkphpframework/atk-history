@@ -65,8 +65,11 @@
       $db = &$this->m_node->getDb();
       $primarykey = $db->escapeSQL($this->m_node->primaryKey($record));
 
-      $db->query("INSERT INTO atkeventlog (id, userid, stamp, node, action, primarykey)
-                    VALUES(".$db->nextid("atkeventlog").", $userid, ".$db->func_now().", '$node', '$action', '$primarykey')");
+      if ($action!=="delete") $primarykey = $db->escapeSQL($this->m_node->primaryKey($record));
+      else                    $primarykey = $db->escapeSQL($record);
+
+      $db->query("INSERT INTO ".atkconfig('eventlogtable')." (id, userid, stamp, node, action, primarykey)
+                    VALUES(".$db->nextid(atkconfig('eventlogtable')).", $userid, ".$db->func_now().", '$node', '$action', '$primarykey')");
       $db->commit();
     }
   }

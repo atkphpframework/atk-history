@@ -175,6 +175,7 @@
     {
       $this->m_postvars = $postvars;
       $node = &$this->getNode();
+      if (!$node) return $this->loadNodeNotFound();
       return $node->dispatch($postvars, $flags);
     }
 
@@ -195,27 +196,21 @@
      */
     function &getNode()
     {
-      if(is_object($this->m_node))
-      {
-        return $this->m_node;
-      }
-      else
+      if(!is_object($this->m_node) && $this->m_node!==false)
       {
         //if the object not yet exists, try to create it
         $fullclassname = $this->m_postvars["atknodetype"];
         if(isset($fullclassname) && $fullclassname != null)
         {
           $this->m_node = &getNode($fullclassname);
-          if (is_object($this->m_node))
-          {
-            return $this->m_node;
-          }
-          else
+          if (!is_object($this->m_node))
           {
             atkError("No object '".$ATK_VARS["atknodetype"]."' created!!?!");
+            $this->m_node=false;
           }
         }
       }
+      return $this->m_node;
     }
 
     /**
@@ -265,7 +260,13 @@
     function accessDeniedPage()
     {
       $node = &$this->getNode();
-      return $this->genericPage(atktext('access_denied'), "<br><br>".atktext("error_node_action_access_denied", "", $node->m_type)."<br><br><br>");
+      return $this->genericPage(atktext('access_denied'), "<br /><br />".atktext("error_node_action_access_denied", "", $node->m_type)."<br /><br /><br />");
+    }
+
+    function loadNodeNotFound()
+    {
+      $output = &atkinstance('atk.ui.atkoutput');
+      return $output->output($this->genericPage(atktext('error_node_unknown'), "<br /><br />".atktext("error_node_unknown")."<br /><br /><br />"));
     }
 
   /**
@@ -282,9 +283,10 @@
      */
     function genericPage($title, $content)
     {
-      $node = &$this->getNode();
-      $ui = &$node->getUi();
-      $node->addStyle("style.css");
+      $ui = &atkinstance('atk.ui.atkui');
+      $page = &atkinstance('atk.ui.atkpage');
+      $page->register_style('style.css');
+
       if (!is_array($content)) $content = array($title=>$content);
       $blocks = array();
       foreach($content as $itemtitle => $itemcontent)
@@ -317,7 +319,7 @@
       }
 
       $node = &$this->getNode();
-      $ui = &$node->getUi();
+      $ui = &atkinstance('atk.ui.atkui');
 
       // todo: overridable action templates
       return $ui->render("actionpage.tpl", array("blocks"=>$blocks,

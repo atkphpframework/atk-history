@@ -205,7 +205,7 @@
         if (atkArrayNvl($config, "sortorder", 0)>0 && is_object($this->m_node->m_attribList[$field]))
         {
           $direction = ($config["direction"]=="desc"?" DESC":"");
-          $res = $this->m_node->m_attribList[$field]->getOrderByStatement($config['extra']).$direction;
+          $res = $this->m_node->m_attribList[$field]->getOrderByStatement($config['extra'],$direction);
           if ($res) $result[] = $res;
         }
       }

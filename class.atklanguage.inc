@@ -354,7 +354,7 @@
       {
         if (atkconfig("debug_translations", false))
           atkdebug("atkLanguage: translation for '$key' with module: '$module' and node: '$node' and language: '$lng' not found, returning default text");
-          
+
         // Still nothing found. return default string
         return $this->defaultText($key);
       }

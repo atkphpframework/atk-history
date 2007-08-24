@@ -310,8 +310,9 @@
       
       if ($searchmode!="between")
       {
-        // Use default handler, and use only the first field.
-        return parent::getSearchCondition($query, $table, $value["from"], $searchmode);
+        // Use default handler, and use only the first field and search in number are not 
+        // case sencsitive, so we set last paramenter to true to remove UPPER() around
+        return parent::getSearchCondition($query, $table, $value["from"], $searchmode, true);      
       }
       else
       {
