@@ -1929,7 +1929,7 @@
           }
         }
       }
-      elseif(!isset($array2[$key]) || $array2[$key] != $value)
+      elseif(!array_key_exists($key,$array2) || $array2[$key] != $value)
       {
         $difference[$key] = $value;
       }
