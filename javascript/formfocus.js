@@ -13,9 +13,14 @@
    * @version $Revision$
    * $Id$
    */
-   
-function placeFocus(inEditForm)
-{
+
+if (!window.ATK) {
+  var ATK = {};
+}
+if (!ATK.Forms) ATK.Forms = {};
+if (!ATK.Forms.Focus) ATK.Forms.Focus = {};
+
+ATK.Forms.Focus.placeFocus = function (inEditForm) {
   if (typeof(inEditForm) == 'undefined')
     inEditForm = true;
     
@@ -65,3 +70,5 @@ function placeFocus(inEditForm)
     }
   }
 }
+
+function placeFocus(inEditForm) { return ATK.Forms.Focus.placeFocus(inEditForm); }

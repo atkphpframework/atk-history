@@ -14,8 +14,13 @@
    * $Id$
    */
 
-function atkSubmit(target)
-{
+if (!window.ATK) {
+  var ATK = {};
+}
+if (!ATK.Forms) ATK.Forms = {};
+if (!ATK.Forms.Submit) ATK.Forms.Submit = {};
+
+ATK.Forms.Submit.atkSubmit = function (target) {
   if(target=='-1') return;
   document.entryform.atkescape.value = target;
   
@@ -24,3 +29,5 @@ function atkSubmit(target)
   globalSubmit(document.entryform);
   document.entryform.submit();
 }
+
+function atkSubmit(target) { return ATK.Forms.Submit.atkSubmit(target); }

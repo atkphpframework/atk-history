@@ -13,6 +13,21 @@
    * @version $Revision$
    * $Id$
    */
+if (!window.ATK) {
+  var ATK = {};
+}
+if (!ATK.Forms) ATK.Forms = {};
+if (!ATK.Forms.Select) ATK.Forms.Select = {};
+
+ATK.Forms.Select.customMRAElements = [];
+
+/**
+ * Register custom elements that MRA action should post alongside the
+ * selected elements.
+ */
+ATK.Forms.Select.registerCustomMRAElement = function(el) {
+  ATK.Forms.Select.customMRAElements[ATK.Forms.Select.customMRAElements.length] = el;
+}
 
 /**
  * Updates the selection of select boxes for the record list form.
@@ -20,8 +35,7 @@
  * @param form reference to the form object
  * @param type "all", "none" or "invert"
  */
-function updateSelection(name, form, type)
-{
+ATK.Forms.Select.updateSelection = function(name, form, type) {
   /* get selectors */
   var list = form.elements[name + '_atkselector[]'];
 
@@ -44,7 +58,7 @@ function updateSelection(name, form, type)
  * @param name unique recordlist name
  * @param form reference to the form object
  */
-function updateSelectable(name, form)
+ATK.Forms.Select.updateSelectable = function(name, form)
 {
   /* get selectors */
   var list = form.elements[name + '_atkselector[]'];
@@ -84,8 +98,7 @@ function updateSelectable(name, form)
  * @param form reference to the form object
  * @param target where do we escape to?
  */
-function atkSubmitMRA(name, form, target)
-{
+ATK.Forms.Select.atkSubmitMRA = function(name, form, target) {
   /* some stuff we need to know */
   var index  = form.elements[name + '_atkaction'].selectedIndex;
   if (typeof(index) == 'undefined') var atkaction = form.elements[name + '_atkaction'].value;
@@ -122,6 +135,11 @@ function atkSubmitMRA(name, form, target)
        target += "&"+form.elements[i].name+'='+form.elements[i].value; 
      }
    }
+   
+   for (var i=0; i< ATK.Forms.Select.customMRAElements.length; i++)
+   {
+   	 target += "&"+ATK.Forms.Select.customMRAElements[i].name+'='+ATK.Forms.Select.customMRAElements[i].value; 
+   }
 
   /* change atkescape value and submit form */
   if (selectorLength > 0)
@@ -141,8 +159,7 @@ function atkSubmitMRA(name, form, target)
  * @param form reference to the form object
  * @param target where do we escape to?
  */
-function atkSubmitMRPA(name, form, target)
-{
+ATK.Forms.Select.atkSubmitMRPA = function(name, form, target) {
   /* some stuff we need to know */
   var index  = form.elements[name + '_atkaction'].selectedIndex;
   if (typeof(index) == 'undefined') var atkaction = form.elements[name + '_atkaction'].value;
@@ -176,3 +193,8 @@ function atkSubmitMRPA(name, form, target)
     form.submit();
   }
 }
+
+function updateSelection(name, form, type) { return ATK.Forms.Select.updateSelection(name, form, type); }
+function updateSelectable(name, form)      { return ATK.Forms.Select.updateSelectable(name,form); }
+function atkSubmitMRA(name, form, target)  { return ATK.Forms.Select.atkSubmitMRA(name, form, target); }
+function atkSubmitMRPA(name, form, target) { return ATK.Forms.Select.atkSubmitMRPA(name, form, target); }
