@@ -2174,5 +2174,57 @@
       else return "";
     }
 
-  }
+   /** 	 
+    * Add an attribute that is to be used as a filter in the 	 
+    * edit dialog for this atkManyToOneRelation. 	 
+    * 	 
+    * @param atkAttribute $attribute The attribute 	 
+    */ 	 
+   function addEditDialogFilterAttribute(&$attribute) 	 
+   { 	 
+     if (is_object($attribute) && is_a($attribute,"atkattribute")) 	 
+     { 	 
+       $this->m_editdialog_filter_attributes[$attribute->fieldName()] = &$attribute; 	 
+       return; 	 
+     } 	 
+  	 
+     atkerror("attribute is not an object!"); 	 
+   } 	 
+  	 
+   /** 	 
+    * Remove an attribute that is to be used as a filter in the 	 
+    * edit dialog for this atkManyToOneRelation. 	 
+    * 	 
+    * @param String $attribute Attribute name 	 
+    */ 	 
+   function removeEditDialogFilterAttribute($attributename) 	 
+   { 	 
+     if (isset($this->m_editdialog_filter_attributes[$attributename])) 	 
+     { 	 
+       unset($this->m_editdialog_filter_attributes[$attributename]); 	 
+     } 	 
+     else 	 
+       atkdebug("attribute does not exist"); 	 
+   } 	 
+  	 
+   /** 	 
+    * Enter description here... 	 
+    * 	 
+    * @param String $attributename The attribute you wish to retrieve. 	 
+    * 	 
+    * @return atkAttribute The atkAttribute. 	 
+    */ 	 
+   function &getEditDialogFilterAttributes($attributename="") 	 
+   { 	 
+     if ($attributename != "") 	 
+     { 	 
+       if (isset($this->m_editdialog_filter_attributes[$attributename])) 	 
+         return $this->m_editdialog_filter_attributes[$attributename]; 	 
+       else 	 
+         return null; 	 
+     } 	 
+     else 	 
+       return $this->m_editdialog_filter_attributes; 	 
+   }
+}
 ?>
