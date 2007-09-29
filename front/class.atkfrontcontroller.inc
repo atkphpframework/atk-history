@@ -1,1107 +1,745 @@
 <?php
+/**
+* This file is part of the Ibuildings E-business Platform.
+* Detailed copyright and licensing information can be found
+* in the doc/COPYRIGHT and doc/LICENSE files which should be
+* included in the distribution.
+*
+* @package ATK
+*
+* @author Peter C. Verhage <peter@ibuildings.nl>
+*
+* @copyright (c) 2007 Ibuildings.nl BV
+* @license see doc/LICENSE
+*
+* @version $Revision$
+* $Id$
+*/
+
+atkimport('atk.front.atkfronttools');
+atkimport('atk.front.routing.atkurlrewriter');
+atkimport('atk.front.views.atkview');
+
+/**
+ * Front-end controller base class.
+ */
+class atkFrontController implements ArrayAccess
+{
+  const DEFAULT_STATUS = 200;
+  
   /**
-   * This file is part of the Achievo ATK distribution.
-   * Detailed copyright and licensing information can be found
-   * in the doc/COPYRIGHT and doc/LICENSE files which should be
-   * included in the distribution.
+   * Current controller.
    *
-   * @package atk
-   * @subpackage front
-   *
-   * @copyright (c)2007 Ibuildings.nl BV
-   * @license http://www.achievo.org/atk/licensing ATK Open Source License
-   *
-   * @version $Revision$
-   * $Id$
+   * @var atkFrontController
    */
+  private static $s_current = null;
 
   /**
-   * Imports
-   * @access private
+   * Controller bridge.
+   * 
+   * @var atkFrontControllerBridge
    */
-  atkimport('atk.utils.atkdataholder');
+  private $m_bridge;
+  
+  /**
+   * Controller view.
+   * 
+   * @var atkView
+   */
+  private $m_view;
+  
+  /**
+   * Controller name.
+   *
+   * @var string
+   */
+  private $m_name;
 
   /**
-   * FrontEnd Controller base class.
-   *
-   * @author Martin Roest <martin@ibuildings.nl>
-   * @author Peter C. Verhage <peter@ibuildings.nl>
-   * @package atk
-   * @subpackage front
+   * Controller package.
+   * 
+   * @var string
    */
-  class atkFrontController implements ArrayAccess
+  private $m_package;
+  
+  /**
+   * Action name.
+   * 
+   * @var unknown_type
+   */
+  private $m_action;
+  
+  /**
+   * Parent controller (optional!).
+   *
+   * @var atkFrontController
+   */
+  private $m_parent;
+
+  /**
+   * Template variables.
+   *
+   * @var array
+   */
+  private $m_vars = array();
+  
+  /**
+   * Rendered?
+   *
+   * @var boolean
+   */
+  private $m_rendered = false;
+
+  /**
+   * URL rewriter.
+   * 
+   * @var atkUrlRewriter
+   */
+  private $m_url = null;
+  
+  /**
+   * Request object. Can be accessed like an array for the
+   * request parameters.
+   * 
+   * @var atkRequest
+   */
+  protected $request;
+  
+  /**
+   * Request parameters object. Can be accessed like an array.
+   * 
+   * @var ArrayAccess
+   */
+  protected $params;
+
+  /**
+   * Session object. Can be accessed like an array.
+   * 
+   * @var atkSession
+   */
+  protected $session;
+  
+  /**
+   * Response object.
+   * 
+   * @var atkResponse
+   */
+  protected $response;
+  
+  /**
+   * Create controller instance for the controller with the given import path.
+   * 
+   * @param string $path ATK import path.
+   * 
+   * @return atkController controller instance
+   */
+  public static function create($path)
   {
-    private static $s_current = null;
-    private static $s_bridges = array();
+    $class = substr($path, strrpos($path, '.') + 1);
+    $name = substr($class, 0, -strlen('controller'));
+    $package = substr($path, 0, strrpos($path, '.'));
 
-    /**
-     * @var atkFrontControllerBridge
-     */
-    protected $m_bridge;
-
-    protected $m_module;
-    protected $m_name;
-    protected $m_action;
-    protected $m_parent;
-
-    protected $m_request;
-    protected $m_session;
-
-    protected $m_vars = array();
-    protected $m_template = "";
-
-    protected $m_plugins = NULL;
-
-    protected $m_partial = false;
-    protected $m_result = "";
-    protected $m_rendered = false;
-
-    protected $m_headers = array();
-    protected $m_contentType;
-
-    protected $m_cacheableActions = array();
-
-    protected $m_styleSheets = array();
-    protected $m_styleCodes = array();
-
-    protected $m_scriptFiles = array();
-    protected $m_scriptCodes = array();
-
-    /**
-     * Dispatch request. Find the right controller, let it handle the request
-     * and return it's result.
-     *
-     * @param string $uri controller request uri
-     * @param array $vars custom variables, will be merged with the request variables
-     *                    and overwrite existing (request) variables with the same name
-     *                    unless $merge is set to false
-     * @param bool $merge merge custom and request variables?
-     *
-     * @return string controller result
-     */
-    public static function dispatchRequest($vars=array(), $merge=true)
+    atkimport($path);
+    return new $class($name, $package);
+  }
+  
+  /**
+   * Constructor.
+   * 
+   * @param string $name    controller name
+   * @param string $package controller package
+   */
+  protected function __construct($name, $package)
+  {
+    $this->m_name = $name;
+    $this->m_package = $package;
+    $this->m_parent = atkFrontController::getCurrent();
+    $this->m_bridge = atkFrontControllerBridge::getInstance();
+    $this->m_view = atkView::create($this);
+  }
+  
+  /**
+   * Process the given request and return the result in the response object. 
+   * For convenience the response object will also be returned.
+   * 
+   * @param atkRequest  $request  request object
+   * @param atkResponse $response response object
+   * @param string      $method   action handler method name
+   * @param array       $params   parameters for the action handler method
+   * 
+   * @return atkResponse response object
+   */
+  public function process($request, $response, $method='performAction', $params=array())
+  {
+    $this->request = $request;
+    $this->params = $request; // for now
+    $this->response = $response;
+    $this->session = $request->getSession();
+    
+    $this->m_action = $this->request['action'] ? $this->request['action'] : 'index';
+    
+    $this->m_url = new atkUrlRewriter($request);
+    
+    self::setCurrent($this);
+    
+    try
     {
-      $parent = self::getCurrent();
-
-      // If this is the root controller we first look if a request variable named URI
-      // is set, if so we use this URI, else we fallback to the custom (default) URI. If
-      // this is a nested controller, we should always respect the custom given URI.
-      $uri = $parent == null && isset($_REQUEST['uri']) ? $_REQUEST['uri'] : $vars['uri'];
-
-      if ($merge)
-      {
-        if (is_object($parent))
-        {
-          $request = $parent->getRequest()->toArray();
-        }
-        else
-        {
-          $request = $_REQUEST;
-        }
-
-        $vars = array_merge($request, $vars);
-      }
-
-      // Always set the URI to the real URI.
-      $vars['uri'] = $uri;
-
-      $controller = self::create($uri, $parent);
-      self::setCurrent($controller);
-      $result = $controller->handleRequest($vars);
-      self::setCurrent($parent);
-
-      return $result;
+      $this->init();
+      $this->preFilter();
+      call_user_func_array(array($this, $method), $params);
+      $this->postFilter();      
     }
-
-    /**
-     * Create controller based on the given URI.
-     *
-     * @param string $uri uri string
-     * @param atkFrontController $parent parent controller
-     * @return atkFrontController the controller
-     */
-    protected static function create($uri, $parent=NULL)
+    catch (Exception $exception)
     {
-      if ($uri{0} == '/')
-        $uri = substr($uri, 1);
-
-      list($module, $name, $action) = explode('/', $uri);
-
-      if ($action == NULL)
-        $action = 'index';
-
-      $importPath = "module.{$module}.controllers.{$name}controller";
-      if (atkimport($importPath))
-      {
-        atkdebug('Create '.$importPath.' controller instance');
-        $class = "{$name}controller";
-        return new $class($module, $name, $action, $parent);
-      }
-      else
-      {
-        throw new Exception("Can't find controller for: '$uri' expecting '$importpath'");
-      }
+      self::setCurrent($this->getParent());
+      throw $exception;
     }
+      
+    self::setCurrent($this->getParent());
+    
+    return $response;
+  }
+  
+  public function processWithException($request, $response, $exception)
+  {
+    return $this->process($request, $response, 'rescueAction', array($exception));
+  }
+  
+  /**
+   * Perform action.
+   */
+  protected function performAction()
+  {
+    $name = atkFrontTools::camelize($this->getAction()).'Action';
 
-    /**
-     * Returns the current controller instance. This can either be the
-     * root or a nested controller.
-     *
-     * @return atkFrontController current controller instance
-     */
-    protected static function getCurrent()
+    // call action method if available and public
+    if (method_exists($this, $name) && 
+        ($method = new ReflectionMethod($this, $name)) &&
+        $method->isPublic())
     {
-      return self::$s_current;
+      $method->invoke($this);
     }
-
-    /**
-     * Sets the current controller instance.
-     *
-     * @param atkFrontController $controller current controller instance
-     */
-    protected static function setCurrent($controller)
+    
+    // let generic catch-all mechanism handle the action
+    else if (method_exists($this, 'actionMissing'))
     {
-      self::$s_current = $controller;
+      $this->actionMissing($this->getAction());
     }
-
-    /**
-     * Bridge factory method. Returns the currently configured controller bridge.
-     * If an instance already exists, re-uses it, else a new bridge will be created.
-     *
-     * @return atkFrontControllerBridge front controller bridge
-     */
-    protected static function createBridge()
+    
+    // if a template exists for the action, we render it anyway
+    else if (!$this->getView()->templateExists())
     {
-      $class = atkconfig("frontcontroller_bridge", "atk.front.atkfrontcontrollerbridge");
-
-      if (!isset(self::$s_bridges[$class]))
-      {
-        atkdebug('Create '.$class.' bridge instance');
-        self::$s_bridges[$class] = atknew($class);
-      }
-
-      return self::$s_bridges[$class];
+      throw new atkFrontException(atkFrontException::UNKNOWN_ACTION, "Unknown action '".$this->getAction()."' for controller '".$this->getFullName()."'");
     }
-
-    /**
-     * Constructor.
-     *
-     * @param string $module module name
-     * @param string $name   controller name
-     */
-    protected function __construct($module, $name, $action, $parent = NULL)
+    
+    // render (if not already rendered)
+    if (!$this->isRendered())
     {
-      $this->m_module = $module;
-      $this->m_name = $name;
-      $this->m_action = $action;
-      $this->m_parent = $parent;
-
-      if (isset($this->cacheableActions))
-      {
-        $this->m_cacheableActions = $this->cacheableActions;
-      }
-
-      if ($parent !== null)
-      {
-        $this->m_bridge = $parent->m_bridge;
-      }
-      else
-      {
-        $this->m_bridge = self::createBridge();
-      }
-    }
-
-    /**
-     * Returns the parent controller.
-     *
-     * @return atkFrontController parent
-     */
-    protected function getParent()
-    {
-      return $this->m_parent;
-    }
-
-    /**
-     * Is this the root controller?
-     *
-     * @return boolean is root controller?
-     */
-    protected function isRoot()
-    {
-      return $this->getParent() == NULL;
-    }
-
-    /**
-     * Returns the root controller.
-     *
-     * @return atkFrontController root
-     */
-    protected function getRoot()
-    {
-      if ($this->isRoot()) return $this;
-      else return $this->getParent()->getRoot();
-    }
-
-    /**
-     * Returns the request parameters.
-     *
-     * @return atkDataHolder request parameters
-     */
-    protected function getRequest()
-    {
-      return $this->m_request;
-    }
-
-    /**
-     * Returns the session.
-     *
-     * @return atkDataHolder session
-     */
-    protected function getSession()
-    {
-      return $this->m_session;
-    }
-
-    /**
-     * Returns the controller name.
-     *
-     * @return string controller name
-     */
-    protected function getName()
-    {
-      return $this->m_name;
-    }
-
-    /**
-     * Returns the controller module.
-     *
-     * @return string controller module
-     */
-    protected function getModule()
-    {
-      return $this->m_module;
-    }
-
-    /**
-     * Returns the action.
-     *
-     * @return string action
-     */
-    protected function getAction()
-    {
-      return $this->m_action;
-    }
-
-    /**
-     * Add response header. (Will only be outputted when
-     * renderPartial or renderContent is called for the
-     * root controller).
-     */
-    protected function addHeader($header)
-    {
-      $this->m_headers[] = $header;
-    }
-
-    /**
-     * Sets the content type (Will only be outputted when
-     * renderPartial or renderContent is called for the
-     * root controller).
-     *
-     * @param string $contentType
-     */
-    protected function setContentType($contentType)
-    {
-      $this->m_contentType = $contentType;
-    }
-
-    /**
-     * Sets the cacheable actions.
-     *
-     * @param array|string $actions cacheable actions
-     * @param ...
-     */
-    protected function setCacheableActions($actions)
-    {
-      if (!is_array($actions))
-        $actions = func_get_args();
-      $this->m_cacheableActions = $actions;
-    }
-
-    /**
-     * Get action cache key.
-     */
-    protected function getActionCacheKey()
-    {
-      return '';
-    }
-
-    /**
-     * Get action cache file.
-     *
-     * @return atkTmpFile
-     */
-    private function getActionCacheFile()
-    {
-      atkimport('atk.utils.atktmpfile');
-      $path = 'frontcontrollers/'.$this->m_module.'/'.$this->m_name.'/'.$this->m_action;
-      $filename = md5($this->getActionCacheKey()).'.cache';
-      $file = new atkTmpFile($path.'/'.$filename);
-      return $file;
-    }
-
-    /**
-     * Is this action cached?
-     */
-    private function isActionCached()
-    {
-      // action is never cached
-      if (!in_array($this->m_action, $this->m_cacheableActions)) return false;
-
-      $file = $this->getActionCacheFile();
-      return $file->exists();
-    }
-
-    /**
-     * Load from action cache.
-     */
-    private function loadFromActionCache()
-    {
-      $file = $this->getActionCacheFile();
-
-      include($file->getPath());
-
-      $this->m_result      = $data['result'];
-      $this->m_headers     = $data['headers'];
-      $this->m_styleSheets = $data['styleSheets'];
-      $this->m_styleCodes  = $data['styleCodes'];
-      $this->m_scriptFiles = $data['scriptFiles'];
-      $this->m_scriptCodes = $data['scriptCodes'];
-    }
-
-    /**
-     * Store current action results in cache.
-     */
-    private function storeInActionCache()
-    {
-      // action is never cached
-      if (!in_array($this->m_action, $this->m_cacheableActions)) return;
-
-      $data = array(
-        'result'      => $this->m_result,
-        'headers'     => $this->m_headers,
-        'styleSheets' => $this->m_styleSheets,
-        'styleCodes'  => $this->m_styleCodes,
-        'scriptFiles' => $this->m_scriptFiles,
-        'scriptCodes' => $this->m_scriptCodes
-      );
-
-      $file = $this->getActionCacheFile();
-      $file->writeAsPhp('data', $data);
-      $file->close();
-    }
-
-    /**
-     * Register styles and scripts using the bridge.
-     */
-    private function registerStylesAndScripts()
-    {
-      foreach ($this->m_styleSheets as $entry)
-        $this->m_bridge->registerStyleSheet($entry['file'], $entry['media']);
-      foreach ($this->m_styleCodes as $entry)
-        $this->m_bridge->registerStyleCode($entry['code']);
-      foreach ($this->m_scriptFiles as $entry)
-        $this->m_bridge->registerScriptFile($entry['file']);
-      foreach ($this->m_scriptCodes as $entry)
-        $this->m_bridge->registerScriptCode($entry['code']);
-    }
-
-    /**
-    * Handle action.
-    *
-    * @param array $request request variables
-    *
-    * @return result of action
-    */
-    protected function handleRequest($request)
-    {
-      try
-      {
-        $this->setTemplate($this->m_action);
-
-        $this->m_request = new atkDataHolder($request);
-        $this->m_session = $this->loadSession();
-
-        $this->module =   $this->m_module;
-        $this->name =     $this->m_name;
-        $this->action =   $this->m_action;
-        $this->request =  $this->m_request;
-        $this->session =  $this->m_session;
-
-        $this->init();
-
-        $this->preFilter();
-
-        if ($this->isActionCached())
-        {
-          $this->loadFromActionCache();
-        }
-        else
-        {
-          $this->installPlugins();
-
-          try
-          {
-            $method = $this->getActionMethod();
-          }
-          catch (Exception $ex)
-          {
-            throw new Exception("Invalid action {$this->m_action} for controller {$this->m_module}/{$this->m_name}! (".$ex->getMessage().")");
-          }
-
-          $method->invoke($this);
-
-          $this->render();
-
-          $this->storeInActionCache();
-
-          $this->uninstallPlugins();
-        }
-
-        // register styles and scripts in bridge
-        $this->registerStylesAndScripts();
-
-        $this->postFilter();
-
-        if ($this->m_partial && $this->isRoot())
-        {
-          while (@ob_end_clean());
-
-          foreach ($this->m_headers as $header)
-            header($header);
-
-          if (isset($this->m_contentType))
-            header('Content-Type: '.$this->m_contentType);
-
-          echo $this->m_result;
-
-          die;
-        }
-      }
-      catch (Exception $ex)
-      {
-        $this->uninstallPlugins();
-        $this->handleException($ex);
-      }
-
-      return $this->m_result;
-    }
-
-    /**
-     * Get the method to call for the current request.
-     *
-     * @return ReflectionMethod The method.
-     */
-    protected function getActionMethod()
-    {
-      $methodName = str_replace('_', '', $this->m_action).'Action';
-      if (!method_exists($this, $methodName))
-        throw new Exception("Action method not found!");
-
-      $method = new ReflectionMethod(get_class($this), $methodName);
-      if (!$method->isPublic())
-        throw new Exception("Action method is not public!");
-
-      return $method;
-    }
-
-    /**
-     * Will be called just before the request is dispatched
-     * to the right method.
-     */
-    protected function preFilter()
-    {}
-
-    /**
-     * Init will be called just after preFilter and just before
-     * the request is dispatched to the right method.
-     */
-    protected function init()
-    {}
-
-    /**
-     * Will be called just after the request has been dispatched
-     * to the right method and the rendering took place but before
-     * the result is returned or outputted.
-     */
-    protected function postFilter()
-    {}
-
-    /**
-     * Handle exception.
-     *
-     * @param $exception exception
-     */
-    protected function handleException($exception)
-    {
-      if ($this->isRoot())
-      {
-        atkerror($exception->__toString());
-        $this->renderContent('An unknown error occured.');
-      }
-      else
-      {
-        throw $exception;
-      }
-    }
-
-    /**
-     * Load session.
-     */
-    protected function loadSession()
-    {
-      return new atkDataHolder($_SESSION);
-    }
-
-    /**
-     * Install smarty plug-ins.
-     */
-    protected function installPlugins()
-    {
-      /* @var $smarty Smarty */
-      $smarty = atkinstance("atk.ui.atksmarty");
-      $this->m_plugins = $smarty->_plugins;
-      $smarty->register_function('_partial', array($this, 'partialFunctionTag'), false);
-      $smarty->register_function('_url', array($this, 'urlFunctionTag'), false);
-      $smarty->register_function('_form_vars', array($this, 'formVarsFunctionTag'), false);
-      $smarty->register_block('_link', array($this, 'linkBlockTag'), false);
-    }
-
-    /**
-     * Uninstall smarty plug-ins.
-     */
-    protected function uninstallPlugins()
-    {
-      if ($this->m_plugins == NULL) return;
-      $smarty = atkinstance("atk.ui.atksmarty");
-      $smarty->_plugins = $this->m_plugins;
-      $this->m_plugins = NULL;
-    }
-
-    /**
-     * Get current template.
-     *
-     * @return string $template template name
-     */
-    protected function getTemplate()
-    {
-      return $this->m_template;
-    }
-
-    /**
-     * Set current template.
-     *
-     * @param string $template template name
-     */
-    protected function setTemplate($template)
-    {
-      $this->m_template = $template;
-    }
-
-    /**
-     * Get assigned template variables.
-     *
-     * @return array template variables
-     */
-    protected function getVars()
-    {
-      return $this->m_vars;
-    }
-
-    /**
-     * Is template variable set?
-     */
-    public function __isset($name)
-    {
-      return isset($this->m_vars[$name]);
-    }
-
-    /**
-     * Template variable assignment.
-     *
-     * @param string $name variable name
-     * @param unknown $value variable value
-     */
-    public function __set($name, $value)
-    {
-      $this->m_vars[$name] = $value;
-    }
-
-    /**
-     * Get template variable value.
-     *
-     * @param string $name variable name
-     * @return unknown
-     */
-    public function &__get($name)
-    {
-      return $this->m_vars[$name];
-    }
-
-    /**
-     * Checks if a certain offset exists.
-     *
-     * @param mixed $offset offset
-     * @return bool offset exists?
-     */
-    public function offsetExists($offset)
-    {
-      return isset($this->m_vars[$offset]);
-    }
-
-    /**
-     * Returns the value at the given offset.
-     *
-     * @param mixed $offset
-     * @return mixed value
-     */
-    public function offsetGet($offset)
-    {
-      return $this->m_vars[$offset];
-    }
-
-    /**
-     * Sets the given offset with the given value
-     *
-     * @param mixed $offset offset
-     * @param mixed $value  value
-     */
-    public function offsetSet($offset, $value)
-    {
-      $this->m_vars[$offset] = $value;
-    }
-
-    /**
-     * Unsets the given offset.
-     *
-     * @param mixed $offset offset
-     */
-    public function offsetUnset($offset)
-    {
-      unset($this->m_vars[$offset]);
-    }
-
-    /**
-     * Build the URI for the given controller and action.
-     *
-     * @param string $controller controller name (uses current if empty)
-     * @param string $action action name (uses current if empty and controller isn't changed, uses index if empty and other controller)
-     * @return string uri
-     */
-    protected function uri($controller, $action)
-    {
-      if ($this->isRoot())
-      {
-        $controller = str_replace('.', '/', $controller);
-
-        if ($controller != NULL && strpos($controller, '/') === FALSE)
-        {
-          $controller = "{$this->m_module}/{$controller}";
-        }
-
-        if ($controller == NULL || $controller == "{$this->m_module}/{$this->m_name}")
-        {
-          $controller = "{$this->m_module}/{$this->m_name}";
-
-          if ($action == NULL)
-            $action = $this->m_action;
-        }
-        else if ($action == NULL)
-        {
-          $action = 'index';
-        }
-
-        return '/'.$controller.'/'.$action;
-      }
-      else
-      {
-        return $this->getParent()->uri($controller, $action);
-      }
-    }
-
-    /**
-     * Build url using the given URI and variables.
-     *
-     * @param string $uri The controller URI.
-     * @param array $vars Request vars.
-     * @return string url
-     */
-    protected function buildUrl($uri, $vars)
-    {
-      return $this->m_bridge->buildUrl($uri, $vars);
-    }
-
-    /**
-     * Build url or return the current url.
-     *
-     * @param string $controller controller name (uses current if empty)
-     * @param string $action action name (uses current if empty and controller isn't changed, uses index if empty and other controller)
-     * @param array $vars request vars
-     * @return string url
-     */
-    protected function url($controller=NULL, $action=NULL, $vars=array())
-    {
-      $uri = $this->uri($controller, $action);
-      return $this->buildUrl($uri, $vars);
-    }
-
-    /**
-     * Smarty wrapper function for the url function.
-     *
-     * @param array $params parameters
-     * @param Smarty $smarty smarty reference
-     * @return string url
-     */
-    public function urlFunctionTag($params, $smarty)
-    {
-      $controller = isset($params['controller']) ? $params['controller'] : NULL;
-      $action = isset($params['action']) ? $params['action'] : NULL;
-      $vars = isset($params['vars']) ? $params['vars'] : array();
-
-      unset($params['controller']);
-      unset($params['action']);
-      unset($params['vars']);
-
-      $vars = array_merge($vars, $params);
-
-      return $this->url($controller, $action, $vars);
-    }
-
-    /**
-     * Smarty function for converting the controller, action etc.
-     * to hidden form vars.
-     *
-     * @param array $params parameters
-     * @param Smarty $smarty smarty reference
-     * @return string hidden form vars html
-     */
-    public function formVarsFunctionTag($params, $smarty)
-    {
-      $controller = isset($params['controller']) ? $params['controller'] : NULL;
-      $action = isset($params['action']) ? $params['action'] : NULL;
-      $vars = isset($params['vars']) ? $params['vars'] : array();
-
-      unset($params['controller']);
-      unset($params['action']);
-      unset($params['vars']);
-
-      $uri = $this->uri($controller, $action);
-      $vars = array_merge($vars, $params, array('uri' => $uri));
-
-      $result = '';
-      foreach ($vars as $name => $value)
-      {
-        $value = htmlentities($value);
-        $result .= "<input type=\"hidden\" name=\"{$name}\" value=\"{$value}\">\n";
-      }
-
-      return $result;
-    }
-
-    /**
-     * Smarty wrapper function for the url function.
-     *
-     * @param array $params parameters
-     * @param string $content content between link tags
-     * @param Smarty $smarty smarty reference
-     * @param boolean $repeat true first time
-     */
-    public function linkBlockTag($params, $content, $smarty, &$repeat)
-    {
-       if (!$repeat)
-      {
-        return '<a href="'.$this->urlFunctionTag($params, $smarty).'">'.$content.'</a>';
-      }
-
-      return NULL;
-    }
-
-    /**
-     * Smarty partial function, render partial template.
-     *
-     * @param $params parameters
-     * @param Smarty $smarty smarty instance
-     * @return string rendered partial
-     */
-    public function partialFunctionTag($params, $smarty)
-    {
-      $template = $params[0];
-      unset($params[0]);
-      return $this->_render($template, $params, true);
-    }
-
-    /**
-     * Redirect to the given url.
-     *
-     * @param string $url The URL.
-     */
-    protected function doRedirect($url)
-    {
-      $this->m_bridge->doRedirect($url);
-    }
-
-    /**
-     * Redirect to the given url.
-     *
-     * @param string $controller controller name (uses current if empty)
-     * @param string $action action name (uses current if empty and controller isn't changed, uses index if empty and other controller)
-     * @param array $vars request vars
-     * @return string url
-     */
-    protected function redirect($controller=NULL, $action=NULL, $vars=array(), $force=FALSE)
-    {
-      if ($this->isRoot() || $force)
-      {
-        $this->doRedirect($this->url($controller, $action, $vars));
-      }
-      else
-      {
-        $vars['uri'] = $this->uri($controller, $action);
-        $content = self::dispatchRequest($vars, false);
-        $this->renderContent($content);
-      }
-    }
-
-    /**
-    * Set locale based on the given language.
-    *
-    * @param string $lng language (ISO code)
-    */
-    protected function setLocale($lng)
-    {
-      switch (strtoupper($lng))
-      {
-        case "EN":
-          setlocale(LC_ALL, "en_EN");
-          break;
-        case "DE":
-          setlocale(LC_ALL, "de_DE");
-          break;
-        case "FR":
-          setlocale(LC_ALL, "fr_FR");
-          break;
-        default:
-          setlocale(LC_ALL, "nl_NL");
-      }
-    }
-
-    /**
-     * Register stylesheet of the given media type.
-     *
-     * @param string $file stylesheet filename
-     * @param string $media media type (defaults to 'all')
-     */
-    protected function registerStyleSheet($file, $media='all')
-    {
-      $this->m_styleSheets[] = array('file' => $file, 'media' => $media);
-    }
-
-    /**
-     * Register stylesheet code.
-     *
-     * @param string $code stylesheet code
-     */
-    protected function registerStyleCode($code)
-    {
-      $this->m_styleCodes[] = array('code' => $code);
-    }
-
-    /**
-     * Register script file.
-     *
-     * @param string $file script filename
-     */
-    protected function registerScriptFile($file)
-    {
-      $this->m_scriptFiles[] = array('file' => $file);
-    }
-
-    /**
-     * Register JavaScript code.
-     *
-     * @param string $code
-     */
-    protected function registerScriptCode($code)
-    {
-      $this->m_scriptCodes[] = array('code' => $code);
-    }
-
-    /**
-     * Render partial.
-     *
-     * Will assign the partial and result variables and will prevent
-     * double rendering!
-     *
-     * @param string $template template name
-     * @param array $vars template variables
-     */
-    protected function renderPartial($template=NULL, $vars=NULL)
-    {
-      $this->render($template, $vars, true);
-    }
-
-    /**
-     * Render content.
-     *
-     * Will assign the partial and result variables and will prevent
-     * double rendering!
-     *
-     * @param string $content content to render
-     */
-    protected function renderContent($content)
-    {
-      $this->m_partial = true;
-      $this->m_result = $content;
-      $this->m_rendered = true;
-    }
-
-    /**
-     * Render template.
-     *
-     * Will assign the partial and result variables and will prevent
-     * double rendering!
-     *
-     * @param string $template template name
-     * @param array $vars template variables
-     * @param boolean $partial render partial?
-     */
-    protected function render($template=NULL, $vars=NULL, $partial=false)
-    {
-      if ($this->m_rendered) return;
-
-      if ($template == NULL)
-        $template = $this->getTemplate();
-
-      if ($vars == NULL)
-        $vars = $this->getVars();
-
-      if (!$partial && file_exists(moduleDir($this->m_module)."scripts/{$this->m_name}.js"))
-      {
-        $this->registerScriptFile(moduleDir($this->m_module)."scripts/{$this->m_name}.js");
-      }
-
-      if (!$partial && file_exists(moduleDir($this->m_module)."styles/{$this->m_name}.js"))
-      {
-        $this->registerStyleSheet(moduleDir($this->m_module)."styles/{$this->m_name}.js");
-      }
-
-      $this->m_partial = $partial;
-      $this->m_result = $this->_render($template, $vars, $partial);
-      $this->m_rendered = true;
-    }
-
-    /**
-     * Returns the template path for the given template.
-     *
-     * @param string $template  template name
-     * @param string $directory the base template directory
-     *
-     * @return string template path
-     */
-    protected function getTemplatePath($template, $directory='templates')
-    {
-      if (file_exists(atkconfig('atkroot')."$directory/$template"))
-      {
-        return atkconfig('atkroot')."$directory/$template";
-      }
-      else if (file_exists(moduleDir($this->m_module)."$directory/$template"))
-      {
-        return moduleDir($this->m_module)."$directory/$template";
-      }
-      else if (file_exists(moduleDir($this->m_module)."skel/$directory/$template"))
-      {
-        return moduleDir($this->m_module)."skel/$directory/$template";
-      }
-      else
-      {
-        return null;
-      }
-    }
-
-    /**
-     * Returns the layout template path for this controller.
-     */
-    protected function getLayoutTemplatePath()
-    {
-      $path = $this->getTemplatePath($this->m_module.'/'.$this->m_name.'.tpl', 'layouts');
-      if ($path != null) return $path;
-
-      $path = $this->getTemplatePath($this->m_module.'/root.tpl', 'layouts');
-      if ($path != null) return $path;
-
-      $path = $this->getTemplatePath('root.tpl', 'layouts');
-      if ($path != null) return $path;
-
-      return $null;
-    }
-
-    /**
-     * Render template.
-     *
-     * @param string $template template name
-     * @param array $vars template variables
-     * @param boolean $partial render partial?
-     *
-     * @return string rendered template
-     */
-    protected function _render($template, $vars, $partial)
-    {
-      if ($template{0} != '/')
-      {
-        $template = $this->m_module.'/'.$this->m_name.'/'.($partial ? '_' : '').$template;
-      }
-      else
-      {
-        $parts = explode('/', $template);
-        $template = implode('/', array_slice($parts, 0, count($parts) - 1)).'/'.($partial ? '_' : '').$parts[count($parts) - 1];
-      }
-
-      $template = "{$template}.tpl";
-
-      /* @var $smarty Smarty */
-      $smarty = atkinstance('atk.ui.atksmarty');
-
-      $oldVars = $smarty->get_template_vars();
-      $oldSerials = $smarty->_cache_serials;
-      $oldCaching = $smarty->caching;
-      $oldForceCompile = $smarty->force_compile;
-
-      $smarty->assign($vars);
-      $smarty->caching = false;
-      $smarty->force_compile = true;
-
-      $result = $smarty->fetch($this->getTemplatePath($template));
-
-      $layoutTemplatePath = $this->getLayoutTemplatePath();
-      if ($this->isRoot() && !$partial && $layoutTemplatePath != null)
-      {
-        $vars['content_for_layout'] = $result;
-        $smarty->assign($vars);
-        $result = $smarty->fetch($layoutTemplatePath);
-      }
-
-      $smarty->force_compile = $oldForceCompile;
-      $smarty->caching = $oldCaching;
-      $smarty->_cache_serials = $oldSerials;
-      $smarty->assign($oldVars);
-
-      return $result;
-    }
-
-    /**
-     * To string.
-     */
-    public function __toString()
-    {
-      return (!$this->isRoot() ? $this->getParent()->__toString().'/' : '').$this->getName();
+      $this->render();
     }
   }
+  
+  /**
+   * Rescue action.
+   * 
+   * @param Exception $exception exception object
+   */
+  protected function rescueAction($exception)
+  {
+    if ($this->isLocalRequest())
+    {
+      $this->rescueActionLocally($exception);
+    }
+    else 
+    {
+      $this->rescueActionInPublic($exception);
+    }
+  }
+  
+  /**
+   * Is this a local request? You can adjust this to add for example a 
+   * developer's IP address. By default requests from 127.0.0.1 and 
+   * requests with a debug level >= 2 a treated "locally".
+   *
+   * @return boolean is local request?
+   */
+  protected function isLocalRequest()
+  {
+    return $this->request->getRemoteAddr() == "127.0.0.1" || atkconfig('debug_level') >= 2;
+  }
+  
+  /**
+   * @param Exception $exception
+   */
+  protected function rescueActionLocally($exception)
+  {
+    $this['exception'] = $exception;
+    $this['message'] = $exception->getMessage();    
+    $this['trace'] = $exception->getTrace();
+    $this->render(array('text' => '<b>Message:</b><br>'.$this['message'].'<br><br><b>Trace:</b><br>'.nl2br($exception->getTraceAsString()))); // TODO!
+  }
+  
+  /**
+   * Enter description here...
+   *
+   * @param Exception $exception
+   */
+  protected function rescueActionInPublic($exception)
+  {
+    if ($exception instanceof atkFrontException && $exception->isNotFound())
+    {
+      $this->render(array('text' => 'Page not found', 'status' => '404 Not Found'));
+    }
+    else 
+    {
+      $this->render(array('text' => 'Internal server error', 'status' => '501 Internal Server Error'));
+    }
+  }
+
+  /**
+   * Returns the current controller instance. This can either be the
+   * root or a nested controller.
+   *
+   * @return atkFrontController current controller instance
+   */
+  public static function getCurrent()
+  {
+    return self::$s_current;
+  }
+
+  /**
+   * Sets the current controller instance.
+   *
+   * @param atkFrontController $controller current controller instance
+   */
+  private static function setCurrent($controller)
+  {
+    self::$s_current = $controller;
+  }
+
+  /**
+   * Returns the parent controller.
+   *
+   * @return atkFrontController parent
+   */
+  public function getParent()
+  {
+    return $this->m_parent;
+  }
+
+  /**
+   * Is this the root controller?
+   *
+   * @return boolean is root controller?
+   */
+  public function isRoot()
+  {
+    return $this->getParent() == NULL;
+  }
+
+  /**
+   * Returns the root controller.
+   *
+   * @return atkFrontController root
+   */
+  public function getRoot()
+  {
+    if ($this->isRoot()) return $this;
+    else return $this->getParent()->getRoot();
+  }
+
+  /**
+   * Returns the request object.
+   *
+   * @return atkRequest request object
+   */
+  public function getRequest()
+  {
+    return $this->request;
+  }
+  
+  /**
+   * Returns the response object.
+   * 
+   * @return atkResponse response object
+   */
+  public function getResponse()
+  {
+    return $this->response;
+  }
+
+  /**
+   * Returns the session object.
+   *
+   * @return atkSession session object
+   */
+  public function getSession()
+  {
+    return $this->session;
+  }
+  
+  /**
+   * Returns the controller bridge.
+   * 
+   * @return atkFrontControllerBridge
+   */
+  public function getBridge()
+  {
+    return $this->m_bridge;
+  }
+
+  /**
+   * Returns the controller view.
+   * 
+   * @return atkView
+   */
+  public function getView()
+  {
+    return $this->m_view;
+  }
+  
+  /**
+   * Returns the controller name.
+   *
+   * @return string controller name
+   */
+  public function getName()
+  {
+    return $this->m_name;
+  }
+  
+  /**
+   * Returns the controller package.
+   * 
+   * @return string controller package
+   */
+  public function getPackage()
+  {
+    return $this->m_package;
+  }
+  
+  /**
+   * Get package path for this controller.
+   * 
+   * @return string controller package path
+   */
+  public function getPackagePath()
+  {
+    return getClassPath($this->getPackage(), false).'/';
+  }
+  
+  /**
+   * Returns the module name for this controller if
+   * this controller is part of a module.
+   * 
+   * @return string module name
+   */
+  public function getModule()
+  {
+    $package = $this->getPackage();
+    $parts = explode('.', $package);
+    return $parts[0] == 'module' && count($parts) > 1 ? $parts[1] : null;
+  }
+  
+  /**
+   * Returns the full controller name, including package(s).
+   * 
+   * @return string full controller name
+   */
+  public function getFullName()
+  {
+    return $this->getPackage().'.'.$this->getName();
+  }
+
+  /**
+   * Returns the current action.
+   *
+   * @return string action
+   */
+  public function getAction()
+  {
+    return $this->m_action;
+  }
+  
+  /**
+   * Returns the helper instances for this controller
+   * 
+   * @return array helper instances
+   */
+  public function getHelpers()
+  {
+    static $helpers = null;
+    if ($helpers == null)
+    {
+      atkimport('atk.front.helpers.atkhelper');
+      $helpers = array();
+      $helpers[] = atknew('atk.front.helpers.atkformhelper', $this);
+      $helpers[] = atknew('atk.front.helpers.atki18nhelper', $this);    
+      $helpers[] = atknew('atk.front.helpers.atkurlhelper', $this);          
+      $helpers[] = atknew('atk.front.helpers.atkscripthelper', $this);
+      $helpers[] = atknew('atk.front.helpers.atkstylehelper', $this);
+    }
+    return $helpers;
+  }
+  
+  /**
+   * Is rendered?
+   * 
+   * @return boolean is rendered?
+   */
+  protected function isRendered()
+  {
+    return $this->m_rendered;
+  }
+  
+  /**
+   * Is partial?
+   * 
+   * @return boolean is partial?
+   */
+  protected function isPartial()
+  {
+    return $this->m_partial;
+  }
+
+  /**
+   * Will be called just before the request is dispatched
+   * to the right method.
+   */
+  protected function preFilter()
+  {}
+
+  /**
+   * Init will be called just after preFilter and just before
+   * the request is dispatched to the right method.
+   */
+  protected function init()
+  {}
+
+  /**
+   * Will be called just after the request has been dispatched
+   * to the right method and the rendering took place but before
+   * the result is returned or outputted.
+   */
+  protected function postFilter()
+  {}
+
+  /**
+   * Set wether or not the controller has rendered yet
+   *
+   * @param bool $rendered
+   */
+  protected function setRendered($rendered)
+  {
+    $this->m_rendered = $rendered;
+  }
+
+  /**
+   * Get assigned template variables.
+   *
+   * @return array template variables
+   */
+  public function getVars()
+  {
+    return $this->m_vars;
+  }
+
+  /**
+   * Returns an URL that has been rewritten according to given parameters
+   * and the defined routes. The following parameters are treated specially:
+   * 
+   * - 'anchor'           Ñ Specifies the anchor name to be appended to the path.
+   * - 'only_path'        Ñ If true, returns the relative URL (omitting the 
+   *                        protocol, host name, and port) (false by default).
+   * - 'trailing_slash'   - If true, adds a trailing slash, as in 
+   *                        "/archive/2005/" (false by default).
+   * - 'host'             - Overrides the default (current) host if provided.
+   * - 'protocol'         - Overrides the default (current) protocol if provided.
+   * - 'port'             - Overrides the default port to connect to.
+   * - 'overwrite_params' - See the description below.
+   * 
+   * The URL is generated from the remaining parameters. An URL contains two 
+   * key parts: the <base> and a query string. atkRouter composes a query string
+   * from the key/value pairs not included in the <base>.
+   *
+   * The default atkRouter setup supports a typical path of "controller/action/id" 
+   * where action and id are optional, with action defaulting to ÔindexÕ when 
+   * not given. Here are some typical url statements and their corresponding URLs: 
+   *
+   * $this->url(array('controller' => 'posts', 'action' => 'recent') // => 'proto://host.com/posts/recent'
+   * $this->url(array('controller' => 'posts', 'action' => 'index') // => 'proto://host.com/posts'
+   * $this->url(array('controller' => 'posts', 'action' => 'show', 'id' => 10) // => 'proto://host.com/posts/show/10'
+   * 
+   * When generating a new URL, missing values may be filled in from the 
+   * current requestÔs parameters. For example, $this->url(array('action' => 'some_action'))
+   * will retain the current controller, as expected. This behavior extends to 
+   * other parameters, including 'controller', 'id', and any other parameters 
+   * that are placed into a routeÔs path. 
+   * 
+   * The URL Smarty plug-ins, such as {url}, have a limited form of memory: 
+   * when generating a new URL, they can look for missing values in the 
+   * current requestÔs parameters. atkRouter attempts to guess when a value 
+   * should and should not be taken from the defaults. There are a few simple
+   * rules on how this is performed:
+   * 
+   * If the controller name begins with a slash, no defaults are used: 
+   * $this->url(array('controller' => '/home'))
+   * 
+   * If the controller changes, the action will default to index unless 
+   * provided.
+   * 
+   * The final rule is applied while the URL is being generated and is best 
+   * illustrated by an example. Let us consider the route given by 
+   * $map->connect('people/:last/:first/:actionÕ, array('action' => 'bio', 'controller' => 'people'))
+   * 
+   * Suppose that the current URL is "people/doe/john/contacts". LetÔs consider
+   * a few different cases of URLs which are generated from this page.
+   * 
+   * $this->url(array('action' => ÔbioÔ)) Ñ During the generation of this URL, 
+   * default values will be used for the first and last components, and the 
+   * action shall change. The generated URL will be, "people/doe/john/bio".
+   *
+   * $this->url(array('first' => 'jane')) - This generates the URL Ôpeople/doe/janeÕ Ñ 
+   * note that this URL leaves out the assumed action of ÔbioÕ.
+   * 
+   * However, you might ask why the action from the current request, ÔcontactsÕ, 
+   * isnÔt carried over into the new URL. The answer has to do with the order 
+   * in which the parameters appear in the generated path. In a nutshell, 
+   * since the value that appears in the slot for :first is not equal to 
+   * default value for :first we stop using defaults. On itÔs own, this rule
+   * can account for much of the typical URL behavior.
+   * 
+   * Although a convienence, defaults can occasionaly get in your way. In some
+   * cases a default persists longer than desired. The default may be cleared
+   * by adding 'name' => null to the parameters. The following line will 
+   * redirect to PostControllerÔs default action, regardless of the page it is
+   * displayed on:
+   *
+   * $this->url(array('controller' => 'posts', 'action' => null))
+   * 
+   * If you explicitly want to create an URL thatÔs almost the same as the 
+   * current URL, you can do so using the :overwrite_params option. Say for 
+   * your posts you have different views for showing and printing them. 
+   * Then, in the show view, you get the URL for the print view like this:
+   *
+   * $this->url(array('overwrite_params' => array('action' => 'print')))
+   * 
+   * This takes the current URL as is and only exchanges the action. In 
+   * contrast, $this->url(array('action' => 'print')) would have 
+   * slashed-off the path components after the changed action.
+   *
+   * @param array $params URL parameters
+   * @return string url
+   */
+  public function url($params=array())
+  {
+    return $this->m_url->rewrite($params);
+  }
+
+  /**
+   * Redirect to the given url.
+   *
+   * @param string $url The URL.
+   */
+  protected function doRedirect($url)
+  {
+    $this->m_bridge->doRedirect($url);
+  }
+
+  /**
+   * Redirect to the given url.
+   *
+   * @param array $vars request vars
+   * @return string url
+   */
+  protected function redirect($vars=array(), $force=FALSE)
+  {
+    if ($this->isRoot() || $force)
+    {
+      $this->doRedirect($this->url($vars));
+    }
+    else
+    {
+      $content = self::dispatchRequest($vars);
+      $this->render($content);
+    }
+  }
+
+  protected function render($options=array())
+  {
+    if ($this->isRendered())
+    {
+      throw new atkFrontException(atkFrontException::DOUBLE_RENDER_ERROR, "Render has already been called.");
+    }
+    
+    $result = $this->m_view->render($options);  
+    $this->response->setBody($result);
+    
+    $this->setRendered(true);
+  }
+
+  /**
+   * Checks if a certain offset exists.
+   *
+   * @param mixed $offset offset
+   * @return bool offset exists?
+   */
+  public function offsetExists($offset)
+  {
+    return isset($this->m_vars[$offset]);
+  }
+
+  /**
+   * Returns the value at the given offset.
+   *
+   * @param mixed $offset
+   * @return mixed value
+   */
+  public function offsetGet($offset)
+  {
+    return $this->m_vars[$offset];
+  }
+
+  /**
+   * Sets the given offset with the given value
+   *
+   * @param mixed $offset offset
+   * @param mixed $value  value
+   */
+  public function offsetSet($offset, $value)
+  {
+    $this->m_vars[$offset] = $value;
+  }
+
+  /**
+   * Unsets the given offset.
+   *
+   * @param mixed $offset offset
+   */
+  public function offsetUnset($offset)
+  {
+    unset($this->m_vars[$offset]);
+  }  
+  
+  public function __call($method, $params)
+  {
+    $helpers = $this->getHelpers();
+    foreach ($helpers as $helper)
+    {
+      if (method_exists($helper, $method))
+      {
+        return call_user_func_array(array($helper, $method), $params);
+      }
+    }
+    
+    throw new Exception('Invalid method');
+  }
+  
+  /**
+   * To string.
+   */
+  public function __toString()
+  {
+    return (!$this->isRoot() ? $this->getParent()->__toString().'/' : '').$this->getName();
+  }  
+}

@@ -4,6 +4,10 @@
 Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 [names] are references to people in the AUTHORS file.
 
+Changed in Almighty branch
+--------------------------
++ Major rewrite of the atkFrontController. [Peter]
+
 Changed in ATK 6.2
 ------------------
 + For the atkFckAttribute it is now possible to load an additional configuration file 
