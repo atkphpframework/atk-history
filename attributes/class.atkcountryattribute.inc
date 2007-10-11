@@ -51,6 +51,7 @@
                                        'UY', 'UZ', 'VU', 'VA', 'VE', 'VN', 'VG', 'VI', 'WF', 'EH', 'YE', 'YU', 'ZR', 'ZM', 'ZW');
 
    var $m_defaulttocurrent=true;
+   var $m_switch = '';
 
 
    /**
@@ -76,12 +77,21 @@
 
       // When switch is not user get country options
       atkdebug("CountryAttribute - $name - $switch");
-      if($switch!="user")
-      {
-        //we assume that the 3 param is flags
-         if(is_numeric($optionArray)) $flags = $optionArray;
 
-         if ($switch != "world")
+      $this->m_defaulttocurrent = $defaulttocurrent;
+      $this->m_switch           = $switch;
+
+      //we assume that the 3 param is flags
+      if(is_numeric($optionArray)) $flags = $optionArray;
+
+      $this->atkListAttribute($name,$optionsArray,$valueArray, $flags|AF_NO_TRANSLATION, 0);
+    }
+
+    function edit($record="",$fieldprefix="")
+    {
+      if($this->m_switch!="user")
+      {
+         if ($this->m_switch != "world")
          {
            $this->fillCountriesArray();
          }
@@ -90,15 +100,13 @@
            $this->fillWorldCountriesArray();
          }
 
-         $optionsArray = $this->getCountryOptionArray($switch);
-         $valueArray   = $this->getCountryValueArray($switch);
+         $this->m_options = $this->getCountryOptionArray($this->m_switch);
+         $this->m_values  = $this->getCountryValueArray($this->m_switch);
       }
-      $this->m_defaulttocurrent = $defaulttocurrent;
-      $this->atkListAttribute($name,$optionsArray,$valueArray, $flags|AF_NO_TRANSLATION, 0);
-    }
-
-    function edit($record="",$fieldprefix="")
-    {
+      $this->_set("options",$this->m_options);
+      $this->_set("values",$this->m_values);
+      $this->createLookupArray($this->m_options,$this->m_values);
+      
       if ($this->m_defaulttocurrent && !$record[$this->fieldName()]) $record[$this->fieldName()] = strtoupper(atkLanguage::getLanguage());
       return parent::edit($record,$fieldprefix);
     }
@@ -106,49 +114,44 @@
     function getCountryOptionArray($switch)
     {
       $tmp_array = array();
-      if($switch=="benelux")
+      
+      switch ($switch)
       {
-         foreach($this->m_benelux_countries as $iso)
-          $tmp_array[]=$this->getCountryOption($iso);
-      }
-      elseif($switch=="europe")
-      {
-         foreach($this->m_europe_countries as $iso)
-          $tmp_array[]=$this->getCountryOption($iso);
-      }
-      elseif($switch=="world")
-      {
-         foreach($this->m_world_countries as $iso)
-          $tmp_array[]=$this->getCountryOption($iso);
-      }
-      else
-      {
-         foreach($this->m_country as $iso => $value)
-           $tmp_array[]=$value;
+        case "benelux":
+          foreach($this->m_benelux_countries as $iso)
+           $tmp_array[]=$this->getCountryOption($iso);
+          break;
+        case "europe":  
+          foreach($this->m_europe_countries as $iso)
+            $tmp_array[]=$this->getCountryOption($iso);
+          break;
+        case "world":
+          foreach($this->m_world_countries as $iso)
+            $tmp_array[]=$this->getCountryOption($iso);
+          break;
+        default:  
+          foreach($this->m_country as $iso => $value)
+            $tmp_array[]=$value;
+          break;   
       }
       return $tmp_array;
     }
 
     function getCountryValueArray($switch)
     {
-      if($switch=="benelux")
+      switch ($switch)
       {
-         return $this->m_benelux_countries;
-      }
-      elseif($switch=="europe")
-      {
-         return $this->m_europe_countries;
-      }
-      elseif($switch=="world")
-      {
-         return $this->m_world_countries;
-      }
-      else
-      {
-         $tmp_array=array();
-         foreach($this->m_country as $iso => $value)
-           $tmp_array[]=$iso;
-         return $tmp_array;
+        case "benelux":
+          return $this->m_benelux_countries;
+        case "europe":
+          return $this->m_europe_countries;
+        case "world":
+          return $this->m_world_countries;
+        default:
+          $tmp_array=array();
+          foreach($this->m_country as $iso => $value)
+            $tmp_array[]=$iso;
+          return $tmp_array;       
       }
     }
 
