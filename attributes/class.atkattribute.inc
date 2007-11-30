@@ -1467,7 +1467,7 @@
       if ($this->m_searchmode) $searchmode = $this->m_searchmode;
 
       $func = $searchmode."Condition";
-      if (method_exists($query,$func) && $value)
+      if (method_exists($query,$func) && ($value || ($value == 0)))
       {
         return $query->$func($table.".".$this->fieldName(),$this->escapeSQL($value));
       }
@@ -2389,7 +2389,9 @@
       foreach ($arr['fields'] as $field)
       {
         atkimport('atk.utils.atkjson');
-        $script .= "\$('".str_replace('.', '_', $this->m_ownerInstance->atkNodeType().'_'.$field['id'])."').innerHTML = ".atkJSON::encode($field['html']).";\r\n";
+        //atkJSON::encode expect string in in ASCII or UTF-8 format, so convert data to UTF-8
+        $value = iconv(atktext("charset"),"UTF-8",$field['html']);
+        $script .= "\$('".str_replace('.', '_', $this->m_ownerInstance->atkNodeType().'_'.$field['id'])."').innerHTML = ".atkJSON::encode($value).";\r\n";
       }
 
       $this->_registerDependees($mode, $fieldprefix);
@@ -2402,7 +2404,7 @@
      */
     function addDependee($attribName)
     {
-      $this->m_dependees[] = $attribName;
+      if(!in_array($attribName, $this->m_dependees)) $this->m_dependees[] = $attribName;
       return $this;
     }
 
