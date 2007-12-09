@@ -40,12 +40,9 @@
      */
     function action_edit()
     {
-      $page = &$this->getPage();
-
       if (isset($this->m_partial) && $this->m_partial!="")
       {
-        $result = $this->partial($this->m_partial);
-        $page->addContent($result);
+        $this->partial($this->m_partial);
         return;
       }
 
@@ -79,6 +76,7 @@
         $res = $this->invoke("editPage", $record, false);
       }
 
+      $page = &$this->getPage();
       $page->addContent($node->renderActionPage("edit", $res));
     }
 
@@ -144,7 +142,7 @@
 
       $params               = $node->getDefaultActionParams($locked);
       $params["formstart"]  = $this->getFormStart();
-      $params["header"]     = $this->invoke("editHeader");
+      $params["header"]     = $this->invoke("editHeader", $record);
       $params["content"]    = $this->getContent($record);
       $params["buttons"]    = $this->getFormButtons($record);
       $params["formend"]    = $this->getFormEnd();
@@ -187,7 +185,7 @@
         $suppressList = $node->m_postvars['atksuppress'];
       }
 
-      $form = $this->editForm("edit",$record,$forceList,$suppressList);
+      $form = $this->editForm("edit",$record,$forceList,$suppressList,$node->getEditFieldPrefix());
 
       return $node->tabulate("edit", $form);
     }
@@ -199,7 +197,7 @@
 
       if (is_object($ui))
       {
-        $output = $ui->renderAction("edit", $params);
+        $output = $ui->renderAction("edit", $params, $node->m_module);
         $this->addRenderBoxVar("title", $node->actionTitle('edit', $record));
         $this->addRenderBoxVar("content", $output);
 
@@ -446,6 +444,7 @@
       $tab = $node->getActiveTab();
       $error_title = "";
       $pk_err_attrib = array();
+      $tabs = $node->getTabs($node->m_action);
 
       // Handle errors
       $errors = array();
@@ -463,7 +462,7 @@
           {
             $type = (empty($error["node"]) ? $node->m_type : $error["node"]);
 
-            if (count($node->getTabs($node->m_action)) > 1 && $error["tab"])
+            if (count($tabs) > 1 && $error["tab"])
               $error_tab = ' ('.atktext("error_tab").' '.'<a href="javascript:void(0)" onclick="showTab(\''.$error["tab"].'\'); return false;">'.$this->getTabLabel($node, $error["tab"]).'</a> )';
             else $error_tab = "";
 
@@ -472,10 +471,6 @@
               $label = implode(', ', $error['label']);
             }
             else if (!empty($error['label']))
-            {
-              $label = $error['label'];
-            }
-            else if (!is_array($error['attrib_name']))
             {
               $label = $error['label'];
             }
@@ -560,9 +555,26 @@
       $params["fields"] = $fields; // add all fields as an numeric array.
       $params["errortitle"] = $error_title;
       $params["errors"] = $errors; // Add the list of errors.
-      if (!$template) $template = $node->getTemplate($mode, $record, $tab);
-      $result.= $ui->render($template, $params);
 
+      if($template)
+      {
+        $result .= $ui->render($template, $params);
+      }
+      else
+      {
+        $theme = &atkTheme::getInstance();
+        if($theme->tplPath("editform_common.tpl")>"")
+        {
+          $tabTpl = $this->_getTabTpl($node, $tabs, $mode, $record);
+          $params['fieldspart'] = $this->_renderTabs($fields, $tabTpl);
+          $result .= $ui->render("editform_common.tpl",$params);
+        }
+        else 
+        {
+          $result .= $ui->render($node->getTemplate($mode, $record, $tab), $params);
+        }
+      }
+      
 	    return $result;
     }
 
@@ -644,30 +656,18 @@
      *
      * @param string $partial full partial
      */
-    function partial_attribute($mode="")
+    function partial_attribute($partial)
     {
-      // We already know type is attribute, so we do not check it again.
-      list($type, $attribute, $partial) = explode('.', $this->m_partial);
+      list($type, $attribute, $partial) = explode('.', $partial);
 
       $attr = &$this->m_node->getAttribute($attribute);
       if ($attr == NULL)
       {
         atkerror("Unknown / invalid attribute '$attribute' for node '".$this->m_node->atkNodeType()."'");
-        return;
+        return '';
       }
 
       return $attr->partial($partial, 'edit');
     }
-
-    /**
-     * Section state handler.
-     */
-    function partial_sectionstate()
-    {
-      atkimport("atk.session.atkstate");
-    	atkState::set(array("nodetype"=>$this->m_node->atknodetype(),"section"=>$this->m_postvars['atksectionname']),$this->m_postvars['atksectionstate']);
-    	die();
-    }
-
   }
 ?>

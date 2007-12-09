@@ -34,6 +34,11 @@
      */
     function atkmysqlidb()
     {
+      if (!function_exists('mysqli_connect'))
+      {
+        trigger_error('MySQLi not supported by your PHP version',E_USER_ERROR);
+      }
+
       // set type
       parent::atkmysqldb();
       $this->m_type = "mysqli";
@@ -116,7 +121,7 @@
        $query .= " LIMIT $offset, $limit";
 
      if (atkconfig("debug")>=0)
-     {       
+     {
        atkimport("atk.utils.atkdebugger");
        atkDebugger::addQuery($query);
      }
@@ -252,13 +257,13 @@
      {
        /* lock */
        $query = "lock tables $table $mode";
-       
+
        if (atkconfig("debug")>=0)
        {
          atkimport("atk.utils.atkdebugger");
          atkDebugger::addQuery($query);
        }
-       
+
        $result = @mysqli_query($this->m_link_id, $query);
        if (!$result) $this->halt("$mode lock on $table failed.");
 
@@ -361,10 +366,10 @@
        return 0;
      }
 
-     /* cannot lock */
+     /* cannot connect */
      else
      {
-       $this->halt("cannot lock ".$this->m_seq_table." - has it been created?");
+       $this->halt("cannot connect to ".$this->m_host);
      }
    }
 
@@ -407,7 +412,13 @@
 	        $result[$i]["gentype"]    = $ddl->getGenericType($finfo->type);
 	        $result[$i]["len"]        = $finfo->length;
 	        $result[$i]["flags"]      = 0;
-
+	       
+	        if ($result[$i]["gentype"] == "decimal")
+	        {
+	          $result[$i]["len"] -= ($finfo->decimals * 2);
+	          $result[$i]["len"] .= "," . $finfo->decimals;
+	        }
+	         
 	        if($finfo->flags & MYSQLI_PRI_KEY_FLAG) $result[$i]["flags"]|= MF_PRIMARY;
 	        if($finfo->flags & MYSQLI_UNIQUE_KEY_FLAG) $result[$i]["flags"]|= MF_UNIQUE;
 	        if($finfo->flags & MYSQLI_NOT_NULL_FLAG ) $result[$i]["flags"]|= MF_NOT_NULL;
@@ -477,5 +488,14 @@
      return true;
    }
 
+   /**
+    * Enable/disable all foreign key constraints.
+    *
+    * @param boolean $enable enable/disable foreign keys?
+    */
+   function toggleForeignKeys($enable)
+   {
+     $this->query("SET FOREIGN_KEY_CHECKS = ".($enable ? 1 : 0));
+   }
  }
 ?>

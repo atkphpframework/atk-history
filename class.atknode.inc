@@ -725,16 +725,11 @@
     var $m_mraSelectionMode = MRA_MULTI_SELECT;
 
     /**
-     * A list of mra actions that need to be accessed through
-     * a dialog.
-     *
-     * @todo This code needs to be removed/replaced when we have support for all MRA
-     * actions for using dialogs. In which case we could make all the actions in a
-     * MRA dropdown open an atkDialog.
-     *
-     * @var array
+     * The default edit fieldprefix to use for atk
+     * @access private
+     * @var String
      */
-    var $m_dialog_mra = null;
+    var $m_edit_fieldprefix = '';
 
     /**
      * Constructor.
@@ -755,6 +750,8 @@
       $this->m_type = $type;
       $this->m_flags = $flags;
       $this->m_module = atkModule::getModuleScope();
+      
+      $this->setEditFieldPrefix(atkconfig('edit_fieldprefix', ''));
     }
 
     /**
@@ -1250,7 +1247,7 @@
         $primKey.=$this->m_table.".".$this->m_primaryKey[$i]."='".$p_attrib->value2db($rec)."'";
         if ($i<($nrOfElements-1)) $primKey.=" AND ";
       }
-
+      
       return $primKey;
     }
 
@@ -1435,6 +1432,7 @@
       foreach(array_keys($this->m_attribList) as $attribname)
       {
         $p_attrib = &$this->m_attribList[$attribname];
+        if ($p_attrib->hasFlag(AF_HIDE)) continue; // attributes to which we don't have access are explicitly hidden
 
         // Only display the attribute if the attribute
         // resides on at least on visible tab
@@ -1483,13 +1481,16 @@
     {
       $sections = array();
 
-      foreach ($this->m_sectionList[$action] as $element)
+      if (is_array($this->m_sectionList[$action]))
       {
-        list($tab,$sec) = (strpos($element, ".") !== false) ? explode(".",$element) : array($element, null);
-
-        //if this section is on an active tab, we return it.
-        if($tab == $this->getActiveTab() && $sec!==NULL)
-          $sections[] = $sec;
+        foreach ($this->m_sectionList[$action] as $element)
+        {
+          list($tab,$sec) = (strpos($element, ".") !== false) ? explode(".",$element) : array($element, null);
+  
+          //if this section is on an active tab, we return it.
+          if($tab == $this->getActiveTab() && $sec!==NULL)
+            $sections[] = $sec;
+        }
       }
 
       //we do not want duplicate sections on the same tab.
@@ -1632,11 +1633,14 @@
     function getActiveSections($tab, $mode)
     {
       $activeSections = array();
-      foreach ($this->m_sectionList[$mode] as $section)
+      if (is_array($this->m_sectionList[$mode]))
       {
-        if (substr($section,0,strlen($tab))==$tab && in_array($section, $this->m_default_expanded_sections))
+        foreach ($this->m_sectionList[$mode] as $section)
         {
-          $activeSections[] = $section;
+          if (substr($section,0,strlen($tab))==$tab && in_array($section, $this->m_default_expanded_sections))
+          {
+            $activeSections[] = $section;
+          }
         }
       }
 
@@ -1782,13 +1786,13 @@
         for ($i=max(0, $cnt-3), $_i=$cnt; $i<$_i; $i++)
         {
           $desc = $descriptortrace[$i];
-          $descrtrace.= htmlentities($desc, ENT_COMPAT,atktext('charset'))." - ";
+          $descrtrace.= atk_htmlentities($desc, ENT_COMPAT)." - ";
         }
         $res= $descrtrace . $res;
       }
       if (is_object($ui))
       {
-        $res.= $ui->title($this->m_module, $this->m_type, $action,$nomodule);
+        $res.= $ui->nodeTitle($this, $action,$nomodule);
       }
 
       return $res;
@@ -1956,9 +1960,12 @@
         if (!isset($defaults['atkerror'])) // only load initial values the first time (not after an error occured)
         {
           $overrides = $this->initial_values();
-          foreach ($overrides as $varname=>$value)
+          if (is_array($overrides) && count($overrides)>0)
           {
-            if (!isset($defaults[$varname]) || $defaults[$varname]=="") $defaults[$varname]=$value;
+            foreach ($overrides as $varname=>$value)
+            {
+              if (!isset($defaults[$varname]) || $defaults[$varname]=="") $defaults[$varname]=$value;
+            }
           }
         }
       }
@@ -2021,6 +2028,7 @@
 
       /* extra submission data */
       //$result["hide"][] = '<input type="hidden" name="'.$fieldprefix.'atkescape">';
+      $result["hide"][] = '<input type="hidden" name="atkfieldprefix" value="'.$this->getEditFieldPrefix(false).'">';
       $result["hide"][] = '<input type="hidden" name="'.$fieldprefix.'atknodetype" value="'.$this->atknodetype().'">';
       $result["hide"][] = '<input type="hidden" name="'.$fieldprefix.'atkprimkey" value="'.atkArrayNvl($record, "atkprimkey", "").'">';
 
@@ -2445,7 +2453,7 @@
         if($this->hasFlag(NF_EDITAFTERCOPY)&&$this->allowed("editcopy"))
         {
           $actions["editcopy"] = $actionbase.'&atkaction=editcopy';
-        }        
+        }
       }
 
       return $actions;
@@ -3340,9 +3348,14 @@
       if (!atkReadOptimizer())
       {
         /* there may be search criteria, which we also filter */
-        $searchArray = isset($this->m_postvars['atksearch']) ? $this->m_postvars['atksearch'] : null;
-        $smartSearchCriteria = isset($this->m_postvars['atksmartsearch']) ? $this->m_postvars['atksmartsearch'] : null;
-        if (is_array($searchArray) && count($searchArray)>0 || is_array($smartSearchCriteria) && count($smartSearchCriteria) > 0)
+        $searchArray = atkArrayNvl($this->m_postvars,'atksearch');
+        $smartSearchCriteria = atkArrayNvl($this->m_postvars,'atksmartsearch');
+        $indexValue = $this->m_index != "" ? atkArrayNvl($this->m_postvars,'atkindex',"") : "";
+
+        if ( (is_array($searchArray) && count($searchArray)>0)
+              || (is_array($smartSearchCriteria) && count($smartSearchCriteria) > 0)
+              || !empty($indexValue) )
+
         {
           $searching = true;
           //The searchmode of an index should be used only once, therefore it uses atksinglesearchmode instead of atksearchmode.
@@ -3363,10 +3376,16 @@
           $query->addCondition($key."='".$value."'");
         }
 
-        /* fuzzy filters may be set */
-        for ($i = 0, $_i = count($this->m_fuzzyFilters); $i < $_i; $i++)
+        if(count($this->m_fuzzyFilters))
         {
-          $query->addCondition($this->m_fuzzyFilters[$i]);
+          atkimport("atk.utils.atkstringparser");
+          /* fuzzy filters may be set */
+          for ($i = 0, $_i = count($this->m_fuzzyFilters); $i < $_i; $i++)
+          {
+            $parser = new atkStringParser($this->m_fuzzyFilters[$i]);
+            $filter = $parser->parse(array('table' => $this->m_table));
+            $query->addCondition($filter);
+          }
         }
       }
 
@@ -3384,6 +3403,20 @@
       {
         $p_attrib = &$this->m_attribList[$loadlist["query"][$i]];
         $p_attrib->addToQuery($query,$this->m_table,"","",1,$mode); // start at level 1
+      }
+
+      //handle index navigation
+      if($indexValue !="")
+      {
+        $p_attrib = &$this->getAttribute($this->m_index);
+        if(is_object($p_attrib))
+        {
+           $p_attrib->searchCondition($query, $this->m_table, $indexValue, "wildcard", "");
+        }
+        else
+        {
+          atkerror("Wrong_index_field");
+        }
       }
 
       if (is_array($searchArray) && count($searchArray) > 0)
@@ -3421,12 +3454,6 @@
             }
           }
         }
-      }
-
-      // there may be smart search criteria which we need to apply
-      if (is_array($smartSearchCriteria) && count($smartSearchCriteria) > 0)
-      {
-        $this->applySmartSearchCriteria($query, $smartSearchCriteria);
       }
 
       // there may be smart search criteria which we need to apply
@@ -3567,9 +3594,13 @@
       if (!atkReadOptimizer())
       {
         /* there may be search criteria, which we also filter */
-        $searchArray = isset($this->m_postvars['atksearch']) ? $this->m_postvars['atksearch'] : null;
-        $smartSearchCriteria = isset($this->m_postvars['atksmartsearch']) ? $this->m_postvars['atksmartsearch'] : null;
-        if (is_array($searchArray) && count($searchArray)>0 || is_array($smartSearchCriteria) && count($smartSearchCriteria) > 0)
+        $searchArray = atkArrayNvl($this->m_postvars,'atksearch');
+        $smartSearchCriteria = atkArrayNvl($this->m_postvars,'atksmartsearch');
+        $indexValue = $this->m_index != "" ? atkArrayNvl($this->m_postvars,'atkindex',"") : "";
+
+        if ( (is_array($searchArray) && count($searchArray)>0)
+              || (is_array($smartSearchCriteria) && count($smartSearchCriteria) > 0)
+              || !empty($indexValue) )
         {
           $searching = true;
         }
@@ -3583,10 +3614,16 @@
           $query->addCondition($key."='".$value."'");
         }
 
-        /* fuzzy filters may be set */
-        for ($i = 0, $_i = count($this->m_fuzzyFilters); $i < $_i; $i++)
+        if(count($this->m_fuzzyFilters))
         {
-          $query->addCondition($this->m_fuzzyFilters[$i]);
+          atkimport("atk.utils.atkstringparser");
+          /* fuzzy filters may be set */
+          for ($i = 0, $_i = count($this->m_fuzzyFilters); $i < $_i; $i++)
+          {
+            $parser = new atkStringParser($this->m_fuzzyFilters[$i]);
+            $filter = $parser->parse(array('table' => $this->m_table));
+            $query->addCondition($filter);
+          }
         }
       }
 
@@ -3643,6 +3680,20 @@
 
       if (!atkReadOptimizer())
       {
+        //handle index navigation
+        if($indexValue !="")
+        {
+          $p_attrib = &$this->getAttribute($this->m_index);
+          if(is_object($p_attrib))
+          {
+             $p_attrib->searchCondition($query, $this->m_table, $indexValue, "wildcard", "");
+          }
+          else
+          {
+            atkerror("Wrong_index_field");
+          }
+        }
+
         // there may be search criteria, which we also filter
         if (is_array($searchArray) && count($searchArray)>0)
         {
@@ -4836,7 +4887,7 @@
       }
 
       // All standard SQL operators
-      $sqloperators = array('=','<>','>','<','>=','<=','BETWEEN','LIKE','IN', 'IS');
+      $sqloperators = array('=','<>','>','<','>=','<=','BETWEEN','LIKE','IN', 'IS', 'NOT IN','&');
 
       // Check the filter for every operator
       foreach ($sqloperators as $sqloperator)
@@ -5011,31 +5062,27 @@
     {
       return $this->atkNodeType();
     }
-
+    
     /**
-     * Add an mra action that need to be accessed through a dialog.
+     * Set the edit fieldprefix to use in atk
      *
-     * @todo This code needs to be removed/replaced when we have support for all MRA
-     * actions for using dialogs. In which case we could make all the actions in a
-     * MRA dropdown open an atkDialog. For now this code just generates another button.
-     *
-     * @param String $action
+     * @param string $prefix
      */
-    function addDialogMRA($action)
+    function setEditFieldPrefix($prefix)
     {
-      $this->m_dialog_mra[] = $action;
+      $this->m_edit_fieldprefix = $prefix;
     }
-
+    
     /**
-     * Retrieve the mra actions that need to be accessed through a dialog.
+     * Get the edit fieldprefix to use
      *
-     * @todo This code needs to be removed/replaced when we have support for all MRA
-     * actions for using dialogs. In which case we could make all the actions in a
-     * MRA dropdown open an atkDialog. For now this code just generates another button.
+     * @param boolean $atk_layout do we want the prefix in atkstyle (with _AE_) or not
+     * @return string with edit fieldprefix
      */
-    function getDialogMRA()
+    function getEditFieldPrefix($atk_layout=true)
     {
-      return $this->m_dialog_mra;
+      if ($this->m_edit_fieldprefix == '') return '';
+      else return $this->m_edit_fieldprefix.($atk_layout ? '_AE_' : '');
     }
   }
 ?>

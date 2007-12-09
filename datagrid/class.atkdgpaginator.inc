@@ -8,8 +8,7 @@
  * @package atk
  * @subpackage utils
  *
- * @copyright (c)2000-2006 Ibuildings.nl BV
- * @copyright (c)2000-2006 Ivo Jansch
+ * @copyright (c) 2000-2007 Ibuildings.nl BV
  * 
  * @license http://www.achievo.org/atk/licensing ATK Open Source License
  */
@@ -32,26 +31,14 @@ class atkDGPaginator extends atkDGComponent
    *
    * @var int
    */
-  var $m_maxLinks;
-
-  
-  /**
-   * Constructor.
-   *
-   * @return atkDGPaginator
-   */
-  function atkDGPaginator()
-  {
-    $this->m_maxLinks = 10;
-  }
+  var $m_maxLinks = 10;
   
   /**
    * Returns an array with pagination links.
-   *
-   * @param atkDataGrid $grid
    */
-  function getLinks(&$grid)
+  function getLinks()
   {
+    $grid = $this->getGrid();
     $links = array();
 
     $count = $grid->getCount();        
@@ -67,8 +54,8 @@ class atkDGPaginator extends atkDGComponent
     // calculate pages, first and last page
     $pages = ceil($count / $limit);
     $current = floor($offset / $limit) + 1;
-    $first = $current - (floor($this->m_maxLinks - 1) / 2);
-    $last = $current + (ceil($this->m_maxLinks - 1) / 2);
+    $first = $current - floor(($this->m_maxLinks - 1) / 2);
+    $last = $current + ceil(($this->m_maxLinks - 1) / 2);
     
     // fix invalid first page
     if ($first < 1)
@@ -88,8 +75,8 @@ class atkDGPaginator extends atkDGComponent
     if ($current > 1)
     {
       $title = $grid->text('previous');           
-      $url = $grid->createLink(array('atkstartat' => $offset - $limit));
-      $links[] = array('type' => 'previous', 'url' => $url, 'title' => $title);
+      $url = $grid->getUpdateCall(array('atkstartat' => $offset - $limit));
+      $links[] = array('type' => 'previous', 'call' => $url, 'title' => $title);
     }
 
     // normal pagination links
@@ -103,8 +90,8 @@ class atkDGPaginator extends atkDGComponent
       else 
       {  
         $title = $i;              
-        $url = $grid->createLink(array('atkstartat' => max(0, ($i - 1) * $limit)));
-        $links[] = array('type' => 'page', 'url' => $url, 'title' => $title, 'current' => false);      
+        $url = $grid->getUpdateCall(array('atkstartat' => max(0, ($i - 1) * $limit)));
+        $links[] = array('type' => 'page', 'call' => $url, 'title' => $title, 'current' => false);      
       }
     }
 
@@ -112,8 +99,8 @@ class atkDGPaginator extends atkDGComponent
     if ($current < $pages)
     {
       $title = $grid->text('next');         
-      $url = $grid->createLink(array('atkstartat' => $offset + $limit));
-      $links[] = array('type' => 'next', 'url' => $url, 'title' => $title);      
+      $url = $grid->getUpdateCall(array('atkstartat' => $offset + $limit));
+      $links[] = array('type' => 'next', 'call' => $url, 'title' => $title);      
     }    
     
     return $links;
@@ -125,13 +112,10 @@ class atkDGPaginator extends atkDGComponent
    * @param atkDataGrid $grid the data grid
    * @return string rendered HTML
    */
-  function render(&$grid)
+  function render()
   {
-    $links = $this->getLinks($grid);
-    
-    $ui = &$grid->getUi();
-    $result = $ui->render('dgpaginator.tpl', array('links' => $links));
-    
+    $links = $this->getLinks();
+    $result = $this->getUi()->render('dgpaginator.tpl', array('links' => $links));
     return $result;
   }
 }

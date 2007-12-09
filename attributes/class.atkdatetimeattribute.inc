@@ -142,7 +142,7 @@
     function datetimeArray($datetime=NULL)
     {
       if ($datetime == NULL)
-        $datetime = date("YmdHi");
+        $datetime = date("YmdHis");
       $date = substr($datetime, 0, 8);
       $time = substr($datetime, 8, 6);
       return array_merge(atkDateAttribute::dateArray($date), atkTimeAttribute::timeArray($time));
@@ -221,8 +221,8 @@
       else if (!empty($rec[$this->fieldName()]))
       {
         $stamp = strtotime($rec[$this->fieldName()]);
-        $stamp = $this->toUTC($stamp);
-        return date('Y-m-d H:m:s',$stamp);
+        $stamp = $this->toUTC($stamp, $rec);
+        return date('Y-m-d H:i:s',$stamp);
       }
      return NULL;
     }
@@ -344,11 +344,11 @@
 
     function parseStringValue($stringvalue)
     {
-	    $datetime = split(" ",$stringvalue);
-		  $formatsdate = array("dd-mm-yyyy","dd-mm-yy","d-mm-yyyy","dd-m-yyyy","d-m-yyyy","yyyy-mm-dd","yyyy-mm-d","yyyy-m-dd","yyyy-m-d");
-		  $retval=array_merge(atkDateAttribute::parseDate($datetime[0],$formatsdate),
-		                      atkTimeAttribute::parseTime($datetime[1]));
-		  return $retval;
+      $datetime = split(" ",$stringvalue);
+      $formatsdate = array("dd-mm-yyyy","dd-mm-yy","d-mm-yyyy","dd-m-yyyy","d-m-yyyy","yyyy-mm-dd","yyyy-mm-d","yyyy-m-dd","yyyy-m-d");
+      $retval=array_merge(atkDateAttribute::parseDate($datetime[0],$formatsdate),
+                          atkTimeAttribute::parseTime($datetime[1]));
+      return $retval;
     }
 
 
@@ -412,7 +412,7 @@
      * @param array $record record
      * @return int UTC offset in seconds
      */
-    function _getUTCOffset($record)
+    function _getUTCOffset(&$record, $stamp=null)
     {
       if ($this->m_utcOffset !== null)
       {
@@ -431,7 +431,11 @@
           // relation, prepare for next iteration
           if (is_a($attr, 'atkManyToOneRelation'))
           {
-            $attr->populate($record, array($parts[0]));
+            if (count($parts) > 0 && !isset($record[$part][$parts[0]]))
+            {
+              $attr->populate($record, array($parts[0]));
+            }
+
             $record = $record[$attr->fieldName()];
             $node = $attr->m_destInstance;
           }
@@ -439,7 +443,7 @@
           // timezone attribute, calculate and return offset
           else if (is_a($attr, 'atkTimezoneAttribute'))
           {
-            return $attr->getUTCOffset($record[$attr->fieldName()]);
+            return $attr->getUTCOffset($record[$attr->fieldName()], $stamp);
           }
 
           // assume the attribute in question already has the offset saved in seconds
@@ -466,10 +470,10 @@
      *
      * @return int|array UNIX timestamp or ATK date/time array (depending on input)
      */
-    function toUTC($value, $record)
+    function toUTC($value, &$record)
     {
       $stamp = is_int($value) ? $value : $this->arrayToDateTime($value);
-      $offset = $this->_getUTCOffset($record);
+      $offset = $this->_getUTCOffset($record, $stamp);
       $stamp = $stamp - $offset;
       $value = is_int($value) ? $stamp : $this->datetimeArray(date("YmdHis", $stamp));
       return $value;
@@ -483,10 +487,10 @@
      *
      * @return int|array UNIX timestamp or ATK date/time array (depending on input)
      */
-    function fromUTC($value, $record)
+    function fromUTC($value, &$record)
     {
       $stamp = is_int($value) ? $value : $this->arrayToDateTime($value);
-      $offset = $this->_getUTCOffset($record);
+      $offset = $this->_getUTCOffset($record, $stamp);
       $stamp = $stamp + $offset;
       $value = is_int($value) ? $stamp : $this->datetimeArray(date("YmdHis", $stamp));
       return $value;

@@ -19,7 +19,15 @@ ATK.Dialog.prototype = {
    * Eval JavaScript in response.
    */
   evalResponse: function(transport) {
-    setTimeout(function() { transport.responseText.evalScripts() }, 10);
+    var dialog = this;
+    
+    setTimeout(function() { 
+      transport.responseText.evalScripts();
+      
+      if (!dialog.options.width && !dialog.options.height) {
+        dialog.delayedResize();
+      }
+    }, 10);
   },
 
   /**
@@ -27,9 +35,6 @@ ATK.Dialog.prototype = {
    */
   onShow: function(transport) {
     this.evalResponse(transport);
-    if (this.options.width || this.options.height) {
-      this.delayedResize();
-    }
   },
 
   /**
@@ -145,6 +150,26 @@ ATK.Dialog.prototype = {
     var element = $('modal_dialog_message');
     element.update(content);
     this.resize();
+  },
+
+  /**
+   * Update dialog contents with the results of the given URL.
+   */
+  ajaxUpdate: function(url) {
+    var options = {};
+    options['onSuccess'] = this.onShow.bind(this);
+    if (this.options.serializeForm) {
+      options['parameters'] = this.serializeForm();
+    }
+	
+    new Ajax.Updater('modal_dialog_message', url, options);
+  },
+
+  /**
+   * Reload dialog contents.
+   */
+  reload: function() {
+	  this.ajaxUpdate(this.url);
   }
 };
 

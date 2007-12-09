@@ -41,10 +41,16 @@
      */
     function atkmysqldb()
     {
+      if (!function_exists('mysql_connect'))
+      {
+        atkerror('MySQL not supported by your PHP version');
+        die('MySQL not supported by your PHP version');
+      }
+
       // set the user error's
       $this->m_type = "mysql";
       $this->m_vendor = "mysql";
-      $this->m_user_error=array();
+      $this->m_user_error=array(1451);
     }
 
     /**
@@ -62,6 +68,7 @@
       {
         if (!empty($port))
           $host = "$host:$port";
+
 
         $this->m_link_id = @mysql_connect($host, $user, $password, true /* ALWAYS NEW LINK */);
         if (!$this->m_link_id)
@@ -86,6 +93,17 @@
 
       /* return link identifier */
       return DB_SUCCESS;
+    }
+
+    /**
+     * Determine whether an error that occurred is a recoverable (user) error
+     * or a system error.
+     * @return String "user" or "system"
+     */
+    function getErrorType()
+    {
+      $this->_setErrorVariables();
+      return parent::getErrorType();
     }
 
     /**
@@ -155,7 +173,7 @@
         $query .= " LIMIT $offset, $limit";
 
       if (atkconfig("debug")>=0)
-      {        
+      {
         atkimport("atk.utils.atkdebugger");
         atkDebugger::addQuery($query);
       }
@@ -297,7 +315,7 @@
           atkimport("atk.utils.atkdebugger");
           atkDebugger::addQuery($query);
         }
-      
+
         /* lock */
         $result = @mysql_query($query, $this->m_link_id);
         if (!$result) $this->halt("$mode lock on $table failed.");
@@ -400,10 +418,10 @@
         return 0;
       }
 
-      /* cannot lock */
+      /* cannot connect */
       else
       {
-        $this->halt("cannot lock ".$this->m_seq_table." - has it been created?");
+        $this->halt("cannot connect to ".$this->m_host);
       }
     }
 
@@ -593,8 +611,28 @@
      */
     function setSequenceValue($seqname, $value)
     {
-      $query = "UPDATE ".$this->m_seq_table." SET ".$this->m_seq_field." = '$value' WHERE ".$this->m_seq_namefield." = '$seqname'";
-      $this->query($query);
+      $value = $value + 1; // nextid should contain the next value, not the current value
+
+      if ($this->lock($this->m_seq_table))
+      {
+        $query = "SELECT COUNT(*) AS result FROM ".$this->m_seq_table." WHERE ".$this->m_seq_namefield." = '$seqname'";
+
+        $id = @mysql_query($query, $this->m_link_id);
+        $result = @mysql_fetch_array($id);
+
+        if ($result[0]['result'] == 0)
+        {
+          $query = "INSERT INTO ".$this->m_seq_table." VALUES('$seqname', $value)";
+        }
+        else
+        {
+          $query = "UPDATE ".$this->m_seq_table." SET ".$this->m_seq_field." = '$value' WHERE ".$this->m_seq_namefield." = '$seqname'";
+        }
+
+        $this->query($query);
+
+        $this->unlock();
+      }
     }
   }
 ?>

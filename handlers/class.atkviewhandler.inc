@@ -34,22 +34,14 @@
      */
     function action_view($renderbox=true)
     {
-      atkdebug("Action view");
-
       if (isset($this->m_partial) && $this->m_partial!="")
       {
-        list($type, $attribute, $partial) = explode('.', $this->m_partial);
-        if($type == 'sectionstate')
-        {
-          atkimport("atk.session.atkstate");
-          atkState::set($this->m_postvars['atksectionname'],$this->m_postvars['atksectionstate']);
-          die();
-        }
+        $this->partial($this->m_partial);
+        return;
+      }      
 
-      }
-
-      list($record) = $this->m_node->selectDb($this->m_postvars['atkselector'],"","",$this->m_node->m_viewExcludes,"","view");
-
+      $record = $this->getRecord();
+      
       // allowed to view record?
       if (!$this->allowed($record))
       {
@@ -60,6 +52,15 @@
       $page = &$this->getPage();
       $this->notify("view", $record);
       $page->addContent($this->m_node->renderActionPage("admin", $this->invoke("viewPage", $record, $this->m_node, $renderbox)));
+    }
+    
+    /**
+     * Returns the view record.
+     */
+    function getRecord()
+    {
+      list($record) = $this->m_node->selectDb($this->m_postvars['atkselector'],"","",$this->m_node->m_viewExcludes,"","view");
+      return $record;      
     }
 
     /**
@@ -95,8 +96,16 @@
           return $output;
         }
 
-        $total = $ui->renderBox(array("title"=>$node->actionTitle('view', $record),
-                                      "content"=>$output));
+        $vars = array("title"=>$node->actionTitle('view', $record), "content"=>$output);        
+        
+        if ($this->getRenderMode() == "dialog")
+        {
+          $total = $ui->renderDialog($vars);
+        }
+        else
+        {
+          $total = $ui->renderBox($vars);
+        }
 
         return $total;
       }
@@ -115,6 +124,8 @@
 
       // get active tab
       $tab = $node->getActiveTab();
+      // get all tabs of current mode
+      $tabs = $node->getTabs($mode);
 
       $fields = array();
 
@@ -148,7 +159,7 @@
 
         // visible sections, both the active sections and the tab names (attribute that are
         // part of the anonymous section of the tab)
-        $visibleSections = array_merge($this->m_node->getActiveSections($tab, $mode), $this->m_node->getTabs($mode));
+        $visibleSections = array_merge($this->m_node->getActiveSections($tab, $mode), $tabs);
 
         // Todo fixme: initial_on_tab kan er uit, als er gewoon bij het opstarten al 1 keer showTab aangeroepen wordt (is netter dan aparte initial_on_tab check)
         // maar, let op, die showTab kan pas worden aangeroepen aan het begin.
@@ -232,9 +243,41 @@
       }
       $ui = &$this->getUi();
 
-      $innerform = $ui->render($node->getTemplate("view", $record, $tab), array("fields"=>$fields));
-
+      $tabTpl = $this->_getTabTpl($node, $tabs,$mode,$record);
+      
+      if(count(array_unique($tabTpl))>1)
+      {
+        $tabForm = $this->_renderTabs($fields, $tabTpl);
+        $innerform = implode(null,$tabForm);
+      }
+      else 
+      {
+        $innerform = $ui->render($node->getTemplate("view", $record, $tab), array("fields"=>$fields));
+      }
       return $innerform;
     }
+    
+    function partial_dialog()
+    {
+      return $this->renderViewDialog();
+    }
+
+    /**
+     * Render add dialog.
+     *
+     * @param array $record
+     * @return string html
+     */
+    function renderViewDialog($record=null)
+    {
+      if ($record == null)
+      {
+        $record = $this->getRecord();
+      }
+
+      $this->setRenderMode('dialog');
+      $result = $this->m_node->renderActionPage("view", $this->invoke("viewPage", $record, $this->m_node));
+      return $result;
+    }    
   }
 ?>

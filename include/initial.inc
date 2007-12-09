@@ -50,6 +50,21 @@
 
   include_once($config_atkroot."config.inc.php");
   require_once($config_atkroot."atk/atktools.inc");
+
+  /**
+   * WARNING: Do NOT use this global variable, it is deprecated .
+   * Re-indroduced to ensure backwards compatibility.
+   * @deprecated in favor of the atkSelf() function.
+   */
+  $PHP_SELF = atkSelf();
+
+  /**
+   * WARNING: Do NOT use this global variable, it is deprecated .
+   * Set this because all PHP_SELF variables must have the same value.
+   * @deprecated in favor of the atkSelf() function.
+   */
+  $_SERVER["PHP_SELF"] = $PHP_SELF;
+
   require_once($config_atkroot.'atk/include/autoload.inc');
 
   // Once atktools is loaded, we can register our own error handler.
@@ -66,6 +81,9 @@
 
   if (atk_value_in_array($config_smart_debug))
     $config_debug = atkConfig::smartDebugLevel($config_debug, $config_smart_debug);
+
+  if ($config_debug > 0)
+    ini_set('display_errors', 1);
 
   // Include locking functionality?
   $lockType = atkconfig("lock_type");

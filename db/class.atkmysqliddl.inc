@@ -48,6 +48,7 @@
         case MYSQLI_TYPE_INT24:
           return "number";
         case MYSQLI_TYPE_DECIMAL:
+        case MYSQLI_TYPE_NEWDECIMAL:
         case MYSQLI_TYPE_FLOAT:
         case MYSQLI_TYPE_DOUBLE:
           return "decimal";        

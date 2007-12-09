@@ -107,6 +107,11 @@ class atkMetaPolicy
         in_array($name, array("id", $meta['table']."id", $meta['table']."_id")))
       $flags |= AF_AUTOKEY;
 
+    if (in_array($name, array("passw", "password")))
+    {
+      $flags |= AF_HIDE_LIST;
+    }
+      
     return $flags;
   }
 
@@ -121,8 +126,10 @@ class atkMetaPolicy
     $params = array();
 
     if (in_array($name, array("passw", "password")))
+    {
       $type = "atk.attributes.atkpasswordattribute";
-
+      $params = array(true);
+    }
     else if (in_array($name, array("email", "e-mail")))
     {
       $type = "atk.attributes.atkemailattribute";
@@ -138,11 +145,19 @@ class atkMetaPolicy
     }
     else if ($name == 'created_at' || $name == 'created_on')
     {
-      $type = 'atk.attribute.atkcreatestampattribute';
+      $type = 'atk.attributes.atkcreatestampattribute';
     }
     else if ($name == 'updated_at' || $name == 'updated_on')
     {
-      $type = 'atk.attribute.atkupdatestampattribute';
+      $type = 'atk.attributes.atkupdatestampattribute';
+    }
+    else if ($name == 'created_by')
+    {
+      $type = 'atk.attributes.atkcreatedbyattribute';
+    }
+    else if ($name == 'updated_by')
+    {
+      $type = 'atk.attributes.atkupdatedbyattribute';
     }
     else if ($meta['gentype'] == 'number' && $meta['len'] == 1 && 
              (substr($name, 0, 3) == 'is_' || substr($name, 0, 4) == 'has_'))
@@ -918,7 +933,8 @@ class atkMetaPolicy
     $flagsStr = $this->_flagsString($flags);
     $tabsStr = var_export($tabs, true);
       
-    $call = "\$this->add(new {$type}('{$name}'$paramsStr, $flagsStr), $tabsStr, $order);";
+    $call = "\$attr = &\$this->add(new {$type}('{$name}'$paramsStr), $tabsStr, $order); \$attr->addFlag($flagsStr);";
+    
     atkdebug("atkMetaPolicy::_applyAttribute: {$call}");
   }
 
@@ -947,8 +963,9 @@ class atkMetaPolicy
     $call = "\$attr = new $type(\$name";
     foreach (array_keys($params) as $i)
       $call .= ", \$params[$i]";
-    $call .= ", \$flags);";
+    $call .= ");";
     eval($call);
+    $attr->addFlag($flags);
     
     $this->_debugAttribute($name, $type, $params, $flags, $tabs, $order);
     

@@ -114,6 +114,7 @@
       // we must die. we can't even output anything anymore..
       // we can mail though.
       mailreport();
+      $output = atkOutput::getInstance()->outputFlush();
       die;
     }
   }
@@ -703,12 +704,14 @@
    */
   function atkDataDecode(&$vars)
   {
+    $magicQuotes = get_magic_quotes_gpc();
+
     foreach (array_keys($vars) as $varname)
     {
       $value = &$vars[$varname];
       // We must strip all slashes from the input, since php puts slashes
       // in front of quotes that are passed by the url. (magic_quotes_gpc)
-      if ($value !== NULL)
+      if ($value !== NULL && $magicQuotes)
         atk_stripslashes($value);
 
       AE_decode($vars, $varname);
@@ -1084,10 +1087,9 @@
    * @param string $err multilanguage error string
    * @param string $msg optinal error string
    */
-  function triggerError(&$rec, $attrib, $err, $msg="", $tab="", $label='')
+  function triggerError(&$rec, $attrib, $err, $msg="", $tab="", $label='', $module='atk')
   {
-    if($msg=="")  $msg = atktext($err, "atk");
-
+    if($msg=="")  $msg = atktext($err, $module);
     $rec['atkerror'][] = array( "attrib_name"=> $attrib, "err" => $err, "msg" => $msg, "tab" => $tab, "label" => $label);
   }
 
@@ -1775,7 +1777,7 @@
    * @param string $fullclassname the ATK classname of the class ("map1.map2.classname")
    * @return obj instance of the class
    */
-  function &atknew($fullclassname)
+  function atknew($fullclassname)
   {
     $fullclassname = atkResolveClass($fullclassname);
     atkimport($fullclassname, true);
@@ -1786,22 +1788,22 @@
     if (class_exists($classname))
     {
       $args = func_get_args();
-      unset($args[0]);
-      if (!empty($args))
-      {
-        foreach ($args as $key=>$arg) $arguments[]="\$args[$key]";
-        $arguments = implode(',',$arguments);
-        eval("\$obj = &new $classname($arguments);");
-      }
-      else $obj = &new $classname();
+      array_shift($args);
 
-      return $obj;
+      if (count($args) == 0)
+      {
+        return new $classname();
+      }
+      else 
+      {
+        $class = new ReflectionClass($classname);      
+        return $class->newInstanceArgs($args);
+      }
     }
     else
     {
       atkerror("Class $fullclassname not found.");
-      $tmp = NULL;
-      return $tmp;
+      return null;
     }
   }
 
@@ -2101,7 +2103,7 @@
     if (strpos($self, '"')!==false) $self = substr($self, 0, strpos($self, '"')); //XSS attempt
     return htmlentities(strip_tags($self)); // just in case..
   }
-  
+
   /**
    * ATK wrapper of the PHP iconv function. Check if iconv function is present in
    * the system. If yes - use it for converting string, if no - save string untouch
@@ -2115,7 +2117,7 @@
    */
   function atk_iconv($in_charset, $out_charset, $str)
   {
-    if(function_exists(iconv))
+    if(function_exists("iconv"))
     {
       $str = iconv($in_charset,$out_charset,$str);
     }
@@ -2124,5 +2126,25 @@
       atkwarning(atktext("error_iconv_not_install"));
     }
     return $str;
+  }
+
+  /**
+   * Returns the first argument that is not null.
+   *
+   * @param mixed ... arguments
+   * @return mixed first argument that is not null
+   */
+  function atkNvl()
+  {
+    for ($i = 0; $i < func_num_args(); $i++)
+    {
+      $arg = func_get_arg($i);
+      if (!is_null($arg))
+      {
+        return $arg;
+      }
+    }
+
+    return null;
   }
 ?>

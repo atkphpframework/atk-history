@@ -6,7 +6,7 @@
   // Language: English (en)
   //
   // Translated by:
-  //   
+  //
   //
   // If you want to add a new language to achievo, please translate this
   // file and send it to translations@achievo.org
@@ -100,7 +100,9 @@
   "email" => "E-mail",
   "enclosure" => "Enclosure",
   "error" => "Error",
+  "error_attributeedit_default"       => "An unknown error has occurred.",
   "error_attributeedit_noselectorset" => "Please select the records you wish to edit.",
+  "error_attributeedit_validationfailed" => "This value is not allowed.",
   "error_attributeedit_update" => "An error occured when updating the selected records.",
   "error_captchafield" => "The given code is invalid, please try again",
   "error_copy_record" => "Unknown error copying record",
@@ -108,6 +110,7 @@
   "error_fileexists" => "File already exists on server. Please rename the file.",
   "error_file_size" => "File is too big",
   "error_file_unknown" => "Unknown error during upload of file",
+  "error_file_mime_type" => "Unsupported file uploaded please check your filetype or extension",
   "error_format_mismatch" => "The element at position %d does not match the desired format (%s)",
   "error_formdataerror" => "Save failed due to the following reason: ",
   "error_invalid_email" => "Invalid e-mail address",
@@ -140,7 +143,7 @@
   "feedback_save_success" => "The item has been added.",
   "feedback_update_cancelled" => "Changes have not been saved.",
   "feedback_update_failed" => "The changes could not be saved.",
-  "feedback_update_success" => "The changes have been changed.",
+  "feedback_update_success" => "The changes have been saved.",
   "field_obligatory" => "This field is a required field",
   "filecontent" => "Content",
   "filename" => "Filename",
@@ -356,7 +359,10 @@
   "wysiwyg_split_cell" => "Split cells",
   "yes" => "Yes",
   "error_iconv_not_install" => "iconv module don't install in your system, but it needs for right functionality",
-
+  "available"=>"Available",
+  "selected"=>"Selected",
+  "datagrid_summary" => "(Records [start] - [end] of [count])",
+  "datagrid_summary_no_records" => "",
 );
 
 ?>

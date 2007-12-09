@@ -15,6 +15,8 @@
    * $Id$
    */
 
+  set_time_limit(0); // no time limit
+
   /**
    * @internal Includes
    */
@@ -154,20 +156,8 @@
       }
       $test = &new GroupTest("Test Page");
 
-      if($_REQUEST['class']) $class = $_REQUEST['class'];
-      else $class = $_REQUEST['atkclass'];
-
-      if(file_exists(getClassPath($class)) && strpos($class, "test_")!=false) $testclass = $class;
-      else $testclass = $this->getTestCaseLocationForClass($class);
-
-      if ($class && file_exists(getClassPath($testclass)))
-      {
-        $this->_runTestCase($test,$testclass);
-      }
-      else
-      {
-        $this->_addTestsByTraversing($test,$module);
-      }
+      $this->runTestCases($test, $module);
+     
       if (isset($_REQUEST['list'])) return;
 
       if($reporttype=="html")
@@ -189,7 +179,31 @@
 
       return $testresults;
     }
+    
+    /**
+     * Run/add test-cases to the given group test. Can be overriden to register
+     * custom test classes.
+     *
+     * @param GroupTest $test group test
+     * @param string $module  ATK module name
+     */
+    function runTestCases(&$test, $module='')
+    {
+      if($_REQUEST['class']) $class = $_REQUEST['class'];
+      else $class = $_REQUEST['atkclass'];
 
+      if(file_exists(getClassPath($class)) && strpos($class, "test_")!=false) $testclass = $class;
+      else $testclass = $this->getTestCaseLocationForClass($class);
+
+      if ($class && file_exists(getClassPath($testclass)))
+      {
+        $this->_runTestCase($test,$testclass);
+      }
+      else
+      {
+        $this->_addTestsByTraversing($test,$module);
+      }      
+    }
 
     /**
      * Setup the test database(s). Clones the database structure of the
@@ -213,8 +227,10 @@
         }
         else
         {
+          $testDb->toggleForeignKeys(false);
           $testDb->deleteAll();
           $testDb->commit();
+          $testDb->toggleForeignKeys(true);          
         }
       }
     }

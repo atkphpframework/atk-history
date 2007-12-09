@@ -155,5 +155,64 @@
       }
     }
 
+    /**
+     * Section state handler.
+     */
+    function partial_sectionstate()
+    {
+      atkimport("atk.session.atkstate");
+    	atkState::set(array("nodetype"=>$this->m_node->atknodetype(),"section"=>$this->m_postvars['atksectionname']),$this->m_postvars['atksectionstate']);
+    	die;
+    }
+
+    /**
+     * Get array with tab name as key and tab template as value
+     *
+     * @param object $node
+     * @param array $tabs
+     * @param string $mode
+     * @param array $record
+     * @return array with tab=>template pear
+     */
+    function _getTabTpl($node, $tabs, $mode, $record)
+    {
+      $tabTpl = array();
+      foreach ($tabs as $t)
+      {
+        $tabTpl['section_'.$t] = $node->getTemplate($mode, $record, $t);
+      }
+      return $tabTpl;
+    }
+    
+    /**
+     * Render tabs using templates
+     *
+     * @param array $fields
+     * @param array $tabTpl
+     * @return array with already rendering tabs
+     */
+    function _renderTabs($fields, $tabTpl)
+    {
+      $ui = &$this->getUi();
+      
+      $tabs = array();
+      $perTpl = array();//per template array
+      
+      for($i=0,$_i=count($fields);$i<$_i;$i++)
+      {
+        $allTabs = explode(' ', $fields[$i]["tab"]); // should not use "tab" here, because it actually contains the CSS class names and not only the tab names
+        $tab = $allTabs[0]; // attributes can be part of one, more than one or all tabs, at the moment it seems only one or all are supported
+        $perTpl[$tabTpl[$tab]]['fields'][] = $fields[$i];//make field available in numeric array
+        $perTpl[$tabTpl[$tab]][$fields[$i]["attribute"]] = $fields[$i];//make field available in associative array
+      }
+      
+      $tpls = array_unique(array_values($tabTpl));
+      foreach ($tpls as $tpl)
+      {
+        $tabs[] = $ui->render($tpl,$perTpl[$tpl]);  
+      }
+      
+      return $tabs;
+    }
   }
 ?>

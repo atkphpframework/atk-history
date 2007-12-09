@@ -42,18 +42,16 @@
      */
     function action_add()
     {
-      $page = &$this->getPage();
-
       if (isset($this->m_partial) && $this->m_partial!="")
       {
-        $result = $this->partial($this->m_partial);
-        $page->addContent($result);
+        $this->partial($this->m_partial);
         return;
       }
 
       // we could get here because of a reject.
       $record = $this->getRejectInfo();
 
+      $page = &$this->getPage();
       $page->addContent($this->m_node->renderActionPage("add", $this->invoke("addPage", $record)));
     }
 
@@ -155,7 +153,7 @@
       $edithandler = &$node->getHandler("edit");
 
       $forceList = (isset($node->m_postvars['atkfilter'])) ? decodeKeyValueSet($node->m_postvars['atkfilter']) : array();
-      $form = $edithandler->editForm("add",$record,$forceList);
+      $form = $edithandler->editForm("add",$record,$forceList,'',$node->getEditFieldPrefix());
 
       return $node->tabulate("add", $form);
     }

@@ -93,6 +93,14 @@
      * @var boolean
      */
     var $m_autonumbering = false;
+    
+    /**
+     * List of mime types which a uses is allowed to upload
+     * Example: array('image/jpeg');
+     *
+     * @var array
+     */
+    var $m_allowedFileTypes = array();
 
     /**
      * Constructor
@@ -156,7 +164,15 @@
      */
     function edit($record="", $fieldprefix="")
     {
-      $result=$this->display($record);
+      if (method_exists($this->getOwnerInstance(), $this->fieldName().'_display'))
+      {
+        $method = $this->fieldName().'_display';
+        $result = $this->m_ownerInstance->$method($record, 'view');
+      }
+      else
+      {
+        $result=$this->display($record, 'view');
+      }
 
       if(is_dir($this->m_dir))
       {
@@ -211,7 +227,7 @@
          && $record[$this->fieldname()]['orgfilename']!='')
       {
        $this->registerKeyListener($id.'_del', KB_CTRLCURSOR|KB_CURSOR);
-       $result .= '<br><input id="'.$id.'_del" type="checkbox" name="del['.$fieldprefix.$this->fieldName().']" '.$this->getCSSClassAttribute("atkcheckbox").'>&nbsp;'.atktext("remove_current_file", "atk");
+       $result .= '<br><input id="'.$id.'_del" type="checkbox" name="'.$id.'[del]" '.$this->getCSSClassAttribute("atkcheckbox").'>&nbsp;'.atktext("remove_current_file", "atk");
       }
       return $result;
     }
@@ -223,16 +239,16 @@
      */
     function value2db($rec)
     {
-      if(isset($_REQUEST["del"])) $del = $_REQUEST["del"];
-
+      $del = (isset($rec[$this->fieldName()]['postdel']))?$rec[$this->fieldName()]['postdel']:null;
+      
       if($rec[$this->fieldName()]["tmpfile"]=="" && $rec[$this->fieldName()]["filename"]!=""
-         && (!isset($del[$this->fieldName()]) || $del[$this->fieldName()]!="on"))
+         && (!isset($del) || $del!=$rec[$this->fieldName()]['filename']))
       {
         return $this->escapeSQL($rec[$this->fieldName()]["filename"]);
       }
       if($this->hasFlag(AF_FILE_NO_DELETE)) unset($del);  // Make sure if flag is set $del unset!
-
-      if(isset($del[$this->fieldName()]) && $del[$this->fieldName()] == "on")
+      
+      if(isset($del))
       {
         if($this->hasFlag(AF_FILE_PHYSICAL_DELETE))
         {
@@ -365,6 +381,79 @@
     function processFile($filepath, $filename)
     {
     }
+    
+    /**
+     * Set the allowed file types. This can either be mime types (detected by the / in the middle
+     * or file extensions (without the leading dot!).
+     *
+     * @param array $types
+     * @return boolean
+     */
+    function setAllowedFileTypes($types)
+    {
+      if(!is_array($types))
+      {
+        atkerror('atkFileAttribute::setAllowedFileTypes() Invalid types (types is not an array!');
+        return false;
+      }
+      $this->m_allowedFileTypes = $types;
+      return true;
+    }
+    
+    /**
+     * Check whether the filetype is is one of the allowed
+     * file formats. If the FileType array is empty this assumes that
+     * all formats are allowed!
+     * 
+     * @todo It turns out that handling mimetypes is not that easy
+     * the mime_content_type has been deprecated and there is no
+     * Os independend alternative! For now we only support a few
+     * image mime types.
+     *
+     * @param array $rec
+     * @return boolean
+     */
+    function isAllowedFileType(&$rec)
+    {
+      if (count($this->m_allowedFileTypes) == 0) return true;
+      
+      // detect whether the file is uploaded or is an existing file.
+      $filename =  (!empty($rec[$this->fieldName()]['tmpfile'])) ? 
+        $rec[$this->fieldName()]['tmpfile'] :
+        $this->m_dir . $rec[$this->fieldName()]['filename'];
+        
+      if (@empty($rec[$this->fieldName()]['postdel']) && $filename != $this->m_dir)
+      {
+        $valid = false;
+        
+        if (function_exists('getimagesize'))
+        {
+          $size = @getimagesize($filename);
+          if (in_array($size['mime'], $this->m_allowedFileTypes))
+          {
+            $valid = true;
+          }
+        }
+
+        $orgFilename = @$rec[$this->fieldName()]['orgfilename'];
+        if ($orgFilename != null)
+        {
+          $extension = $this->getFileExtension($orgFilename);
+          if (in_array($extension, $this->m_allowedFileTypes))
+          {
+            $valid = true;
+          }
+        }
+        
+        if (!$valid)
+        {
+          $rec[$this->fieldName()]['error'] = UPLOAD_ERR_EXTENSION;
+          return false;
+        }
+      }
+      
+      return true;
+    }
 
     /**
      * Convert value to string
@@ -381,7 +470,9 @@
     function validate(&$record, $mode)
     {
       parent::validate($record, $mode);
-
+      
+      $this->isAllowedFileType($record);
+      
       $error = $record[$this->fieldName()]['error'];
       if ($error > 0)
       {
@@ -389,13 +480,15 @@
         {
           case UPLOAD_ERR_INI_SIZE:
           case UPLOAD_ERR_FORM_SIZE:
-            triggerError($record, $this->fieldName(), 'error_file_size', atktext("error_file_size", "atk"));
+            atkTriggerError($record, $this, 'error_file_size', atktext("error_file_size", "atk"));
             break;
-
+          case UPLOAD_ERR_EXTENSION:
+            atkTriggerError($record, $this, 'error_file_mime_type', atktext("error_file_mime_type", "atk"));
+            break;
           case UPLOAD_ERR_NO_TMP_DIR:
           case UPLOAD_ERR_PARTIAL:
           default:
-            triggerError($record, $this->fieldName(), 'error_file_unknown', atktext("error_file_unknown", "atk"));
+            atkTriggerError($record, $this, 'error_file_unknown', atktext("error_file_unknown", "atk"));
         }
       }
     }
@@ -407,8 +500,8 @@
      */
     function fetchValue($rec)
     {
-      if(isset($_REQUEST["del"])) $del=$_REQUEST["del"];
-
+      $del = (isset($rec[$this->fieldName()]['del']))?$rec[$this->fieldName()]['del']:null;
+      
       $postfiles_basename = $rec[$this->fieldName()."_postfileskey"];
 
       $basename = $this->fieldName();
@@ -433,7 +526,7 @@
             $filename=$rec[$this->fieldName()]["select"];
             $orgfilename = $filename;
             $postdel = '';
-            if (isset($del[$this->fieldName()]) && $del[$this->fieldName()]=="on")
+            if (isset($del) && $del=="on")
             {
               $filename = '';
               $orgfilename='';
@@ -453,7 +546,7 @@
           {
             $filename = (isset($rec[$basename."_orgfilename"]))?$rec[$basename."_orgfilename"]:"";
 
-            if (isset($del[$this->fieldName()]) && $del[$this->fieldName()]=="on")
+            if (isset($del) && $del=="on")
             {
               $filename = '';
             }
@@ -461,7 +554,7 @@
             // Note: without file_exists() check, calling filesize() generates an error message:
             $result = array("tmpfile"=>$this->m_dir.$filename,
                           "filename"=>$filename,
-                          "filesize"=>(file_exists(filesize($this->m_dir.$filename)) ? filesize($this->m_dir.$filename) : 0),
+                          "filesize"=>($filename!='' && file_exists(filesize($this->m_dir.$filename)) ? filesize($this->m_dir.$filename) : 0),
                           "orgfilename"=>$filename);
           }
         }
@@ -482,24 +575,17 @@
         return $result;
       }
     }
-
+    
     /**
      * Check if the attribute is empty..
-     * @param array $postvars Array with the postvars
-     * @return boolean true if no image was uploaded
+     * 
+     * @param array $record the record
+     * 
+     * @return boolean true if empty
      */
-    function isEmpty($postvars)
+    function isEmpty($record)
     {
-      if (is_array($_FILES))
-      {
-        // php4
-        return ($_FILES[$this->fieldName()]["tmp_name"]=="none");
-      }
-      else
-      {
-        // php3
-        return ($postvars[$this->fieldName()]=="none");
-      }
+      return @empty($record[$this->fieldName()]['filename']);
     }
 
     /**

@@ -152,6 +152,18 @@
     {
     }
 
+    function initialValue()
+    {
+      if ($this->m_initialValue!==null) return parent::initialValue();
+
+      if ($this->createDestination())
+      {
+        return $this->m_destInstance->initial_values();
+      }
+
+      return null;
+    }
+
     /**
      * Adds this attribute to database queries.
      *
@@ -1163,6 +1175,18 @@
       {
         parent::addToSearchformFields($fields,$node,$record, $fieldprefix, $currentSearchMode);
       }
+    }
+    
+    function value2db($rec)
+    {
+      if (is_array($rec)&&isset($rec[$this->fieldName()]))
+      {        
+        if (is_array($rec[$this->fieldName()]))
+          return $this->escapeSQL($rec[$this->fieldName()][$this->m_destInstance->primaryKeyField()]);
+        else 
+          return $rec[$this->fieldName()];
+      }
+      return NULL;
     }
   }
 

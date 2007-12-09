@@ -808,28 +808,61 @@
      */
     function hide($record="", $fieldprefix="")
     {
-      if ($this->createDestination())
+      if (!$this->createDestination()) return '';
+      
+      $currentPk = "";
+      if (isset($record[$this->fieldName()]) && $record[$this->fieldName()] != null)
       {
-        $currentPk = "";
-        if (count($record[$this->fieldName()]))
-        {
-          if(is_array($record[$this->fieldName()]))
-          {
-            $currentPk = $this->m_destInstance->primaryKey($record[$this->fieldName()]);
-          }
-          else
-          {
-            $newrecord=array($this->m_destInstance->primaryKeyField()=>$record[$this->fieldName()]);
-            $currentPk = $this->m_destInstance->primaryKey($newrecord);
-          }
-        }
-      $result = '<input type="hidden" id="'.$fieldprefix.$this->formName().'" name="'.$fieldprefix.$this->formName().
-      '" value="'.$currentPk.'">';
-        return $result;
+        $currentPk = $this->m_destInstance->primaryKey($record[$this->fieldName()]);
       }
-      return "";
+        
+      $result = 
+        '<input type="hidden" id="'.$fieldprefix.$this->formName().'" 
+                name="'.$fieldprefix.$this->formName().'" 
+                value="'.$currentPk.'">';
+        
+      return $result;
     }
 
+    /**
+     * Support for destination "records" where only the id is set and the 
+     * record itself isn't converted to a real record (array) yet
+     */
+    function fixDestinationRecord(&$record)
+    {
+      if ($this->createDestination() && 
+          isset($record[$this->fieldName()]) && 
+          $record[$this->fieldName()] != null && 
+          !is_array($record[$this->fieldName()]))
+      {
+        $record[$this->fieldName()] = array($this->m_destInstance->primaryKeyField() => $record[$this->fieldName()]);
+      }
+    }
+    
+    /**
+     * Retrieve the html code for placing this attribute in an edit page.
+     *
+     * The difference with the edit() method is that the edit() method just
+     * generates the HTML code for editing the attribute, while the getEdit()
+     * method is 'smart', and implements a hide/readonly policy based on
+     * flags and/or custom override methodes in the node.
+     * (<attributename>_edit() and <attributename>_display() methods)
+     *
+     * Framework method, it should not be necessary to call this method
+     * directly.
+     *
+     * @param String $mode The edit mode ("add" or "edit")
+     * @param array $record The record holding the values for this attribute
+     * @param String $fieldprefix The fieldprefix to put in front of the name
+     *                            of any html form element for this attribute.
+     * @return String the HTML code for this attribute that can be used in an
+     *                editpage.
+     */
+    function getEdit($mode, &$record, $fieldprefix)
+    {
+      $this->fixDestinationRecord($record);
+      return parent::getEdit($mode, $record, $fieldprefix);
+    }    
 
     /**
      * Returns a piece of html code that can be used in a form to search
@@ -1035,6 +1068,10 @@
           return $cond;
         }
       }
+      else if (empty($value)) // nothing to search for
+      {
+        return '';
+      }
       else // AF_LARGE || AF_RELATION_AUTOCOMPLETE
       {
         // ask the destination node for it's search condition
@@ -1134,14 +1171,15 @@
      */
     function loadType($mode)
     {
-      if ($this->hasFlag(AF_MANYTOONE_LAZY))
-      {
+      if (isset($this->m_loadType[$mode]) && $this->m_loadType[$mode] !== null)
+        return $this->m_loadType[$mode];
+      else if (isset($this->m_loadType[null]) && $this->m_loadType[null] !== null)
+        return $this->m_loadType[null];
+      // Default backwardscompatible behaviour:
+      else if ($this->hasFlag(AF_MANYTOONE_LAZY))
         return POSTLOAD|ADDTOQUERY;
-      }
       else
-      {
         return ADDTOQUERY;
-      }
     }
 
     /**
