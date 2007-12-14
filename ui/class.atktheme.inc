@@ -115,9 +115,9 @@
      * @param string $attribname the name of the attribute in the themedefinition
      * @return var the value of the attribute in the themedefinition
      */
-    function getAttribute($attribname)
+    function getAttribute($attribname,$default="")
     {
-      return (isset($this->m_theme["attributes"][$attribname])?$this->m_theme["attributes"][$attribname]:"");
+      return (isset($this->m_theme["attributes"][$attribname])?$this->m_theme["attributes"][$attribname]:$default);
     }
 
     /**
@@ -177,22 +177,66 @@
      * @param string $icon   the icon name (no extension)
      * @param string $type   the icon type (example: "recordlist")
      * @param string $module the name of the module requesting the file
+     * @param string $ext    the extension of the file,
+     *                       if this is empty, atkTheme will check several
+     *                       extensions.
      * @return string the full path of the icon file
      */
-    function iconPath($icon, $type, $module="")
+    function iconPath($icon, $type, $module="",$ext='')
     {
-      if ($module!="" && isset($this->m_theme["modulefiles"][$module]["icons"][$type][$icon.".gif"]))
+      // Check module themes for icon
+      $iconfile = $this->getIconFileFromModuleTheme($icon,$type,$ext);
+      if ($module!="" && $iconfile) return moduleDir($module)."themes/".$iconfile;
+
+      // Check the default theme for icon
+      $iconfile = $this->getIconFileFromTheme($icon,$type, $this->m_theme['files'],$ext);
+      if ($iconfile) return atkTheme::absPath($iconfile);
+
+      // Check the default theme for default icon
+      $iconfile = $this->getIconFileFromTheme('default',$type,$this->m_theme['files'],$ext);
+      if ($iconfile) return atkTheme::absPath($iconfile);
+
+      return false;
+    }
+
+    function getIconFileFromModuleTheme($icon,$type,$ext="")
+    {
+      if (!isset($this->m_theme['modulefiles']))
+        return false;
+      $modules = atkGetModules();
+      $modulenames = array_keys($modules);
+      foreach ($modulenames as $modulename)
       {
-        return moduleDir($module)."themes/".$this->m_theme["modulefiles"][$module]["icons"][$type][$icon.".gif"];
+        if (isset($this->m_theme['modulefiles']))
+        {
+          $iconfile = $this->getIconFileFromTheme($icon,$type, $this->m_theme['modulefiles'][$modulename],$ext);
+          if ($iconfile) return $iconfile;
+        }
       }
-      else if (isset($this->m_theme["files"]["icons"][$type][$icon.".gif"]))
+      return false;
+    }
+
+    function getIconFileFromTheme($iconname, $type, $theme,$ext="")
+    {
+      if ($ext) return $this->_getIconFileWithExtFromTheme($iconname,$ext,$type,$theme);
+      
+      $allowediconext=array('png','gif','jpg');
+      foreach ($allowediconext as $ext)
       {
-        return atkTheme::absPath($this->m_theme["files"]["icons"][$type][$icon.".gif"]);
+        $iconfile = $this->_getIconFileWithExtFromTheme($iconname,$ext,$type,$theme);
+        if ($iconfile) return $iconfile;
       }
-      else
+      return false;
+    }
+    
+    function _getIconFileWithExtFromTheme($iconname,$ext,$type,$theme)
+    {
+      if (isset($theme['icons'][$type][$iconname.".".$ext]))
       {
-        return atkTheme::absPath($this->m_theme["files"]["icons"][$type]["default.gif"]);
+        $iconfile = $theme['icons'][$type][$iconname.".".$ext];
+        if ($iconfile) return $iconfile;
       }
+      return false;
     }
 
     /**

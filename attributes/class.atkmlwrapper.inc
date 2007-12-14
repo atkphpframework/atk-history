@@ -36,16 +36,17 @@
   class atkMlWrapper extends atkAttribute
   {
     var $m_childList = array();
-
+    
     function atkMlWrapper(&$attribute, $flags = 0)
     {
       // first highjack the containing attribute
       $this->atkAttribute($attribute->m_name, $flags|$attribute->m_flags);
-
+      
       foreach($this->getLanguages() as $lng)
       {
         // Clone attrs with new name
-        $attr = $attribute;
+        $attr = atkClone($attribute);
+        
         $attr->m_name = $this->m_name."_".$lng;
         $this->m_childList[$lng] = $attr;
       }
@@ -218,6 +219,7 @@
 
     function getRecordForLng($masterrecord, $lng)
     {
+      if (empty($masterrecord)) return array();
       return array($this->m_childList[$lng]->m_name=>$masterrecord[$this->fieldName()][$lng]);
     }
 

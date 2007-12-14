@@ -38,15 +38,20 @@
     function action_save()
     {
       $record = $this->m_node->updateRecord();
+      
+      // allowed to save record?
+      if (!$this->allowed($record))
+      {
+        $this->renderAccessDeniedPage();
+        return;
+      }
 
       if (!isset($this->m_postvars['atkcancel']))
       {
-
         // just before we validate the record we call the preAdd() to check if the record needs to be modified
         $this->m_node->executeTrigger("preAdd", $record, "add");
 
         $this->m_node->validate($record, "add");
-
 
         if(!isset($record['atkerror']))
           $record['atkerror'] = array();
@@ -57,16 +62,11 @@
         {
           $error = $error || (is_array($record[$key]) && array_key_exists('atkerror', $record[$key]) && count($record[$key]['atkerror']) > 0);
         }
-
-        // if an error occured, or we got back from a higher level we present the user
-        // with the add form again (instead of saving the data to the database)
-        if ($error || atkPrevLevel() > atkLevel())
+        
+        if ($error)
         {
-          $this->m_action="add";
-          $this->m_node->m_action = "add";
-          $page = &$this->getPage();
-          $addhandler = &$this->m_node->getHandler("add");          
-          $page->addContent($this->m_node->renderActionPage("add", $addhandler->invoke("addPage", $record)));
+          // something went wrong, back to where we came from
+          return $this->goBack($record);
         }
         else
         {
@@ -78,11 +78,9 @@
             if($db->getErrorType()=="user")
             {
               triggerError($record, 'Error', $db->getErrorMsg(), '', '');
-              $this->m_action="add";
-              $this->m_node->m_action = "add";
-              $page = &$this->getPage();
-              $addhandler = &$this->m_node->getHandler("add");
-              $page->addContent($addhandler->invoke("addPage", $record));
+              
+              // still an error, back to where we came from
+              return $this->goBack($record);
             }
             else
             {
@@ -102,18 +100,25 @@
               // forward atkpkret for newly added records
               $extra = "";
               if (isset($this->m_postvars["atkpkret"]))
-                $extra = "&atkpkret=".rawurlencode($this->m_postvars["atkpkret"]);              
+                $extra = "&atkpkret=".rawurlencode($this->m_postvars["atkpkret"]);
+
+              $back = SESSION_BACK;
+              if ($this->_getSkip()==1) $back = SESSION_REPLACE;
                 
-              $location = session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->m_node->atknodetype().'&atkaction=edit&atkselector='.rawurlencode($this->m_node->primaryKey($record)).$extra, SESSION_REPLACE);
+              $location = session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->m_node->atknodetype().'&atkaction=edit&atkselector='.rawurlencode($this->m_node->primaryKey($record)).$extra, $back);
             }
             else if ($this->m_node->hasFlag(NF_ADDAFTERADD) && isset($this->m_postvars['atksaveandnext']))
             {
+              $back = SESSION_BACK;
+              if ($this->_getSkip()==1) $back = SESSION_DEFAULT;
+              
               $filter = isset($this->m_node->m_postvars['atkfilter']) ? "&atkfilter=".rawurlencode($this->m_node->m_postvars['atkfilter']) : "";
-              $location = session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->m_node->atknodetype().'&atkaction=add'.$filter, SESSION_DEFAULT);
+              $location = session_url($_SERVER["PHP_SELF"].'?atknodetype='.$this->m_node->atknodetype().'&atkaction=add'.$filter, $back);
             }
             else
             {
-              $location = $this->m_node->feedbackUrl("save", ACTION_SUCCESS, $record);
+              // normal succesful save              
+              $location = $this->m_node->feedbackUrl("save", ACTION_SUCCESS, $record, "", $this->_getSkip());
             }
             $this->m_node->redirect($location, $record);
           }
@@ -122,10 +127,27 @@
       else
       {
         // Cancel was pressed
-        $location = $this->m_node->feedbackUrl("save", ACTION_CANCELLED, $record);
+        $location = $this->m_node->feedbackUrl("save", ACTION_CANCELLED, $record, "", $this->_getSkip());
         $this->m_node->redirect($location);
       }
+    }   
+    
+    function _getSkip()
+    {      
+      if (isset($this->m_postvars["atkreturnbehaviour"]) && 
+          $this->m_postvars["atkreturnbehaviour"]==ATK_ACTION_BACK)
+      {
+        return 2;
+      }
+      return 1;
     }
+    
+    function goBack($record)
+    {
+      $this->setRejectInfo($record);
+      $this->m_node->redirect();
+    }
+
   }
 
 ?>

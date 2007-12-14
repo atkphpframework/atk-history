@@ -8,18 +8,35 @@ class atkModernMenu extends atkPlainMenu
   {
     $this->m_height = "130";
   }
-  
+
   function render()
+  {
+    $page = &atkinstance('atk.ui.atkpage');
+    $theme = &atkinstance("atk.ui.atktheme");
+    if ($theme->getAttribute('modern_menu_compat'))
+    {
+      $page->addContent($this->getMenu());
+      return $page->render("Menu", true);
+    }
+    else
+    {
+      $oldmenu = &atknew('atk.menu.atkplainmenu');
+      return $oldmenu->render();
+    }
+  }
+
+  function getMenu()
   {
     $theme = &atkinstance("atk.ui.atktheme");
     if ($theme->getAttribute('modern_menu_compat'))
     {
       global $g_menu;
-      $atkmenutop="main";
+      $atkmenutop = ($_REQUEST['atkmenutop']?$_REQUEST['atkmenutop']:sessionLoad('atkmenutop'));
+      sessionStore('atkmenutop',$atkmenutop);
 
-      $menuitems = $this->getMenuItems($g_menu,$atkmenutop);
+      $menuitems = $this->getMenuItems($g_menu,'main');
 
-      $page = &atknew("atk.ui.atkpage");
+      $page = &atkInstance("atk.ui.atkpage");
       $page->register_style($theme->stylePath("style.css"));
       $page->register_style($theme->stylePath("menu.css"));
       $page->register_script(atkconfig("atkroot")."atk/javascript/menuload.js");
@@ -27,21 +44,19 @@ class atkModernMenu extends atkPlainMenu
       $ui = &atkinstance("atk.ui.atkui");
       $atkmenutop=($_REQUEST['atkmenutop']?$_REQUEST['atkmenutop']:$atkmenutop);
 
-      $box = $ui->renderBox(array("title"=>$this->getMenuTranslation($atkmenutop),
+      $box = $ui->renderBox(array("title"=>$this->getMenuTranslation(($atkmenutop?$atkmenutop:'main')),
       "menuitems"=>$menuitems,
       'menutop'=>$atkmenutop,
       'g_menu'=>$g_menu,
       'atkmenutop'=>$atkmenutop,
       'atkmenutopname'=>$this->getMenuTopName($menuitems,$atkmenutop)),"menu");
 
-      $page->addContent($box);
-
-      return $page->render("Menu", true);
+      return $box;
     }
     else
     {
       $oldmenu = &atknew('atk.menu.atkplainmenu');
-      return $oldmenu->render();
+      return $oldmenu->getMenu();
     }
   }
 
@@ -63,15 +78,17 @@ class atkModernMenu extends atkPlainMenu
       {
         $this->setEnabled($menuitem);
 
+        $menuitem['id'] = $menuitem['name'];
         $this->addSubMenuForMenuitem($menu,$menuitem);
+
         if ($menuitem['name']!=='-')
         {
-          $menuitem['id'] = $menuitem['name'];
           $menuitem['name'] = $this->getMenuTranslation($menuitem['name'],$menuitem['module']);
         }
+
         if (!empty($menuitem['url']))
         {
-          $menuitem['url'] = session_url($menuitem['url'], SESSION_NEW);
+          $menuitem['url'] = session_url($menuitem['url']."&amp;atkmenutop={$menuitem['id']}", SESSION_NEW);
         }
         $menuitem['header']=$this->getHeader($menuitem['id']);
         $menuitems[] = $menuitem;
@@ -98,13 +115,14 @@ class atkModernMenu extends atkPlainMenu
         $menuitem['submenu'] = $menu[$menuitem['name']];
         foreach ($menuitem['submenu'] as $submenukey=>$submenuitem)
         {
+          $menuitem['submenu'][$submenukey]['id'] = $menuitem['submenu'][$submenukey]['name'];
           if ($menuitem['submenu'][$submenukey]['name']!=='-')
           {
             $menuitem['submenu'][$submenukey]['name'] = $this->getMenuTranslation($submenuitem['name'],$submenuitem['module']);
           }
           if (!empty($submenuitem['url']))
           {
-            $menuitem['submenu'][$submenukey]['url'] = session_url($submenuitem['url'], SESSION_NEW);
+            $menuitem['submenu'][$submenukey]['url'] = session_url($submenuitem['url']."&amp;atkmenutop={$menuitem['id']}", SESSION_NEW);
           }
         }
       }

@@ -100,6 +100,11 @@ INPUT.btn_saveandnext
   height: 25px;
 }
 
+.atkboolattribute
+{
+  border:0px ! Important;
+}
+
 INPUT.btn_saveandclose
 {
   font-weight: bold;
@@ -169,11 +174,12 @@ INPUT.btn_saveandclose
   margin: 0px;
   letter-spacing: 0.4px;
   background: #fff url(../images/tabLeft.gif) repeat-x left top;
-  padding: 9px 4px 0px 12px;
-  display: table;
+  padding: 9px 4px 5px 12px;
+  display: block;
   height: 11px;
   margin-left: 8px;
   float: left;
+  position: relative;
 }
 
 .contentBlock
@@ -187,12 +193,12 @@ INPUT.btn_saveandclose
 
 #banner
 {
-  
+
 }
 
 #topLinks
 {
-  
+
 }
 
 
@@ -204,8 +210,8 @@ INPUT.btn_saveandclose
   /* white-space: nowrap; */
 }
 
-#editform input, 
-#editform textarea, 
+#editform input,
+#editform textarea,
 #editform select,
 .contentBlock input,
 .contentBlock textarea,
@@ -245,11 +251,11 @@ INPUT.btn_saveandclose
 #loginform
 {
   width: 360px;
-  border: 1px solid #666;	
+  border: 1px solid #666;
   padding: 24px;
   padding-left: 228px;
   margin: 0px auto;
-  
+
 }
 
 #loginform form
@@ -313,12 +319,12 @@ INPUT.btn_saveandclose
 {
   padding-top: 2px;
   padding-bottom: 2px;
-  vertical-align: middle;
+  vertical-align: top;
 }
 
 
 
-hr 
+hr
 {
   border: none 0;
   border-top: 1px dashed #666;
@@ -352,4 +358,15 @@ input[type="checkbox"]
   border: 0px ! important;
   width: auto ! important;
   border: 1px solid red;
+}
+
+#atkbusy
+{
+ top: 0px;
+ right: -32px;
+ position: absolute;
+ background: #fff url(../images/tabRight2.gif) no-repeat  right top;
+ height: 22px;
+ width: 22px;
+ padding: 8px 8px 8px 2px;
 }

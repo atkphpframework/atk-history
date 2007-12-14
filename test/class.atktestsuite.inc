@@ -24,6 +24,8 @@
   atkimport("atk.test.atktestreporter");
   atkimport("atk.test.atkattributetestcase");
   atkimport("atk.test.atktestcase");
+  atkimport("atk.db.atkdb");
+  atkimport("atk.db.atkddl");
 
   /**
    * atkTestCaseCollector is a visitor that can be passed to an
@@ -48,15 +50,24 @@
 
     function visitFile($fullpath)
     {
-      $include = $_REQUEST["include"];
+      $include = atkArrayNvl($_REQUEST, "include");
       $includefiles = explode("|",$include);
       $filename = basename($fullpath);
-      if (substr($filename, 0, 11)=="class.test_" && (!$include ||($include && in_array($filename,$includefiles))))
+      if (substr($filename, 0, 11)=="class.test_" && (!$include ||($include && in_array($filename,$includefiles))) && strpos($fullpath,"/testcases/")!==false)
       {
         $elems = explode(".", $filename); // leads to 'class' 'test_...' and '.inc'
         $testclassname = $elems[1];
-        include_once($fullpath);
-        $this->m_grouptest->addTestClass($testclassname);
+        if (isset($_REQUEST['list']))
+        {
+          $fullpath = atkCleanPath($fullpath);
+      	  $ret ='<tr><td>'.$fullpath.'</td><td><a href="'.$_SERVER['PHP_SELF'].'?showpassed&atkclass='.getClassName($fullpath).'">Test</a><br></tr></td>';
+        	echo $ret;
+        }
+        else
+        {
+          include_once($fullpath);
+          $this->m_grouptest->addTestClass($testclassname);
+        }
       }
     }
 
@@ -84,6 +95,20 @@
      */
     function atkTestSuite()
     {
+      error_reporting(E_ALL & ~E_NOTICE);
+    }
+
+    /**
+     * Detect if a test-database is used or not.
+     *
+     * @return boolean use test-database?
+     * @static
+     */
+    function useTestDatabase()
+    {
+      $config = atkconfig('db');
+      $mapping = atkconfig('test_db_mapping');
+      return isset($config['test']) || count($mapping) > 1 || (count($mapping) == 1 && key($mapping) != 'default');
     }
 
     /**
@@ -97,35 +122,140 @@
      */
     function run($reporttype="html", $module="")
     {
-      $test = &new GroupTest("Full ATK test");
+      $config = atkconfig('db');
 
+      if (atkTestSuite::useTestDatabase())
+      {
+        // setup the test database(s)
+        $this->_setupTestDatabases();
+      }
+      $test = &new GroupTest("Test Page");
+
+      if($_REQUEST['class']) $class = $_REQUEST['class'];
+      else $class = $_REQUEST['atkclass'];
+
+      if(file_exists(getClassPath($class))) $testclass = $class;
+      else $testclass = $this->getTestCaseLocationForClass($class);
+
+      if ($class && file_exists(getClassPath($testclass)))
+      {
+        $this->_runTestCase($test,$testclass);
+      }
+      else
+      {
+        $this->_addTestsByTraversing($test,$module);
+      }
+      if (isset($_REQUEST['list'])) return;
+
+      if($reporttype=="html")
+      {
+        $test->run(atknew("atk.test.atktestreporter"));
+      }
+      elseif($reporttype=="arrayHtml")
+      {
+        $testresults = $test->run(atknew("atk.test.arrayhtmlreporter"));
+      }
+      elseif($reporttype=="arrayText")
+      {
+        $testresults = $test->run(atknew("atk.test.arraytextreporter"));
+      }
+      else
+      {
+        $test->run(new TextReporter());
+      }
+
+      return $testresults;
+    }
+
+
+    /**
+     * Setup the test database(s). Clones the database structure of the
+     * default databases to the test databases. All data in the test
+     * databases will be lost!
+     */
+    function _setupTestDatabases()
+    {
+      $mapping = atkconfig('test_db_mapping');
+      foreach ($mapping as $normal => $test)
+      {
+        $normalDb = &atkGetDb($normal);
+        $testDb = &atkGetDb($test);
+
+        $config = atkconfig('db');
+        $clone = !isset($config[$test]['clone_structure']) || $config[$test]['clone_structure'];
+
+        if ($clone)
+        {
+          $testDb->cloneAll($normalDb);
+        }
+        else
+        {
+          $testDb->deleteAll();
+          $testDb->commit();
+        }
+      }
+    }
+
+    function getTestCaseLocationForClass($class)
+    {
+      $exploded = explode('.',$class);
+      $class = array_pop($exploded);
+      return implode('.',$exploded).'.testcases.test_'.$class;
+    }
+
+    function _runTestCase(&$test,$testcase)
+    {
+      atkimport($testcase,true);
+      $test->addTestClass(array_pop(explode(".", $testcase)));
+    }
+
+    function _addTestsByTraversing(&$test, $module)
+    {
       $traverser = &atknew("atk.utils.atkdirectorytraverser");
       $traverser->addCallbackObject(new atkTestCaseCollector($test));
-
       if ($module!="")
       {
         if ($module=="atk") // make it possible to only test atk.
         {
           $dir = atkconfig("atkroot")."atk/";
         }
+        //make it possible to run all tests from another dir than the root dir. EE.g. i case test.php isn't used.
+        elseif ($module=="all")
+        {
+        	$dir = atkconfig("atkroot")."..";
+        }
         else
         {
           $dir = moduleDir($module);
         }
-        $traverser->traverse($dir);
+        $this->traverse($traverser, $dir);
       }
       else
       {
-        $traverser->traverse(".");
-        $this->_traverseExtraModules($traverser);
+        $this->traverse($traverser, ".", true);
       }
-      if($reporttype=="html")
+    }
+
+    function traverse($traverser, $dir, $extramods=false)
+    {
+      // pre-traverse code
+      if (isset($_REQUEST['list']))
       {
-        $test->run(atknew("atk.test.atktestreporter"));
+        $ret = "<h1>Testcase list</h1>";
+    	  $ret .='<table border="1" cellspacing="0" cellpadding="5">';
+    	  $ret .='<tr><th>Path</th><th>&nbsp;</th></tr>';
+      	echo $ret;
       }
-      else
+
+      // traverse
+      $traverser->traverse($dir);
+      if ($extramods) $this->_traverseExtraModules($traverser);
+
+      // post-traverse code
+      if (isset($_REQUEST['list']))
       {
-        $test->run(new TextReporter());
+    	  $ret ='</table>';
+      	echo $ret;
       }
     }
 
@@ -142,7 +272,7 @@
     {
       global $g_modules;
       $curdir = getcwd();
-      if (chdir(atkconfig('modulepath')))
+      if (chdir(atkconfig('module_path')))
       {
         $modulepath = getcwd();
         if (chdir($curdir))
