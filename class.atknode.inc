@@ -3486,6 +3486,10 @@
      */
     function copyDb(&$record, $mode="copy")
     {
+      // add original record
+      $original = $record; // force copy
+      $record['atkorgrec'] = $original;      
+      
       //notify precopy listeners
       $this->preNotify("precopy", $record);
 
@@ -3603,6 +3607,9 @@
           $searching = true;
         }
       }
+      
+      if (array_key_exists("atkfilter", $this->m_postvars))
+       $query->addCondition($this->validateFilter($this->m_postvars["atkfilter"]));      
 
       if (!$this->hasFlag(NF_NO_FILTER))
       {
