@@ -598,7 +598,8 @@
         }
       }
 
-      return implode(" AND ", $whereelems);
+      $result = implode(" AND ", $whereelems);
+      return $result == '' ? '1=0' : $result;      
     }
 
     /**
@@ -623,7 +624,7 @@
       
       // for edit and view mode we don't load any records unless a display override exists
       // we use the grid to load records because it makes things easier
-      if (($mode != 'edit' && $mode != 'view') ||
+      if (($mode != 'add' && $mode != 'edit' && $mode != 'view') ||
           ($mode == 'view' && method_exists($this->getOwnerInstance(), $this->fieldName()."_display")))
       {
         $grid = $this->createGrid($record, $mode, $mode);
