@@ -208,21 +208,21 @@
     {
       $this->createDestination();
       
-      $filter = $this->_getLoadWhereClause($record);
-      if ($this->m_destinationFilter != '') 
-      {
-        $filter = "({$filter}) AND (".$this->parseFilter($this->m_destinationFilter, $record).")";
-      }
-
       atkimport('atk.datagrid.atkdatagrid');
       $grid = atkDataGrid::create($this->m_destInstance);
       $grid->setMode($mode);
       $grid->removeFlag(atkDataGrid::EXTENDED_SEARCH);
       $grid->setBaseUrl(partial_url($this->getOwnerInstance()->atkNodeType(), $action, 'attribute.'.$this->fieldName().'.grid'));
+
       if ($mode != 'copy') // don't exclude ref key in copy mode, we use it for atkorgrec!
         $grid->setExcludes($this->m_refKey); 
-      $grid->setFilter($filter);
-      
+
+      $grid->addFilter($this->_getLoadWhereClause($record));
+      if ($this->m_destinationFilter != '')
+      {
+        $grid->addFilter($this->parseFilter($this->m_destinationFilter, $record));
+      }
+
       return $grid;     
     }
     

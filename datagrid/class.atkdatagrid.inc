@@ -190,12 +190,12 @@ class atkDataGrid
   private $m_actionSessionStatus;  
   
   /**
-   * Node filter. Only used when the select handler and count
+   * Node filters. Only used when the select handler and count
    * handlers are not overridden.
    * 
    * @var string
    */
-  private $m_filter;
+  private $m_filters;
   
   /**
    * Selection mode.
@@ -493,7 +493,7 @@ class atkDataGrid
   {
     $this->m_session['system'] = array();
     
-    $vars = array('flags', 'formName', 'embedded', 'baseUrl', 'components', 'excludes', 'defaultActions', 'defaultLimit', 'template', 'actionSessionStatus', 'filter');
+    $vars = array('flags', 'formName', 'embedded', 'baseUrl', 'components', 'excludes', 'defaultActions', 'defaultLimit', 'template', 'actionSessionStatus', 'filters');
     foreach ($vars as $var)
     {
       $fullVar = "m_{$var}";
@@ -945,26 +945,36 @@ class atkDataGrid
   }    
   
   /**
-   * Returns the current node filter.
+   * Returns the current node filters.
    *
-   * @return string filter
+   * @return string filters
    */
-  public function getFilter()
+  public function getFilters()
   {
-    return $this->m_filter;
+    return $this->m_filters;
   }
   
   /**
-   * Set node filter (only used if no custom select and
+   * Add node filter  (only used if no custom select and
    * count handlers are used!).
    *
    * @param string $filter
    */
-  public function setFilter($filter)
+  public function addFilter($filter)
   {
-    $this->m_filter = $filter;
+    $this->m_filters[] = $filter;
   }
-  
+
+  /**
+   * Returns the complete filter string based on the different
+   * filters set on the grid.
+   *
+   * @return string filter string
+   */
+  protected function getFilter()
+  {
+    return count($this->m_filters) == 0 ? '' : '('.implode(') AND (', $this->getFilters()).')';
+  }  
   
   /**
    * Returns the mode.

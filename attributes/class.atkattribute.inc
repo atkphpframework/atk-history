@@ -1277,11 +1277,11 @@
           $fn = $this->fieldName()."_search";
           if (method_exists($this->m_ownerInstance, $fn))
           {
-            $arr["search"][$key] = $this->m_ownerInstance->$fn($atksearch, false, $fieldprefix);
+            $arr["search"][$key] = $this->m_ownerInstance->$fn($atksearch, false, $fieldprefix, $grid);
           }
           else
           {
-            $arr["search"][$key] = $this->search($atksearch, false, $fieldprefix);
+            $arr["search"][$key] = $this->search($atksearch, false, $fieldprefix, $grid);
           }
           $arr["search"][$key].='<input type="hidden" name="'.$fieldprefix.'atksearchmode['.$this->formName().']" value="'.$this->getSearchMode(false).'">';
         }
