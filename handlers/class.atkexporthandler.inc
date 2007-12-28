@@ -72,6 +72,7 @@
       $content.= '<br><br><form name="entryform" enctype="multipart/form-data" action="'.$HTTP_SERVER_VARS['REQUEST_URI'].'?'.SID.'"'.
                                   ' method="post">'.session_form();
       $content.= '<input type="hidden" name="phase" value="process">';
+      $content.= '<input type="hidden" name="atkfilter" value="'.$this->m_postvars['atkfilter'].'">';
       $content.= $this->_getOptions();
 
       $content.= '<br><br><input type="submit" value="'.atktext("export","atk").'"> ';
@@ -206,7 +207,8 @@
       $rl = &atknew("atk.recordlist.atkcustomrecordlist");
       $flags = ($node_bk->hasFlag(NF_MRA) ? RL_MRA : 0) | ($node_bk->hasFlag(NF_MRPA) ? RL_MRPA : 0) | ($node_bk->hasFlag(NF_LOCK) ? RL_LOCK : 0);
       $node_bk->m_postvars = $session_back;
-      $recordset = $node_bk->selectDb($session_back['atkselector'], $atkorderby, "" ,"", $list_includes, "export");
+      $atkfilter = atkArrayNvl($source, 'atkfilter', "");
+      $recordset = $node_bk->selectDb($session_back['atkselector'].($session_back['atkselector'] != '' && $atkfilter != '' ? ' AND ' : '').$atkfilter, $atkorderby, "" ,"", $list_includes, "export");
       if (method_exists($this->m_node, "assignExportData")) $this->m_node->assignExportData($list_includes, $recordset);
       $recordset_new = array();
 
