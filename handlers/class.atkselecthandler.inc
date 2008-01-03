@@ -79,6 +79,10 @@ class atkSelectHandler extends atkActionHandler
     }
     
     $output = $this->getUi()->renderList("select", $params);
+    
+    $vars = array("title" => $this->m_node->actionTitle('select'), "content" => $output);
+    $output = $this->getUi()->renderBox($vars);    
+    
     return $output;
   }
   
