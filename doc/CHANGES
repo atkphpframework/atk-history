@@ -5,6 +5,15 @@ Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 [names] are references to people in the AUTHORS file.
 Please do not exceed 80 characters per line.
 
+Changed in grid
+---------------
++ Added the atkDataGrid which replaces atkRecordList for the admin and
+  select handlers and the atkOneToManyRelation. The atkDataGrid allows
+  browsing through records without page reloads. [Peter]
++ Added atkTextAttribute::setWrapMode to specify the wrap mode for
+  the textarea (by default "soft"). [Peter]
+
+
 Changed in ATK 6.2
 ------------------
 * Fixed non static call to atkFileUtils. [Yannick]
