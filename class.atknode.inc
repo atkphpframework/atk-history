@@ -2559,6 +2559,11 @@
       }
 
       $buttons = $this->getFormButtons($action, array());
+      if (count($buttons) == 0)
+      {
+        $buttons[] = '<input name="confirm" type="submit" class="btn_ok" value="'.$this->text('yes').'">';
+        $buttons[] = '<input name="cancel" type="submit" class="btn_cancel" value="'.$this->text('no').'">';        
+      }        
 
       $content = "";
       $recs = $this->selectDb($atkselector_str, "", "", "", $this->descriptorFields());
