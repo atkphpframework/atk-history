@@ -493,7 +493,7 @@ class atkDataGrid
   {
     $this->m_session['system'] = array();
     
-    $vars = array('flags', 'formName', 'embedded', 'baseUrl', 'components', 'excludes', 'defaultActions', 'defaultLimit', 'template', 'actionSessionStatus', 'filters');
+    $vars = array('flags', 'formName', 'embedded', 'baseUrl', 'components', 'excludes', 'defaultActions', 'defaultLimit', 'template', 'actionSessionStatus', 'filters', 'mode');
     foreach ($vars as $var)
     {
       $fullVar = "m_{$var}";
