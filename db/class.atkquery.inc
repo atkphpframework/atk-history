@@ -222,30 +222,6 @@
     }
     
     /**
-     * Add's an expression to the select query
-     * 
-     * @param $fieldName        string expression field name
-     * @param $expression       string expression value
-     * @param $table            string table name
-     * @param $fieldAliasPrefix string field alias prefix 
-     * @param $quoteFieldName   bool   wether or not to quote the expression field name
-     */    
-    function addExpression($fieldName, $expression, $fieldAliasPrefix="", $quoteFieldName=false)
-    {
-      if ($quoteFieldName)
-        $this->m_quotedfields[] = $fieldName;
-        
-      $this->m_expressions[] = array('name' => $fieldName, 'expression' => $expression);
-
-      if (!empty($fieldAliasPrefix))
-      {
-        $this->m_aliasLookup["al_".$this->m_generatedAlias] = $fieldAliasPrefix.$fieldName;
-        $this->m_fieldaliases[$fieldAliasPrefix.$fieldName] = "al_".$this->m_generatedAlias;
-        $this->m_generatedAlias++;
-      }
-    }
-
-    /**
     * Add table to Tables array
     * @param $name Table name
     * @param $alias Alias of table
