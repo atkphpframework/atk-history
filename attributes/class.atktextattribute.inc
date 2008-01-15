@@ -86,7 +86,6 @@
         $id = $fieldprefix.$this->fieldName();
 
         $page = &$this->m_ownerInstance->getPage();
-        $page->register_script(atkconfig('atkroot').'atk/javascript/prototype/prototype.js');
 
         // NOTE:
         // The onblur function uses a small timeout to make sure a click on a
@@ -201,6 +200,9 @@
 
     function dbFieldType()
     {
+      // make sure our metadata is set
+      if (is_object($this->m_ownerInstance)) $this->m_ownerInstance->setAttribSizes();
+
       if ($this->m_dbfieldtype=="")
       {
         return "text";

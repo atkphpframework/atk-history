@@ -43,7 +43,7 @@
       $theme = &atkinstance("atk.ui.atktheme");
       $page->register_script(atkconfig('atkroot').'atk/javascript/dropdown_menu.js');
       $page->register_style($theme->stylePath("atkdropdownmenu.css"));
-      $page->m_loadscripts[] = "activateMenu('nav');";
+      $page->m_loadscripts[] = "new DHTMLListMenu('nav');";
 
       $atkmenutop = $ATK_VARS["atkmenutop"];
       if($atkmenutop=="") $atkmenutop="main";
@@ -51,7 +51,7 @@
         $g_menu[$atkmenutop] = array();
       usort($g_menu[$atkmenutop],array("atkplainmenu","menu_cmp"));
 
-      $menu.= "<div id='nav'>\n";
+      $menu.= "<div id=\"nav\">\n";
       $menu.=$this->getHeader($atkmenutop);
 
       $menu.="  <ul>\n";
@@ -62,7 +62,7 @@
       
       if (atkconfig("menu_logout_link"))
       {
-        $menu.="    <li><a href='app.php?atklogout=1'>".atktext('logout')."</a></li>\n";
+        $menu.="    <li><a href=\"app.php?atklogout=1\">".atktext('logout')."</a></li>\n";
       }
       
       $menu.="  </ul>\n";
@@ -76,7 +76,7 @@
     {
       global $g_menu;
 
-      $enable = $this->getEnabled($menuitem);
+      $enable = $this->isEnabled($menuitem);
       if ($enable)
       {
         if (!$menuitem['url'] && $g_menu[$menuitem['name']])
@@ -97,39 +97,14 @@
       return $menu;
     }
 
-    function getEnabled($menuitem)
-    {
-      global $g_menu;
-      
-      $enable = $menuitem['enable'];
-      if (is_array($enable))
-      {
-        $enabled = false;
-        for ($j=0;$j<(count($enable)/2);$j++)
-        {
-          $enabled = $enabled || is_allowed($enable[(2*$j)],$enable[(2*$j)+1]);
-        }
-        $enable = $enabled;
-      }
-      elseif (is_array($g_menu[$menuitem['name']]))
-      {
-        $enabled = false;
-        foreach ($g_menu[$menuitem['name']] as $item)
-          $enabled = $enabled || $this->getEnabled($item);       
-        $enable = $enabled;
-      }
-      
-      return $enable;
-    }
-
     function getItemHtml($menuitem, $submenu="",$submenuname='')
     {
       $delimiter = atkconfig("menu_delimiter");
 
       $name = $this->getMenuTranslation($menuitem['name'],$menuitem['module']);
-      if ($menuitem['name']=='-') return "<li><a href='#'>-</a></li>\n";
+      if ($menuitem['name']=='-') return "<li><a href=\"#\">-</a></li>\n";
       if ($menuitem['url']) $href = href($menuitem['url'],$this->getMenuTranslation($menuitem['name'],$menuitem['module']), SESSION_NEW);
-      else $href = '<a href ="#">'.$name.'</a>';
+      else $href = '<a href="#">'.$name.'</a>';
 
       return "<li id='{$menuitem['module']}.{$menuitem['name']}' class='$submenuname'>".$href.$delimiter.$submenu."</li>\n";
     }

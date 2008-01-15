@@ -36,9 +36,10 @@
 
 //  Renders the help screen
   $node = $_GET["node"];
-  $title1 ="txt_title_".$node;
-  $title = $$title1;
-  $file   = $config_atkroot."help/".atkconfig('language')."/help.".$node.".inc";
+  $title = atktext("title_$node", isset($_GET["module"])?$_GET["module"]:"");
+  $helpbase = $config_atkroot;
+  if (isset($_GET["module"])) $helpbase = moduleDir($_GET["module"]);
+  $file   = $helpbase."help/".atkconfig('language')."/help.".$node.".inc";
   $data = '<div align="left">';
   $data .= implode("<br>",file($file));
   $data .='</div>';
@@ -52,11 +53,11 @@
 
   $res = $ui->renderBox(array("title"=>$title,
                                  "content"=>$data));
-  $res.='<br><div align="right"><a href="javascript:window.close();">'.text("close").'</a></div>';
+  $res.='<br><div align="right"><a href="javascript:window.close();">'.atktext("close").'</a></div>';
 
   $page->addContent($res);
 
-  $output->output($page->render(text('txt_app_title').' - '.text('help'), true));
+  $output->output($page->render(atktext('app_title').' - '.atktext('help'), true));
 
   $output->outputFlush();
 

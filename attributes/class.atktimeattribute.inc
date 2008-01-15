@@ -16,6 +16,11 @@
    */
 
   /**
+   * Flags for atkTimeAttribute
+   */
+  define("AF_TIME_SECONDS", AF_SPECIFIC_1);
+
+  /**
    * The atkTimeAttribute class represents an attribute of a node
    * that has a selectbox to select from predefined time values.
    *
@@ -36,7 +41,10 @@
      * @param $name        Name of the attribute
      * @param $beginTime   Time to start with (eg 8)
      * @param $endTime     Time to end with (eg 24)
-     * @param $steps       Array containing possible minute values (eg array("00","15","30","45"))
+     * @param $steps       int|Array containing possible minute or seconds values (eg array("00","15","30","45"))
+     *                               or the interval (eg 5 for 00,05,10,15, etc.)
+     *                               if the flag AF_TIME_SECONDS is set, this is for seconds, the minutes will be range(0, 59)
+     *                               else this is for the minutes and the seconds will not be displayed
 	   * @param $default  Start Time (exp: 20:30)
      * @param $flags Flags for this attribute
      */
@@ -45,8 +53,28 @@
       $this->atkAttribute($name,$flags); // base class constructor
       $this->m_beginTime = $beginTime;
       $this->m_endTime   = $endTime;
-      $this->m_steps     = $steps;
+      if (is_array($steps))  $this->m_steps     = $steps;
+      else                   $this->m_steps     = $this->intervalToSteps($steps);
       $this->m_default   = $default;
+    }
+
+    /**
+     * Convert an interval (integer) to an array with steps.
+     *
+     * @param int $interval The interval to convert
+     * @return array The array with steps.
+     */
+    function intervalToSteps($interval)
+    {
+      $steps=array();
+      for ($i=0;$i<=59;$i++)
+      {
+        if ($i%$interval===0)
+        {
+          $steps[] = $i;
+        }
+      }
+      return $steps;
     }
 
     /**
@@ -73,7 +101,7 @@
 	  	$value = $record[$this->fieldName()];
       if ($value["hours"] === "") return "";
       $tmp_time = sprintf("%02d:%02d", $value["hours"], $value["minutes"]);
-      if ($value["seconds"]) $tmp_time.=sprintf(":%02d", $value["seconds"]);
+      if ($value["seconds"] && $this->hasFlag(AF_TIME_SECONDS)) $tmp_time.=sprintf(":%02d", $value["seconds"]);
       return $tmp_time;
     }
 
@@ -102,7 +130,7 @@
           'seconds' => $result['seconds']
         );
       }
-      
+
       return $result;
     }
 
@@ -117,7 +145,7 @@
       if(($this->m_default=="NOW" && $this->m_ownerInstance->m_action=="add") ||
          ($this->m_default=="" && $this->hasFlag(AF_OBLIGATORY)))
       {
-	     $this->m_default=date("H:i");
+	     $this->m_default=date("H:i:s");
       }
       $default = split(":",$this->m_default);
 
@@ -127,8 +155,10 @@
       // set vars for hour / minutes dropdowns
       $this->registerKeyListener($id.'[hours]', KB_CTRLCURSOR|KB_LEFTRIGHT);
       $this->registerKeyListener($id.'[minutes]', KB_CTRLCURSOR|KB_LEFTRIGHT);
+      $this->registerKeyListener($id.'[seconds]', KB_CTRLCURSOR|KB_LEFTRIGHT);
       $m_hourBox = '<select id="'.$id.'[hours]" name="'.$id."[hours]\">\n";
       $m_minBox  = '<select id="'.$id.'[minutes]" name="'.$id."[minutes]\">\n";
+      $m_secBox  = '<select id="'.$id.'[seconds]" name="'.$id."[seconds]\">\n";
       // set default values for both boxes
       // depends upon atkaction
       // if add/admin, use $default param, else use time in $record
@@ -136,11 +166,13 @@
       {
         $m_defHour = $field["hours"];
         $m_defMin  = $field["minutes"];
+        $m_defSec  = $field["seconds"];
       }
       else
       {
         $m_defHour = $default[0];
         $m_defMin  = $default[1];
+        $m_defSec  = $default[2];
       }
 
       atkdebug("defhour=$m_defHour   defmin=$m_defMin");
@@ -163,11 +195,21 @@
       // generate minute dropdown
       if (!$this->hasflag(AF_OBLIGATORY))
         $m_minBox .= '<option value=""'.($m_defMin === "" ? ' selected' : '').'></option>';
-      for ($i=0;$i<=count($this->m_steps)-1;$i++)
+
+      if ($this->hasFlag(AF_TIME_SECONDS))
       {
-       if($i!=0) $prev = $this->m_steps[$i-1];
+        $minute_steps = range(00, 59);
+      }
+      else
+      {
+        $minute_steps = $this->m_steps;
+      }
+
+      for ($i=0;$i<=count($minute_steps)-1;$i++)
+      {
+       if($i!=0) $prev = $minute_steps[$i-1];
        else $prev= -1;
-       if ($this->m_steps[$i] >= $m_defMin && $prev < $m_defMin&&($m_defMin!=""))
+       if ($minute_steps[$i] >= $m_defMin && $prev < $m_defMin&&($m_defMin!=""))
        {
         $sel = " selected";
        }
@@ -176,14 +218,43 @@
         $sel = "";
        }
 
-       $m_minBox .= sprintf("<option value='%02d'%s>%02d</option>\n",$this->m_steps[$i],$sel,$this->m_steps[$i]);
+       $m_minBox .= sprintf("<option value='%02d'%s>%02d</option>\n",$minute_steps[$i],$sel,$minute_steps[$i]);
       }
+
+      // generate second dropdown
+      if (!$this->hasFlag(AF_OBLIGATORY))
+        $m_secBox .= '<option value""'.($m_defSec === "" ? ' selected' : '').'></option>';
+      for ($i=0;$i<=count($this->m_steps)-1;$i++)
+      {
+        if($i!=0) $prev= $this->m_steps[$i-1];
+        else $prev= -1;
+        if ($this->m_steps[$i] >= $m_defSec && $prev < $m_defSec&&($m_defSec!=""))
+        {
+          $sel = " selected";
+        }
+        else
+        {
+          $sel = "";
+        }
+
+        $m_secBox .= sprintf("<option value='%02d' %s>%02d</option>\n",$this->m_steps[$i],$sel,$this->m_steps[$i]);
+      }
+
+
 
       // close dropdown structures
       $m_hourBox .= "</select>";
       $m_minBox  .= "</select>";
-      $m_secBox  = "<input type=\"hidden\" name=\"".$fieldprefix.$this->fieldName()."[seconds]\" value=\"00\">\n";
-       
+      if($this->hasFlag(AF_TIME_SECONDS))
+      {
+        $m_secBox  .= "</select>";
+        $m_secBox = ":" . $m_secBox;
+      }
+      else
+      {
+        $m_secBox = "<input type=\"hidden\" name=\"".$fieldprefix.$this->fieldName()."[seconds]\" value=\"00\">\n";
+      }
+
       // assemble display version
       return $m_hourBox.":".$m_minBox.$m_secBox;
     }
@@ -194,11 +265,11 @@
       $hours = $rec[$this->fieldName()]["hours"];
       $minutes = $rec[$this->fieldName()]["minutes"];
       $seconds = $rec[$this->fieldName()]["seconds"];
-
-      if ($hours=="" || $minutes=="") return NULL;
+      
+      if ($hours=="" || $minutes=="" || ($this->hasFlag(AF_TIME_SECONDS) && $seconds=="")) return NULL;
 
       $result = sprintf("%02d",$hours).":".sprintf("%02d",$minutes).":".sprintf("%02d",$seconds);
-
+      
       return $result;
     }
 

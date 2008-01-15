@@ -51,6 +51,7 @@
       $this->atkDateTimeAttribute($name, date("Y-m-d"), date("H:i:s"), $flags|AF_READONLY|AF_HIDE_ADD);
       $this->setForceInsert(true);
       $this->setForceUpdate(true);
+      $this->setInitialValue(atkDateTimeAttribute::datetimeArray());
     }
 
     /**
@@ -59,15 +60,17 @@
     function value2db($record)
     {
       // if record not created using a form this situation can occur, so set the value here
-      if (!is_array($record[$this->fieldName()]))
-        $record[$this->fieldName()] = $this->fetchValue();
+      // Every time we must overwrite the value of this attribute, because this is UPDATE stamp
+      $record[$this->fieldName()] = $this->initialValue();
       return parent::value2db($record);
     }
     
     /**
-     * Fetch value.
+     * Override the initial value
+     *
+     * @return Array
      */
-    function fetchValue()
+    function initialValue()
     {
       return atkDateTimeAttribute::datetimeArray();
     }

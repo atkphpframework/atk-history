@@ -30,7 +30,7 @@
    *   {atkmessages}
    *
    *   {foreach from=$atkmessages item=message}
-   *     {$message}<br>
+   *     {$message.message}<br>
    *   {/foreach}
    * </code>
    *

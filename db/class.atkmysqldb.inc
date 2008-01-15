@@ -41,10 +41,16 @@
      */
     function atkmysqldb()
     {
+      if (!function_exists('mysql_connect'))
+      {
+        atkerror('MySQL not supported by your PHP version');
+        die('MySQL not supported by your PHP version');
+      }
+
       // set the user error's
       $this->m_type = "mysql";
       $this->m_vendor = "mysql";
-      $this->m_user_error=array();
+      $this->m_user_error=array(1451);
     }
 
     /**
@@ -63,6 +69,7 @@
         if (!empty($port))
           $host = "$host:$port";
 
+
         $this->m_link_id = @mysql_connect($host, $user, $password, true /* ALWAYS NEW LINK */);
         if (!$this->m_link_id)
         {
@@ -73,7 +80,7 @@
         if (!empty($charset))
         {
           atkdebug("Set database character set to: {$charset}");
-          @mysql_query($this->m_link_id, "SET NAMES '{$charset}'");
+          @mysql_query("SET NAMES '{$charset}'", $this->m_link_id);
         }
       }
 
@@ -86,6 +93,17 @@
 
       /* return link identifier */
       return DB_SUCCESS;
+    }
+
+    /**
+     * Determine whether an error that occurred is a recoverable (user) error
+     * or a system error.
+     * @return String "user" or "system"
+     */
+    function getErrorType()
+    {
+      $this->_setErrorVariables();
+      return parent::getErrorType();
     }
 
     /**
@@ -136,7 +154,7 @@
     {
       if ($this->m_link_id)
       {
-        atkdebug("Disconnecting from database...");         
+        atkdebug("Disconnecting from database...");
         @mysql_close($this->m_link_id);
         $this->m_link_id = 0;
       }
@@ -153,14 +171,14 @@
       /* limit? */
       if ($offset >= 0 && $limit > 0)
         $query .= " LIMIT $offset, $limit";
-      if (atkconfig("debug")>0)
+
+      if (atkconfig("debug")>=0)
       {
         atkimport("atk.utils.atkdebugger");
         atkDebugger::addQuery($query);
       }
 
       $mode = $this->getQueryMode($query);
-      atkdebug("atkmysqldb::query -> connect with mode = $mode");
 
       /* connect to database */
       if ($this->connect($mode)==DB_SUCCESS)
@@ -177,18 +195,18 @@
 
         /* query database */
         $this->m_query_id = @mysql_query($query, $this->m_link_id);
-        
+
         $unlock_table = false;
         if (mysql_errno($this->m_link_id) == 1100)
         {
           $this->locktables_fallback_on_error($query, $mode);
           $unlock = true;
         }
-        else 
+        else
         {
           $this->m_affected_rows = mysql_affected_rows();
         }
-        
+
         $this->m_row = 0;
 
         /* invalid query */
@@ -200,7 +218,7 @@
 
         if ($unlock_table)
           $this->unlock();
-        
+
         /* return query id */
         return true;
       }
@@ -219,14 +237,14 @@
     {
       $error = mysql_error($this->m_link_id);
       $matches = array();
-      
+
       preg_match("/\'(.*)\'/U",$error,$matches);
-          
+
       if (is_array($matches) && sizeof($matches) == 2)
       {
         atkdebug("<b>Fallback feature called because error '1100' occured during the last query. Running query again using table lock for table '{$matches[1]}' (".$this->m_link_id.").</b>");
         $table = $matches[1];
-        
+
         if ($this->m_query_id)
         {
           if (is_resource($this->m_query_id))
@@ -234,14 +252,14 @@
           $this->m_query_id = 0;
         }
         $this->m_affected_rows = 0;
-        
+
         $this->lock($table,($querymode=='r' ? 'read' : 'write'));
         $this->m_query_id = @mysql_query($query, $this->m_link_id);
-        
+
         $this->m_affected_rows = mysql_affected_rows($this->m_link_id);
-      } 
+      }
     }
-    
+
     /**
      * Goto the next record in the result set
      * @return result of going to the next record
@@ -292,7 +310,7 @@
       {
         $query = "lock tables $table $mode";
 
-        if (atkconfig("debug")>0)
+        if (atkconfig("debug")>=0)
         {
           atkimport("atk.utils.atkdebugger");
           atkDebugger::addQuery($query);
@@ -400,10 +418,10 @@
         return 0;
       }
 
-      /* cannot lock */
+      /* cannot connect */
       else
       {
-        $this->halt("cannot lock ".$this->m_seq_table." - has it been created?");
+        $this->halt("cannot connect to ".$this->m_host);
       }
     }
 
@@ -593,8 +611,28 @@
      */
     function setSequenceValue($seqname, $value)
     {
-      $query = "UPDATE ".$this->m_seq_table." SET ".$this->m_seq_field." = '$value' WHERE ".$this->m_seq_namefield." = '$seqname'";
-      $this->query($query);
+      $value = $value + 1; // nextid should contain the next value, not the current value
+
+      if ($this->lock($this->m_seq_table))
+      {
+        $query = "SELECT COUNT(*) AS result FROM ".$this->m_seq_table." WHERE ".$this->m_seq_namefield." = '$seqname'";
+
+        $id = @mysql_query($query, $this->m_link_id);
+        $result = @mysql_fetch_array($id);
+
+        if ($result[0]['result'] == 0)
+        {
+          $query = "INSERT INTO ".$this->m_seq_table." VALUES('$seqname', $value)";
+        }
+        else
+        {
+          $query = "UPDATE ".$this->m_seq_table." SET ".$this->m_seq_field." = '$value' WHERE ".$this->m_seq_namefield." = '$seqname'";
+        }
+
+        $this->query($query);
+
+        $this->unlock();
+      }
     }
   }
 ?>

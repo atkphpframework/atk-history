@@ -16,13 +16,20 @@
    * @version $Revision$
    * $Id$
    */
-/**
+
+  /**
    * flag(s) specific for atkManyToOneRelation
    */
-  define("AF_RELATION_AUTOLINK", AF_SPECIFIC_1);     // create edit/view links for the items in a manytoonerelation dropdown.
-  define("AF_RELATION_NO_NULL_ITEM", AF_SPECIFIC_2); // do not add null option ever
-  define("AF_RELATION_AUTOCOMPLETE", AF_SPECIFIC_3); // use auto-completition instead of drop-down / selection page
-  define("AF_MANYTOONE_LAZY", AF_SPECIFIC_4); // lazy load
+  define("AF_RELATION_AUTOLINK",  AF_SPECIFIC_1);     // create edit/view links for the items in a manytoonerelation dropdown.
+  define("AF_MANYTOONE_AUTOLINK", AF_RELATION_AUTOLINK);     // create edit/view links for the items in a manytoonerelation dropdown.
+
+  define("AF_RELATION_NO_NULL_ITEM",  AF_SPECIFIC_2); // do not add null option ever
+  define("AF_MANYTOONE_NO_NULL_ITEM", AF_RELATION_NO_NULL_ITEM); // do not add null option ever
+
+  define("AF_RELATION_AUTOCOMPLETE",  AF_SPECIFIC_3); // use auto-completition instead of drop-down / selection page
+  define("AF_MANYTOONE_AUTOCOMPLETE", AF_RELATION_AUTOCOMPLETE);
+
+  define("AF_MANYTOONE_LAZY", AF_SPECIFIC_4);        // lazy load
 
   /**
    * @internal include base class
@@ -85,7 +92,7 @@
 
     /**
      * List columns.
-     * @Access private
+     * @access private
      * @var Array
      */
     var $m_listColumns = array();
@@ -157,6 +164,14 @@
     var $m_onchangehandler_init = "newvalue = el.options[el.selectedIndex].value;\n";
 
     /**
+     * Use destination filter for autolink add link?
+     *
+     * @access private
+     * @var boolean
+     */
+    var $m_useFilterForAddLink = true;
+
+    /**
      * Constructor.
      * @param String $name The name of the attribute. This is the name of the
      *                     field that is the referential key to the
@@ -205,6 +220,31 @@
     }
 
     /**
+     * Adds a flag to the manyToOne relation
+     * Note that adding flags at any time after the constructor might not
+     * always work. There are flags that are processed only at
+     * constructor time.
+     *
+     * @param int $flag The flag to add to the attribute
+     */
+    function addFlag($flag)
+    {
+      parent::addFlag($flag);
+      if (atkconfig("manytoone_autocomplete_large", true) && hasFlag($flag, AF_LARGE))
+        $this->m_flags |= AF_RELATION_AUTOCOMPLETE;
+    }
+
+    /**
+     * Set join filter.
+     *
+     * @param string $filter join filter
+     */
+    function setJoinFilter($filter)
+    {
+      $this->m_joinFilter = $filter;
+    }
+
+    /**
      * Set the searchfields for the autocompletion.
      *
      * @param array $searchfields
@@ -213,7 +253,7 @@
     {
       $this->m_autocomplete_searchfields = $searchfields;
     }
-    
+
     /**
      * Set the searchmode for the autocompletion:
      * exact, startswith(default) or contains.
@@ -224,7 +264,7 @@
     {
       $this->m_autocomplete_searchmode = $mode;
     }
-    
+
     /**
      * Set the case-sensitivity for the autocompletion search (true or false).
      *
@@ -234,7 +274,7 @@
     {
       $this->m_autocomplete_search_case_sensitive = $case_sensitive;
     }
-    
+
     /**
      * Sets the minimum number of characters before auto-completion kicks in.
      *
@@ -264,6 +304,16 @@
     function setAutoCompleteMinRecords($minrecords)
     {
       $this->m_autocomplete_minrecords = $minrecords;
+    }
+
+    /**
+     * Use destination filter for auto add link?
+     *
+     * @param boolean $useFilter use destnation filter for add link?
+     */
+    function setUseFilterForAddLink($useFilter)
+    {
+      $this->m_useFilterForAddLink = $useFilter;
     }
 
     /**
@@ -438,29 +488,6 @@
     }
 
     /**
-     * Populate the record with the destination record data.
-     *
-     * @param array $record        record
-     * @param mixed $fullOrFields  load all data, only the given fields or only the descriptor fields?
-     */
-    function populate(&$record, $fullOrFields=false)
-    {
-      if ($record[$this->fieldName()] == "") return;
-
-      atkdebug("Delayed loading of ".($fullOrFields || is_array($fullOrFields) ? "" : "descriptor ")."fields for ".$this->m_name);
-      $this->createDestination();
-
-      $includes = "";
-      if (is_array($fullOrFields))
-        $includes = array_merge($this->m_destInstance->m_primaryKey, $fullOrFields);
-      else if (!$fullOrFields)
-        $includes = $this->m_destInstance->descriptorFields();
-
-      list($record[$this->fieldName()]) =
-        $this->m_destInstance->selectDb($this->m_destInstance->primaryKey($record[$this->fieldName()]), "", "", "", $includes);
-    }
-
-    /**
      * Returns a displayable string for this value.
      * @param $record Record
      * @return a displayable string
@@ -474,21 +501,18 @@
 
         if(!$this->isEmpty($record))
         {
-          $title = $this->m_destInstance->descriptor($record[$this->fieldName()]);
+          $result = $this->m_destInstance->descriptor($record[$this->fieldName()]);
+          if ($this->hasFlag(AF_RELATION_AUTOLINK) && (!in_array($mode, array("csv", "plain")))) // create link to edit/view screen
+          {
+            if (($this->m_destInstance->allowed("view"))&&!$this->m_destInstance->hasFlag(NF_NO_VIEW)&&$result!="")
+            {
+              $result = href(dispatch_url($this->m_destination,"view",array("atkselector"=>$this->m_destInstance->primaryKey($record[$this->fieldName()]))), $result, SESSION_NESTED);
+            }
+          }
         }
         else
         {
-          $title = ""; // no record
-        }
-
-        $result = $title; // default result is just the title.
-
-        if ($this->hasFlag(AF_RELATION_AUTOLINK) && (!in_array($mode, array("csv", "plain")))) // create link to edit/view screen
-        {
-          if (($this->m_destInstance->allowed("view"))&&!$this->m_destInstance->hasFlag(NF_NO_VIEW)&&$title!="")
-          {
-            $result = href("dispatch.php?atknodetype=".$this->m_destination."&atkaction=view&atkselector=".rawurlencode($this->m_destInstance->primaryKey($record[$this->fieldName()])), $title, SESSION_NESTED);
-          }
+          $result = (!in_array($mode, array("csv", "plain"))?$this->getNoneLabel():''); // no record
         }
         return $result;
       }
@@ -497,6 +521,32 @@
        atkdebug("Can't create destination! ($this->m_destination");
       }
       return "";
+    }
+
+    /**
+     * Populate the record with the destination record data.
+     *
+     * @param array $record        record
+     * @param mixed $fullOrFields  load all data, only the given fields or only the descriptor fields?
+     */
+    function populate(&$record, $fullOrFields=false)
+    {
+      if (!is_array($record)||$record[$this->fieldName()] == "") return;
+
+      atkdebug("Delayed loading of ".($fullOrFields || is_array($fullOrFields) ? "" : "descriptor ")."fields for ".$this->m_name);
+      $this->createDestination();
+
+      $includes = "";
+      if (is_array($fullOrFields))
+        $includes = array_merge($this->m_destInstance->m_primaryKey, $fullOrFields);
+      else if (!$fullOrFields)
+        $includes = $this->m_destInstance->descriptorFields();
+
+      $result = $this->m_destInstance->selectDb($this->m_destInstance->primaryKey($record[$this->fieldName()]), "", "", "", $includes);
+      if (count($result))
+      {
+        list($record[$this->fieldName()]) = $result;
+      }
     }
 
     /**
@@ -518,14 +568,15 @@
       {
         if ($this->m_destInstance->allowed("add"))
         {
-          $links[] = href("dispatch.php?atknodetype=".$this->m_destination."&atkaction=add&atkpkret=".$id."_newsel".($filter!=""?"&atkfilter=".rawurlencode($filter):""),atktext("new"),SESSION_NESTED,true);
+          $links[] = href(dispatch_url($this->m_destination,"add",array("atkpkret"=>$id."_newsel","atkfilter"=>($filter!=""?$filter:""))),
+                          atktext("new"),SESSION_NESTED,true);
         }
 
         if ($this->m_destInstance->allowed("edit") && $record[$this->fieldName()] != NULL)
         {
           //we laten nu altijd de edit link zien, maar eigenlijk mag dat niet, want
           //de app crasht als er geen waarde is ingevuld.
-          $editUrl = session_url("dispatch.php?atknodetype=".$this->m_destination."&atkaction=edit&atkselector=REPLACEME",SESSION_NESTED);
+          $editUrl = session_url(dispatch_url($this->m_destination,"edit",array("atkselector"=>"REPLACEME")),SESSION_NESTED);
           $links[] = "<span id=\"".$id."_edit\" style=\"\"><a href='javascript:atkSubmit(mto_parse(\"".atkurlencode($editUrl)."\", document.entryform.".$id.".value))'>".atktext('edit')."</a></span>";
         }
       }
@@ -546,6 +597,7 @@
       // and one with a dropdownbox that contains the last 10 used records,
       // with a link to a selector with all records. This second one is for
       // relations with large tables, so is only used when AF_LARGE is set.
+      $recordset = NULL;
 
       // check if a normal dropdown should be shown or the autocomplete field
       if ($this->hasFlag(AF_RELATION_AUTOCOMPLETE) && $this->m_autocomplete_minrecords > -1)
@@ -572,7 +624,11 @@
           if(isset($record[$this->fieldName()]))
             $value = $record[$this->fieldName()];
           $currentPk = $this->m_destInstance->primaryKey($value);
-          $recordset = $this->_getSelectableRecords($record, 'select');
+
+          if (is_null($recordset)) // already loaded above.
+          {
+            $recordset = $this->_getSelectableRecords($record, 'select');
+          }
           if(count($recordset)==0) $editflag = false;
 
           $onchange='';
@@ -589,11 +645,6 @@
           if (count($recordset) == 0)
           {
             $result .= $this->getNoneLabel();
-          }
-          else if ((count($recordset)==1 || $this->_checkPrimaryKeysForSelector($recordset))&&$this->hasFlag(AF_OBLIGATORY))
-          {
-            $result.= $this->m_destInstance->descriptor($recordset[0])."&nbsp;&nbsp;";
-            $result.= $this->hide(array($this->fieldName()=>$recordset[0]), $fieldprefix);
           }
           else
           {
@@ -615,7 +666,7 @@
             {
               $pk = $this->m_destInstance->primaryKey($recordset[$i]);
               if (($newlyadded!="" && $newlyadded==$pk) || ($newlyadded=="" && $pk==$currentPk)) $sel = "selected"; else $sel = "";
-              $result.= '<option value="'.$pk.'" '.$sel.'>'.$this->m_destInstance->descriptor($recordset[$i]);
+              $result.= '<option value="'.$pk.'" '.$sel.'>'.htmlspecialchars($this->m_destInstance->descriptor($recordset[$i]));
             }
             $result.='</select>';
           }
@@ -625,7 +676,7 @@
           // Large mode
           // TODO: Fill a dropdown box with recent records..
 
-          $newlyadded = $this->m_ownerInstance->m_postvars[$id."_ret"];
+          $newlyadded = atkArrayNvl($this->m_ownerInstance->m_postvars,$id."_ret");
 
           $destrecord = $this->_getDestRecord($id."_newsel", $newlyadded, $record, $editflag);
 
@@ -659,21 +710,19 @@
       $result = "";
       // we use the current level to automatically return to this page
       // when we come from the select..
-      $atktarget = rawurlencode("dispatch.php?atklevel=".atkLevel()."&".$selname."=[atkprimkey]");
+      $atktarget = getDispatchFile()."?atklevel=".atkLevel()."&".$selname."=[atkprimkey]";
       $linkname = atktext("link_select_".getNodeType($this->m_destination), getNodeModule($this->m_destination),getNodeType($this->m_destination),'','',true);
       if (!$linkname) $linkname = atktext("select_a").' '.strtolower(atktext(getNodeType($this->m_destination), getNodeModule($this->m_destination),getNodeType($this->m_destination)));
       if ($this->m_destinationFilter!="")
       {
-        $result.= href("dispatch.php?atknodetype=".$this->m_destination.
-                       "&atkaction=select&atkfilter=".$filter."&atktarget=".$atktarget,
+        $result.= href(dispatch_url($this->m_destination,"select",array("atkfilter"=>$filter,"atktarget"=>$atktarget)),
                        $linkname,
                        SESSION_NESTED,
                        $this->m_autocomplete_saveform,'class="atkmanytoonerelation"');
       }
       else
       {
-        $result.= href("dispatch.php?atknodetype=".$this->m_destination.
-                       "&atkaction=select&atktarget=".$atktarget,
+        $result.= href(dispatch_url($this->m_destination,"select",array("atktarget"=>$atktarget)),
                        $linkname,
                        SESSION_NESTED,
                        $this->m_autocomplete_saveform,'class="atkmanytoonerelation"');
@@ -693,7 +742,7 @@
     function _getDestRecord($selname, $newlyadded, &$record, &$editflag)
     {
       global $ATK_VARS;
-      if ($ATK_VARS[$selname]!="" || $newlyadded!="")
+      if (atkArrayNvl($ATK_VARS,$selname) || $newlyadded)
       // new record selected
       {
         // $ATK_VARS[$selname] contains full primary key of selected record.
@@ -739,12 +788,13 @@
 
         if ($this->m_destInstance->allowed("edit"))
         {
-          $editlink = session_url("dispatch.php?atknodetype=".$this->m_destination."&atkaction=edit&atkselector=REPLACEME",SESSION_NESTED);
+          $editlink = session_url(dispatch_url($this->m_destination,"edit",array("atkselector"=>"REPLACEME")),SESSION_NESTED);
           $autolink['edit'] = "&nbsp;<a href='javascript:atkSubmit(mto_parse(\"".atkurlencode($editlink)."\", document.entryform.".$id.".value))'>".atktext('edit')."</a>";
         }
         if ($this->m_destInstance->allowed("add"))
         {
-          $autolink['add'] = "&nbsp;".href("dispatch.php?atknodetype=".$this->m_destination."&atkaction=add&atkpkret=".$id."_ret".($filter!=""?"&atkfilter=".rawurlencode($filter):""),atktext("new"),SESSION_NESTED,true);
+          $autolink['add'] = "&nbsp;".href(dispatch_url($this->m_destination,"add",array("atkpkret"=>$id."_ret","atkfilter"=>($this->m_useFilterForAddLink && $filter != "" ? $filter : ""))),
+                                                        atktext("new"),SESSION_NESTED,true);
         }
       }
       return $autolink;
@@ -758,28 +808,61 @@
      */
     function hide($record="", $fieldprefix="")
     {
-      if ($this->createDestination())
+      if (!$this->createDestination()) return '';
+
+      $currentPk = "";
+      if (isset($record[$this->fieldName()]) && $record[$this->fieldName()] != null)
       {
-        $currentPk = "";
-        if (count($record[$this->fieldName()]))
-        {
-          if(is_array($record[$this->fieldName()]))
-          {
-            $currentPk = $this->m_destInstance->primaryKey($record[$this->fieldName()]);
-          }
-          else
-          {
-            $newrecord=array($this->m_destInstance->primaryKeyField()=>$record[$this->fieldName()]);
-            $currentPk = $this->m_destInstance->primaryKey($newrecord);
-          }
-        }
-      $result = '<input type="hidden" id="'.$fieldprefix.$this->formName().'" name="'.$fieldprefix.$this->formName().
-      '" value="'.$currentPk.'">';
-        return $result;
+        $currentPk = $this->m_destInstance->primaryKey($record[$this->fieldName()]);
       }
-      return "";
+
+      $result =
+        '<input type="hidden" id="'.$fieldprefix.$this->formName().'"
+                name="'.$fieldprefix.$this->formName().'"
+                value="'.$currentPk.'">';
+
+      return $result;
     }
 
+    /**
+     * Support for destination "records" where only the id is set and the
+     * record itself isn't converted to a real record (array) yet
+     */
+    function fixDestinationRecord(&$record)
+    {
+      if ($this->createDestination() &&
+          isset($record[$this->fieldName()]) &&
+          $record[$this->fieldName()] != null &&
+          !is_array($record[$this->fieldName()]))
+      {
+        $record[$this->fieldName()] = array($this->m_destInstance->primaryKeyField() => $record[$this->fieldName()]);
+      }
+    }
+
+    /**
+     * Retrieve the html code for placing this attribute in an edit page.
+     *
+     * The difference with the edit() method is that the edit() method just
+     * generates the HTML code for editing the attribute, while the getEdit()
+     * method is 'smart', and implements a hide/readonly policy based on
+     * flags and/or custom override methodes in the node.
+     * (<attributename>_edit() and <attributename>_display() methods)
+     *
+     * Framework method, it should not be necessary to call this method
+     * directly.
+     *
+     * @param String $mode The edit mode ("add" or "edit")
+     * @param array $record The record holding the values for this attribute
+     * @param String $fieldprefix The fieldprefix to put in front of the name
+     *                            of any html form element for this attribute.
+     * @return String the HTML code for this attribute that can be used in an
+     *                editpage.
+     */
+    function getEdit($mode, &$record, $fieldprefix)
+    {
+      $this->fixDestinationRecord($record);
+      return parent::getEdit($mode, $record, $fieldprefix);
+    }
 
     /**
      * Returns a piece of html code that can be used in a form to search
@@ -796,7 +879,8 @@
       if (substr($fieldprefix, -4) == "_AE_")
         $fieldprefix = "_AE_".substr($fieldprefix, 0, -4);
 
-      if (!$this->hasFlag(AF_LARGE) && !$this->hasFlag(AF_RELATION_AUTOCOMPLETE))
+      $useautocompletion = atkConfig("manytoone_search_autocomplete", true) && $this->hasFlag(AF_RELATION_AUTOCOMPLETE);
+      if (!$this->hasFlag(AF_LARGE) && !$useautocompletion)
       {
         if ($this->createDestination())
         {
@@ -846,18 +930,16 @@
 
         $this->registerKeyListener($id, KB_CTRLCURSOR|KB_UPDOWN);
         $result = '<input type="text" id="'.$id.'" class="'.get_class($this).'" name="'.$id.'" value="'.$record[$this->fieldName()].'"'.
-          ($this->hasFlag(AF_RELATION_AUTOCOMPLETE) ? ' onchange=""' : '').
+          ($useautocompletion ? ' onchange=""' : '').
           ($this->m_searchsize > 0 ? ' size="'.$this->m_searchsize.'"' : '').
           ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>';
 
-        if ($this->hasFlag(AF_RELATION_AUTOCOMPLETE))
+        if ($useautocompletion)
         {
           $page = &$this->m_ownerInstance->getPage();
           $url = partial_url($this->m_ownerInstance->atkNodeType(), $this->m_ownerInstance->m_action, 'attribute.'.$this->fieldName().'.autocomplete_search');
           $code = "ATK.ManyToOneRelation.completeSearch('{$id}', '{$id}_result', '{$url}', {$this->m_autocomplete_minchars});";
           $this->m_ownerInstance->addStyle("atkmanytoonerelation.css");
-          $page->register_script(atkconfig("atkroot").'atk/javascript/prototype/prototype.js');
-          $page->register_script(atkconfig("atkroot").'atk/javascript/scriptaculous/scriptaculous.js');
           $page->register_script(atkconfig('atkroot').'atk/javascript/class.atkmanytoonerelation.js');
           $page->register_loadscript($code);
           $result .= '<div id="'.$id.'_result" style="display: none" class="atkmanytoonerelation_result"></div>';
@@ -986,6 +1068,10 @@
           return $cond;
         }
       }
+      else if (empty($value)) // nothing to search for
+      {
+        return '';
+      }
       else // AF_LARGE || AF_RELATION_AUTOCOMPLETE
       {
         // ask the destination node for it's search condition
@@ -1085,14 +1171,15 @@
      */
     function loadType($mode)
     {
-      if ($this->hasFlag(AF_MANYTOONE_LAZY))
-      {
+      if (isset($this->m_loadType[$mode]) && $this->m_loadType[$mode] !== null)
+        return $this->m_loadType[$mode];
+      else if (isset($this->m_loadType[null]) && $this->m_loadType[null] !== null)
+        return $this->m_loadType[null];
+      // Default backwardscompatible behaviour:
+      else if ($this->hasFlag(AF_MANYTOONE_LAZY))
         return POSTLOAD|ADDTOQUERY;
-      }
       else
-      {
         return ADDTOQUERY;
-      }
     }
 
     /**
@@ -1167,15 +1254,35 @@
       }
       return 0;
     }
-    
+
+    /**
+     * Returns the selected record for this many-to-one relation. Uses
+     * the owner instance $this->fieldName()."_selected" method if it exists.
+     */
+    function _getSelectedRecord($record=array(), $mode="select")
+    {
+      $method = $this->fieldName()."_selected";
+      if (method_exists($this->m_ownerInstance, $method))
+        return $this->m_ownerInstance->$method($record, $mode);
+      else return $this->getSelectedRecord($record, $mode);
+    }
+
     /**
      * Returns the currently selected record.
      */
     function getSelectedRecord($record=array(), $mode="select")
     {
       $this->createDestination();
+
       $condition = $this->m_destInstance->m_table.'.'.$this->m_destInstance->primaryKeyField().
                    "='".$record[$this->fieldName()][$this->m_destInstance->primaryKeyField()]."'";
+
+      $filter = $this->createFilter($record);
+      if (!empty($filter))
+      {
+        $condition = $condition.' AND '.$filter;
+      }
+
       list($record) = $this->m_destInstance->selectDb($condition, "", "", "", "", $mode);
       return $record;
     }
@@ -1232,9 +1339,9 @@
     function isSelectableRecord($record=array(), $mode="select")
     {
       if ($record[$this->fieldName()] == NULL) return false;
-      
+
       $this->createDestination();
-      
+
       // if the value is set directly in the record field we first
       // need to convert the value to an array
       if (!is_array($record[$this->fieldName()]))
@@ -1285,32 +1392,6 @@
 
       return $result;
     }
-
-    /**
-     * If the primary key of one of the records is the current selected selector
-     * we should only be able to select that record so we set selectablerecords to that record
-     * and return true.
-     *
-     * @return bool Wether one of the records has the current selector or not
-     */
-    function _checkPrimaryKeysForSelector(&$recordset)
-    {
-      $sessionm = &atkGetSessionManager();
-      $atkselector = $sessionm->stackVar('atkselector');
-      if ($atkselector)
-      {
-        foreach ($recordset as $key=>$record)
-        {
-          if ($atkselector==$record['atkprimkey'])
-          {
-            $recordset = array($record);
-            return true;
-          }
-        }
-      }
-      return false;
-    }
-
 
    /**
     * Returns the condition (SQL) that should be used when we want to join a relation's
@@ -1428,7 +1509,7 @@
       if (!$this->createDestination() || count($this->m_listColumns) == 0) return;
 
       foreach ($this->m_listColumns as $attribname)
-      {        
+      {
         $p_attrib = &$this->m_destInstance->getAttribute($attribname);
         $p_attrib->m_flags |= AF_HIDE_LIST;
         $p_attrib->m_flags ^= AF_HIDE_LIST;
@@ -1558,7 +1639,7 @@
 
       return $order;
     }
-    
+
     /**
      * Creates and registers the on change handler caller function.
      * This method will be used to message listeners for a change
@@ -1578,27 +1659,34 @@
         ";
 
         $this->m_onchangehandler_init = "newvalue = el.value;\n";
-        $page = &$this->m_ownerInstance->getPage();        
+        $page = &$this->m_ownerInstance->getPage();
         $page->register_scriptcode($js);
         $this->_renderChangeHandler($fieldPrefix);
-      }   
-      
-      return $function;   
+      }
+
+      return $function;
     }
-    
+
     /**
      * Draw the auto-complete box.
      */
     function drawAutoCompleteBox($record, $fieldPrefix, $mode)
     {
       $this->createDestination();
-      
-      // register base JavaScript code and stylesheet
-      $page = &$this->m_ownerInstance->getPage();              
-      $page->register_script(atkconfig('atkroot').'atk/javascript/class.atkmanytoonerelation.js');
-      $this->m_ownerInstance->addStyle("atkmanytoonerelation.css");      
 
-      // validate is this is a selectable record and if so 
+      // register base JavaScript code and stylesheet
+      $page = &$this->m_ownerInstance->getPage();
+      $page->register_script(atkconfig('atkroot').'atk/javascript/class.atkmanytoonerelation.js');
+      $this->m_ownerInstance->addStyle("atkmanytoonerelation.css");
+
+      $id = $this->getHtmlId($fieldPrefix);
+      $editflag = true;
+
+      $newlyadded = atkArrayNvl($this->m_ownerInstance->m_postvars,$id."_ret");
+
+      $this->_getDestRecord($id."_newsel", $newlyadded, $record, $editflag);
+
+      // validate is this is a selectable record and if so
       // retrieve the display label and hidden value
       if ($this->_isSelectableRecord($record, 'select'))
       {
@@ -1606,7 +1694,7 @@
         $label = $this->m_destInstance->descriptor($record[$this->fieldName()]);
         $value = $this->m_destInstance->primaryKey($record[$this->fieldName()]);
       }
-      else 
+      else
       {
         $current = NULL;
         $label = '';
@@ -1614,21 +1702,20 @@
       }
 
       // create the widget
-      $id = $this->getHtmlId($fieldPrefix);
       $links = $this->createSelectAndAutoLinks($id, $record);
 
       $result =
         '<input type="hidden" id="'.$id.'" name="'.$id.'" value="'.$value.'" />
-         <input type="text" id="'.$id.'_search" value="'.htmlentities($label).'" class="atkmanytoonerelation_search" size="40" onfocus="this.select()" />
+         <input type="text" id="'.$id.'_search" value="'.atk_htmlentities($label).'" class="atkmanytoonerelation_search" size="40" onfocus="this.select()" />
          <img id="'.$id.'_spinner" src="atk/images/spinner.gif" style="vertical-align: middle; display: none"> '.$links.'<br />
-         <div id="'.$id.'_result" style="display: none" class="atkmanytoonerelation_result"></div>';      
-        
+         <div id="'.$id.'_result" style="display: none" class="atkmanytoonerelation_result"></div>';
+
       // register JavaScript code that attaches the auto-complete behaviour to the search box
       $url = partial_url($this->m_ownerInstance->atkNodeType(), $mode, 'attribute.'.$this->fieldName().'.autocomplete');
-      $function = $this->createOnChangeCaller($id, $fieldPrefix);      
-      $code = "ATK.ManyToOneRelation.completeEdit('{$id}_search', '{$id}_result', '$id', '{$id}_spinner', '$url', $function, 1);";            
+      $function = $this->createOnChangeCaller($id, $fieldPrefix);
+      $code = "ATK.ManyToOneRelation.completeEdit('{$id}_search', '{$id}_result', '$id', '{$id}_spinner', '$url', $function, 1);";
       $page->register_loadscript($code);
-      
+
       return $result;
     }
 
@@ -1647,7 +1734,7 @@
 
       $this->createDestination();
 
-      $fieldprefix = $this->m_ownerInstance->m_postvars['atkfieldprefix'];
+      $fieldprefix = (isset($this->m_ownerInstance->m_postvars['atkfieldprefix'])?$this->m_ownerInstance->m_postvars['atkfieldprefix']:"");
       $searchvalue = $this->escapeSQL($searchvalue);
       $record = $this->m_ownerInstance->updateRecord();
 
@@ -1703,7 +1790,7 @@
         $option = $this->m_destInstance->descriptor($rec);
         $value = $this->m_destInstance->primaryKey($rec);
         $result .= '
-          <li title="'.htmlentities($option).'">'.htmlentities($option).'</li>';
+          <li title="'.atk_htmlentities($option).'">'.atk_htmlentities($option).'</li>';
       }
 
       return "<ul>$result</ul>";
@@ -1774,5 +1861,6 @@
         return "(".implode(") AND (", $mainFilter).")";
       else return "";
     }
+
   }
 ?>

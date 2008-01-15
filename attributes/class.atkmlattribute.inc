@@ -109,16 +109,17 @@
         $entry = array("name" => $this->m_name."_ml", "obligatory" => $this->hasFlag(AF_OBLIGATORY), "attribute" => &$this);
 
         /* label? */
-        $entry["label"] = $this->label($defaults).' (<label id="'.$fieldprefix.$this->formName().'_label">'.text("language_".strtolower($curlng)).'</label>)';
+        $entry["label"] = $this->label($defaults).' (<label id="'.$fieldprefix.$this->formName().'_label">'.atktext("language_".strtolower($curlng)).'</label>)';
         $entry["id"] = $this->getHtmlId($fieldprefix);
         $entry["tabs"] = $this->m_tabs;
-
+        $entry["sections"] = $this->m_sections;
+        
         /* first language of other languages */
         $entry["html"] = '<input type="text" name="'.$fieldprefix.$this->formName().'['.(count($this->m_languages)==2 ? $curlng : "multilanguage").']"'.
                    ' value="'.htmlspecialchars($defaults[$this->fieldName()][$curlng]).'"'.
                    ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').
                    ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>';
-
+                   
         $arr["fields"][] = $entry;
         $this->m_edited = false;
       }
@@ -150,7 +151,7 @@
       return $result;
     }
 
-    /**
+   /**
      * Check if the attribute is empty for all languages
      * @param array $record Current record
      * @return boolean true if it's empty
@@ -165,6 +166,7 @@
 
       return 1;
     }
+
 
     /**
      * Returns a displayable string for this value.

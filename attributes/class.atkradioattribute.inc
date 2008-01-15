@@ -48,7 +48,15 @@
     var $m_amount = 1;
     var $m_cols=false;
     var $m_rows=false;
+    var $m_clickableLabel=true;
     
+    /**
+     * Array with comments per option
+     *
+     * @var array
+     */
+    var $m_comments = array();
+
     var $m_onchangehandler_init = "var newvalue = el.value;\n";
 
     /**
@@ -86,6 +94,28 @@
       }
       $this->atkListAttribute($name, $optionArray, $valueArray, $flags,$size); // base class constructor
     }
+    
+    /**
+     * Set comment for a specific option
+     *
+     * @param string $option The option the comment is for
+     * @param string $comment The comment itself
+     */
+    function setComment($option, $comment)
+    {
+      $key = array_search($option, $this->m_options);
+      $this->m_comments[$key] = $comment;
+    }
+    
+    /**
+     * Set clickablelabel for the radioattribute
+     *
+     * @param boolean $label
+     */
+    function setClickableLabel($label=true)
+    {
+      $this->m_clickableLabel=$label;
+    }
 
     /**
      * Returns a piece of html code that can be used in a form to edit this
@@ -95,7 +125,10 @@
      */
     function edit($record="", $fieldprefix="")
     {
-      $total_items = count($this->m_values);
+      $values = $this->getValues($record);
+      atk_var_dump($record,'EDIT RECORD');
+      
+      $total_items = count($values);
       if($this->m_cols && !$this->hasFlag(AF_DISPLAY_VERT))
       {
         $items=$this->m_amount;
@@ -118,9 +151,10 @@
       $result ='<table class="table">';
       if(!$this->hasFlag(AF_DISPLAY_VERT)) $result.='<tr>';
       $item_count=0;
+      
       for ($i=0;$i<$total_items;$i++)
       {
-        if ($this->m_values[$i] == $record[$this->fieldName()] && $record[$this->fieldName()]!="")
+        if ($values[$i] == $record[$this->fieldName()] && $record[$this->fieldName()]!="")
         {
           $sel = "checked";
         }
@@ -129,26 +163,29 @@
           $sel = "";
         }
 
-        $labelID = $fieldprefix.$this->formName()."_".$this->m_values[$i];
+        $labelID = $fieldprefix.$this->formName()."_".$values[$i];
         if($this->hasFlag(AF_DISPLAY_VERT)) $result.='<tr>';
         $this->registerKeyListener($labelID, KB_CTRLCURSOR|KB_CURSOR);
         $id = $this->getHtmlId($fieldprefix);
-        
+
         $onchange='';
         if (count($this->m_onchangecode))
         {
-          $onchange = 'onChange="'.$id.'_onChange(this);" ';
+          $onchange = 'onClick="'.$id.'_onChange(this);" ';
           $this->_renderChangeHandler($fieldprefix);
         }
         
-        $result .= '<td><input id="'.$labelID.'" type="radio" name="'.$fieldprefix.$this->formName().'" value="'.$this->m_values[$i].'" '.$onchange.$sel.'>
-        <label for="'.$labelID.'">'.atktext($this->m_options[$i], $this->m_ownerInstance->m_module).'</label></td>';
+        $commenthtml = '<br/><div class="atkradio_comment">'.$this->m_comments[$i].'</div>';
+
+        $result .= '<td><input id="'.$labelID.'" type="radio" name="'.$fieldprefix.$this->formName().'" '.$this->getCSSClassAttribute("atkradio").' value="'.$values[$i].'" '.$onchange.$sel.'>
+        '.$this->renderValue($labelID,$this->_translateValue($values[$i],$record)).($this->hasFlag(AF_DISPLAY_VERT) && $this->m_comments[$i] != '' ? $commenthtml : '').'</td>';
+        
         if($this->hasflag(AF_DISPLAY_VERT))
         {
           $tmp_items=$items;
           if($this->hasFlag(AF_DISPLAY_VERT)&&$this->m_rows)
           {
-            $tmp_items=count($this->m_values);
+            $tmp_items=count($values);
           }
           else
           {
@@ -165,10 +202,10 @@
             {
               $sel = "";
             }
-            if($this->m_values[$j]!="")
+            if($values[$j]!="")
             {
-              $result .= '<td><input id="'.$labelID.'" type="radio" name="'.$fieldprefix.$this->formName().'" value="'.$this->m_values[$j].'" '.$sel.'>
-              <label for="'.$labelID.'">'.atktext($this->m_options[$j], $this->m_ownerInstance->m_module).'</label></td>';
+              $result .= '<td><input id="'.$labelID.'" type="radio" name="'.$fieldprefix.$this->formName().'" '.$this->getCSSClassAttribute("atkradio").' value="'.$values[$j].'" '.$onchange.$sel.'>
+              '.$this->renderValue($labelID,$this->_translateValue($values[$j],$record)).($this->m_comments[$i] != '' ? $commenthtml : '').'</td>';
             }
             else
             {
@@ -195,5 +232,22 @@
       $result.='</table>';
       return $result;
     }
+    
+    /**
+     * Render value with or without a clickable label
+     *
+     * @param string $labelID Label ID
+     * @param string $value Label value
+     * @return string Label
+     */
+    function renderValue($labelID,$value)
+    {
+      if($this->m_clickableLabel)
+      {
+        return '<label for="'.$labelID.'">'.$value.'</label>';
+      }
+      return $value;
+    }
+    
   }
 ?>

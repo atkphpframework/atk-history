@@ -134,13 +134,7 @@
 
       $this->atkAttribute($name, $flags, $size); // base class constructor
 
-      // m_options and m_values array are still here for backwardscompatibility
-      $this->m_options = $optionArray;
-      $this->_set("options",$optionArray);
-      $this->m_values = $valueArray;
-      $this->_set("values",$valueArray);
-
-      $this->createLookupArray($optionArray,$valueArray);
+      $this->setOptions($optionArray, $valueArray);
     }
 
     /**
@@ -242,7 +236,7 @@
       if (count($this->m_onchangecode))
       {
         $onchange = 'onChange="'.$id.'_onChange(this);"';
-        $this->renderChangeHandler($fieldprefix);
+        $this->_renderChangeHandler($fieldprefix);
       }
 
       $result = '<select id="'.$id.'" name="'.$id.'"  class="atklistattribute" '.$onchange.($this->m_width?" style='width: {$this->m_width}px'":"").'>';
@@ -250,11 +244,12 @@
       $result.=$this->_addEmptyListOption();
 
       $values = $this->getValues($record);
+      $recvalue = atkArrayNvl($record,$this->fieldName());
       for ($i=0;$i<count($values);$i++)
       {
         // If the current value is selected or occurs in the record
         if ((!is_null($this->m_selected) && $values[$i] == $this->m_selected) ||
-            ( is_null($this->m_selected) && $values[$i] == $record[$this->fieldName()] && $record[$this->fieldName()]!=""))
+            ( is_null($this->m_selected) && $values[$i] == $recvalue && $recvalue!==""))
         {
           $sel = "selected";
         }
@@ -280,13 +275,17 @@
     function _addEmptyListOption()
     {
       $ret='';
-      if (!$this->hasFlag(AF_OBLIGATORY) ||
+      
+      // use a different (more descriptive) text for obligatory items
+      $text_key = $this->hasFlag(AF_OBLIGATORY) ? "list_null_value_obligatory" : "list_null_value";
+      
+      if (!$this->hasFlag(AF_LIST_NO_NULL_ITEM) ||
            ($this->hasFlag(AF_OBLIGATORY) &&
            // CONFIG IS DEPRECATED
           ((atkconfig("list_obligatory_null_item")&&!$this->hasFlag(AF_LIST_NO_OBLIGATORY_NULL_ITEM))||
            ($this->hasFlag(AF_LIST_OBLIGATORY_NULL_ITEM)))))
       {
-        $ret = '<option value="'.$this->m_emptyvalue.'">'.atktext("list_null_value", "", is_object($this->m_ownerInstance) ? $this->m_ownerInstance->m_type : "");
+        $ret = '<option value="'.$this->m_emptyvalue.'">'.atktext($text_key, "", is_object($this->m_ownerInstance) ? $this->m_ownerInstance->m_type : "");
       }
       return $ret;
     }
@@ -377,19 +376,6 @@
       return $this->m_dbfieldtype;
     }
 
-    function renderChangeHandler($fieldprefix)
-    {
-      if (count($this->m_onchangecode))
-      {
-        $page = &$this->m_ownerInstance->getPage();
-        $page->register_scriptcode("function ".$this->getHtmlId($fieldprefix)."_onChange(el)
-                                    {
-                                      newvalue = el.options[el.selectedIndex].value;
-                                      ".implode("\n", $this->m_onchangecode)."
-                                    }\n");
-      }
-    }
-
     function setAutoHide($attrib, $valuearr)
     {
       $conditions = array();
@@ -402,7 +388,11 @@
 
     /**
      * Sets the selected listitem
+     * 
      * @param string $selected the listitem you want to have selected
+     * 
+     * @deprecated 
+     * @see atkNode::initial_values
      */
     function setSelected($selected)
     {
@@ -411,7 +401,11 @@
 
     /**
      * Gets the selected listattribute
+     * 
      * @return string the selected listitem
+     * 
+     * @deprecated 
+     * @see atkNode::initial_values
      */
     function getSelected()
     {
@@ -485,6 +479,60 @@
     function getWidth()
     {
       return $this->m_width;
+    }
+    
+    /**
+     * Add option/value to dropdown
+     *
+     * @param string $option
+     * @param string $value
+     */
+    function addOption($option, $value="")
+    {
+      if ($value!=0 && empty($value)) $value = $option;
+      $currentOptions = $this->_get("options");
+      $currentOptions[] = $option;
+      $this->_set("options", $currentOptions);
+            
+      $currentValues = $this->_get("values");
+      $currentValues[] = $value;
+      $this->_set("values", $currentValues);
+      
+      $this->createLookupArray($currentOptions,$currentValues);
+      return $this;
+    }
+    
+    /**
+     * Remove option from dropdown
+     *
+     * @param string $option
+     */
+    function removeOption($option)
+    {
+      $currentOptions = $this->_get("options");
+      $currentValues = $this->_get("values");      
+      
+      $index = array_search($option, $currentOptions);
+      $value = $currentValues[$index];
+      
+      array_splice($currentOptions, $index, 1); // remove option
+      array_splice($currentValues, $index, 1);  // remove value
+      
+      $this->_set("options",$currentOptions);
+      $this->_set("values",$currentValues);
+      return $this;
+    }
+
+    function setOptions($optionArray, $valueArray)
+    {
+      // m_options and m_values array are still here for backwardscompatibility
+      $this->m_options = $optionArray;
+      $this->_set("options",$optionArray);
+      $this->m_values = $valueArray;
+      $this->_set("values",$valueArray);
+
+      $this->createLookupArray($optionArray,$valueArray);
+      return $this;
     }
   }
 

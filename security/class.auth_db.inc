@@ -27,7 +27,7 @@
    {
      var $m_rightscache = array();
 
-     
+
      function buildSelectUserQuery($user,$usertable,$userfield,$passwordfield,$accountdisablefield=null,$accountenbleexpression=null)
      {
        $disableexpr="";
@@ -36,7 +36,7 @@
        if ($accountenbleexpression) $query .= " AND $accountenbleexpression";
        return $query;
      }
-     
+
      function validateUser($user, $passwd)
      {
        if ($user=="") return AUTH_UNVERIFIED; // can't verify if we have no userid
@@ -49,14 +49,14 @@
                                             atkconfig("auth_accountdisablefield"),
                                             atkconfig("auth_accountenableexpression"));
        $recs = $db->getrows($query);
-       if ($this->isLocked($recs[0]))
+       if (count($recs)>0 && $this->isLocked($recs[0]))
        {
          return AUTH_LOCKED;
        }
 
        return ((count($recs)>0 && $user!="" && $this->matchPasswords($this->getPassword($recs[0]), $passwd))?AUTH_SUCCESS:AUTH_MISMATCH);
      }
-     
+
      /**
       * returns the users password from record
       *
@@ -67,7 +67,7 @@
      {
        return (isset($rec[atkconfig("auth_passwordfield")]))?$rec[atkconfig("auth_passwordfield")]:false;
      }
-     
+
      /**
       * checks wether the useraccount is locked
       *
@@ -119,7 +119,7 @@
        $groupfield = atkconfig("auth_groupfield");
        $groupparentfield = atkconfig("auth_groupparentfield");
 
-       $db = &atkGetDb();
+       $db = &atkGetDb(atkconfig("auth_database"));
        if ($usertable==$leveltable||$leveltable=="")
        {
          // Level and userid are stored in the same table.
@@ -149,10 +149,10 @@
        $recs = $db->getrows($query);
        return $recs;
      }
-     
+
      function getParentGroups($parents)
      {
-       $db = &atkGetDb();
+       $db = &atkGetDb(atkconfig("auth_database"));
 
        $grouptable = atkconfig("auth_grouptable");
        $groupfield = atkconfig("auth_groupfield");
@@ -165,7 +165,7 @@
        $recs = $db->getrows($query->buildSelect(TRUE));
        return $recs;
      }
-     
+
      function getUser($user)
      {
        atk_var_dump("GETUSER!!!!!!!");
@@ -240,10 +240,10 @@
        }
        return $access;
      }
-     
+
      function getEntity($node, $action)
      {
-       $db = &atkGetDb();
+       $db = &atkGetDb(atkconfig("auth_database"));
 
        if (!isset($this->m_rightscache[$node])||count($this->m_rightscache[$node])==0)
        {
@@ -256,20 +256,24 @@
 
        $rights = $this->m_rightscache[$node];
 
+       $field = atkconfig("auth_accessfield");
+       if (empty($field))
+         $field = atkconfig("auth_levelfield");
+         
        for ($i=0, $_i=count($rights); $i<$_i; $i++)
        {
          if ($rights[$i]['action'] == $action)
          {
-           $result[] = $rights[$i][atkconfig("auth_levelfield")];
+	         $result[] = $rights[$i][$field];
          }
        }
-
+       
        return $result;
      }
 
      function getAttribEntity($node, $attrib, $mode)
      {
-       $db = &atkGetDb();
+       $db = &atkGetDb(atkconfig("auth_database"));
 
        $query = "SELECT * FROM attribaccess WHERE node='$node' AND attribute='$attrib' AND mode='$mode'";
 
@@ -292,10 +296,10 @@
      {
      	 return strcmp($a["username"], $b["username"]);
      }
-     
+
      function getUserList()
      {
-       $db = &atkGetDb();
+       $db = &atkGetDb(atkconfig("auth_database"));
        $query = "SELECT * FROM ".atkconfig("auth_usertable");
 
        $accountdisablefield = atkconfig("auth_accountdisablefield");

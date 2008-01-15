@@ -36,7 +36,7 @@ class atkMetaShuttleRelation extends atkShuttleRelation
   /**
    * Default constructor.    
    */
-  function atkMetaShuttleRelation($name, $accessor, $template, $options, $flags)
+  function atkMetaShuttleRelation($name, $accessor, $template, $options, $flags=0)
   {
     $this->atkManyToManyRelation($name, $options['through'], $accessor, $flags);
     $this->m_accessor = $accessor;
@@ -66,10 +66,19 @@ class atkMetaShuttleRelation extends atkShuttleRelation
     $policy = &$this->m_ownerInstance->getMetaPolicy();
 
     $this->m_destination = $policy->findDestination($this->m_accessor, true);
-    atkdebug("atkMetaShuttleRelation: {$this->m_accessor} destination {$this->m_destination}");
-    if ($this->m_destination == NULL) return FALSE;
-    else if (!parent::createDestination()) return FALSE;
-      
+    atkdebug("atkMetaShuttleRelation: '{$this->m_accessor}' destination '{$this->m_destination}'");
+    
+    if ($this->m_destination == NULL) 
+    {
+      atkerror("No destination found for atkMetaShuttleRelation with accessor '{$this->m_accessor}'!");
+      return FALSE;
+    }
+    else if (!parent::createDestination()) 
+    {
+      atkerror("Cannot instantiate destination '{$this->m_destination}' for atkMetaShuttleRelation with accessor '{$this->m_accessor}'!");        
+      return FALSE;
+    }      
+    
     return TRUE;
   }
   
@@ -87,9 +96,18 @@ class atkMetaShuttleRelation extends atkShuttleRelation
     $policy = &$this->m_ownerInstance->getMetaPolicy();
 
     $this->m_link = $policy->findDestination($this->m_through, true);
-    atkdebug("atkMetaShuttleRelation: {$this->m_through} link {$this->m_destination}");
-    if ($this->m_link == NULL) return FALSE;
-    else if (!parent::createLink()) return FALSE;
+    atkdebug("atkMetaShuttleRelation: '{$this->m_through}' link '{$this->m_destination}'");
+    
+    if ($this->m_link == NULL) 
+    {
+      atkerror("No link found for atkMetaShuttleRelation with accessor '{$this->m_through}'!");
+      return FALSE;
+    }
+    else if (!parent::createLink()) 
+    {
+      atkerror("Cannot instantiate link '{$this->m_link}' for atkMetaShuttleRelation with accessor '{$this->m_through}'!");        
+      return FALSE;
+    }      
       
     return TRUE;    
   }  

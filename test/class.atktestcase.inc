@@ -25,17 +25,17 @@
    * @package atk
    * @subpackage test
    *
-   */   
+   */
   class atkTestCase extends UnitTestCase
   {
     var $m_restoreDb = array();
     var $m_restoreNode = array();
     var $m_restoreSecMgr = NULL;
-    
+
     var $m_useTestDatabase = NULL;
     var $m_fixtures = array();
     var $m_fixtureData = array();
-    
+
     /**
      * Constructor.
      *
@@ -45,16 +45,16 @@
     {
       $this->UnitTestCase($label);
     }
-    
+
     function getLabel()
     {
       $label = parent::getLabel();
       return empty($label) ? get_class($this) : $label;
     }
-    
+
     /**
      * Use test database?
-     * 
+     *
      * @return boolean use test database?
      */
     function useTestDatabase()
@@ -63,10 +63,10 @@
       {
         $this->setUseTestDatabase(atkTestSuite::useTestDatabase());
       }
-      
+
       return $this->m_useTestDatabase;
     }
-    
+
     /**
      * Use test database?
      *
@@ -74,7 +74,6 @@
      */
     function setUseTestDatabase($value)
     {
-      atkdebug("Use test database? => ".print_r($value, true));
       $this->m_useTestDatabase = $value;
     }
 
@@ -94,16 +93,16 @@
       $g_nodeHandlers = array();
       $g_nodeListeners = array();
       $g_nodeControllers = array();
-      
+
       if ($this->useTestDatabase())
       {
         // switch to the test databases
         $mapping = atkconfig("test_db_mapping");
-        atkDb::useMapping($mapping);      
+        atkDb::useMapping($mapping);
         $this->_loadData();
       }
     }
-    
+
     /**
      * Called after each test method. By default this
      * means the fixture data and any other data added
@@ -116,20 +115,20 @@
       if ($this->useTestDatabase())
       {
         // stop using the test database(s)
-        $this->_cleanData();        
+        $this->_cleanData();
         atkDb::clearMapping();
       }
-    }    
-    
+    }
+
     /**
-     * Returns the fixture for the given table name with the given name. 
+     * Returns the fixture for the given table name with the given name.
      * If the fixture doesn't exist NULL is returned. If no database is specified
      * all databases will be searched. If no name is specified all fixtures for
      * the given table will be returned.
-     * 
+     *
      * @param string $table table name
      * @param string $name  fixture name
-     * 
+     *
      * @return array fixture data
      */
     function fixture($table, $name=NULL, $database=NULL)
@@ -150,7 +149,7 @@
           if ($data != NULL) return $data;
         }
       }
-      
+
       return NULL;
     }
 
@@ -159,10 +158,10 @@
      * This makes it possible to access fixtures if there is a method
      * with the same name as the table the fixture is defined for. Only
      * works properly in PHP5.
-     * 
+     *
      * @param string $method method name (table name)
      * @param array  $args   method arguments
-     * 
+     *
      * @return array fixture data
      */
     function __call($method, $args)
@@ -172,11 +171,11 @@
         if (isset($this->m_fixtureData[$database][$method]))
           return $this->fixture($method, isset($args[0]) ? $args[0] : NULL, isset($args[1]) ? $args[1] : NULL);
       }
-      
+
       atkerror("Invalid method name $method for ".get_class($this)." (fixture not loaded?)!");
       return NULL;
     }
-    
+
     /**
      * Clean-up data in the test database so we have a nice clean
      * database for the next test method.
@@ -184,22 +183,22 @@
     function _cleanData()
     {
       atkdebug("Clean test database(s)...");
-      
-      $config = atkconfig("db");      	      
+
+      $config = atkconfig("db");
       $mapping = atkconfig("test_db_mapping");
-    	    	
+
       foreach ($mapping as $normal => $test)
-      {      
-      	$db = &$this->_getTestDb($normal);      
-        if (!isset($config[$test]["transactional_fixtures"]) || 
+      {
+      	$db = &$this->_getTestDb($normal);
+        if (!isset($config[$test]["transactional_fixtures"]) ||
             !$config[$test]["transactional_fixtures"])
         {
-          //$db->toggleForeignKeys(false);          
-          
+          $db->toggleForeignKeys(false);
+
           $db->deleteAll();
           $db->commit();
-          
-          //$db->toggleForeignKeys(true);                    
+
+          $db->toggleForeignKeys(true);
         }
         else
         {
@@ -207,26 +206,33 @@
         }
       }
     }
-    
+
     /**
      * Load fixture data into the test database.
      */
     function _loadData()
     {
       atkdebug("Load fixtures into test database(s)...");
-      
+
       if (count($this->m_fixtures) == 0) return;
 
+      $config = atkconfig("db");      
+      $mapping = atkconfig("test_db_mapping");      
+      
       atkimport('atk.fixture.atkfixturemanager');
       $manager = &atkFixtureManager::getInstance();
-      
+
       $this->m_fixtureData = array();
       foreach($this->m_fixtures as $database => $fixtures)
       {
         $db = &$this->_getTestDb($database);
-        
-        //$db->toggleForeignKeys(false);
-        
+
+        if (!isset($config[$mapping[$database]]["transactional_fixtures"]) ||
+            !$config[$mapping[$database]]["transactional_fixtures"])
+        {
+          $db->toggleForeignKeys(false);
+        }
+
         foreach ($fixtures as $fullname)
         {
           $result = $manager->load($fullname, $db, $this->_getPath());
@@ -234,33 +240,38 @@
           {
             atkerror("Error loading fixture '$fullname'!");
           }
-          else 
+          else
           {
             $table = $result['table'];
             $data = $result['data'];
-  
+
             if (!isset($this->m_fixtureData[$database][$table]))
               $this->m_fixtureData[$database][$table] = array();
-  
+
             $this->m_fixtureData[$database][$table] =
               array_merge($this->m_fixtureData[$database][$table], $data);
           }
         }
-        
-        //$db->toggleForeignKeys(true);
+
+        if (!isset($config[$mapping[$database]]["transactional_fixtures"]) ||
+            !$config[$mapping[$database]]["transactional_fixtures"])
+        {
+          $db->toggleForeignKeys(true);
+          $db->commit();
+        }
       }
     }
-    
+
     /**
      * Get path for this test-case.
-     * 
+     *
      * @return returns the path for this test-case
      */
     function _getPath()
     {
       static $s_path = array();
       $class = get_class($this);
-      
+
       if (!isset($s_path[$class]))
       {
         $includes = get_included_files();
@@ -275,12 +286,12 @@
           }
         }
       }
-      
+
       if (!isset($s_path[$class]))
         atkerror('Could not determine path for test-case: '.$class);
       else return $s_path[$class];
-    }    
-    
+    }
+
     /**
      * Get test database.
      */
@@ -288,10 +299,10 @@
     {
       return atkGetDb($database);
     }
-    
+
     /**
      * Adds the given fixture to the given database.
-     * 
+     *
      * @param string $name     fixture name
      * @param string $database database name
      */
@@ -299,10 +310,10 @@
     {
       $this->addFixtures(array($name), $database);
     }
-    
+
     /**
      * Adds the given fixtures to the given database.
-     * 
+     *
      * @param array $names     fixture names
      * @param string $database database name
      */
@@ -310,13 +321,13 @@
     {
       if (!isset($this->m_fixtures[$database]))
         $this->m_fixtures[$database] = array();
-      $this->m_fixtures[$database] = array_merge($this->m_fixtures[$database], $names);       
+      $this->m_fixtures[$database] = array_unique(array_merge($this->m_fixtures[$database], $names));
     }
-    
+
     function setMockDb($conn=NULL)
     {
       global $config_db;
-      
+
       if ($conn === NULL)
         $conn = "default";
 
@@ -329,7 +340,7 @@
     function restoreDb($conn=NULL)
     {
       if ($conn === NULL)
-        $conn = "default";      
+        $conn = "default";
       atkDb::setInstance($conn, $this->m_restoreDb[$conn]);
     }
 
@@ -352,6 +363,137 @@
     {
       atkSetSecurityManager($this->m_restoreSecMgr);
     }
-  }
+    
+    /**
+     * Asserts the given attribute(s) value did not cause the given validation error.
+     *
+     * $attribName can contain the name of a single attributename, or an array with
+     * attributenames.
+     * 
+     * @param array  $record
+     * @param mixed $attribName
+     * @param string $error
+     */
+    function _hasValidationError($record, $attribName, $error)
+    {
+      if (!isset($record['atkerror'])) return false;
+      
+      $errors = $record['atkerror'];
 
+      $found = false;
+      
+      foreach ($errors as $entry)
+      {
+        //does the error match?
+        if($entry['err'] == $error)
+        {
+          //If both $attribName and $entry["attrib_name"] are arrays, we could have a match.
+          if(is_array($attribName) && is_array($entry["attrib_name"]))
+          {
+            //if the number of elements is not the same, we do not have a match.
+            if(count($attribName)==count($entry["attrib_name"]))
+            {
+              //check if the attributes in the arrays are the same
+              $allIn = true;
+              foreach($attribName as $att)
+              {
+                if(!in_array($att,$entry["attrib_name"]))
+                {
+                  $allIn=false;
+                  break;
+                }
+              }
+            
+              //if the arrays are the same, we have found a match
+              if($allIn)
+              {
+                $found = true;
+                break;
+              }
+            }
+          }
+          //If neither is an array, we could have a match.
+          elseif(!is_array($attribName) && !is_array($error["attrib_name"]))
+          {
+            //If the names are the same, we have a match.
+            if($entry['attrib_name'] == $attribName)
+            {
+              $found = true;
+              break;
+            }
+          }          
+        }
+      }     
+      
+      return $found;      
+    }    
+    
+    /**
+     * Asserts the given attribute(s) value did not cause the given validation error.
+     *
+     * $attribName can contain the name of a single attributename, or an array with
+     * attributenames.
+     * 
+     * @param array  $record
+     * @param mixed $attribName
+     * @param string $error
+     */    
+    function assertNoValidationError($record, $attribName, $error)
+    {   
+      $found = $this->_hasValidationError($record, $attribName, $error);
+      if(is_array($attribName))
+        $this->assertTrue(!$found, 'Validation error '.$error.' not found for attributes '.implode(", ",$attribName));
+      else
+        $this->assertTrue(!$found, 'Validation error '.$error.' not found for attribute '.$attribName);          
+    }
+    
+    /**
+     * Asserts the given attribute(s) value caused the given validation error.
+     * 
+     * $attribName can contain the name of a single attributename, or an array with
+     * attributenames.
+     *
+     * @param array  $record
+     * @param mixed $attribName
+     * @param string $error
+     */
+    function assertValidationError($record, $attribName, $error)
+    {
+      $found = $this->_hasValidationError($record, $attribName, $error);
+      if(is_array($attribName))
+        $this->assertTrue($found, 'Validation error '.$error.' for attributes '.implode(", ",$attribName));        
+      else 
+        $this->assertTrue($found, 'Validation error '.$error.' for attribute '.$attribName);        
+    }
+    
+    /**
+     * Asserts if a certain attribute in the given node has the given flag.
+     * You should pass the flag name to this method!
+     *
+     * @param atkNodeType $node
+     * @param string $attribName
+     * @param string $flagName
+     */
+    function assertAttributeHasFlag($node, $attribName, $flagName)
+    {
+      $flag = eval("return ".$flagName.";");
+      $hasFlag = $node->getAttribute($attribName)->hasFlag($flag);
+      $this->assertTrue($hasFlag, "Attribute ".$node->atkNodeType()."::$attribName has flag $flagName");
+    }
+
+    /**
+     * Asserts if a certain attribute in the given node doesn't have the given flag.
+     * You should pass the flag name to this method!
+     *
+     * @param atkNodeType $node
+     * @param string $attribName
+     * @param string $flagName
+     */
+    function assertAttributeNotHasFlag($node, $attribName, $flagName)
+    {
+      $flag = eval("return ".$flagName.";");
+      $hasFlag = $node->getAttribute($attribName)->hasFlag($flag);
+      $this->assertFalse($hasFlag, "Attribute ".$node->atkNodeType()."::$attribName not has flag $flagName");
+    }    
+  }
 ?>

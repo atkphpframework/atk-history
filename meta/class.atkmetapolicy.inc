@@ -37,6 +37,7 @@ class atkMetaPolicy
   var $m_includes = NULL;
   var $m_excludes = NULL;
 
+  var $m_tableAttrs = array();
   var $m_attrs = array();
 
   /**
@@ -100,12 +101,17 @@ class atkMetaPolicy
       (hasFlag($meta['flags'], MF_UNIQUE) ? AF_UNIQUE : 0) |
       (hasFlag($meta['flags'], MF_NOT_NULL) ? AF_OBLIGATORY : 0) |
       (hasFlag($meta['flags'], MF_AUTO_INCREMENT|MF_PRIMARY) ? AF_AUTOKEY : 0) |
-      ($meta['type'] == "text" ? AF_HIDE_LIST : 0);
+      ($meta['gentype'] == "text" ? AF_HIDE_LIST : 0);
 
     if (hasFlag($flags, AF_PRIMARY) && $meta['num'] == 0 &&
         in_array($name, array("id", $meta['table']."id", $meta['table']."_id")))
       $flags |= AF_AUTOKEY;
 
+    if (in_array($name, array("passw", "password")))
+    {
+      $flags |= AF_HIDE_LIST;
+    }
+      
     return $flags;
   }
 
@@ -120,8 +126,10 @@ class atkMetaPolicy
     $params = array();
 
     if (in_array($name, array("passw", "password")))
+    {
       $type = "atk.attributes.atkpasswordattribute";
-
+      $params = array(true);
+    }
     else if (in_array($name, array("email", "e-mail")))
     {
       $type = "atk.attributes.atkemailattribute";
@@ -135,7 +143,23 @@ class atkMetaPolicy
     {
       $type = 'atk.attributes.atktimezoneattribute';
     }
-    else if ($meta['type'] == 'int' && $meta['len'] == 1 && 
+    else if ($name == 'created_at' || $name == 'created_on')
+    {
+      $type = 'atk.attributes.atkcreatestampattribute';
+    }
+    else if ($name == 'updated_at' || $name == 'updated_on')
+    {
+      $type = 'atk.attributes.atkupdatestampattribute';
+    }
+    else if ($name == 'created_by')
+    {
+      $type = 'atk.attributes.atkcreatedbyattribute';
+    }
+    else if ($name == 'updated_by')
+    {
+      $type = 'atk.attributes.atkupdatedbyattribute';
+    }
+    else if ($meta['gentype'] == 'number' && $meta['len'] == 1 && 
              (substr($name, 0, 3) == 'is_' || substr($name, 0, 4) == 'has_'))
     {
       $type = 'atk.attributes.atkboolattribute';
@@ -243,7 +267,7 @@ class atkMetaPolicy
         $sequence = $meta['sequence'];
 
     if ($sequence == NULL)
-      $sequence = "seq_".$this->getTable();
+      $sequence = atkConfig("database_sequenceprefix").$this->getTable();
 
     return $sequence;
   }
@@ -264,6 +288,9 @@ class atkMetaPolicy
 
   /**
    * Set includes. Implicitly sets the order.
+   * 
+   * Attributes manually added through the policy 
+   * will always be included!
    */
   function setIncludes($attrs)
   {
@@ -278,6 +305,9 @@ class atkMetaPolicy
 
   /**
    * Set excludes.
+   * 
+   * Attributes manually added through the policy 
+   * will always be included!
    */
   function setExcludes($attrs)
   {
@@ -416,6 +446,12 @@ class atkMetaPolicy
       if (array_key_exists($attr, $this->m_attrs))
         $this->m_attrs[$attr]["tabs"] = $tabs;
   }
+  
+  /**
+   * Set the sections/tabs for the given attribute or list of attributes.
+   */
+  function setSection($attrs, $tab) { $params = func_get_args(); $this->_call("setTabs", $params); }
+  function setSections($attrs, $tabs)  { $params = func_get_args(); $this->_call("setTabs", $params); }
 
   /**
    * Sets the attribute type. All extra arguments after the two
@@ -423,9 +459,9 @@ class atkMetaPolicy
    * attribute. If you need to pass arguments by reference you can
    * better use the setTypeAndParams method.
    *
-   * @param $attr  the attribute name
-   * @param $type  full ATK attribute class (e.g. atk.attributes.atkboolattribute)
-   * @param $...   all other arguments will be threated as parameters
+   * @param string|array $attr  the attribute name or a list of attributes
+   * @param string $type        full ATK attribute class (e.g. atk.attributes.atkboolattribute)
+   * @param mixed ...           all other arguments will be threated as parameters
    */
   function setType($attr, $type)
   {
@@ -437,14 +473,18 @@ class atkMetaPolicy
   /**
    * Sets the attribute type and parameters.
    *
-   * @param $attr    the attribute name
-   * @param $type    full ATK attribute class (e.g. atk.attributes.atkboolattribute)
-   * @param $params  parameters for the attribute (optional)
+   * @param string|array $attr the attribute name or a list of attributes
+   * @param string $type       full ATK attribute class (e.g. atk.attributes.atkboolattribute)
+   * @param array $params      parameters for the attribute (optional)
    */
   function setTypeAndParams($attr, $type, $params=array())
   {
-    $this->m_attrs[$attr]["type"] = $type;
-    $this->m_attrs[$attr]["params"] = $params;
+    $attrs = is_array($attr) ? $attr : array($attr);
+    foreach ($attrs as $attr)
+    {
+      $this->m_attrs[$attr]["type"] = $type;
+      $this->m_attrs[$attr]["params"] = $params;
+    }
   }
 
   /**
@@ -580,8 +620,10 @@ class atkMetaPolicy
    * - dest(-ination)  destination attribute name
    * - filter          destination filter
    * - through         intermediate node name (for many-to-many relations)
-   * - type            type of many-to-many relation (shuttle or bool(ean), defaults to shuttle)
-   * - cols/columns    number of columns (many-bool relations only)
+   * - type            type of many-to-many relation (shuttle, bool(ean) or list, defaults to shuttle)
+   * - cols/columns    number of columns (many-to-many bool relations only)
+   * - rows            number of rows (many-to-many list relations only)
+   * - name            name for this relation (by default getNodeType($accessor))
    *
    * @param $accessor          accessor name (complete description is given above)
    * @param $templateOrOptions template or list of options (complete description is given above)
@@ -595,8 +637,15 @@ class atkMetaPolicy
       $options = $templateOrOptions;
     else $template = $templateOrOptions;
     
-    $name = getNodeType($accessor);    
-    
+    if (isset($options['name']))
+    {
+      $name = $options['name'];
+    }
+    else 
+    {
+      $name = getNodeType($accessor);    
+    }
+
     if (isset($options['through']))
     {
       switch ($options['type'])
@@ -604,6 +653,13 @@ class atkMetaPolicy
         case 'bool':
         case 'boolean':
           $type = "atk.meta.relations.atkmetamanyboolrelation";
+          break;
+        case 'list':
+          $type = "atk.meta.relations.atkmetamanytomanylistrelation";
+          break;
+        case 'eshuttle':
+        case 'extendableshuttle':
+          $type = "atk.meta.relations.atkmetaextendableshuttlerelation";
           break;
         case 'shuttle':
         default:
@@ -668,8 +724,17 @@ class atkMetaPolicy
     $attr = NULL;
 
     if (array_key_exists("source", $options))
-      $attr = $options["source"];
-
+    {
+      //in case of multi referential key "source" is array
+      if(is_array($options["source"]))
+      {
+        $attr = $options["source"][0];// we use first key as name of attribute 
+      }
+      else 
+      {
+        $attr = $options["source"];
+      }
+    }
     else if (!array_key_exists("dest", $options) && !array_key_exists("destination", $options))
     {
       foreach (array_keys($this->m_attrs) as $name)
@@ -704,28 +769,42 @@ class atkMetaPolicy
   /**
    * Add / replace (custom) attribute.
    * 
-   * @param $name    attribute name
-   * @param $type    attribute type
-   * @param $params  attribute parameters, excluding flags (optional)
-   * @param $flags   attribute flags (optional)
-   * @param $tabs    tabs to display the attribute on
-   * @param $order   order of the attribute
+   * @param string|array $name  attribute name or list of attributes
+   * @param string $type        attribute type
+   * @param array $params       attribute parameters, excluding flags (optional)
+   * @param int $flags          attribute flags (optional)
+   * @param string|array $tabs  tabs to display the attribute on
+   * @param int $order          order of the attribute
    */
   function add($name, $type, $params=array(), $flags=0, $tabs=NULL, $order=NULL)
   {
-    if ($order === NULL && isset($this->m_attrs[$name]))
-      $order = $this->m_attrs[$name]['order']; 
-    else if ($order === NULL) 
-      $order = $this->_getMaxOrder() + 100;
-
-    $this->m_attrs[$name] =
-      array(
-        "type" => $type,
-        "params" => $params,
-        "flags" => $flags,
-        "tabs" => $tabs,
-        "order" => $order
-      );   
+    $names = is_array($name) ? $name : array($name);
+    foreach ($names as $name)
+    {
+      if ($order === NULL && isset($this->m_attrs[$name]))
+        $order = $this->m_attrs[$name]['order']; 
+      else if ($order === NULL) 
+        $order = $this->_getMaxOrder() + 100;
+  
+      $this->m_attrs[$name] =
+        array(
+          "type" => $type,
+          "params" => $params,
+          "flags" => $flags,
+          "tabs" => $tabs,
+          "order" => $order
+        );   
+    }
+  }
+  
+  /**
+   * Remove attribute.
+   * 
+   * @param $name attribute name
+   */
+  function remove($name)
+  {
+    unset($this->m_attrs[$name]);
   }
 
   /**
@@ -734,6 +813,14 @@ class atkMetaPolicy
   function &getAttributes()
   {
     return $this->m_attrs;
+  }
+  
+  /**
+   * Returns the attribute names.
+   */
+  function getAttributeNames()
+  {
+    return array_keys($this->m_attrs);
   }
 
   /**
@@ -757,6 +844,7 @@ class atkMetaPolicy
   {
     $db = &$this->m_node->getDb();
     $cols = $db->tableMeta($this->m_node->getTable());
+    $this->m_tableAttrs = array_keys($cols);
     foreach ($cols as $name => $meta)
       $this->_initAttribute($name, $meta);
   }
@@ -770,6 +858,7 @@ class atkMetaPolicy
    */
   function _isAttributeIncluded($name)
   {
+    if (!in_array($name, $this->m_tableAttrs)) return true;
     if ($this->m_includes !== NULL && in_array($name, $this->m_includes)) return true;
     if ($this->m_excludes !== NULL && in_array($name, $this->m_excludes)) return false;
 
@@ -788,6 +877,65 @@ class atkMetaPolicy
     }
 
     return true;
+  }
+  
+  /**
+   * Flags string.
+   */
+  function _flagsString($flags)
+  {
+    static $attrConstants = null;
+    
+    if ($attrConstants == null) 
+    {
+      useattrib('atkattribute');
+      $allConstants = get_defined_constants();
+
+      $attrConstants = array();
+      foreach ($allConstants as $const => $value)
+      {
+        if (substr($const, 0, 3) == 'AF_' && 
+            (substr($const, 0, 12) == 'AF_SPECIFIC_' || !in_array($value, array(AF_SPECIFIC_1, AF_SPECIFIC_2, AF_SPECIFIC_3, AF_SPECIFIC_4, AF_SPECIFIC_5))) && 
+            !in_array($const, array('AF_UNIX', 'AF_INET', 'AF_INET6')))
+        {
+          $attrConstants[$value] = $const;
+        }
+      }
+ 
+      krsort($attrConstants);
+    }
+
+    $found = array();
+    foreach ($attrConstants as $value => $const)
+    {
+      if (hasFlag($flags, $value))
+      {
+        $found[] = $const;
+        $flags ^= $value;
+      }
+    }
+    
+    return count($found) > 0 ? implode('|', $found) : 0;
+  }
+  
+  /**
+   * Debug attribute.
+   */
+  function _debugAttribute($name, $type, $params, $flags, $tabs, $order)
+  {
+    if (atkconfig('debug') < 1) return;
+    
+    $paramsStrs = array();
+    foreach ($params as $param)
+      $paramsStrs[] = htmlentities(var_export($param, true));
+    $paramsStr = count($paramsStrs) > 0 ? ', '.implode(', ', $paramsStrs) : '';
+    
+    $flagsStr = $this->_flagsString($flags);
+    $tabsStr = var_export($tabs, true);
+      
+    $call = "\$attr = &\$this->add(new {$type}('{$name}'$paramsStr), $tabsStr, $order); \$attr->addFlag($flagsStr);";
+    
+    atkdebug("atkMetaPolicy::_applyAttribute: {$call}");
   }
 
   /**
@@ -815,28 +963,50 @@ class atkMetaPolicy
     $call = "\$attr = new $type(\$name";
     foreach (array_keys($params) as $i)
       $call .= ", \$params[$i]";
-    $call .= ", \$flags);";
+    $call .= ");";
     eval($call);
+    $attr->addFlag($flags);
+    
+    $this->_debugAttribute($name, $type, $params, $flags, $tabs, $order);
     
     $attr = &$this->m_node->add($attr, $tabs, $order);
     if ($forceUpdate !== NULL)
       $attr->setForceUpdate($forceUpdate);
     return $attr;
   }  
+  
+  /**
+   * Compare the order of two attributes.
+   *
+   * @param array $attr1
+   * @param array $attr2
+   * @return result of ordering
+   */
+  function _cmpAttribute($attr1, $attr2)
+  {
+    if ($attr1['order'] < $attr2['order']) return -1;
+    else if ($attr1['order'] == $attr2['order']) return 0;
+    else return 1;
+  }
 
   /**
    * Build / setup node using the collected attributes.
    */
   function apply()
   {
-    foreach ($this->m_attrs as $name => $data) 
+    atkdebug("atkMetaPolicy::apply: ".$this->m_node->atkNodeType());
+    
+    $attrs = $this->m_attrs;
+    uasort($attrs, array($this, '_cmpAttribute'));
+    
+    foreach ($attrs as $name => $data) 
     {
       $this->_applyAttribute(
         $name, 
         isset($data["type"]) ? $data["type"] : '', 
         isset($data["params"]) ? $data["params"] : '', 
         isset($data["flags"]) ? $data["flags"] : '', 
-        isset($data["tabs"]) ? $data["tabs"] : '', 
+        isset($data["tabs"]) ? $data["tabs"] : $this->m_node->m_default_tab, 
         isset($data["order"]) ? $data["order"] : '',
         isset($data["forceUpdate"]) ? $data["forceUpdate"] : NULL
       );

@@ -28,7 +28,7 @@
   define ("AUTH_MISMATCH", 3);
   define ("AUTH_PASSWORDSENT", 4);
   define ("AUTH_MISSINGUSERNAME", 5);
-  define ("AUTH_ERROR",-1);
+  define ("AUTH_ERROR", -1);
 
   /**
    * The security manager for ATK applications.
@@ -48,25 +48,26 @@
     var $m_authorization = 0;
     var $m_scheme = "none";
     var $m_user = array();
+    var $m_listeners = array();
 
     // If login really fails (no relogin box, but an errormessage), the
     // error message that caused the fatal error is put in this variable.
     var $m_fatalError = "";
 
-    
+
     /**
      * Register a new listener.
-     * 
+     *
      * @param atkSecurityListener listener
      */
     function addListener(&$listener)
     {
       $this->m_listeners[] = $listener;
     }
-    
+
     /**
      * Notify listeners of a certain event.
-     * 
+     *
      * @param string event name
      * @param string username (might be null)
      */
@@ -182,6 +183,9 @@
       $userrecords[0][atkconfig("auth_passwordfield")]["hash"] = md5($newpassword);
       $usernode->updateDb($userrecords[0], true, "", array(atkconfig("auth_passwordfield")));
 
+      $db = &$usernode->getDB();
+      $db->commit();
+      
       // Send an email containing the new password to user
       $subject = atktext("auth_passwordmail_subjectnew_password", "atk");
       $body = atktext("auth_passwordmail_explanation", "atk") . "\n\n";
@@ -216,7 +220,7 @@
         $auth_user = $_SERVER["PHP_AUTH_USER"];
         $auth_pw = $_SERVER["PHP_AUTH_PW"];
       }
-      
+
       // throw post login event?
       $throwPostLoginEvent = false;
 
@@ -225,7 +229,7 @@
       if (isset($ATK_VARS["atklogout"]) && (!isset($session["relogin"])||$session["relogin"]!=1))
       {
         $this->notifyListeners("preLogout", $auth_user);
-        
+
         session_destroy();
         $cookie_params = session_get_cookie_params();
         session_set_cookie_params($cookie_params["lifetime"], dirname($_SERVER["SCRIPT_NAME"]));
@@ -239,9 +243,9 @@
           $cookiename = $this->_getAuthCookieName();
           if (!empty($_COOKIE[$cookiename])) setcookie($cookiename, "", 0);
         }
-        
-        $this->notifyListeners("postLogout", $auth_user);        
-        
+
+        $this->notifyListeners("postLogout", $auth_user);
+
         if($ATK_VARS["atklogout"]>1)
         {
           header("Location: logout.php");
@@ -249,7 +253,7 @@
         }
       }
       // do we need to login?
-      else if ((!array_key_exists("login", $session)) || ($session["login"]!=1))
+      else if ((!isset($session["login"])) || ($session["login"]!=1))
       {
         // authenticated?
         $authenticated = false;
@@ -298,31 +302,30 @@
           $this->mailPassword($auth_user);
           $response = AUTH_PASSWORDSENT;
         }
-        else 
+        else
         {
           $throwPostLoginEvent = true;
           $this->notifyListeners("preLogin", $auth_user);
-          
-          // check superuser
-          if (atkconfig("administratorpassword")!=""&&$auth_user=="administrator"&&$auth_pw==atkconfig("administratorpassword"))
+
+          // check administrator and guest user
+          if ($auth_user == "administrator" || $auth_user == "guest")
           {
-            $this->m_user = array("name"=>"administrator","level"=>-1, "access_level"=>9999999);
-            // for convenience, we also store the user as a global variable.
-            atkdebug("Administrator (configfile) logged in");
-            $authenticated = true;
+            $config_pw = atkconfig($auth_user . "password");
+            if (!empty($config_pw) && (($auth_pw == $config_pw) || (atkConfig("authentication_md5") && (md5($auth_pw) == strtolower($config_pw)))))
+            {
+              $authenticated = true;
+              $response = AUTH_SUCCESS;
+              if ($auth_user == "administrator")
+                $this->m_user = array("name" => "administrator", "level" => -1, "access_level" => 9999999);
+              else
+                $this->m_user = array("name" => "guest", "level" => -2, "access_level" => 0);
+            }
+            else
+            {
+              $response = AUTH_MISMATCH;
+            }
           }
-          else if (atkconfig("administratorpassword")!=""&&$auth_user=="administrator")
-          {
-            $response = AUTH_MISMATCH;
-          }
-          // check guest user
-          else if (atkconfig("guestpassword")!=""&&$auth_user=="guest"&&$auth_pw==atkconfig("guestpassword"))
-          {
-            $this->m_user = Array("name"=>"guest","level"=>-2, "access_level"=>0);
-            // for convenience, we also store the user as a global variable.
-            atkdebug("Guest (configfile) logged in");
-            $authenticated = true;
-          }
+
           // other users
           // we must first explicitly check that we are not trying to login as administrator or guest.
           // these accounts have been validated above. If we don't check this, an account could be
@@ -355,10 +358,10 @@
               (is_array($this->m_user['level'])) ? $dbg = implode(",",$this->m_user['level']) : $dbg = $this->m_user['level'];
               atkdebug("Logged in user: ".$this->m_user["name"]." (level: ".$dbg.")");
               $authenticated = true;
-  
+
               // Remember that we are logged in..
               //$g_sessionManager->globalVar("authentication",array("authenticated"=>1, "user"=>$this->m_user), true);
-  
+
               // write cookie
               if (atkconfig("authentication_cookie")&&$auth_user!="administrator")
               {
@@ -402,7 +405,7 @@
               $authenticated = false;
             }
           }
-          
+
           // we are logged in
           if ($authenticated) $session["login"]=1;
         }
@@ -437,7 +440,28 @@
       // still not logged in?!
       if (!isset($session["login"])||$session["login"]!=1)
       {
-        if(atkconfig("auth_loginform"))
+        $location = atkconfig('auth_loginpage', '');
+        if ($location)
+        {
+          $location.= (strpos($location,'?')===false) ? '?' : '&';
+          $location.='login='.$auth_user.'&error='.$response;
+                    
+          if (atkconfig("debug")>=2)
+          {
+            $debugger = &atkinstance('atk.utils.atkdebugger');
+            $debugger->setRedirectUrl($location);
+            atkdebug('Non-debug version would have redirected to <a href="'.$location.'">'.$location.'</a>');
+            $output = &atkOutput::getInstance();
+            $output->outputFlush();
+            exit();
+          }
+          else
+          {
+            header('Location: '.$location);
+            exit();
+          }
+        }
+        elseif(atkconfig("auth_loginform"))
         {
           $this->loginForm($auth_user, $response);
           $output = &atkOutput::getInstance();
@@ -454,7 +478,7 @@
       }
 
       // we are authenticated, but atklogout is still active, let's get rid of it!
-      else if (isset($ATK_VARS["atklogout"])) header("Location: ".$_SERVER["PHP_SELF"]."?");
+      else if (isset($ATK_VARS["atklogout"])) header("Location: ".atkSelf()."?");
 
       // we keep the relogin state until the atklogout variable isn't set anymore
       else if (!isset($ATK_VARS["atklogout"]) && isset($session["relogin"]) && $session["relogin"]==1) $session["relogin"]=0;
@@ -468,10 +492,10 @@
       $GLOBALS["g_user"] = $this->m_user;
       $g_sessionManager->globalVar("authentication",array("authenticated"=>1, "user"=>$this->m_user), true);
       sessionStore('loginattempts',''); //reset maxloginattempts
-      
-      if ($throwPostLoginEvent) 
-        $this->notifyListeners("postLogin", $auth_user);            
-        
+
+      if ($throwPostLoginEvent)
+        $this->notifyListeners("postLogin", $auth_user);
+
       return true;
     }
 
@@ -525,12 +549,12 @@
       $page->register_script(atkConfig('atkroot')."atk/javascript/tools.js");
 
       $tplvars = Array();
-      $output ='<form action="'.$_SERVER["PHP_SELF"].'" method="post">';
+      $output ='<form action="'.atkSelf().'" method="post">';
       $output.=makeHiddenPostVars(array("atklogout", "loginattempts"));
       $output.='<br><br><table border="0" cellspacing="2" cellpadding="0" align="center">';
 
       $tplvars["atksessionformvars"] = makeHiddenPostVars(array("atklogout", "loginattempts"));
-      $tplvars["formurl"] = $_SERVER["PHP_SELF"];
+      $tplvars["formurl"] = atkSelf();
 
       // max_loginattempts of 0 means no maximum.
       if(atkconfig('max_loginattempts')>0 && $loginattempts>atkconfig('max_loginattempts'))
@@ -540,7 +564,7 @@
       }
       else
       {
-        $page->register_script(atkConfig('atkroot')."atk/javascript/formfocus.js");  
+        $page->register_script(atkConfig('atkroot')."atk/javascript/formfocus.js");
         $page->register_loadscript("placeFocus(false);");
 
         // generate the username input field
@@ -563,13 +587,13 @@
         {
           $output.='<tr><td colspan=3 class=error>'.atktext('auth_mismatch').'<br><br></td></tr>';
           $tplvars["auth_mismatch"] = atktext('auth_mismatch');
-          $tplvars["error"] = atktext('auth_mismatch');          
+          $tplvars["error"] = atktext('auth_mismatch');
         }
         else if ($lastresponse == AUTH_MISSINGUSERNAME)
         {
           $output.='<tr><td colspan="3" class=error>'.atktext('auth_missingusername').'<br /><br /></td></tr>';
           $tplvars["auth_mismatch"] = atktext('auth_missingusername');
-          $tplvars["error"] = atktext('auth_missingusername');          
+          $tplvars["error"] = atktext('auth_missingusername');
         }
         else if ($lastresponse == AUTH_PASSWORDSENT)
         {
@@ -645,7 +669,7 @@
       }
       else
       {
-        return '<input type="text" size="15" name="auth_user" value="'.htmlentities($defaultname).'" />';
+        return '<input class="loginform" type="text" size="15" name="auth_user" value="'.htmlentities($defaultname).'" />';
       }
     }
 
@@ -663,7 +687,7 @@
 
       if (!isset($_cache[$node][$privilege]))
       {
-        // ask authorization instance        
+        // ask authorization instance
         $allowed = $this->m_authorization->allowed($this, $node, $privilege);
         $_cache[$node][$privilege] = $allowed;
       }
@@ -671,17 +695,18 @@
     }
 
     /**
-     * Check if the currently logged-in user has the right to view or edit
+     * Check if the currently logged-in user has the right to view, edit etc.
      * an attribute of a node.
-     * @param String $node The full nodename of the node for which to check
-     *                     access.
-     * @param String $attribute The name of the attribute to check.
-     * @param String $mode "edit" or "view"
-     * @return boolean True if access is granted, false if not.
+     *
+     * @param atkAttribute $attr    attribute reference
+     * @param string       $mode    mode (add, edit, view etc.)
+     * @param array        $record  record data
+     *
+     * @return boolean true if access is granted, false if not.
      */
-    function attribAllowed($node, $attribute, $mode)
+    function attribAllowed(&$attr, $mode, $record=NULL)
     {
-      return $this->m_authorization->attribAllowed($this, $node, $attribute, $mode);
+      return $this->m_authorization->attribAllowed($this, $attr, $mode, $record);
     }
 
     /**

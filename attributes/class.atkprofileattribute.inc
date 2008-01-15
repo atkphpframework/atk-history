@@ -28,6 +28,7 @@
   class atkProfileAttribute extends atkAttribute
   {
     var $m_parentAttrName;
+    var $m_accessField;
 
     function atkProfileAttribute($name, $parentAttrName="", $flags=0)
     {
@@ -39,13 +40,17 @@
 
       $this->atkAttribute($name, $flags|AF_HIDE_SEARCH|AF_HIDE_LIST);
       $this->m_parentAttrName = $parentAttrName;
+      
+      $this->m_accessField = atkconfig('auth_accessfield');
+      if (empty($this->m_accessField))
+        $this->m_accessField = atkconfig('auth_levelfield');
     }
 
-    function load($db, $record)
+    function load(&$db, $record)
     {
       $query = "SELECT *
                 FROM ".atkconfig("auth_accesstable")."
-                WHERE ".atkconfig("auth_levelfield")."='".$record[$this->m_ownerInstance->primaryKeyField()]."'";
+                WHERE ".$this->m_accessField."='".$record[$this->m_ownerInstance->primaryKeyField()]."'";
 
       $result = Array();
       $rows = $db->getrows($query);
@@ -87,7 +92,7 @@
       $editableActions = $this->getEditableActions($record);
 
       $delquery = "DELETE FROM ".atkconfig("auth_accesstable")."
-                   WHERE ".atkconfig("auth_levelfield")."='".$record[$this->m_ownerInstance->primaryKeyField()]."'";
+                   WHERE ".$this->m_accessField."='".$record[$this->m_ownerInstance->primaryKeyField()]."'";
 
       if ($db->query($delquery))
       {
@@ -101,7 +106,7 @@
         foreach ($checked as $node => $actions)
         {
           $actions = array_unique($actions);
-          
+
           $nodeModule = getNodeModule($node);
           $nodeType = getNodeType($node);
 
@@ -116,7 +121,7 @@
 
           foreach ($validActions as $action)
           {
-            $query = "INSERT INTO ".atkconfig("auth_accesstable")." (node, action, ".atkconfig("auth_levelfield").") ";
+            $query = "INSERT INTO ".atkconfig("auth_accesstable")." (node, action, ".$this->m_accessField.") ";
             $query.= "VALUES ('".$db->escapeSQL($node)."','".$db->escapeSQL($action)."','".$record[$this->m_ownerInstance->primaryKeyField()]."')";
 
             if (!$db->query($query))
@@ -129,7 +134,7 @@
           if (count($children) > 0 && count($validActions) > 0)
           {
             $query = "DELETE FROM ".atkconfig("auth_accesstable")." ".
-                     "WHERE ".atkconfig("auth_levelfield")." IN (".implode(",", $children).") ".
+                     "WHERE ".$this->m_accessField." IN (".implode(",", $children).") ".
                      "AND node = '".$db->escapeSQL($node)."' ".
                      "AND action NOT IN ('".implode("','", $validActions)."')";
 
@@ -170,7 +175,7 @@
     function getAllActions($record)
     {
       global $g_modules, $g_moduleflags, $g_nodes;
-      
+
       $result = array();
 
       // hierarchic groups, only return actions of parent (if this record has a parent)
@@ -179,7 +184,7 @@
       {
         $db = &atkGetDb();
         $query = "SELECT DISTINCT node, action FROM ".atkconfig("auth_accesstable")." ".
-                 "WHERE ".atkconfig("auth_levelfield")." = ".$record[$parentAttr];
+                 "WHERE ".$this->m_accessField." = ".$record[$parentAttr];
         $rows = $db->getRows($query);
 
         foreach ($rows as $row)
@@ -235,7 +240,7 @@
 
       // retrieve editable actions by user's levels
       $db = &atkGetDb();
-      $query = "SELECT DISTINCT node, action FROM ".atkconfig("auth_accesstable"). " WHERE ".atkconfig("auth_levelfield")." IN (".$levels.")";
+      $query = "SELECT DISTINCT node, action FROM ".atkconfig("auth_accesstable"). " WHERE ".$this->m_accessField." IN (".$levels.")";
       $rows = $db->getRows($query);
 
       $result = array();
@@ -249,6 +254,16 @@
       return $result;
     }
 
+    /**
+     * Initially use an empty rights array.
+     *
+     * @return array initial rights
+     */
+    function initialValue()
+    {
+      return array();
+    }
+    
     /**
      * Returns the currently selected actions.
      */
@@ -276,11 +291,11 @@
       $this->_restoreDivStates($page);
 
       $result='<div align="right">
-                  [<a href="javascript:profile_checkAll(\''.$this->fieldName().'\')">'.
+                  [<a href="javascript:void(0)" onclick="profile_checkAll(\''.$this->fieldName().'\'); return false;">'.
                     atktext("check_all").
-             '</a> <a href="javascript:profile_checkNone(\''.$this->fieldName().'\')">'.
+             '</a> <a href="javascript:void(0)" onclick="profile_checkNone(\''.$this->fieldName().'\'); return false;">'.
                     atktext("check_none").
-             '</a> <a href="javascript:profile_checkInvert(\''.$this->fieldName().'\')">'.
+             '</a> <a href="javascript:void(0)" onclick="profile_checkInvert(\''.$this->fieldName().'\'); return false;">'.
                     atktext("invert_selection").'</a>]</div>';
 
       $isAdmin =  ($user['name']=='administrator' || $this->canGrantAll());
@@ -291,7 +306,7 @@
       $showModule = count($allActions) > 1 && ($isAdmin || count($editableActions) > 1);
 
       $firstModule = true;
-      
+
       foreach ($allActions as $module => $nodes)
       {
         if ($showModule)
@@ -301,19 +316,19 @@
             $firstModule = false;
           else
             $result .= "</div><br>";
-          $result .= "<b><a href=\"javascript:profile_swapProfileDiv('div_$module','".atkConfig("atkroot")."');\"><img src='".atkConfig("atkroot")."atk/images/plus.gif' border='0' id='img_div_$module'></a>&nbsp;</b>".atktext(array("title_$module", $module), $module)."<br>";
+          $result .= "<b><a href=\"javascript:void(0)\" onclick=\"profile_swapProfileDiv('div_$module','".atkConfig("atkroot")."'); return false;\"><img src='".atkConfig("atkroot")."atk/images/plus.gif' border='0' id='img_div_$module'></a>&nbsp;</b>".atktext(array("title_$module", $module), $module)."<br>";
           $result .= "<div id='div_$module' name='div_$module' style='display: none;'>";
           $result .= "<input type='hidden' name=\"divstate['div_$module']\" id=\"divstate['div_$module']\" value='closed' />";
           $result.='<div>
-                  [<a href="javascript:profile_checkAllByValue(\''.$this->fieldName().'\',\''.$module.'.\')">'.
+                  [<a href="javascript:void(0)" onclick="profile_checkAllByValue(\''.$this->fieldName().'\',\''.$module.'.\'); return false;">'.
                     atktext("check_all", "atk").
-             '</a> <a href="javascript:profile_checkNoneByValue(\''.$this->fieldName().'\',\''.$module.'.\')">'.
+             '</a> <a href="javascript:void(0)" onclick="profile_checkNoneByValue(\''.$this->fieldName().'\',\''.$module.'.\'); return false;">'.
                     atktext("check_none", "atk").
-             '</a> <a href="javascript:profile_checkInvertByValue(\''.$this->fieldName().'\',\''.$module.'.\')">'.
+             '</a> <a href="javascript:void(0)" onclick="profile_checkInvertByValue(\''.$this->fieldName().'\',\''.$module.'.\'); return false;">'.
                     atktext("invert_selection", "atk").'</a>]</div>';
           $result .= "<br>";
         }
-        
+
         foreach ($nodes as $node => $actions)
         {
           $showBox = $isAdmin || count(array_intersect($actions, (is_array($editableActions[$module][$node])?$editableActions[$module][$node]:array()))) > 0;
@@ -337,7 +352,7 @@
               if (substr($action,0,4) == "tab_")
                 $display_tabs_str = true;
 
-              $temp_str .= '<input type="checkbox" name="'.$this->formName().'[]" value="'.$module.".".$node.".".$action.'" ';
+              $temp_str .= '<input type="checkbox" name="'.$this->formName().'[]" '.$this->getCSSClassAttribute("atkcheckbox").' value="'.$module.".".$node.".".$action.'" ';
               $temp_str .= ($isSelected ? ' checked="checked"' : '').'></input> ';
               $temp_str .= $this->permissionName($action, $node, $module).'&nbsp;&nbsp;&nbsp;';
             }

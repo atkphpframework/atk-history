@@ -76,7 +76,7 @@
 
         /* set default date format for Oracle */
         $nls = OCIParse($this->m_link_id, "alter session set nls_date_format='YYYY-MM-DD HH24:MI:SS'");
-        $myresult = OCIExecute($nls);
+        $myresult = OCIExecute($nls, OCI_DEFAULT);
         $error = OCIError($this->m_link_id);
         if ($err["code"]!="")
         {
@@ -89,7 +89,7 @@
         // Is this a PHP bug
         // Workarround: see class.atkoci9query.inc and class.atkdatetimeattribute.inc
         $nls = OCIParse($this->m_link_id, "alter session set nls_timestamp_format='YYYY-MM-DD HH24:MI:SS'");
-        $myresult = OCIExecute($nls);
+        $myresult = OCIExecute($nls, OCI_DEFAULT);
         $err = OCIError($this->m_link_id);
         if ($err["code"]!="")
         {
@@ -117,7 +117,7 @@
       }
 
       /* query */
-      atkdebug("atkoci9db.query(): ".$query);
+      atkdebug("atkoci9db:query(): ".$query);
 
       /* connect to database */
       if ($this->connect()==DB_SUCCESS)
@@ -131,35 +131,25 @@
         }
 
         /* query database */
-        if (count($bindLobs))
+        $clobVars = array();
+        //$bindLobs = array();
+        if (count($bindLobs) > 0)
         {
-          $i=0;
-          foreach($bindLobs as $bind => $value)
-          {
-            $clobVar = $bind.$i;
-            $$clobVar = OCINewDescriptor($this->m_link_id, OCI_D_LOB);
-            $i++;
-            atkdebug("NewDescriptor for ".$bind);
-          }
-          $fieldNames = array();
-          $bindNames = array();
-          $fieldNames = array_keys($bindLobs);
-          foreach($fieldNames as $name) $bindNames[] = ":".$name;
-          $query .= " RETURNING ".implode(",",$fieldNames)." INTO ".implode(",",$bindNames);
+          $query .= " RETURNING ".implode(", ", array_keys($bindLobs))." INTO :".implode(", :", array_keys($bindLobs));
+          atkdebug("atkoci9db.query(), modified query to: $query");
         }
 
         $this->m_query_id = OCIParse($this->m_link_id, $query);
         if ($this->m_query_id)
         {
-          if (count($bindLobs))
+          if (count($bindLobs) > 0)
           {
-            $i=0;
             foreach($bindLobs as $bind => $value)
             {
-              $clobVar = $bind.$i;
-              OCIBindByName($this->m_query_id, $bind, $$clobVar, -1, OCI_B_CLOB);
-              $i++;
-              atkdebug("Binding CLOB ".$bind);
+              atkdebug("atkoci9db.query(): new descriptor for :$bind");
+              $clobVars[$bind] = &OCINewDescriptor($this->m_link_id, OCI_D_LOB);
+              atkdebug("atkoci9db.query(): binding (clob) :".$bind);
+              OCIBindByName($this->m_query_id, ":$bind", $clobVars[$bind], -1, OCI_B_CLOB);
             }
           }
 
@@ -168,7 +158,14 @@
             OCIBindByName($this->m_query_id, $bindVars[$i], $this->m_bindresult[$bindVars[$i]], 32);
           }
 
-          if (!@OCIExecute($this->m_query_id,OCI_DEFAULT))
+          // time the query execution
+          $start = gettimeofday();
+          $OCIexecute = @OCIExecute($this->m_query_id,OCI_DEFAULT);
+          $end = gettimeofday();
+          $secs = (($end['sec'] + $end['usec']) - ($start['sec'] + $start['usec'])) / 1000000;
+          atkdebug("atkoci9db.query(): Query execution took ".$secs." sec.");
+
+          if (!$OCIexecute)
           {
             /* error in query */
             $error = OCIError($this->m_query_id);
@@ -177,28 +174,22 @@
           }
           else
           {
-            if (count($bindLobs))
+            if (count($bindLobs) > 0)
             {
-              $i=0;
               foreach($bindLobs as $bind => $value)
               {
-                $clobVar = $bind.$i;
-                if (!@$$clobVar->save($value))
+                if (!@$clobVars[$bind]->save($value))
                   atkerror("Error bind save: empty value");
-                $i++;
               }
             }
           }
-          if (count($bindLobs))
+
+          if (count($bindLobs) > 0)
           {
-            $i=0;
             foreach($bindLobs as $bind => $value)
             {
-              $clobVar = $bind.$i;
-              OCIFreeDesc($$clobVar);
-              $i++;
+              OCIFreeDesc($clobVars[$bind]);
             }
-
           }
 
           $this->m_row = 0;

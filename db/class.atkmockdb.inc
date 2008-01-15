@@ -59,14 +59,15 @@
      */
     function query($query, $offset=-1, $limit=-1)
     {
+      atk_var_dump($query,'inatkmockdb teh query');
       $this->m_query_history[] = $query;
-
+      
       if (isset($this->m_results[$offset][$limit][$query])) return $this->m_results[$offset][$limit][$query];
       if (!empty($this->m_regex_results))
       {
         foreach ($this->m_regex_results[$offset][$limit] as $regex => $result)
-        {
-          if (preg_match($regex, $query)) return $result;
+        {         
+          if (preg_match($regex, $query)) return $result;        
         }
       }
       return true;
@@ -101,6 +102,24 @@
     function setRegexResult($result, $regex, $offset=-1, $limit=-1)
     {
       $this->m_regex_results[$offset][$limit][$regex] = $result;
+    }
+    
+    /**
+     * Retrieve the query history.
+     *
+     * @return Array
+     */
+    function getQueryHistory()
+    {
+      return $this->m_query_history;
+    }
+    
+    /**
+     * Clear the query history.
+     */
+    function clearQueryHistory()
+    {
+      $this->m_query_history = array();
     }
   }
 

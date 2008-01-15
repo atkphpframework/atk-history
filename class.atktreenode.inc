@@ -100,7 +100,7 @@
      */
     function adminPage(&$handler)
     {
-      global $g_maxlevel, $PHP_SELF;
+      global $g_maxlevel;
 
       $this->addStyle("style.css");
 
@@ -108,7 +108,7 @@
 
       $content = "";
 
-      $adminHeader = $handler->adminHeader();
+      $adminHeader = $handler->invoke("adminHeader");
       if ($adminHeader!="")
       {
         $content.= $adminHeader."<br><br>";
@@ -134,7 +134,7 @@
 
       if (!$this->hasFlag(NF_NO_ADD) && $this->hasFlag(NF_ADD_LINK) && $this->allowed("add"))
       {
-        $addurl = $PHP_SELF."?atknodetype=".$this->atknodetype()."&atkaction=add&atkfilter=".rawurlencode($this->m_parent.".".$this->m_primaryKey[0]."='0'");
+        $addurl = atkSelf()."?atknodetype=".$this->atknodetype()."&atkaction=add&atkfilter=".rawurlencode($this->m_parent.".".$this->m_primaryKey[0]."='0'");
         if (atktext("txt_link_".getNodeType($this->m_type)."_add",$this->m_module,"","","",true)!="")
         {
           // specific text
@@ -150,6 +150,12 @@
 
       $content.= $this->GraphTreeRender();
       $content.= "</table><br>";
+
+      $adminFooter = $handler->invoke("adminFooter");
+      if ($adminFooter!="")
+      {
+        $content.= "<br>" . $adminFooter;
+      }
 
       atkdebug("Generated treeview");
 
@@ -221,7 +227,7 @@
     function GraphTreeRender($showactions=true, $expandAll=false, $foldable=true)
     {
       // Load used classes (and globals? :( )
-      global $g_maxlevel,$g_theme, $exp_index, $PHP_SELF;
+      global $g_maxlevel,$g_theme, $exp_index;
       atkimport("atk.utils.atkstringparser");
 
       // Return
@@ -430,13 +436,14 @@
                   $i++;
                 }
                 if($this->extraparams) $params=$params.$this->extraparams;
+
                 if($this->m_tree[$cnt]["isleaf"]==1)
                 {
-                  if($cnt!=0) $res.= "<td>".href($PHP_SELF."?atknodetype=".$this->atknodetype()."&atkaction=".$this->m_action."&".$params,"<img src=\"".$img_end_plus."\" border=0>")."</td>\n";
+                  if($cnt!=0) $res.= "<td>".href(atkSelf()."?atknodetype=".$this->atknodetype()."&atkaction=".$this->m_action."&".$params,"<img src=\"".$img_end_plus."\" border=0>")."</td>\n";
                 }
                 else
                 {
-                  if($cnt!=0) $res.= "<td>".href($PHP_SELF."?atknodetype=".$this->atknodetype()."&atkaction=".$this->m_action."&".$params,"<img src=\"".$img_plus."\" border=0>")."</td>\n";
+                  if($cnt!=0) $res.= "<td>".href(atkSelf()."?atknodetype=".$this->atknodetype()."&atkaction=".$this->m_action."&".$params,"<img src=\"".$img_plus."\" border=0>")."</td>\n";
                 }
               }
               else
@@ -468,7 +475,7 @@
                   {
                     if ($foldable)
                     {
-                      $res.="<td>".href($PHP_SELF."?atknodetype=".$this->atknodetype()."&atkaction=".$this->m_action."&".$params,"<img src=\"".$img_end_minus."\" border=0>")."</td>\n";
+                      $res.="<td>".atkHref(atkSelf()."?atknodetype=".$this->atknodetype()."&atkaction=".$this->m_action."&".$params,"<img src=\"".$img_end_minus."\" border=0>")."</td>\n";
                     }
                     else
                     {
@@ -482,7 +489,7 @@
                   {
                     if ($foldable)
                     {
-                      $res.="<td>".href($PHP_SELF."?atknodetype=".$this->atknodetype()."&atkaction=".$this->m_action."&".$params,"<img src=\"".$img_minus."\" border=0>")."</td>\n";
+                      $res.="<td>".atkHref(atkSelf()."?atknodetype=".$this->atknodetype()."&atkaction=".$this->m_action."&".$params,"<img src=\"".$img_minus."\" border=0>")."</td>\n";
                     }
                     else
                     {
@@ -529,9 +536,9 @@
               }
               if(isset($this->extraparams)) $params=$params.$this->extraparams;
               if ($expand[$cnt]==0)
-                $res.= "<td>".href($PHP_SELF."?".$params,"<img src=\"".$img_expand."\" border=0>")."</td>\n";
+                $res.= "<td>".atkHref(atkSelf()."?".$params,"<img src=\"".$img_expand."\" border=0>")."</td>\n";
               else
-                $res.= "<td>".href($PHP_SELF."?".$params,"<img src=\"".$img_collapse."\" border=0>")."</td>\n";
+                $res.= "<td>".atkHref(atkSelf()."?".$params,"<img src=\"".$img_collapse."\" border=0>")."</td>\n";
             }
             else
             {
@@ -578,17 +585,17 @@
 
             if (!$this->hasFlag(NF_NO_ADD) && !($this->hasFlag(NF_TREE_NO_ROOT_ADD) && $this->m_tree[$cnt]["level"] == 0))
             {
-              $actions["add"] = $PHP_SELF."?atknodetype=".$this->atknodetype()."&atkaction=add&atkfilter=".$this->m_parent.".".$this->m_primaryKey[0].rawurlencode("='".$this->m_tree[$cnt]["id"]."'");
+              $actions["add"] = atkSelf()."?atknodetype=".$this->atknodetype()."&atkaction=add&atkfilter=".$this->m_parent.".".$this->m_primaryKey[0].rawurlencode("='".$this->m_tree[$cnt]["id"]."'");
             }
             if($cnt>0)
             {
               if (!$this->hasFlag(NF_NO_EDIT))
               {
-                $actions["edit"] = $PHP_SELF."?atknodetype=".$this->atknodetype()."&atkaction=edit&atkselector=".$this->m_table.'.'.$this->m_primaryKey[0].'='.$this->m_tree[$cnt]["id"];
+                $actions["edit"] = atkSelf()."?atknodetype=".$this->atknodetype()."&atkaction=edit&atkselector=".$this->m_table.'.'.$this->m_primaryKey[0].'='.$this->m_tree[$cnt]["id"];
               }
               if(($this->hasFlag(NF_COPY)&&$this->allowed("add")&&!$this->hasflag(NF_TREE_NO_ROOT_COPY))||($this->m_tree[$cnt]["level"]!=1&&$this->hasFlag(NF_COPY)&&$this->allowed("add")))
               {
-                $actions["copy"] = $PHP_SELF."?atknodetype=".$this->atknodetype()."&atkaction=copy&atkselector=".$this->m_table.'.'.$this->m_primaryKey[0].'='.$this->m_tree[$cnt]["id"];
+                $actions["copy"] = atkSelf()."?atknodetype=".$this->atknodetype()."&atkaction=copy&atkselector=".$this->m_table.'.'.$this->m_primaryKey[0].'='.$this->m_tree[$cnt]["id"];
               }
               if($this->hasFlag(NF_NO_DELETE)||($this->hasFlag(NF_TREE_NO_ROOT_DELETE)&&$this->m_tree[$cnt]["level"]==1))
               {
@@ -596,7 +603,7 @@
               }
               else
               {
-                $actions["delete"] = $PHP_SELF."?atknodetype=".$this->atknodetype()."&atkaction=delete&atkselector=".$this->m_table.'.'.$this->m_primaryKey[0].'='.$this->m_tree[$cnt]["id"];
+                $actions["delete"] = atkSelf()."?atknodetype=".$this->atknodetype()."&atkaction=delete&atkselector=".$this->m_table.'.'.$this->m_primaryKey[0].'='.$this->m_tree[$cnt]["id"];
               }
             }
 

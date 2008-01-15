@@ -134,17 +134,13 @@
 
         if (count($g_error_msg)>0)
         {
-          if (atkconfig("display_errors")||atkconfig("debug")>0)
-          {
-            // only show errors in debugmode, or when display_errors is
-            // true.
-            $res.='<br><div style="font-family: monospace; font-size: 11px; color: #FF0000" align="left">error: '.implode("<br>\nerror: ",$g_error_msg).'</div>';
-          }
-          // also send a mail report with errormessages..
+          // send an mail report with errormessages..
           // (even when display of errors is turned off)
           mailreport();
         }
-        $res.=$this->getDebugging();
+        
+        $debugger = &atkinstance('atk.utils.atkdebugger');
+        $res .= $debugger->renderDebugAndErrorMessages();
       }
 
       if (atkconfig("output_gzip") &&

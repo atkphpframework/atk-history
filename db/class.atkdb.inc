@@ -333,6 +333,14 @@
     }
 
     /**
+     * Has error?
+     */
+    function hasError()
+    {
+      return $this->m_errno != 0;
+    }
+
+    /**
      * Determine whether an error that occurred is a recoverable (user) error
      * or a system error.
      * @return String "user" or "system"
@@ -579,7 +587,7 @@
 
     /**
      * Set savepoint with the given name.
-     * 
+     *
      * @param $name savepoint name
      * @abstract
      */
@@ -590,9 +598,9 @@
     /**
      * Rollback the current transaction.
      * (If a savepoint is given to the given savepoint.)
-     * 
+     *
      * @param $savepoint savepoint name
-     * 
+     *
      * @abstract
      */
     function rollback($savepoint="")
@@ -757,6 +765,23 @@
     }
 
     /**
+     * Get a single value (first row, first column) from a
+     * certain specified query
+     *
+     * @param string $query The query
+     * @param mixed $default A default value which will be returned if the query doesn't return a result
+     * @return mixed Either the result of the query or the default value
+     */
+    function getValue($query, $default=null)
+    {
+      $this->query($query, -1, 1);
+      if ($this->next_record() && count($this->m_record)>0)
+        return atkArrayNvl(array_values($this->m_record), 0);
+      else
+        return $default;
+    }
+
+    /**
      * This function indicates what searchmodes the database supports.
      * @return array with search modes
      */
@@ -884,10 +909,10 @@
       $query->m_db = &$this;
       return $query;
     }
-    
+
     /**
      * Enable/disable all foreign key constraints.
-     * 
+     *
      * @param boolean $enable enable/disable foreign keys?
      */
     function toggleForeignKeys($enable)
@@ -1071,7 +1096,7 @@
          if($total_connections>0)
          {
            $random = rand(0,($total_connections-1));
-           atkdebug("<h1>Random server (".$connections[$random].") choosen from cluster $conn for mode: $mode</h1>");
+           atkdebug("Random server (".$connections[$random].") choosen from cluster $conn for mode: $mode");
            return $connections[$random];
          }
          else
@@ -1106,6 +1131,10 @@
       return $olddb;
     }
 
+    function setHaltOnError($state=true)
+    {
+      $this->m_haltonerror = $state;
+    }
   }
 
 ?>

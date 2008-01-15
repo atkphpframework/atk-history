@@ -63,7 +63,7 @@
         }
       }
       $this->atkListAttribute($name, $optionArray, $valueArray, $flags, $size); // base class constructor
-      $this->m_dbfieldtype = "string"; // since we store values separated by '|', we always store as string.
+      $this->m_dbfieldtype = "text"; // since we store the selection labels as values separated by '|', we always store as text.
       ($cols<1)?$this->m_cols=3:$this->m_cols=$cols;
     }
 
@@ -133,8 +133,14 @@
 
       $result .="\n<table><tr>\n";
 
-      $values = $this->getValues($record);
-      $recordvalue = atkArrayNvl($record, $this->fieldName());
+
+      
+      $values = $this->getValues($record);     
+      if(!is_array($record[$this->fieldname()]))
+        $recordvalue = $this->db2value($record);
+      else 
+        $recordvalue = $record[$this->fieldName()];
+      
       for ($i=0;$i<count($values);$i++)
       {
         if (!$this->hasFlag(AF_CHECK_ALL))
@@ -146,7 +152,7 @@
           $sel = "checked";
         }
 
-        $result .= '<td class="table" valign="top"><input type="checkbox" id="'.$id.'_'.$i.'" name="'.$fieldprefix.$this->fieldName().'[]" value="'.$values[$i].'" '.$sel.'>'.$this->_translateValue($values[$i],$record).'</td>';
+        $result .= '<td class="table" valign="top"><input type="checkbox" id="'.$id.'_'.$i.'" '.$this->getCSSClassAttribute("atkcheckbox").' name="'.$fieldprefix.$this->fieldName().'[]" value="'.$values[$i].'" '.$sel.'>'.$this->_translateValue($values[$i],$record).'</td>';
         $this->registerKeyListener($id.'_'.$i, KB_CTRLCURSOR|KB_UPDOWN);
 
         if ($i%$cols == $modcols) $result .="</tr><tr>\n";
@@ -198,11 +204,11 @@
       if (count($this->m_values)>4 && !hasFlag($this->m_flags,AF_NO_TOGGLELINKS))
       {
         return '<div align="left"><font size="-2">
-                  [<a href="javascript:profile_checkAll(\''.$fieldprefix.$this->fieldName().'\')">'.
+                  [<a href="javascript:void(0)" onclick="profile_checkAll(\''.$fieldprefix.$this->fieldName().'\'); return false;">'.
                        atktext("check_all").
-                  '</a> <a href="javascript:profile_checkNone(\''.$fieldprefix.$this->fieldName().'\')">'.
+                  '</a> <a href="javascript:void(0)" onclick="profile_checkNone(\''.$fieldprefix.$this->fieldName().'\'); return false;">'.
                        atktext("check_none").
-                  '</a> <a href="javascript:profile_checkInvert(\''.$fieldprefix.$this->fieldName().'\')">'.
+                  '</a> <a href="javascript:void(0)" onclick="profile_checkInvert(\''.$fieldprefix.$this->fieldName().'\'); return false;">'.
                        atktext("invert_selection").'</a>]</font></div>';
       }
     }

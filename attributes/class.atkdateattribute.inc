@@ -252,7 +252,7 @@
      *
      * @param String $format_view The format (see format for date() function)
      */
-    function setFormatView()
+    function setFormatView($format_view)
     {
       $txt_date_format_view = atktext("date_format_view","atk","","","",true);
 
@@ -335,7 +335,7 @@
         if (!$this->hasFlag(AF_DATE_NO_CALENDAR) && $mode != 'list')
         {
           $format = str_replace(array("y", "Y", "m", "n", "j", "d"), array("yy", "y", "mm", "m", "d", "dd"), $this->m_date_format_edit);
-          $result.=' <input class="button" class="atkdateattribute" type="button" value="..." onclick="return showCalendar(\''.$fieldname.'\', \''.$fieldname.'\', \''.$format.'\', false);">';
+          $result.=' <input '.$this->getCSSClassAttribute(array("button", "atkbutton")).' type="button" value="..." onclick="return showCalendar(\''.$fieldname.'\', \''.$fieldname.'\', \''.$format.'\', false);">';
         }
         return $result;
       }
@@ -435,36 +435,6 @@
       atkimport('atk.utils.atkjson');
       if (!$pda) $result .= '<script language="javascript">var atkdateattribute_'.$fieldname.' = '.atkJSON::encode($info).';</script>';
 
-      if ($this->hasFlag(AF_DATE_EMPTYFIELD))  $emptyfield=true;
-      else if (!$obligatory) $emptyfield=true;
-      else $emptyfield=false;
-
-      $info = array(
-        'format' => $str_format,
-        'min' => $str_min,
-        'max' => $str_max,
-        'emptyfield' => $emptyfield,
-        'weekday' => !$this->hasFlag(AF_DATE_EDIT_NO_DAY)
-      );
-
-      atkimport('atk.utils.atkjson');
-      if (!$pda) $result .= '<script language="javascript">var atkdateattribute_'.$fieldname.' = '.atkJSON::encode($info).';</script>';
-
-      if ($this->hasFlag(AF_DATE_EMPTYFIELD))  $emptyfield=true;
-      else if (!$obligatory) $emptyfield=true;
-      else $emptyfield=false;
-
-      $info = array(
-        'format' => $str_format,
-        'min' => $str_min,
-        'max' => $str_max,
-        'emptyfield' => $emptyfield,
-        'weekday' => !$this->hasFlag(AF_DATE_EDIT_NO_DAY)
-      );
-
-      atkimport('atk.utils.atkjson');
-      if (!$pda) $result .= '<script language="javascript">var atkdateattribute_'.$fieldname.' = '.atkJSON::encode($info).';</script>';
-
       /* other date selections */
       $weekdayFormat = NULL;
       for($i = 0; $i < strlen($str_format); $i++)
@@ -506,18 +476,6 @@
             $this->registerKeyListener($fieldname.'[year]', KB_CTRLCURSOR|KB_UPDOWN);
             $result .= '<input type="text" id="'.$fieldname.'[year]" name="'.$fieldname.'[year]" class="atkdateattribute" size="4" maxlength="4" onChange="'.$str_script.'" value="'.(isset($current["year"])?$current["year"]:"").'">';
           }
-        }
-
-        /* weekday format */
-        elseif ($str_format[$i] == 'D' || $str_format[$i] == 'l')
-        {
-          $weekdayFormat = $str_format[$i];
-        }
-
-        /* weekday format */
-        elseif ($str_format[$i] == 'D' || $str_format[$i] == 'l')
-        {
-          $weekdayFormat = $str_format[$i];
         }
 
         /* weekday format */
@@ -602,7 +560,7 @@
 
       if (!$this->hasFlag(AF_DATE_NO_CALENDAR) && !$yeardropdown && !$pda && $mode != 'list')
       {
-        $result.=' <input class="button" type="reset" value="..." onclick="return showCalendar(\''.$fieldname.'\', \''.$fieldname.'[year]\', \'y-mm-dd\', true);">';
+        $result.=' <input '.$this->getCSSClassAttribute(array("button", "atkbutton")).' type="reset" value="..." onclick="return showCalendar(\''.$fieldname.'\', \''.$fieldname.'[year]\', \'y-mm-dd\', true);">';
       }
 
       /* return result */
@@ -870,22 +828,28 @@
     function fetchValue($postvars)
     {
       if (!is_array($postvars) || !isset($postvars[$this->fieldName()])) return NULL;
-      
+
       $value = $postvars[$this->fieldName()];
-      
+
 
       // edit in text mode
       if (is_array($value) && array_key_exists('date', $value))
       {
         $value = $postvars[$this->fieldName()]['date'];
       }
+
+      // null
+      if (is_array($value) && $this->value2db($postvars) == null)
+      {
+        return null;
+      }
       
       // array with year / month / day
-      if (is_array($value)) 
+      else if (is_array($value))
       {
         return $value;
       }
-      
+
       // text format
       else if (!empty($value))
       {
@@ -904,8 +868,8 @@
         if ($arr['day'] == 0 || $arr['month'] == 0 || $arr['year'] == 0)
           return $this->dateArray(adodb_date("Ymd", strtotime($value)));
         else return $arr;
-      }       
-      
+      }
+
       return NULL;
     }
 

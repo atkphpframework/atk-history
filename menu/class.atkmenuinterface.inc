@@ -103,6 +103,43 @@
 		function getMultilevel()
 		{
 		}
+		
+
+		/**
+		 * Recursively checks if a menuitem should be enabled or not.
+		 *
+		 * @param array $menuitem menuitem array
+		 * @return enabled?
+		 */
+    function isEnabled($menuitem)
+    {
+      global $g_menu;
+      
+      $enable = $menuitem['enable'];      
+      if ((is_string($enable) || (is_array($enable) && count($enable) == 2 && is_object(@$enable[0]))) &&
+          is_callable($enable))
+      {
+        $enable = call_user_func($enable);
+      }
+      else if (is_array($enable))
+      {
+        $enabled = false;
+        for ($j=0;$j<(count($enable)/2);$j++)
+        {
+          $enabled = $enabled || is_allowed($enable[(2*$j)],$enable[(2*$j)+1]);
+        }
+        $enable = $enabled;
+      }
+      else if (is_array($g_menu[$menuitem['name']]))
+      {
+        $enabled = false;
+        foreach ($g_menu[$menuitem['name']] as $item)
+          $enabled = $enabled || $this->isEnabled($item);       
+        $enable = $enabled;
+      }
+      
+      return $enable;
+    }		
 	}
 
 ?>

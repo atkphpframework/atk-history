@@ -1,43 +1,48 @@
 <?php
 
- /**
-  * This file is part of the Achievo ATK distribution.
-  * Detailed copyright and licensing information can be found
-  * in the doc/COPYRIGHT and doc/LICENSE files which should be
-  * included in the distribution.
+  /**
+   * This file is part of the Achievo ATK distribution.
+   * Detailed copyright and licensing information can be found
+   * in the doc/COPYRIGHT and doc/LICENSE files which should be
+   * included in the distribution.
+   *
+   * @package atk
+   * @subpackage db
+   *
+   * @copyright (c)2000-2004 Ibuildings.nl BV
+   * @license http://www.achievo.org/atk/licensing ATK Open Source License
+   *
   *
-  * @package atk
-  * @subpackage db
-  *
-  * @copyright (c)2000-2004 Ibuildings.nl BV
-  * @license http://www.achievo.org/atk/licensing ATK Open Source License
-  *
-  *
-  */
+   */
 
   /**
-  * @internal Include baseclass
-  */
- require_once(atkconfig("atkroot")."atk/db/class.atkmysqldb.inc");
+   * @internal Include baseclass
+   */
+  require_once(atkconfig("atkroot")."atk/db/class.atkmysqldb.inc");
 
- /**
-  * Driver for MySQL databases > 4.1.3
-  *
-  * @author Eldad Ran <eldad@tele-concept.com>
-  * @package atk
-  * @subpackage db
-  */
- class atkMysqliDb extends atkMysqlDb
- {
-   /**
-    * Base constructor
-    */
-   function atkmysqlidb()
-   {
-     // set type
-     parent::atkmysqldb();
-     $this->m_type = "mysqli";
-   }
+  /**
+   * Driver for MySQL databases > 4.1.3
+   *
+   * @author Eldad Ran <eldad@tele-concept.com>
+   * @package atk
+   * @subpackage db
+   */
+  class atkMysqliDb extends atkMysqlDb
+  {
+    /**
+     * Base constructor
+     */
+    function atkmysqlidb()
+    {
+      if (!function_exists('mysqli_connect'))
+      {
+        trigger_error('MySQLi not supported by your PHP version',E_USER_ERROR);
+      }
+
+      // set type
+      parent::atkmysqldb();
+      $this->m_type = "mysqli";
+    }
 
    /**
     * Connect to the database
@@ -78,7 +83,7 @@
     */
    function _setErrorVariables()
    {
-     if($this->m_link_id!="")
+     if(!empty($this->m_link_id))
      {
        $this->m_errno = mysqli_errno($this->m_link_id);
        $this->m_error = mysqli_error($this->m_link_id);
@@ -97,7 +102,7 @@
    {
      if ($this->m_link_id)
      {
-       atkdebug("Disconnecting from database...");       
+       atkdebug("Disconnecting from database...");
        @mysqli_close($this->m_link_id);
        $this->m_link_id = 0;
      }
@@ -115,7 +120,7 @@
      if ($offset >= 0 && $limit > 0)
        $query .= " LIMIT $offset, $limit";
 
-     if (atkconfig("debug")>0)
+     if (atkconfig("debug")>=0)
      {
        atkimport("atk.utils.atkdebugger");
        atkDebugger::addQuery($query);
@@ -128,7 +133,8 @@
        /* free old results */
        if ($this->m_query_id)
        {
-         @mysqli_free_result($this->m_query_id);
+         if (is_resource($this->m_query_id))
+          mysqli_free_result($this->m_query_id);
          $this->m_query_id = 0;
        }
 
@@ -156,7 +162,7 @@
          $this->halt("Invalid SQL: $query");
          return false;
        }
-       
+
        if ($unlock_table)
          $this->unlock();
 
@@ -165,7 +171,7 @@
      }
      return false;
    }
-   
+
    /**
      * This method provides a fallback when error 1100 occurs
      * (Table ... not locked using LOCK TABLES). This method locks
@@ -250,8 +256,15 @@
      if ($this->connect('w')==DB_SUCCESS)
      {
        /* lock */
-       atkdebug("lock tables $table $mode");
-       $result = @mysqli_query($this->m_link_id, "lock tables $table $mode");
+       $query = "lock tables $table $mode";
+
+       if (atkconfig("debug")>=0)
+       {
+         atkimport("atk.utils.atkdebugger");
+         atkDebugger::addQuery($query);
+       }
+
+       $result = @mysqli_query($this->m_link_id, $query);
        if (!$result) $this->halt("$mode lock on $table failed.");
 
        /* return result */
@@ -353,10 +366,10 @@
        return 0;
      }
 
-     /* cannot lock */
+     /* cannot connect */
      else
      {
-       $this->halt("cannot lock ".$this->m_seq_table." - has it been created?");
+       $this->halt("cannot connect to ".$this->m_host);
      }
    }
 
@@ -399,7 +412,13 @@
 	        $result[$i]["gentype"]    = $ddl->getGenericType($finfo->type);
 	        $result[$i]["len"]        = $finfo->length;
 	        $result[$i]["flags"]      = 0;
-
+	       
+	        if ($result[$i]["gentype"] == "decimal")
+	        {
+	          $result[$i]["len"] -= ($finfo->decimals * 2);
+	          $result[$i]["len"] .= "," . $finfo->decimals;
+	        }
+	         
 	        if($finfo->flags & MYSQLI_PRI_KEY_FLAG) $result[$i]["flags"]|= MF_PRIMARY;
 	        if($finfo->flags & MYSQLI_UNIQUE_KEY_FLAG) $result[$i]["flags"]|= MF_UNIQUE;
 	        if($finfo->flags & MYSQLI_NOT_NULL_FLAG ) $result[$i]["flags"]|= MF_NOT_NULL;
@@ -469,5 +488,14 @@
      return true;
    }
 
+   /**
+    * Enable/disable all foreign key constraints.
+    *
+    * @param boolean $enable enable/disable foreign keys?
+    */
+   function toggleForeignKeys($enable)
+   {
+     $this->query("SET FOREIGN_KEY_CHECKS = ".($enable ? 1 : 0));
+   }
  }
 ?>

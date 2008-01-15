@@ -99,7 +99,7 @@
       $content.= '<tr><td>'.atktext("enclosure", "atk").': </td><td><input type="text" size="2" name="enclosure" value="&quot;"></td></tr>';
       $content.= '<tr><td valign="top">'.atktext("export_selectcolumns", "atk").': </td><td>'.$this->getAttributeSelect().'</td></tr>';
       $content.= '<tr><td>';
-      $content.= atktext("export_generatetitlerow").': </td><td><input type="checkbox" name="generatetitlerow" value="1" />';
+      $content.= atktext("export_generatetitlerow").': </td><td><input type="checkbox" name="generatetitlerow" class="atkcheckbox" value="1" />';
       $content.= '</td></tr>';
       $content.= '</table><br /><br />';
       return $content;
@@ -125,7 +125,7 @@
           if($item['checked']) $checked = 'CHECKED';
           else $checked = '';
 
-          $content.= '<TD align="left" width="'.(90/$cols).'%"><LABEL><INPUT TYPE="checkbox" NAME="export_'.$item['name'].'" VALUE="export_'.$item['name'].'" '.$checked.'>'.$item['text'].'</LABEL></TD>';
+          $content.= '<TD align="left" width="'.(90/$cols).'%"><LABEL><INPUT type="checkbox" name="export_'.$item['name'].'" class="atkcheckbox" value="export_'.$item['name'].'" '.$checked.'>'.$item['text'].'</LABEL></TD>';
 
           $idx++;
           if($idx%$cols == 0)
@@ -148,15 +148,18 @@
      */
     function getUsableAttributes()
     {
-      $node = &$this->m_node;
       $atts = array();
-      foreach($node->m_attribList as $key => $value){
+      $attriblist = $this->invoke('getExportAttributes');
+      foreach($attriblist as $key => $value)
+      {
         $flags = $value->m_flags;
-        $class = get_class($value);
+        $class = strtolower(get_class($value));
         if($value->hasFlag(AF_AUTOKEY) ||
            $value->hasFlag(AF_HIDE_VIEW) ||
            !(strpos($class, "dummy") === FALSE) ||
-           !(strpos($class, "image") === FALSE))
+           !(strpos($class, "image") === FALSE) ||
+           !(strpos($class,'tabbedpane') === FALSE)
+           )
           continue;
         if (method_exists($this->m_node, "getExportAttributeGroup"))
         {
@@ -173,6 +176,18 @@
         $atts[$group][] = array('name' => $key, 'text' => $value->label(), 'checked' => !$value->hasFlag(AF_HIDE_LIST));
       }
       return $atts;
+    }
+
+    /**
+     * Return all attributes that can be exported
+     *
+     * @param object $handler atkExport
+     * @return array Array with attribs that needs to be exported
+     */
+    function getExportAttributes()
+    {
+      $attribs = $this->m_node->getAttributes();
+      if(is_null($attribs)) { return array(); } else { return $attribs; }
     }
 
     /**

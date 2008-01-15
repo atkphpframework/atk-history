@@ -74,7 +74,7 @@
    /**
     * Return the one and only instance of the class
     *
-    * @return unknown
+    * @return atkController
     */
     function &getInstance()
     {
@@ -114,7 +114,7 @@
 
       $node = &$this->getNode();
       $node->m_postvars = $postvars;
-      if(!is_object($node)) return;
+      if(!is_object($node) || !method_exists($node,'getUi')) return "";
 
       $ui = &$node->getUi();
       $page = &$node->getPage();
@@ -128,19 +128,13 @@
       {
         $flags = $flags ? HTML_STRICT : HTML_HEADER|HTML_DOCTYPE;
       }
-      if (hasFlag($flags, HTML_PARTIAL) && !$postvars["atkdebug"]["force"])
-      {
-        // turn off debugging in partial mode (ajax snippets)
-        global $config_debug;
-        $config_debug = 0;
-      }
 
       // Use invoke to be backwards compatible with overrides
       // of loadDispatchPage in atknode.
       $this->invoke("loadDispatchPage", $postvars);
 
       $screen = '';
-      if (!$page->isEmpty()) // Only output an html output if there is anything to output.
+      if (!$page->isEmpty() || hasFlag($flags, HTML_PARTIAL)) // Only output an html output if there is anything to output.
       {
         $screen = $page->render(atktext('app_shorttitle')." - ".$ui->title($node->m_module, $node->m_type,$node->m_postvars['atkaction']), $flags);
       }
@@ -161,6 +155,7 @@
       {
         return $screen;
       }
+      return "";
     }
 
     /**
@@ -216,6 +211,8 @@
           }
         }
       }
+      $res = NULL;
+      return $res; // prevent notice
     }
 
     /**
@@ -239,7 +236,9 @@
       $page = &$node->getPage();
 
       $page->register_script(atkconfig("atkroot")."atk/javascript/prototype/prototype.js");
+      $page->register_script(atkconfig("atkroot")."atk/javascript/prototype-ext.js");
       $page->register_script(atkconfig("atkroot")."atk/javascript/scriptaculous/scriptaculous.js");
+      $page->register_script(atkconfig("atkroot")."atk/javascript/class.atktools.js");
       $page->register_script(atkconfig("atkroot")."atk/javascript/atkbusy.js");
 
       if ($node->allowed($node->m_action))
@@ -265,7 +264,14 @@
     function accessDeniedPage()
     {
       $node = &$this->getNode();
-      return $this->genericPage(atktext('access_denied'), "<br><br>".atktext("error_node_action_access_denied", "", $node->m_type)."<br><br><br>");
+      
+      $content = "<br><br>".atktext("error_node_action_access_denied", "", $node->m_type)."<br><br><br>";
+      
+      // Add a cancel button to an error page if it is a dialog.
+      if ($node->m_partial == 'dialog')      
+        $content.= $this->getDialogButton('cancel', 'close');      
+      
+      return $this->genericPage(atktext('access_denied'), $content);
     }
 
   /**
@@ -288,7 +294,13 @@
       if (!is_array($content)) $content = array($title=>$content);
       $blocks = array();
       foreach($content as $itemtitle => $itemcontent)
-        $blocks[] = $ui->renderBox(array("title"=>$itemtitle, "content"=>$itemcontent), 'dispatch');
+      {
+        if ($node->m_partial == 'dialog')
+          $blocks[] = $ui->renderDialog(array("title"=>$itemtitle, "content"=>$itemcontent));
+        else
+          $blocks[] = $ui->renderBox(array("title"=>$itemtitle, "content"=>$itemcontent), 'dispatch');
+      }
+      
       /**
        * @todo Don't use renderActionPage here because it tries to determine
        *       it's own title based on the title which is passed as action.
@@ -405,43 +417,138 @@
       {
         // if atklevel is 0 or less, we are at the bottom of the session stack,
         // which means that 'saveandclose' doesn't close anyway, so we leave out
-        // the 'saveandclose' button. Unless, a feedback screen is configured.
-        if (atkLevel() >0 || hasFlag($node->m_feedback["update"], ACTION_SUCCESS))
+        // the 'saveandclose' and 'cancel' button. Unless, a feedback screen is configured.
+        if (atkLevel() >0 || hasFlag(atkArrayNvl($node->m_feedback, "update", 0), ACTION_SUCCESS))
         {
-          $result[] = '<input type="submit" class="btn_saveandclose" name="atksaveandclose" value="'.atktext('saveandclose', "atk").'">';
+          $result[] = $this->getButton('saveandclose');
         }
-        $result[] = '<input type="submit" class="btn_save" name="atknoclose" value="'.atktext("save", "atk").'">';
-        $result[] = '<input type="submit" class="btn_cancel" name="atkcancel" value="'.atktext("cancel", "atk").'">';
+        $result[] = $this->getButton('save');
+
+        if (atkLevel() >0 || hasFlag(atkArrayNvl($node->m_feedback, "update", 0), ACTION_SUCCESS))
+        {
+          $result[] = $this->getButton('cancel');
+        }
       }
       elseif ($mode == "add")
       {
-        if ($node->hasFlag(NF_EDITAFTERADD) === TRUE )
-        {
-          $result[] = '<input type="submit" class="btn_saveandcontinue" name="atksaveandcontinue" value="'.atktext("saveandedit", "atk").'">';
-        }
-        else
-        {
-          $result[] = '<input type="submit" class="btn_save" value="'.atktext("save", "atk").'">';
-        }
+        $result[] = ($node->hasFlag(NF_EDITAFTERADD) === TRUE ) ? $this->getButton('saveandedit') : $this->getButton('save');
+
         // if action is admin, we don't show the cancelbutton or the add next button
         if ($node->hasFlag(NF_ADDAFTERADD) && !$node->hasFlag(NF_EDITAFTERADD))
-          $result[] = '<input type="submit" class="btn_saveandnext" name="atksaveandnext" value="'.atktext("saveandnext", "atk").'">';
-        $result[] = '<input type="submit" class="btn_cancel" name="atkcancel" value="'.atktext("cancel", "atk").'">';
+          $result[] = $this->getButton('saveandnext');
+
+        $result[] = $this->getButton('cancel');
       }
       elseif ($mode == "view")
       {
         if(atkLevel() > 0)
-          $result[] = '<input type="submit" class="btn_cancel" name="atkback" value="&lt;&lt; '.atktext('back').'">';
+          $result[] = $this->getButton('back');
+
         // if appropriate, display an edit button.
         if (!$node->hasFlag(NF_NO_EDIT)&&$node->allowed("edit", $record))
         {
           $result[] = '<input type="hidden" name="atkaction" value="edit">'.
                       '<input type="hidden" name="atknodetype" value="'.$node->atkNodeType().'">'.
-                      '&nbsp;<input type="submit" class="btn_save" value="'.atktext('edit').'">&nbsp;';
+                      '&nbsp;'.$this->getButton('edit').'&nbsp;';
         }
+      }
+      elseif ($mode == "delete")
+      {
+        $result[] = '<input name="confirm" type="submit" class="btn_ok" value="'.$node->text('yes').'">';
+        $result[] = '<input name="cancel" type="submit" class="btn_cancel" value="'.$node->text('no').'">';
       }
 
       return $result;
+    }
+
+    /**
+      * Create a button.
+      *
+      * @param String $action
+      * @return HTML
+      */
+    function getButton($action)
+     {
+       $name = "";
+       $class = "";
+
+       switch ($action)
+       {
+         case "save":
+           $name = "atknoclose";
+           $class = "btn_save";
+           break;
+         case "saveandclose":
+           $name = "atksaveandclose";
+           $class = "btn_saveandclose";
+           break;
+         case "cancel":
+           $name = "atkcancel";
+           $class = "btn_cancel";
+           break;
+         case "saveandedit":
+           $name = "atksaveandcontinue";
+           $class = "btn_saveandcontinue";
+           break;
+         case "saveandnext":
+           $name = "atksaveandnext";
+           $class = "btn_saveandnext";
+           break;
+         case "back":
+           $name = "atkback";
+           $class = "btn_cancel";
+           $value = '&lt;&lt; '.atktext($action, 'atk');
+           break;
+         case "edit":
+           $class = "btn_save";
+           break;
+         default:
+           return "";
+       }
+
+      if (!isset($value))
+        $value = atktext($action, "atk");
+
+      if ($class != "")
+        $class = "class=\"$class\" ";
+
+      if ($name != "")
+        $name = "name=\"".$this->m_node->getEditFieldPrefix()."{$name}\" ";
+
+       return '<input type="submit" '.$class.$name.' value="'.$value.'">';
+     }
+
+     /**
+      * Create a dialog button.
+      *
+      * @param String $action
+      * @param String $url
+      * @param array  $extraParams
+      * @return HTML
+      */
+    function getDialogButton($action, $label=null, $url=null, $extraParams=array())
+    {
+      atkimport('atk.ui.atkdialog');
+
+      // Disable the button when clicked to prevent javascript errors.
+      $onClick = 'this.disabled=\'true\';';
+      
+      switch($action)
+      {
+        case "save":
+          $class = "btn_save";          
+          $onClick.= atkDialog::getSaveCall($url, 'dialogform', $extraParams);
+          break;
+        case "cancel":
+          $class = "btn_cancel";
+          $onClick.= atkDialog::getCloseCall();
+          break;
+        default:
+          return "";
+      }
+
+      $label = $label == null ? atktext($action, 'atk') : $label;
+      return '<input type="button" class="'.$class.'" name="'.$label.'" value="'.$label.'" onClick="'.$onClick.'" />';
     }
 
     /**
@@ -477,18 +584,16 @@
     }
 
     /**
-     * Return php_file if not set returns PHP_SELF
+     * Return php_file. If not set, returns theme-level dispatchfile, if not set either, return (sanitized) PHP_SELF
      *
-     * @return string
+     * @return string The name of the file to which subsequent requests should be posted.
      */
     function getPhpFile()
     {
       $theme = &atkinstance('atk.ui.atktheme');
 
       if ($this->m_php_file != "") return $this->m_php_file;
-      elseif ($theme->getAttribute('dispatcher') != '') return $theme->getAttribute('dispatcher');
-      elseif (atkconfig("dispatcher") != '') return atkconfig("dispatcher");
-      else return $_SERVER['PHP_SELF'];
+      return $theme->getAttribute('dispatcher', atkconfig("dispatcher", atkSelf()));
     }
 
     /**

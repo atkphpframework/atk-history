@@ -30,7 +30,7 @@
    */
   $config_application_root = "/";
 
-  if ($config_atkroot == "")
+  if ($config_atkroot == "" || isset($_REQUEST["config_atkroot"])) // may not be passed in request (register_globals danger) 
   {
     /**
      * The root of the ATK application, where the atk/ directory resides
@@ -123,7 +123,7 @@
    *
    * Currently supported are:
    *   mysql:   MySQL (3.X ?)
-   *   mysql41: MySQL > 4.1.3
+   *   mysqli:  MySQL > 4.1.3
    *   oci8:    Oracle 8i
    *   oci9:    Oracle 9i and 10g
    *   pgsql:   PostgreSQL
@@ -131,14 +131,14 @@
    * @var String
    */
   $config_db["default"]["driver"]="mysql";
-  
+
   /**
    * Test database mapping. Maps normal databases to their test database.
    * Most of the applications only use one database in that case the default
    * should be sufficient. But in case you use multiple database and also
    * want to run tests on all these database you can override this mapping
    * or add your own mappings.
-   * 
+   *
    * @var array
    */
   $config_test_db_mapping = array('default' => 'test');
@@ -204,6 +204,12 @@
   $config_authentication_cookie_expire = 10080;
 
   /**
+   * The default state cookie expiry time (in minutes) (7 days)
+   * @var int
+   */
+  $config_state_cookie_expire = 10080;
+
+  /**
    *
    * @var boolean
    */
@@ -248,11 +254,11 @@
   /************************** AUTHENTICATION *********************************/
 
   /**
-   * 
+   *
    * @var String
    */
   $config_auth_database    = "default";
-  
+
   /**
    *
    * @var String
@@ -271,6 +277,13 @@
    */
   $config_auth_accesstable = "access";
 
+  /**
+   * If left empty auth_levelfield is used.
+   * 
+   * @var String
+   */
+  $config_auth_accessfield = "";
+  
   /**
    *
    * @var String
@@ -450,7 +463,7 @@
    * @var String
    */
   $config_mailreport = "";
-  
+
   /**
    * Output missing translation "errors".
    * @var String
@@ -489,10 +502,10 @@
    * @var String
    */
   $config_menu_align = "center";
-  
+
   /**
    * Auto-include logout link in menu?
-   * 
+   *
    * @var Boolean
    */
   $config_menu_logout_link = true;
@@ -520,7 +533,7 @@
    * @var boolean
    */
   $config_tabs = true;
-  
+
   /**
    * Whatever DHTML tabs should be stateful or not
    * (E.g. the current tab is saved for the current node/selector combination)
@@ -574,12 +587,12 @@
    * @var String
    */
   $config_language_basedir = "languages/";
-  
+
   /**
    * Use browser language to detect application language.
    * By default set to false to remain backwards compatible.
    *
-   * @var
+   * @var boolean
    */
   $config_use_browser_language = false;
 
@@ -664,7 +677,16 @@
   /****************** MISCELLANEOUS CONFIGURATION OPTIONS ********************/
 
   /**
-   * The application identifier (used for sessions)
+   * The session name. If this configuration option is not set the 
+   * $config_identifier option is used instead.
+   * 
+   * @var string
+   */
+  $config_session_name = "";
+  
+  /**
+   * The application identifier. 
+   *  
    * @var String
    * @todo update this bit of documentation as it doesn't really say much
    */
@@ -780,30 +802,38 @@
    * @var string
    */
   $config_extended_search_action = 'search';
-  
+
   /**
    * Should all many-to-one relations have the AF_RELATION_AUTOCOMPLETE flag set?
-   * 
+   *
    * @var boolean
    */
   $config_manytoone_autocomplete_default = false;
-  
+
   /**
-   * Should all many-to-one relations that have the AF_LARGE flag set also 
+   * Should all many-to-one relations that have the AF_LARGE flag set also
    * have the AF_RELATION_AUTOCOMPLETE flag set?
-   * 
+   *
    * @var boolean
    */
-  $config_manytoone_autocomplete_large = true;  
-  
+  $config_manytoone_autocomplete_large = true;
+
   /**
-   * Controls how many characters a user must enter before an auto-completion 
+   * Should manytoone relations having the AF_RELATION_AUTOCOMPLETE flag also
+   * use auto completion in search forms?
+   *
+   * @var boolean
+   */
+  $config_manytoone_search_autocomplete = true;
+
+  /**
+   * Controls how many characters a user must enter before an auto-completion
    * search is being performed.
-   * 
+   *
    * @var int
    */
   $config_manytoone_autocomplete_minchars = 2;
-    
+
   /**
    * The search mode of the autocomplete fields. Can be 'startswith', 'exact' or 'contains'.
    *
@@ -811,11 +841,25 @@
    * @var String
    */
   $config_manytoone_autocomplete_searchmode = "contains";
-  
+
   /**
    * Value determines wether the search of the autocompletion is case-sensitive.
    *
    * @var boolean
    */
   $config_manytoone_autocomplete_search_case_sensitive = false;
+
+  /**
+   * Warn the user if he/she has changed something in a form
+   * and leaves the page without pressing save or cancel.
+   *
+   * @var bool
+   */
+  $config_lose_changes_warning = false;
+
+/**
+ * Directories that contains modules (needed for testcases)
+ */
+
+//  $config_module_dirs = array("/modules");
 ?>
