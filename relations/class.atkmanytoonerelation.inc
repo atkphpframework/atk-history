@@ -411,6 +411,11 @@
           $result[$field] = $value;
         }
 
+        if (count($result) == 0)
+        {
+          return null;
+        }        
+        
         // add descriptor fields, this means they can be shown in the title
         // bar etc. when updating failed for example
         $record = array($this->fieldName() => $result);
