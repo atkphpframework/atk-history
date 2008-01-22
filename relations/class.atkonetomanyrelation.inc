@@ -198,18 +198,19 @@
      * The datagrid uses for both the edit and display actions the partial_grid
      * method to update it's view.
      *
-     * @param array $record  the record
-     * @param string $mode   the mode
-     * @param string $action the action
+     * @param array  $record      the record
+     * @param string  $mode       the mode
+     * @param string  $action     the action
+     * @param boolean $useSession use session?
      * 
      * @return atkDataGrid grid
      */
-    protected function createGrid($record, $mode, $action)
+    protected function createGrid($record, $mode, $action, $useSession=true)
     {
       $this->createDestination();
       
       atkimport('atk.datagrid.atkdatagrid');
-      $grid = atkDataGrid::create($this->m_destInstance);
+      $grid = atkDataGrid::create($this->m_destInstance, null, null, $useSession);
       $grid->setMode($mode);
       $grid->removeFlag(atkDataGrid::EXTENDED_SEARCH);
       $grid->setBaseUrl(partial_url($this->getOwnerInstance()->atkNodeType(), $action, 'attribute.'.$this->fieldName().'.grid'));
@@ -627,7 +628,7 @@
       if (($mode != 'add' && $mode != 'edit' && $mode != 'view') ||
           ($mode == 'view' && method_exists($this->getOwnerInstance(), $this->fieldName()."_display")))
       {
-        $grid = $this->createGrid($record, $mode, $mode);
+        $grid = $this->createGrid($record, $mode, $mode, false);
         $grid->setPostvar('atklimit', -1); // all records
         $grid->setCountHandler(create_function('', '')); // don't count
         $grid->loadRecords();
