@@ -778,9 +778,10 @@
      *             SESSION_NESTED|SESSION_BACK)
      * @param int $returnbehaviour When SESSION_NESTED is used, this is used to
      *            indicate where to return to.
+     * @param string $fieldprefix
      * @return string the HTML formcode with the session info
      */
-    function formState($sessionstatus=SESSION_DEFAULT, $returnbehaviour=NULL)
+    function formState($sessionstatus=SESSION_DEFAULT, $returnbehaviour=NULL, $fieldprefix='')
     {
       global $g_stickyurl;
 
@@ -801,7 +802,7 @@
 
       if (!is_null($returnbehaviour))
       {
-        $res.= '<input type="hidden" name="atkreturnbehaviour" value="'.$returnbehaviour.'" />';
+        $res.= '<input type="hidden" name="'.$fieldprefix.'atkreturnbehaviour" value="'.$returnbehaviour.'" />';
       }
 
       $res .= '<input type="hidden" name="'.session_name().'" value="'.session_id().'" />';
@@ -957,10 +958,10 @@
     $g_sessionManager->session_read($ATK_VARS);
 
     // Escape check
-    if (isset($ATK_VARS["atkescape"]) && $ATK_VARS["atkescape"]!="")
+    if (isset($_REQUEST["atkescape"]) && $_REQUEST["atkescape"]!="")
     {
       atkimport("atk.atknode");
-      atkNode::redirect(atkurldecode($ATK_VARS["atkescape"]));
+      atkNode::redirect(atkurldecode($_REQUEST["atkescape"]));
 
       $output = &atkOutput::getInstance();
       $output->outputFlush();

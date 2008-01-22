@@ -16,6 +16,9 @@ Changed in grid
 
 Changed in ATK 6.2
 ------------------
++ Took the file error check out of the validate function so that it can be
+  called statically from outside of atkfileattribute. It returns the
+  corresponding error. fetchFileErrorType($_FILES[0]['error']) [Erik]
 * Fixed non static call to atkFileUtils. [Yannick]
 + Initial values are now filled as well for the destination of an
   atkOneToOnerelation during a call to initial_values. [Tjeerd,Peter]
@@ -80,6 +83,15 @@ Changed in ATK 6.2
   dumping the contents of an entire database to YAML files. [Peter]
 + Adding methods for retrieving and clearing the query history in 
   atkMockDb. [Dennis]
++ Added feature to specify which attributes you want to export. [Sandy]
++ Added manual paint feature to atkAttribute. Manually painted attributes will
+  not be rendered. If this is set to true, you are responsible for calling 
+  the attribute's edit() method to paint it on screen. [Ivo, Sandy]
++ Added setText function to atkDummyAttribute to change the text. [Sandy]
++ Added setClickableLabel to the atkRadioAttribute to turn it of 
+  (default this is on). [Sandy]
++ Added validation of tags, they may not contain HTML or linefeeds. Also
+  added testcase for validation. [Dennis]
 * Fixed fatal error on some occasions when using the update action on a node
   with a onetoone relation. [Harrie]
 * Fix use of non-numeric keys in atkOneToManyRelation [Marc]
@@ -222,6 +234,13 @@ Changed in ATK 6.2
 * Fixed detection of order direction for default order by statements
   which use a combination of table name and field name. [Peter]
 * Moved buttons from confirmAction to getFormButtons function. [Peter Bottenberg]
+* Improved the atkRadioAttribute so it can use the same functions like the list
+  attribute to fill the items dynamicly (with the addOption function) [Sandy]
+* Added dutch, english, german and french translations. [Boy]
+* Added getDebugging method to atkOutput class. [Boy]
+* Improved winXP theme. [Boy]
+* Added fieldprefix to atkreturnbehaviour field. [Lineke]
+* Added stacks for rejectinfo in atkactionhandler. [Lineke]
 
 Changed in ATK 6.1
 ------------------

@@ -478,9 +478,9 @@
   /**
    * @deprecated Use atkSessionManager::formState instead.
    */
-  function session_form($sessionstatus=SESSION_DEFAULT, $returnbehaviour=NULL)
+  function session_form($sessionstatus=SESSION_DEFAULT, $returnbehaviour=NULL, $fieldprefix='')
   {
-    return atkSessionManager::formState($sessionstatus, $returnbehaviour);
+    return atkSessionManager::formState($sessionstatus, $returnbehaviour, $fieldprefix);
   }
 
   /**
@@ -1768,7 +1768,7 @@
   function getClassPath($fullclassname, $class = true)
   {
     $elems = explode(".", strtolower($fullclassname));
-    if($elems["0"] == "module")
+    if($elems[0] == "module")
     {
       array_shift($elems);
       $prefix = moduleDir(array_shift($elems));

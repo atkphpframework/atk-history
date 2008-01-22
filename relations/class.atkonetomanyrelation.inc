@@ -103,7 +103,7 @@
      * @var boolean
      */
     var $m_useFilterForAddLink = true;
-    
+
     /**
      * Use destination filter for edit link (edit button)?
      *
@@ -111,7 +111,7 @@
      * @var boolean
      */
     var $m_useFilterForEditLink = true;
-    
+
     /**
      * Default constructor.
      *
@@ -170,7 +170,7 @@
       }
       return $this->m_ownerInstance->m_primaryKey;
     }
-    
+
     /**
      * Use destination filter for auto add link?
      *
@@ -180,7 +180,7 @@
     {
       $this->m_useFilterForAddLink = $useFilter;
     }
-    
+
     /**
      * Use destination filter for edit link (edit button)?
      *
@@ -263,7 +263,14 @@
         // no records
         if ($grid->getCount() == 0)
         {
-          return $this->text('none');
+          if (!in_array($mode, array("csv", "plain"))) 
+          { 
+            return $this->text("none"); 
+          } 
+          else 
+          { 
+            return '';
+          }
         }        
         
         $actions = array();
@@ -445,7 +452,7 @@
     function _getDialogAddLink($record, $action)
     {
       atkimport("atk.ui.atkdialog");
-       
+
       $filter = $this->getAddFilterString($record);
 
       $ui = &$this->m_ownerInstance->getUi();
@@ -1117,7 +1124,7 @@
         $page->register_loadscript($script);
       }
     }
-    
+
     /**
      * Edit dialog.
      */
@@ -1143,6 +1150,6 @@
       $handler->m_postvars = $this->m_ownerInstance->m_postvars;
       $handler->setDialogSaveUrl(partial_url($this->m_ownerInstance->atkNodeType(), 'edit', 'attribute.'.$this->fieldName().'.edit_process'));
       $handler->handleUpdate(partial_url($this->m_ownerInstance->atkNodeType(), 'edit', 'attribute.'.$this->fieldName().'.refresh'));
-    }    
+    }
   }
 ?>
