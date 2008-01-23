@@ -42,12 +42,12 @@
      */
     function action_add()
     {
-      if (isset($this->m_partial) && $this->m_partial!="")
+      if (!empty($this->m_partial))
       {
         $this->partial($this->m_partial);
         return;
       }
-
+            
       // we could get here because of a reject.
       $record = $this->getRejectInfo();
 
@@ -134,7 +134,7 @@
                      ' method="post" onsubmit="return globalSubmit(this)">';
 
 
-      $formstart .= session_form(SESSION_NESTED, $this->getReturnBehaviour());
+      $formstart .= session_form(SESSION_NESTED, $this->getReturnBehaviour(), $node->getEditFieldPrefix());
       $formstart .= $controller->getHiddenVarsString();
 
       if (isset($node->m_postvars['atkfilter']))

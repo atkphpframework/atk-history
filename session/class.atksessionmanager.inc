@@ -40,7 +40,11 @@
   // we don't have a session...
   if (isValidSessionId())
   {
-    session_name(atkconfig("identifier"));
+    $sessionName = atkconfig("session_name");
+    if (empty($sessionName))
+      $sessionName = atkconfig("identifier");
+    
+    session_name($sessionName);
     session_start();
 
   // backwardscompatibility hacks. g_sessionData and g_sessionData are obsolete actually.
@@ -329,8 +333,9 @@
       $sessionVars = array("atknodetype","atkfilter","atkaction","atkpkret");
 
       // pagevars are valid on a page. if you go a session level higher, the pagevars are no longer
-      // visible until you return.
-      $pageVars = array("atkdg", "atksearch","atkselector","atksearchmode","atkorderby","atkstartat","atklimit","atktarget","atkformdata","atktree","atksuppress","atktab","atksmartsearch","atkindex");
+      // visible until you return. if the name ends in a * the pagevar is treated as an array that
+      // needs to be merged recursive with new postvar values
+      $pageVars = array("atkdg*","atkdgsession","atksearch","atkselector","atksearchmode","atkorderby","atkstartat","atklimit","atktarget","atkformdata","atktree","atksuppress","atktab","atksmartsearch","atkindex");
 
       // lockedvars are session or page vars that will not be overwritten in partial mode
       // e.g., the values that are already known in the session will be used
@@ -462,6 +467,9 @@
           // Posted vars always overwrite anything in the current session..
           foreach(array_merge($pageVars, $sessionVars) as $var)
           {
+            $recursive = $var{strlen($var) - 1} == '*';
+            $var = $recursive ? substr($var, 0, -1) : $var;
+            
             if (isset($postvars[$var])&&$postvars[$var]!="")
             {
               if ($postvars[$var]=="clear")
@@ -470,7 +478,14 @@
               }
               else
               {
-                $currentitem[$var] = $postvars[$var];
+                if ($recursive && is_array($currentitem[$var]) && is_array($postvars[$var]))
+                {
+                  $currentitem[$var] = array_merge_recursive($currentitem[$var], $postvars[$var]);
+                }
+                else 
+                {
+                  $currentitem[$var] = $postvars[$var];
+                }
               }
             }
           }
@@ -489,9 +504,19 @@
 
           foreach($pageVars as $var)
           {
+            $recursive = $var{strlen($var) - 1} == '*';
+            $var = $recursive ? substr($var, 0, -1) : $var;
+                        
             if (isset($postvars[$var])&&count($postvars[$var])>0 && (!$partial || !in_array($var, $lockedVars)))
             {
-              $currentitem[$var] = $postvars[$var];
+              if ($recursive && is_array($currentitem[$var]) && is_array($postvars[$var]))
+              {
+                $currentitem[$var] = atk_array_merge_recursive($currentitem[$var], $postvars[$var]);
+              }
+              else 
+              {
+                $currentitem[$var] = $postvars[$var];
+              }              
             }
           }
 
@@ -506,7 +531,6 @@
               $currentitem[$var] = $postvars[$var];
             }
           }
-
         }
 
         if (isset($currentitem["atkformdata"]) && is_array($currentitem["atkformdata"]))
@@ -537,8 +561,11 @@
         {
           foreach($currentitem as $var => $value)
           {
-            // don't override what was passed in the url.
-            if (!isset($postvars[$var]))
+            $recursive = in_array("{$var}*", $pageVars);
+            
+            // don't override what was passed in the url except for
+            // recursive mergeable pagevars
+            if ($recursive || !isset($postvars[$var]))
             {
               $postvars[$var] = $value;
             }
@@ -751,9 +778,10 @@
      *             SESSION_NESTED|SESSION_BACK)
      * @param int $returnbehaviour When SESSION_NESTED is used, this is used to
      *            indicate where to return to.
+     * @param string $fieldprefix
      * @return string the HTML formcode with the session info
      */
-    function formState($sessionstatus=SESSION_DEFAULT, $returnbehaviour=NULL)
+    function formState($sessionstatus=SESSION_DEFAULT, $returnbehaviour=NULL, $fieldprefix='')
     {
       global $g_stickyurl;
 
@@ -774,7 +802,7 @@
 
       if (!is_null($returnbehaviour))
       {
-        $res.= '<input type="hidden" name="atkreturnbehaviour" value="'.$returnbehaviour.'" />';
+        $res.= '<input type="hidden" name="'.$fieldprefix.'atkreturnbehaviour" value="'.$returnbehaviour.'" />';
       }
 
       $res .= '<input type="hidden" name="'.session_name().'" value="'.session_id().'" />';
@@ -930,10 +958,10 @@
     $g_sessionManager->session_read($ATK_VARS);
 
     // Escape check
-    if (isset($ATK_VARS["atkescape"]) && $ATK_VARS["atkescape"]!="")
+    if (isset($_REQUEST["atkescape"]) && $_REQUEST["atkescape"]!="")
     {
       atkimport("atk.atknode");
-      atkNode::redirect(atkurldecode($ATK_VARS["atkescape"]));
+      atkNode::redirect(atkurldecode($_REQUEST["atkescape"]));
 
       $output = &atkOutput::getInstance();
       $output->outputFlush();
@@ -1087,7 +1115,10 @@
    */
   function isValidSessionId()
   {
-    $name = atkconfig("identifier");
+    $name = atkconfig("session_name");
+    if (empty($name))
+      $name = atkconfig("identifier");
+      
     $sessionid = "";
     global ${$name};
 

@@ -85,7 +85,9 @@
      *
      * The default implementation invokes an action_$action override (if
      * present) and stores the postvars. Custom handlers may override this
-     * behavior.
+     * behavior. If there is no node action override and a partial is set 
+     * for the action we don't invoke the action_$action override but 
+     * instead let the partial method handle the action.
      *
      * @param atkNode $node The node on which the action should be performed.
      * @param String $action The action that is being performed.
@@ -98,8 +100,9 @@
       $this->m_node = &$node;
       $this->m_action = $action;
       $this->m_partial = $node->m_partial;
-      $this->invoke("action_".$action);
       
+      $this->invoke("action_".$action);
+           
       // when we're finished, cleanup any atkrejects (that we haven't set ourselves).
       if (!$this->m_rejecting)
       {
@@ -120,14 +123,16 @@
     
     function getRejectInfo()
     {      
+      global $atklevel;
       atkdebug("looking for rejectinfo");
       $sm = &atkGetSessionManager();
       $session = &$sm->getSession();
-      if (isset($session["atkreject"]))
+      $stackid = atkStackID(($atklevel==-1));
+      if (isset($session["atkreject"][$sm->m_namespace][$stackid][atkLevel()]))
       {
         atkdebug("rejectinfo found");        
-        $result = $session["atkreject"];        
-        unset($session["atkreject"]);
+        $result = $session["atkreject"][$sm->m_namespace][$stackid][atkLevel()];        
+        unset($session["atkreject"][$sm->m_namespace][$stackid][atkLevel()]);
         return $result;
       }
       return NULL;
@@ -135,15 +140,12 @@
     
     function setRejectInfo($data)
     {
+      global $atklevel;
       atkdebug("setting rejectinfo");
-      /**
-       * @todo We're storing this globally in the session; each window should
-       * have its own rejection data so this should be a 'stack global' (but we 
-       * don't support that concept yet.
-       */
       $sm = &atkGetSessionManager();
       $session = &$sm->getSession();
-      $session["atkreject"] = $data;
+      $stackid = atkStackID(($atklevel==-1));
+      $session["atkreject"][$sm->m_namespace][$stackid][atkPrevLevel()] = $data;
       $this->m_rejecting = true;
     }
 

@@ -11,6 +11,10 @@ Changed in Almighty branch
 
 Changed in ATK 6.2
 ------------------
++ Took the file error check out of the validate function so that it can be
+  called statically from outside of atkfileattribute. It returns the
+  corresponding error. fetchFileErrorType($_FILES[0]['error']) [Erik]
+* Fixed non static call to atkFileUtils. [Yannick]
 + Initial values are now filled as well for the destination of an
   atkOneToOnerelation during a call to initial_values. [Tjeerd,Peter]
 + Added support for image mime type validation in the atkfileattribute. [Martin]
@@ -53,7 +57,7 @@ Changed in ATK 6.2
   setting of the colormode. For now only two modes are supported:
   CP_COLORMODE_DEFAULT (default behaviour) and CP_COLORMODE_HEX6 (Only hex
   notations with 6 characters are valid). Also added testcase for the
-  atkColorPickerAttribute [Dennis]
+  atkColorPickerAttribute. [Dennis]
 + The submit-handling of a the javascript method atkMRASubmit() can be
   overridden by proving a javascript method with the name atkMRA_<action>. Where
   action is the name of the action you wish to override. [Peter, Dennis]
@@ -72,10 +76,26 @@ Changed in ATK 6.2
   applications. [Peter]
 + Added utility scripts for dumping the contents of a table to YAML and/or
   dumping the contents of an entire database to YAML files. [Peter]
++ Adding methods for retrieving and clearing the query history in 
+  atkMockDb. [Dennis]
++ Added feature to specify which attributes you want to export. [Sandy]
++ Added manual paint feature to atkAttribute. Manually painted attributes will
+  not be rendered. If this is set to true, you are responsible for calling 
+  the attribute's edit() method to paint it on screen. [Ivo, Sandy]
++ Added setText function to atkDummyAttribute to change the text. [Sandy]
++ Added setClickableLabel to the atkRadioAttribute to turn it of 
+  (default this is on). [Sandy]
++ Added validation of tags, they may not contain HTML or linefeeds. Also
+  added testcase for validation. [Dennis]
++ Added the atkDataGrid which replaces atkRecordList for the admin and
+  select handlers and the atkOneToManyRelation. The atkDataGrid allows
+  browsing through records without page reloads. [Peter]
++ Added atkTextAttribute::setWrapMode to specify the wrap mode for
+  the textarea (by default "soft"). [Peter]
 * Fixed fatal error on some occasions when using the update action on a node
   with a onetoone relation. [Harrie]
-* Fix use of non-numeric keys in atkOneToManyRelation [Marc]
-* Improve atknavigator->getAvailableIndeces(), it now work with Oracle too.
+* Fix use of non-numeric keys in atkOneToManyRelation. [Marc]
+* Improve atknavigator->getAvailableIndeces(), it now works with Oracle too.
   [Yury]
 * Fix atkquery - select query can contains only expression too (not only
   fields). [Yury]
@@ -205,6 +225,22 @@ Changed in ATK 6.2
   javascript method atkMRASubmit(). [Dennis]
 * Don't fetch meta data for atkDataNode. [Peter]
 * Fixed javascript error in atkDateAttribute when using french language. [Ivo]
+* Session name can now optionally differ from the application identifier
+  by setting $config_session_name. [Peter]
+* Made atkGetUser accept 'key' parameter, allowing you to only get 
+  one bit of data from the user data. [Boy]
+* Made DHTML Calendar use ATKs maxdate and mindate  to disable dates. [Boy]
+* Fixed label retrieval for error messages. [Peter]
+* Fixed detection of order direction for default order by statements
+  which use a combination of table name and field name. [Peter]
+* Moved buttons from confirmAction to getFormButtons function. [Peter Bottenberg]
+* Improved the atkRadioAttribute so it can use the same functions like the list
+  attribute to fill the items dynamicly (with the addOption function) [Sandy]
+* Added dutch, english, german and french translations. [Boy]
+* Added getDebugging method to atkOutput class. [Boy]
+* Improved winXP theme. [Boy]
+* Added fieldprefix to atkreturnbehaviour field. [Lineke]
+* Added stacks for rejectinfo in atkactionhandler. [Lineke]
 
 Changed in ATK 6.1
 ------------------

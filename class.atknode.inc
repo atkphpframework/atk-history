@@ -2558,9 +2558,12 @@
           $formstart.='<input type="hidden" name="atkselector[]" value="'.$selector.'">';
       }
 
-      $buttons = array();
-      $buttons[] = '<input name="confirm" type="submit" class="btn_ok" value="'.atktext('yes').'">';
-      $buttons[] = '<input name="cancel" type="submit" class="btn_cancel" value="'.atktext('no').'">';
+      $buttons = $this->getFormButtons($action, array());      
+      if (count($buttons) == 0)
+      {
+        $buttons[] = '<input name="confirm" type="submit" class="btn_ok" value="'.$this->text('yes').'">';
+        $buttons[] = '<input name="cancel" type="submit" class="btn_cancel" value="'.$this->text('no').'">';
+      }
 
       $content = "";
       $recs = $this->selectDb($atkselector_str, "", "", "", $this->descriptorFields());
@@ -3488,6 +3491,10 @@
      */
     function copyDb(&$record, $mode="copy")
     {
+      // add original record
+      $original = $record; // force copy
+      $record['atkorgrec'] = $original;      
+      
       //notify precopy listeners
       $this->preNotify("precopy", $record);
 
@@ -3605,6 +3612,9 @@
           $searching = true;
         }
       }
+      
+      if (array_key_exists("atkfilter", $this->m_postvars))
+       $query->addCondition($this->validateFilter($this->m_postvars["atkfilter"]));      
 
       if (!$this->hasFlag(NF_NO_FILTER))
       {
