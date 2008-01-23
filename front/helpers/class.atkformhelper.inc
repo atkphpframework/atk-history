@@ -23,8 +23,12 @@ class atkFormHelper extends atkHelper
     
     $action = $this->getController()->url($params);
     
+    $allowedAttribs = array('class', 'style', 'onsubmit');
+    $attribsString = atkFrontTools::attributesString($params, $allowedAttribs);
+    $attribsString = strlen($attribsString) > 0 ? ' '.$attribsString : '';
+    
     $result = '
-      <form method="'.$method.'" action="'.$action.'">
+      <form method="'.$method.'" action="'.$action.'"'.$attribsString.'>
         '.$content.'
       </form>
     ';
