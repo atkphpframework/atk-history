@@ -385,6 +385,11 @@ class atkDataGrid
     {
       $this->addComponent('index', 'atk.datagrid.atkdgindex');
     }       
+    
+    if (count($this->getNode()->m_editableListAttributes) > 0)
+    {
+      $this->addComponent('editcontrol', 'atk.datagrid.atkdgeditcontrol');
+    }
   }
   
   /**

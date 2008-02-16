@@ -185,13 +185,13 @@ function atkSubmitMRA(name, form, target, embedded, ignoreHandler)
     {
       var input = document.createElement('input');
       input.setAttribute('type', 'hidden');
-      input.setAttribute('name', 'atkrecordlist');      
+      input.setAttribute('name', 'atkdatagrid');      
       input.setAttribute('value', name);
       form.appendChild(input);    
     }
     else 
     {
-      form.atkrecordlist.value = name;
+      form.atkdatagrid.value = name;
     }
     
     // default the form is build using SESSION_DEFAULT,

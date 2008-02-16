@@ -1,14 +1,14 @@
 <table border="0" cellspacing="0" cellpadding="2">
-{if $index}
+{if $index || $editcontrol}
   <tr>
     <td align="left" valign="top">
-      {$index}
+      {if $editcontrol}{$editcontrol}{/if} {if $index}{$index}{/if}
     </td>
   </tr>
 {elseif $paginator || $limit}
   <tr>
     <td align="left" valign="middle">
-      {if $paginator}{$paginator}{/if}
+      {if $editcontrol}{$editcontrol}{/if} {if $paginator}{$paginator}{/if}
     </td>
     <td align="right" valign="middle">
       {if $limit}{$limit}{/if}

@@ -60,6 +60,7 @@ class atkDGList extends atkDGComponent
     $grid = $this->getGrid();
     $theme = $this->getTheme();
     $page = $this->getPage();
+    $edit = $grid->getPostvar('atkgridedit', false);
     
     $page->register_style($theme->stylePath("recordlist.css",$grid->getNode()->m_module));
     $page->register_script(atkconfig("atkroot")."atk/javascript/recordlist.js");
@@ -111,7 +112,7 @@ class atkDGList extends atkDGComponent
         $headercols[] = array("content"=>"&nbsp;");
       }
     }
-    if ($grid->hasFlag(atkDataGrid::MULTI_RECORD_ACTIONS) || $grid->hasFlag(atkDataGrid::MULTI_RECORD_PRIORITY_ACTIONS))
+    if (!$edit && ($grid->hasFlag(atkDataGrid::MULTI_RECORD_ACTIONS) || $grid->hasFlag(atkDataGrid::MULTI_RECORD_PRIORITY_ACTIONS)))
     {
       $headercols[] = array("content"=>""); // Empty leader on top of mra action list.
     }
@@ -164,7 +165,7 @@ class atkDGList extends atkDGComponent
     {
       $call = htmlentities($grid->getUpdateCall(array('atkstartat' => 0), array(), 'ATK.DataGrid.extractExtendedSortOverrides'));
       $button = '<input type="button" value="'.atktext("sort").'" onclick="'.$call.'">';
-      if ($grid->hasFlag(atkDataGrid::MULTI_RECORD_ACTIONS) || $grid->hasFlag(atkDataGrid::MULTI_RECORD_PRIORITY_ACTIONS))
+      if (!$edit && ($grid->hasFlag(atkDataGrid::MULTI_RECORD_ACTIONS) || $grid->hasFlag(atkDataGrid::MULTI_RECORD_PRIORITY_ACTIONS)))
       {
         $sortcols[] = array("content"=>""); // Empty leader on top of mra action list.
       }
@@ -208,7 +209,7 @@ class atkDGList extends atkDGComponent
      // $searchstart = '<a name="searchform"></a>';
      $searchstart = "";
 
-      if ($grid->hasFlag(atkDataGrid::MULTI_RECORD_ACTIONS) || $grid->hasFlag(atkDataGrid::MULTI_RECORD_PRIORITY_ACTIONS))
+      if (!$edit && ($grid->hasFlag(atkDataGrid::MULTI_RECORD_ACTIONS) || $grid->hasFlag(atkDataGrid::MULTI_RECORD_PRIORITY_ACTIONS)))
       {
         $searchcols[] = array("content"=>"");
       }
@@ -243,7 +244,7 @@ class atkDGList extends atkDGComponent
     /*******************************************/
     $liststart = "";
     $listend = "";
-    if ($grid->hasFlag(atkDataGrid::MULTI_RECORD_ACTIONS) || $grid->hasFlag(atkDataGrid::MULTI_RECORD_PRIORITY_ACTIONS))
+    if (!$edit && ($grid->hasFlag(atkDataGrid::MULTI_RECORD_ACTIONS) || $grid->hasFlag(atkDataGrid::MULTI_RECORD_PRIORITY_ACTIONS)))
     {
       $page->register_script(atkconfig("atkroot")."atk/javascript/formselect.js");
 
@@ -300,7 +301,7 @@ class atkDGList extends atkDGComponent
       $record["type"] = $list["rows"][$i]["type"];
 
       /* multi-record-priority-actions -> priority selection */
-      if ($grid->hasFlag(atkDataGrid::MULTI_RECORD_PRIORITY_ACTIONS))
+      if (!$edit && $grid->hasFlag(atkDataGrid::MULTI_RECORD_PRIORITY_ACTIONS))
       {
         $select = '<select name="'.$listName.'_atkselector[]">'.
                     '<option value="'.htmlentities($list["rows"][$i]["selector"]).'"></option>';
@@ -311,7 +312,7 @@ class atkDGList extends atkDGComponent
       }
 
       /* multi-record-actions -> checkbox */
-      elseif ($grid->hasFlag(atkDataGrid::MULTI_RECORD_ACTIONS))
+      elseif (!$edit && $grid->hasFlag(atkDataGrid::MULTI_RECORD_ACTIONS))
       {
         if (count($list["rows"][$i]["mra"]) > 0)
           $record["cols"][] = array(
@@ -321,6 +322,14 @@ class atkDGList extends atkDGComponent
 
         else $record["cols"][] = array("content"=>"");
       }
+      
+      // editable row, add selector
+      else if ($edit && $list["rows"][$i]['edit'])
+      {
+        $liststart .= 
+          '<input type="hidden" name="atkdatagriddata_AE_'.$i.'_AE_atkprimkey" value="'.htmlentities($list["rows"][$i]["selector"]).'">'.
+          '<input type="hidden" name="'.$listName.'_atkselector[]" value="'.htmlentities($list["rows"][$i]["selector"]).'">';
+      }        
 
       /* locked? */
       if ($grid->hasFlag(atkDataGrid::LOCKING))
@@ -410,7 +419,7 @@ class atkDGList extends atkDGComponent
 
     if (count($list["total"]) > 0)
     {
-      if ($grid->hasFlag(atkDataGrid::MULTI_RECORD_ACTIONS) || $grid->hasFlag(atkDataGrid::MULTI_RECORD_PRIORITY_ACTIONS)) $totalcols[] = array("content"=>"");
+      if (!$edit && ($grid->hasFlag(atkDataGrid::MULTI_RECORD_ACTIONS) || $grid->hasFlag(atkDataGrid::MULTI_RECORD_PRIORITY_ACTIONS))) $totalcols[] = array("content"=>"");
       if ($grid->hasFlag(atkDataGrid::LOCKING)) $totalcols[] = array("content"=>"");
       if (($orientation == "left" || $orientation == "both") && ($this->_hasActionColumn($list) && count($list["rows"]) > 0))
         $totalcols[] = array("content"=>"");
@@ -428,7 +437,7 @@ class atkDGList extends atkDGComponent
     /* MULTI-RECORD-PRIORITY-ACTION FORM (CONTINUED) */
     /*************************************************/
     $mra = "";
-    if ($grid->hasFlag(atkDataGrid::MULTI_RECORD_PRIORITY_ACTIONS))
+    if (!$edit && $grid->hasFlag(atkDataGrid::MULTI_RECORD_PRIORITY_ACTIONS))
     {
       $target = session_url(atkSelf().'?atknodetype='.$grid->getActionNode()->atkNodeType(), SESSION_NESTED);
 
@@ -457,7 +466,7 @@ class atkDGList extends atkDGComponent
     /****************************************/
     /* MULTI-RECORD-ACTION FORM (CONTINUED) */
     /****************************************/
-    elseif ($grid->hasFlag(atkDataGrid::MULTI_RECORD_ACTIONS))
+    elseif (!$edit && $grid->hasFlag(atkDataGrid::MULTI_RECORD_ACTIONS))
     {
       $target = session_url(atkSelf().'?atknodetype='.$grid->getNode()->atkNodeType().'&atktarget='.$grid->getNode()->m_postvars['atktarget'].'&atktargetvar='.$grid->getNode()->m_postvars['atktargetvar'].'&atktargetvartpl='.$grid->getNode()->m_postvars['atktargetvartpl'], SESSION_NESTED);
 
@@ -499,6 +508,15 @@ class atkDGList extends atkDGComponent
         }
       }
     }
+    
+    else if ($edit)
+    {
+      $embedded = $this->getGrid()->isEmbedded() ? 'true' : 'false';
+      $mra =
+       '<input type="hidden" name="'.$listName.'_atkaction" value="multiupdate">'.
+       '<input type="button" class="btn" value="'.atktext('save').'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\', '.$embedded.', false)">';
+    }
+    
 
     if (atkconfig("use_keyboard_handler"))
     {
@@ -594,7 +612,7 @@ class atkDGList extends atkDGComponent
     $result |= !$grid->hasFlag(atkDataGrid::SEARCH) ? RL_NO_SEARCH : 0;
     $result |= !$grid->hasFlag(atkDataGrid::EXTENDED_SEARCH) ? RL_NO_EXTENDED_SEARCH : 0;
     $result |= $grid->hasFlag(atkDataGrid::EXTENDED_SEARCH) ? RL_EXT_SORT : 0;
-
+    
     return $result;
   }
 
@@ -700,13 +718,16 @@ class atkDGList extends atkDGComponent
       }
 
       /* columns */
+      $editAllowed = $grid->getPostvar('atkgridedit', false) && $grid->getNode()->allowed('edit', $result["rows"][$i]["record"]);
+      $result["rows"][$i]["edit"] = $editAllowed;
       foreach (array_keys($grid->getNode()->m_attribIndexList) as $r)
       {
         $name = $grid->getNode()->m_attribIndexList[$r]["name"];
         if (!in_array($name, $suppress))
         {
           $attribute = &$grid->getNode()->m_attribList[$name];
-          $attribute->addToListArrayRow($grid->getNode()->m_action, $result, $i, $prefix, $flags);
+          $edit = $editAllowed && in_array($name, $grid->getNode()->m_editableListAttributes);
+          $attribute->addToListArrayRow($grid->getNode()->m_action, $result, $i, $prefix, $flags, $edit);
         }
       }
     }
