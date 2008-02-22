@@ -1517,9 +1517,10 @@
       if (!empty($order))
       {
         // realias if destination order contains a tablename.
-        if (strpos($order, $this->m_destInstance->m_table.'.') !== FALSE)
+        if (strpos($order, $this->m_destInstance->m_table.'.') !== false)
           $order = str_replace($this->m_destInstance->m_table.'.', $this->fieldName().'.', $order);
-        else $order = $this->fieldName().".".$order;
+        else if (strpos($order, '.') === false) 
+          $order = $this->fieldName().".".$order;
         return $order;
       }
       else
