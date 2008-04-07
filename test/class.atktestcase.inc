@@ -35,6 +35,7 @@
     var $m_useTestDatabase = NULL;
     var $m_fixtures = array();
     var $m_fixtureData = array();
+    var $m_usesFixture = NULL;
 
     /**
      * Constructor.
@@ -190,12 +191,21 @@
       foreach ($mapping as $normal => $test)
       {
       	$db = &$this->_getTestDb($normal);
+        
+      	if($db->getDbStatus() <> DB_SUCCESS)
+        {
+          atkerror("test db '$normal' is not acceptable");
+          break;
+        }
+
         if (!isset($config[$test]["transactional_fixtures"]) ||
             !$config[$test]["transactional_fixtures"])
         {
           $db->toggleForeignKeys(false);
 
-          $db->deleteAll();
+          if ($config['default']['db'] == $config[$test]['db']) atkerror("atkTestCase::_cleanData() | testdatabase equals default database: '{$config['default']['db']}'! Database will not be emptied");
+          else $db->deleteAll();
+
           $db->commit();
 
           $db->toggleForeignKeys(true);
@@ -216,9 +226,9 @@
 
       if (count($this->m_fixtures) == 0) return;
 
-      $config = atkconfig("db");      
-      $mapping = atkconfig("test_db_mapping");      
-      
+      $config = atkconfig("db");
+      $mapping = atkconfig("test_db_mapping");
+
       atkimport('atk.fixture.atkfixturemanager');
       $manager = &atkFixtureManager::getInstance();
 
@@ -226,6 +236,12 @@
       foreach($this->m_fixtures as $database => $fixtures)
       {
         $db = &$this->_getTestDb($database);
+        
+        if($db->getDbStatus() <> DB_SUCCESS)
+        {
+          atkerror("test db '$database' is not acceptable");
+          break;
+        }
 
         if (!isset($config[$mapping[$database]]["transactional_fixtures"]) ||
             !$config[$mapping[$database]]["transactional_fixtures"])
@@ -363,13 +379,13 @@
     {
       atkSetSecurityManager($this->m_restoreSecMgr);
     }
-    
+
     /**
      * Asserts the given attribute(s) value did not cause the given validation error.
      *
      * $attribName can contain the name of a single attributename, or an array with
      * attributenames.
-     * 
+     *
      * @param array  $record
      * @param mixed $attribName
      * @param string $error
@@ -377,11 +393,11 @@
     function _hasValidationError($record, $attribName, $error)
     {
       if (!isset($record['atkerror'])) return false;
-      
+
       $errors = $record['atkerror'];
 
       $found = false;
-      
+
       foreach ($errors as $entry)
       {
         //does the error match?
@@ -403,7 +419,7 @@
                   break;
                 }
               }
-            
+
               //if the arrays are the same, we have found a match
               if($allIn)
               {
@@ -421,35 +437,35 @@
               $found = true;
               break;
             }
-          }          
+          }
         }
-      }     
-      
-      return $found;      
-    }    
-    
+      }
+
+      return $found;
+    }
+
     /**
      * Asserts the given attribute(s) value did not cause the given validation error.
      *
      * $attribName can contain the name of a single attributename, or an array with
      * attributenames.
-     * 
+     *
      * @param array  $record
      * @param mixed $attribName
      * @param string $error
-     */    
+     */
     function assertNoValidationError($record, $attribName, $error)
-    {   
+    {
       $found = $this->_hasValidationError($record, $attribName, $error);
       if(is_array($attribName))
         $this->assertTrue(!$found, 'Validation error '.$error.' not found for attributes '.implode(", ",$attribName));
       else
-        $this->assertTrue(!$found, 'Validation error '.$error.' not found for attribute '.$attribName);          
+        $this->assertTrue(!$found, 'Validation error '.$error.' not found for attribute '.$attribName);
     }
-    
+
     /**
      * Asserts the given attribute(s) value caused the given validation error.
-     * 
+     *
      * $attribName can contain the name of a single attributename, or an array with
      * attributenames.
      *
@@ -461,11 +477,11 @@
     {
       $found = $this->_hasValidationError($record, $attribName, $error);
       if(is_array($attribName))
-        $this->assertTrue($found, 'Validation error '.$error.' for attributes '.implode(", ",$attribName));        
-      else 
-        $this->assertTrue($found, 'Validation error '.$error.' for attribute '.$attribName);        
+        $this->assertTrue($found, 'Validation error '.$error.' for attributes '.implode(", ",$attribName));
+      else
+        $this->assertTrue($found, 'Validation error '.$error.' for attribute '.$attribName);
     }
-    
+
     /**
      * Asserts if a certain attribute in the given node has the given flag.
      * You should pass the flag name to this method!
@@ -494,6 +510,59 @@
       $flag = eval("return ".$flagName.";");
       $hasFlag = $node->getAttribute($attribName)->hasFlag($flag);
       $this->assertFalse($hasFlag, "Attribute ".$node->atkNodeType()."::$attribName not has flag $flagName");
-    }    
+    }
+
+    /**
+     * Check if currect testcase use fixture
+     *
+     * @return boolean
+     */
+    function useFixture()
+    {
+      if($this->m_usesFixture === null) return (count($this->m_fixtures) > 0);
+      else return $this->m_usesFixture;
+    }
+    
+    /**
+     * Set if currect testcase use fixture
+     *
+     */
+    function setUseFixture($value)
+    {
+      $this->m_usesFixture = $value;
+    }
+
+    /**
+     * When the testdatabase isn't configured or acceptable and the
+     * test uses the testdatabase then skip it.
+     *
+     */
+    public function skip()
+    {
+      $this->skipIf(!$this->useTestDatabase() && $this->useFixture(),'Test database isn\'t configured');
+      $this->skipIf($this->useTestDatabase() && $this->useFixture() && !$this->_checkFixtureDb(),'Test database is not acceptable');
+    }
+    
+    /**
+     * Check if database(s), used by fixture, are acceptable
+     *
+     * @return boolean
+     */
+    function _checkFixtureDb()
+    {
+      $mapping = atkconfig("test_db_mapping");
+      atkDb::useMapping($mapping);
+      foreach($this->m_fixtures as $database=>$fixture)
+      {
+        $db = &$this->_getTestDb($database);
+        
+        if($db->getDbStatus() <> DB_SUCCESS)
+        {
+          atkerror("test db '$database' is not acceptable");
+          return false;
+        }
+      }
+      return true;
+    }
   }
 ?>

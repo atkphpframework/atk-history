@@ -793,20 +793,74 @@
       return array("exact","substring", "wildcard","greaterthan","greaterthanequal","lessthan","lessthanequal","between");
     }
 
-    function tableMeta($table)
+    /**
+     * Fetches table meta data from database
+     *
+     * @param string $table
+     * @return array
+     */
+    public function tableMeta($table)
     {
-      if (!isset($this->m_tableMeta[$table]))
+      if (isset($this->m_tableMeta[$table]))
       {
-        $meta = $this->metadata($table, false);
-        $this->m_tableMeta[$table] = array();
-        for ($i = 0, $_i = count($meta); $i < $_i; $i++)
-        {
-          $meta[$i]['num'] = $i;
-          $this->m_tableMeta[$table][$meta[$i]['name']] = &$meta[$i];
-        }
+        return $this->m_tableMeta[$table];
+      }
+
+      if (atkconfig('meta_caching'))
+      {
+        $this->m_tableMeta[$table] = $this->_getTableMetaFromCache($table);
+      }
+      else
+      {
+        $this->m_tableMeta[$table] = $this->_getTableMetaFromDb($table);
       }
 
       return $this->m_tableMeta[$table];
+    }
+
+    /**
+     * If cached it'll return the table metadata
+     * from cache.
+     *
+     * @param string $table
+     * @return array
+     */
+    private function _getTableMetaFromCache($table)
+    {
+      atkimport('atk.utils.atktmpfile');
+      $tmpfile = new atkTmpFile('tablemeta/' . $this->m_connection . "/" . $table . ".php");
+
+      if ($tmpfile->exists())
+      {
+        include($tmpfile->getPath());
+      }
+      else
+      {
+        $tablemeta = $this->_getTableMetaFromDb($table);
+        $tmpfile->writeAsPhp("tablemeta", $tablemeta);
+      }
+
+      return $tablemeta;
+    }
+
+    /**
+     * Returns the tablemetadata directly from db
+     *
+     * @param string $table
+     * @return array
+     */
+    protected function _getTableMetaFromDb($table)
+    {
+      $meta = $this->metadata($table, false);
+
+      $result = array();
+      for ($i = 0, $_i = count($meta); $i < $_i; $i++)
+      {
+        $meta[$i]['num'] = $i;
+        $result[$meta[$i]['name']] = $meta[$i];
+      }
+
+      return $result;
     }
 
     /**
@@ -1135,6 +1189,37 @@
     {
       $this->m_haltonerror = $state;
     }
+
+    /**
+     * Check if current db is present and acceptable for current user
+     *
+     * @return DB_SUCCESS if
+     */
+    function getDbStatus()
+    {
+      // We don't want the db class to display error messages, because
+      // we handle the error ourselves.
+      $curhaltval = $this->m_haltonerror;
+      $this->m_haltonerror = false;
+
+      $res = $this->connect();
+
+      $dbconfig = atkconfig("db");
+
+      if ($res==DB_SUCCESS && (strpos($this->m_type, "mysql") === 0))
+      {
+        // This can't be trusted. Mysql returns DB_SUCCESS even
+        // if the user doesn't have access to the database. We only get an
+        // error for this after we performed the first query.
+        $this->table_names();  // this triggers a query
+        $res = $this->_translateError($db->m_errno);
+      }
+
+      $this->m_haltonerror = $curhaltval;
+
+      return $res;
+    }
+
   }
 
 ?>

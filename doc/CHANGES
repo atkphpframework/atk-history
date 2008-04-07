@@ -7,10 +7,32 @@ Please do not exceed 80 characters per line.
 
 Changed in ATK 6.2
 ------------------
++ Added atkEcho() function for making echo output only from cron. [Yury]
++ Added support for searching with a '/' as seperator for from/to values in a
+  free text search for atkDateAttribute. [Tjeerd, Peter]
++ Added node, nodetitle, action and actiontitle as separate entries to
+  the stack-trace array. (Achievo Bug 942) [Peter]
++ Added support for objects tat implement the ArrayAccess interface in
+  atkStringParser and don't threat strings as an array anymore. [Peter]
++ atkCountryAttribute now has a new list type called "custom", this custom
+  list can be customised by calling the new method "setList" with as parameter
+  a array of country iso codes. After setting the list you can just request
+  the custom list like you would with the "world" or "europe" list.
+  [Erik]
++ atkFrontController will now register scripts and styles in child
+  controllers after the main controller [Harrie]
++ Added unregister_style() method to atkPage to unregister a stylesheet.
+  [Tjeerd]
++ atkBoolAttribute now uses getLabel for displaying it's label if it uses the
+  AF_BOOL_INLINE_LABEL flag. [Tjeerd]
++ atkAttribute's HTML input box now has an id attribute by default. [Tjeerd]
++ atkCountryAttribute now includes a world shortlist that includes US+EU15
+  [Erik]
++ Adding to atkaggregatedcolumn support using relation field as searching
+  field. [Yury]
 + Took the file error check out of the validate function so that it can be
   called statically from outside of atkfileattribute. It returns the
   corresponding error. fetchFileErrorType($_FILES[0]['error']) [Erik]
-* Fixed non static call to atkFileUtils. [Yannick]
 + Initial values are now filled as well for the destination of an
   atkOneToOnerelation during a call to initial_values. [Tjeerd,Peter]
 + Added support for image mime type validation in the atkfileattribute. [Martin]
@@ -72,14 +94,14 @@ Changed in ATK 6.2
   applications. [Peter]
 + Added utility scripts for dumping the contents of a table to YAML and/or
   dumping the contents of an entire database to YAML files. [Peter]
-+ Adding methods for retrieving and clearing the query history in 
++ Adding methods for retrieving and clearing the query history in
   atkMockDb. [Dennis]
 + Added feature to specify which attributes you want to export. [Sandy]
 + Added manual paint feature to atkAttribute. Manually painted attributes will
-  not be rendered. If this is set to true, you are responsible for calling 
+  not be rendered. If this is set to true, you are responsible for calling
   the attribute's edit() method to paint it on screen. [Ivo, Sandy]
 + Added setText function to atkDummyAttribute to change the text. [Sandy]
-+ Added setClickableLabel to the atkRadioAttribute to turn it of 
++ Added setClickableLabel to the atkRadioAttribute to turn it of
   (default this is on). [Sandy]
 + Added validation of tags, they may not contain HTML or linefeeds. Also
   added testcase for validation. [Dennis]
@@ -88,6 +110,69 @@ Changed in ATK 6.2
   browsing through records without page reloads. [Peter]
 + Added atkTextAttribute::setWrapMode to specify the wrap mode for
   the textarea (by default "soft"). [Peter]
++ Added support for caching of the meta node code. This makes the meta node
+  just as fast as an ordinary node. Caching is automatically turned on for meta
+  nodes which either don't have a meta method defined or have their meta method
+  defined as being static. During development the caching can be turned of
+  by setting the new $config_meta_cache configuration option to false. [Peter]
++ Added the atkMetaCompiler which transforms the meta policy contents to code.
+  If you want to use your own compiler class you can override the new
+  $config_meta_compiler configuration option. [Peter]
++ Added support for setting the default value for meta node attributes using
+  atkMetaPolicy's new setDefaultValue method. [Peter]
++ Added support for forcing the insertion of meta node attributes using
+  atkMetaPolicy's new setForceInsert/removeForceInsert methods. [Peter]
++ Added support for setting a handler/callback for the atkMetaPolicy which
+  should be called instead of the meta node's meta method, this supercedes
+  the atkMetaHandler class. You can set the handler for a node by specifying
+  it as a meta option either by passing it to the parent constructor or
+  creating a protected instance variable called $handler. [Peter]
++ Added support for caching database table meta data. This is in addition
+  to the AtkMetaNode caching. [Martin]
++ Added support for specifying the character set for the atkOci9Db driver. [Peter]
++ Added support for modifying add / add-or-copy dialogs from inside the node by
+  implementing a modifyDialog method. [Peter]
++ Added support for specifying more dialog window options on a per-theme basis
+  by setting the new theme attribute 'dialog_window_options'. [Peter]
++ Added support for dynamically loading stylesheets (for Ajax requests). [Peter]
++ Added $config_application_dir which can be used to separate ATK from your
+  application code. [Boy]
++ Added atkManyToManySelectRelation, a new variant of the many to many relation
+  which allows you to add items to the relation using auto-completion. Useful 
+  for many-to-many relations which have many selectable options. [Peter]
++ Added atkRadioDetailsAttribute, displays radio buttons with options to choose
+  from just like the atkRadioAttribute but allows you to use other attributes 
+  for detail selections once certain options are selected. [Peter]
+* Refactored and fixed searching in attributes and relations. Custom attributes/
+  relations which override the search method and take prefixes into account
+  might break because the way the atkSearch(Mode) array is now handled.
+  [Tjeerd, Peter]
+* Refactored a small part of the frontcrontroller which allows you to re-use
+  the logic. [Martin]
+* Fixed initial value of obligatory atkDate(Time)Attribute. [Tjeerd, Peter]
+* Fix re-aliassen with multiple sortfields in atkManyToOneRelation. [Martijn]
+* Fixed issue with adding o2m relation with a set filter. [Peter/Tjeerd]
+* Fixed issue with ordering in recordlist when multiple ordercolumns were
+  specified. [Tjeerd]
+* Fixed a possible error situation in Smarty, which caused fatal errors on some
+  occasions. This was caused by a &nbsp; directly after an open tag, added there
+  for example by the FCK Editor. [Peter,Tjeerd]
+* In atkCountryAttribute i changed the world_countries_shortlist.
+  Germany was missing and the UK was listed twice, and canada is added now.
+  [Erik]
+* Added html entities to the country definitions in atkCountryAttribute and
+  html_decode them before putting them in the array so that it should contain
+  the right character. [Erik]
+* A test will now fail if a specified class cannot be found. [Peter]
+* Refactored atkDateAttribute a bit, so we don't need the include.php file to
+  register it's javascript. This makes the use of class.atkdateattribute.js.inc
+  deprecated. Also added a call to the onChange handler for the input field if
+  the AF_DATE_STRING flag is used. [Tjeerd,Peter]
+* atkDebugger now only stores query traces if debuglevel > 2. [Tjeerd]
+* Fixed non static call to atkFileUtils. [Yannick]
+* Atkaggregatedcolumn use method label() for label generation. [Yury]
+* Fix parameter order in atkmanytoonerelation->getSearchCondition() - the same
+  as in other attribute/relation. [Yury]
 * Fixed fatal error on some occasions when using the update action on a node
   with a onetoone relation. [Harrie]
 * Fix use of non-numeric keys in atkOneToManyRelation. [Marc]
@@ -209,21 +294,21 @@ Changed in ATK 6.2
 * Fixed search for auto-complete atkManyToOneRelation. [Peter]
 * Fixed atkFileAttribute obligatory validation. [Peter]
 * Fixed layout of recordlists with navigation in tabbedpanes. [Dennis]
-* Function atknew now uses reflection (instead of eval) to instantiate objects 
+* Function atknew now uses reflection (instead of eval) to instantiate objects
   with arguments for the constructor. [Peter]
 * Only register global submit script for the original request. [Peter]
 * atkQuery::addJoin now uses inner joins by default, instead of forcing
   callers to specify which type of join. [Boy]
-* When a fatal application error is detected we flush 
+* When a fatal application error is detected we flush
   the output buffer (to get debugging). [Boy]
 * Removed dirty addDialogMRA functionality from atkNode and atkRecordList.
-  since it is now also possible to override the submit-handling of the 
+  since it is now also possible to override the submit-handling of the
   javascript method atkMRASubmit(). [Dennis]
 * Don't fetch meta data for atkDataNode. [Peter]
 * Fixed javascript error in atkDateAttribute when using french language. [Ivo]
 * Session name can now optionally differ from the application identifier
   by setting $config_session_name. [Peter]
-* Made atkGetUser accept 'key' parameter, allowing you to only get 
+* Made atkGetUser accept 'key' parameter, allowing you to only get
   one bit of data from the user data. [Boy]
 * Made DHTML Calendar use ATKs maxdate and mindate  to disable dates. [Boy]
 * Fixed label retrieval for error messages. [Peter]
@@ -237,6 +322,41 @@ Changed in ATK 6.2
 * Improved winXP theme. [Boy]
 * Added fieldprefix to atkreturnbehaviour field. [Lineke]
 * Added stacks for rejectinfo in atkactionhandler. [Lineke]
+* The display of error messages in templates can now be customized using the
+  fields message, tablink and label. Note that the msg variable where the
+  tab and message are concatenated still exists for backwardscompatibility
+  with custom templates. All ATK templates now use the message, tablink and
+  label fields to display error messages. [Dennis]
+* Changes in atkcolorpickerattribute for using this attribute in a dialog.
+  [Lineke]
+* Added html entities to the country definitions in atkCountryAttribute and
+  html_decode them before putting them in the array so that it should contain
+  the right character. [Erik]
+* Fixed atkStringParser issue: When the string supposes something is an array
+  when it is not, we no longer return the first character,
+  we stop parsing and throw a notice. [Boy,Ivo]
+* Fixed failing unittests for atkStringParser and added a new one for the
+  feature that broke 2 other tests. [Sandy]
+* Changes in colorattribute for using this attribute in a dialog. [Lineke]
+* Do not empty testdatabase when its name equals the default database [Jeroen]
+* Fixed PHP Short open tag in atkmssqlquery. [Guido]
+* atkimport function now keeps a list of already included files by itself
+  instead of using include_once, causing less file I/O [Harrie]
+* Fixed issue with htmlencoding in the old recordlist. [Tjeerd]
+* Fixed issue with copying records. [Tjeerd]
+* Removed executable bit (svn:executable property in svn) from files that
+  aren't executable. [Guido]
+* Improved atkMetaPolicy's table detection; we now search the class hierarchy
+  and check for a table based on parent class names too and also take the
+  node's module into account (module_ prefix). [Peter]
+* Improved detection of source/destination attributes for relations, we take
+  the class hierarchy and the node's module into account. [Peter]
+* Improved speed of atkExtendableShuttleRelation for large datasets. [Peter]
+* Fixed bug in Ajax script load mechanism. [Peter]
+* Fixed loading of attributes with 'alltabs', would not be shown at all. [Boy]
+- Removed atkMetaHandler because it wasn't very useful. [Peter]
+- Removed support for regexes in atkMetaPolicy's setIncludes/setExcludes
+  because it wasn't very useful and wasn't used anyway. [Peter]
 
 Changed in ATK 6.1
 ------------------

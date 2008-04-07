@@ -93,7 +93,7 @@
      * @var boolean
      */
     var $m_autonumbering = false;
-    
+
     /**
      * List of mime types which a uses is allowed to upload
      * Example: array('image/jpeg');
@@ -119,12 +119,12 @@
       if(is_array($dir))
       {
         $this->m_dir = $this->AddSlash($dir[0]);
-	      $this->m_url = $this->AddSlash($dir[1]);
+        $this->m_url = $this->AddSlash($dir[1]);
       }
       else
       {
         $this->m_dir = $this->AddSlash($dir);
-	      $this->m_url = $this->AddSlash($dir);
+        $this->m_url = $this->AddSlash($dir);
       }
     }
 
@@ -156,13 +156,46 @@
 
 
     /**
+     * Returns an array containing files in specified directory
+     * optionally filtered by settings from setAllowedFileTypes method.
+     * 
+     * @param string $dir Directory to read files from
+     * @return array Array with files in specified dir
+     */
+    function getFiles($dir)
+    {
+      $dirHandle = dir($this->m_dir);
+      $file_arr  = array();
+ 
+      while($item = $dirHandle->read())
+      {
+        if (count($this->m_allowedFileTypes) == 0)
+        {
+          if(is_file($this->m_dir.$item)) $file_arr[] = $item;
+        }
+        else
+        {
+          $extension = $this->getFileExtension($item);
+
+          if (in_array($extension, $this->m_allowedFileTypes))
+          {
+            if(is_file($this->m_dir.$item)) $file_arr[] = $item;
+          }
+        }
+      }
+      $dirHandle->close();
+      return $file_arr;       
+    }
+
+
+    /**
      * Returns a piece of html code that can be used in a form to edit this
      * attribute's value.
      * @param array $record Record
      * @param string $fieldprefix Field prefix
      * @return string piece of html code with a browsebox
      */
-    function edit($record="", $fieldprefix="")
+    function edit($record="", $fieldprefix="", $regex="")
     {
       if (method_exists($this->getOwnerInstance(), $this->fieldName().'_display'))
       {
@@ -176,13 +209,7 @@
 
       if(is_dir($this->m_dir) && is_writable($this->m_dir))
       {
-        $file_arr=array();
-        $d = dir($this->m_dir);
-        while($item = $d->read())
-        {
-          if(is_file($this->m_dir.$item)) $file_arr[] = $item;
-        }
-        $d->close();
+        $file_arr = $this->getFiles($this->m_dir);
         if(count($file_arr)>0) natcasesort($file_arr);
       }
       else
@@ -240,14 +267,14 @@
     function value2db($rec)
     {
       $del = (isset($rec[$this->fieldName()]['postdel']))?$rec[$this->fieldName()]['postdel']:null;
-      
+
       if($rec[$this->fieldName()]["tmpfile"]=="" && $rec[$this->fieldName()]["filename"]!=""
          && (!isset($del) || $del!=$rec[$this->fieldName()]['filename']))
       {
         return $this->escapeSQL($rec[$this->fieldName()]["filename"]);
       }
       if($this->hasFlag(AF_FILE_NO_DELETE)) unset($del);  // Make sure if flag is set $del unset!
-      
+
       if(isset($del))
       {
         if($this->hasFlag(AF_FILE_PHYSICAL_DELETE))
@@ -381,7 +408,7 @@
     function processFile($filepath, $filename)
     {
     }
-    
+
     /**
      * Set the allowed file types. This can either be mime types (detected by the / in the middle
      * or file extensions (without the leading dot!).
@@ -399,12 +426,12 @@
       $this->m_allowedFileTypes = $types;
       return true;
     }
-    
+
     /**
      * Check whether the filetype is is one of the allowed
      * file formats. If the FileType array is empty this assumes that
      * all formats are allowed!
-     * 
+     *
      * @todo It turns out that handling mimetypes is not that easy
      * the mime_content_type has been deprecated and there is no
      * Os independend alternative! For now we only support a few
@@ -416,16 +443,16 @@
     function isAllowedFileType(&$rec)
     {
       if (count($this->m_allowedFileTypes) == 0) return true;
-      
+
       // detect whether the file is uploaded or is an existing file.
-      $filename =  (!empty($rec[$this->fieldName()]['tmpfile'])) ? 
+      $filename =  (!empty($rec[$this->fieldName()]['tmpfile'])) ?
         $rec[$this->fieldName()]['tmpfile'] :
         $this->m_dir . $rec[$this->fieldName()]['filename'];
-        
+
       if (@empty($rec[$this->fieldName()]['postdel']) && $filename != $this->m_dir)
       {
         $valid = false;
-        
+
         if (function_exists('getimagesize'))
         {
           $size = @getimagesize($filename);
@@ -444,14 +471,14 @@
             $valid = true;
           }
         }
-        
+
         if (!$valid)
         {
           $rec[$this->fieldName()]['error'] = UPLOAD_ERR_EXTENSION;
           return false;
         }
       }
-      
+
       return true;
     }
 
@@ -470,9 +497,9 @@
     function validate(&$record, $mode)
     {
       parent::validate($record, $mode);
-      
+
       $this->isAllowedFileType($record);
-      
+
       $error = $record[$this->fieldName()]['error'];
       if ($error > 0)
       {
@@ -480,7 +507,7 @@
         atkTriggerError($record, $this, $error_text, atktext($error_text, "atk"));
       }
     }
-    
+
     /**
      * Tests the $_FILE error code and returns the corresponding atk error text token.
      *
@@ -502,7 +529,7 @@
           default:
             $error = 'error_file_unknown';
         }
-        
+
         return $error;
     }
 
@@ -514,7 +541,7 @@
     function fetchValue($rec)
     {
       $del = (isset($rec[$this->fieldName()]['del']))?$rec[$this->fieldName()]['del']:null;
-      
+
       $postfiles_basename = $rec[$this->fieldName()."_postfileskey"];
 
       $basename = $this->fieldName();
@@ -565,7 +592,7 @@
             }
 
             // Note: without file_exists() check, calling filesize() generates an error message:
-            $result = array("tmpfile"=>$this->m_dir.$filename,
+            $result = array("tmpfile"=>$filename == '' ? '' : $this->m_dir.$filename,
                           "filename"=>$filename,
                           "filesize"=>($filename!='' && file_exists(filesize($this->m_dir.$filename)) ? filesize($this->m_dir.$filename) : 0),
                           "orgfilename"=>$filename);
@@ -588,12 +615,12 @@
         return $result;
       }
     }
-    
+
     /**
      * Check if the attribute is empty..
-     * 
+     *
      * @param array $record the record
-     * 
+     *
      * @return boolean true if empty
      */
     function isEmpty($record)
@@ -687,7 +714,7 @@
       // searches can be implemented using LIKE)
       // Possible values
       //"regexp","exact","substring", "wildcard","greaterthan","greaterthanequal","lessthan","lessthanequal"
-      return array("exact","substring","wildcard","regexp");
+      return array("substring","exact","wildcard","regexp");
     }
 
     /**

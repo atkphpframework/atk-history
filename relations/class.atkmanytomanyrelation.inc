@@ -65,7 +65,15 @@
       $this->atkRelation($name, $destination, $flags|AF_CASCADE_DELETE|AF_NO_SORT);
     }
 
-
+    /**
+     * Returns the selectable records. Checks for an override in the owner instance
+     * with name <attribname>_selection.
+     *
+     * @param array  $record
+     * @param string $mode
+     * 
+     * @return array
+     */
     function _getSelectableRecords($record=array(), $mode="")
     {
       $method = $this->fieldName()."_selection";
@@ -73,25 +81,79 @@
         return $this->m_ownerInstance->$method($record, $mode);
       else return $this->getSelectableRecords($record, $mode);
     }
+    
+    /**
+     * Parse destination filter and return the result.
+     *
+     * @param array $record record
+     * 
+     * @return string parsed filter
+     */
+    private function parseDestinationFilter($record)
+    {
+      $filter = "";
 
-    function getSelectableRecords($record=array(), $mode="",$force=false)
+      if ($this->m_destinationFilter!="")
+      {
+        $filter = $this->parseFilter($this->m_destinationFilter, $record);      
+      }
+     
+      return $filter; 
+    }
+    
+    /**
+     * Returns the selectable record count.
+     *
+     * @param array  $record
+     * @param string $mode
+     * 
+     * @return int
+     */
+    protected function _getSelectableRecordCount($record=array(), $mode="")
+    {
+      $method = $this->fieldName()."_selection";
+      if (method_exists($this->m_ownerInstance, $method))
+        return count($this->_getSelectableRecords($record, $mode));
+      
+      static $resultList = array();
+
+      if ($this->createDestination())
+      {
+        $filter = $this->parseDestinationFilter($record);
+
+        $filterkey = md5($this->m_destInstance->atkNodeType().".".$filter);
+        if (!array_key_exists($filterkey, $resultList))
+        {
+          $resultList[$filterkey] = $this->m_destInstance->countDb($filter,"","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
+        }
+
+        return $resultList[$filterkey];
+      }
+      
+      return 0;
+    }    
+
+    /**
+     * Returns the selectable records for this relation.
+     *
+     * @param array $record
+     * @param string $mode
+     * @param boolean $force
+     * 
+     * @return array selectable records
+     */
+    public function getSelectableRecords($record=array(), $mode="",$force=false)
     {
       static $resultList = array();
 
       if ($this->createDestination())
       {
-        $filter = "";
+        $filter = $this->parseDestinationFilter($record);
 
-        if ($this->m_destinationFilter!="")
-        {
-          $filter = $this->parseFilter($this->m_destinationFilter, $record);
-          $this->m_destInstance->addFilter($filter);
-        }
-
-        $filterkey = md5($this->m_destInstance->m_type.".".$filter);
+        $filterkey = md5($this->m_destInstance->atkNodeType().".".$filter);
         if (!array_key_exists($filterkey, $resultList))
         {
-          $resultList[$filterkey] = $this->m_destInstance->selectDb("","","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
+          $resultList[$filterkey] = $this->m_destInstance->selectDb($filter,"","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
         }
 
         return $resultList[$filterkey];
@@ -147,8 +209,8 @@
 
         // Validate if destination was created succesfully
         if (!is_object($this->m_linkInstance))
-      	{
-	        atkerror("Relation with unknown nodetype '".$this->m_link."' (in node '".$this->m_owner."')");
+        {
+          atkerror("Relation with unknown nodetype '".$this->m_link."' (in node '".$this->m_owner."')");
           $this->m_linkInstance = NULL;
           return false;
         }
@@ -486,29 +548,26 @@
 
       // now select all records
       $recordset = $this->m_destInstance->selectDb("","","","*",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
-        $result = '<select ';
-        if ($extended)
-        {
-          $result.='multiple size="'.min(5,count($recordset)+1).'"';
-        }
+      $result = '<select ';
+      if ($extended)
+      {
+        $result.='multiple="multiple" size="'.min(5,count($recordset)+1).'"';
+      }
 
-        if (strstr($fieldprefix,"]["))
-          $result.='name="atksearch['. $fieldprefix.$this->fieldName().'][]">';
-        else
-          $result.='name="atksearch'.$fieldprefix.'['. $this->fieldName().'][]">';
+      $result.='name="'.$this->getSearchFieldName($fieldprefix).'[]">';
 
-        $pkfield = $this->m_destInstance->primaryKeyField();
+      $pkfield = $this->m_destInstance->primaryKeyField();
 
-        $result.= '<option value="">'.atktext("search_all", "atk");
+      $result.= '<option value="">'.atktext("search_all", "atk").'</option>';
 
-        for ($i=0;$i<count($recordset);$i++)
-        {
-          $pk = $recordset[$i][$pkfield];
-          if (atk_in_array($pk, $record[$this->fieldName()])) $sel = "selected"; else $sel = "";
-          $result.= '<option value="'.$pk.'" '.$sel.'>'.$this->m_destInstance->descriptor($recordset[$i]);
-        }
-        $result.='</select>';
-        return $result;
+      for ($i=0;$i<count($recordset);$i++)
+      {
+        $pk = $recordset[$i][$pkfield];
+        if (atk_in_array($pk, $record[$this->fieldName()])) $sel = ' selected="selected"'; else $sel = "";
+        $result.= '<option value="'.$pk.'"'.$sel.'>'.$this->m_destInstance->descriptor($recordset[$i]).'</option>';
+      }
+      $result.='</select>';
+      return $result;
     }
 
     /**
@@ -524,9 +583,9 @@
       // which should work in any ansi compatible database.
       if (is_array($value) && count($value)>0 && $value[0]!="") // This last condition is for when the user selected the 'search all' option, in which case, we don't add conditions at all.
       {
-    		$this->createLink();
-    		$query->addJoin($this->m_linkInstance->m_table, $this->fieldName(), $table.".".$this->m_ownerInstance->primaryKeyField()."=".$this->fieldName().".".$this->getLocalKey(),FALSE );
-    		$query->setDistinct(TRUE);
+        $this->createLink();
+        $query->addJoin($this->m_linkInstance->m_table, $this->fieldName(), $table.".".$this->m_ownerInstance->primaryKeyField()."=".$this->fieldName().".".$this->getLocalKey(),FALSE );
+        $query->setDistinct(TRUE);
 
         if (count($value)==1) // exactly one value
         {

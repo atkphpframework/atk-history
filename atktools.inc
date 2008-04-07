@@ -1162,12 +1162,14 @@
       }
 
       $tab = $attrib[0]->m_tabs[0];
+      $message = $attrib[0]->text($error);      
     }
     else
     {
       $attribName = $attrib->fieldName();
       $label = $attrib->getLabel($record);
       $tab = $attrib->m_tabs[0];
+      $message = $attrib->text($error);
     }
 
     triggerError($record, $attribName, $error, $message, $tab, $label);
@@ -1690,16 +1692,27 @@
     else
       $filename = $fullclassname;
 
-    if (file_exists($filename))
+    static $alreadyHad = array();
+    if (!in_array($filename,$alreadyHad))
     {
-      if ($failsafe)
-        require_once($filename);
+      $alreadyHad[] = $filename;
+      
+      if (file_exists($filename))
+      {
+        if ($failsafe)
+          require_once($filename);
+        else
+          include_once($filename);
+        return true;
+      }
       else
-        include_once($filename);
+        return false;
+    }
+    else 
+    {
+      // we already included this file
       return true;
     }
-    else
-      return false;
   }
 
   /**
@@ -2192,5 +2205,13 @@
     }
 
     return null;
+  }
+  
+  function atkEcho($message)
+  {
+    if(strpos(atkSelf(),"runcron"))
+    {
+      echo $message;
+    }
   }
 ?>

@@ -44,6 +44,13 @@
    */
   class atkDateAttribute extends atkAttribute
   {
+    /**
+     * Static var to keep track if js scripts are already registered.
+     *
+     * @var bool
+     */
+    protected static $s_baseScriptsRegistered = false;
+
     var $m_date_min;
     var $m_date_max;
     var $m_date_format_edit;
@@ -231,6 +238,21 @@
       /* base class constructor */
       $this->atkAttribute($name, $flags);
     }
+    
+    /**
+     * Override add flag so that we can set the initial value.
+     *
+     * @param int $flags
+     */
+    public function addFlag($flags)
+    {
+      parent::addFlag($flags);
+      
+      if ($this->hasFlag(AF_OBLIGATORY))
+      {
+        $this->setInitialValue(atkDateAttribute::dateArray(date('Ymd')));
+      }
+    }
 
     /**
      * Set the format for the boxes in edit mode.
@@ -315,7 +337,10 @@
       $pda = browserInfo::detectPDA();
       $yeardropdown = false;
 
-      if (!$pda) $this->_registerScripts();
+      if (!$pda)
+      {
+        self::registerScriptsAndStyles(!$this->hasFlag(AF_DATE_NO_CALENDAR));
+      }
 
       $fieldname = $fieldprefix.$this->fieldName().$postfix;
 
@@ -324,9 +349,12 @@
       {
         $value = &$record[$this->fieldName()];
 
-        if (is_array($value)) $value = adodb_date($this->m_date_format_edit, adodb_mktime(0, 0, 0, $value["month"], $value["day"], $value["year"]));
-        elseif ($obligatory) $value = adodb_date($this->m_date_format_edit);
-        else $value = "";
+        if (is_array($value))
+          $value = adodb_date($this->m_date_format_edit, adodb_mktime(0, 0, 0, $value["month"], $value["day"], $value["year"]));
+        elseif ($obligatory)
+          $value = adodb_date($this->m_date_format_edit);
+        else
+          $value = "";
 
         $fieldname = $fieldname.'[date]';
         $this->registerKeyListener($fieldname, KB_CTRLCURSOR|KB_UPDOWN);
@@ -385,12 +413,9 @@
       else $str_max = 0;
 
       /* did we select a valid date? */
-      if     ($current === NULL && !$this->hasFlag(AF_OBLIGATORY)); // NULL date selection; ignore this if statement
+      if ($current === NULL && !$this->hasFlag(AF_OBLIGATORY)); // NULL date selection; ignore this if statement
       elseif (!empty($current) && !empty($minimum) && $current < $minimum) $current = $minimum;
       elseif (!empty($current) && !empty($maximum) && $current > $maximum) $current = $maximum;
-      elseif (empty($current)  && !empty($minimum) && time() < $minimum) $current = $minimum;
-      elseif (empty($current)  && !empty($maximum) && time() > $maximum) $current = $maximum;
-      elseif (empty($current)) $current = time();
 
       /* get dates in array format */
       if ($current !== NULL) $current = adodb_getdate($current);
@@ -406,7 +431,6 @@
       $current["y_max"] = (!empty($maximum) ? $maximum["year"] : 0);
 
       /* small date selections, never possible is field isn't obligatory (no min/max date) */
-
       if (!empty($maximum) && !empty($minimum) && $str_max - $str_min < 25)
       {
         $this->registerKeyListener($fieldname, KB_CTRLCURSOR|KB_LEFTRIGHT);
@@ -568,23 +592,47 @@
     }
 
     /**
-    * Registers the javascripts (and 1 stylesheet) for the atkDateAttribute
-    */
-    function _registerScripts()
+     * Registers the scripts and styles for the date attribute. Can be used
+     * to load the scripts beforehand from another location.
+     *
+     * @param boolean $useCalendar use calendar widget? (defaults to true)
+     */
+    public static function registerScriptsAndStyles($useCalendar=true)
     {
-      $page = &atkinstance('atk.ui.atkpage');
+      $page = atkinstance('atk.ui.atkpage');
 
-      /* register javascript */
-      atkimport("atk.atklanguage");
-      $page->register_script(session_url("include.php?file=atk/javascript/class.atkdateattribute.js.inc&atklng=".atkLanguage::getLanguage(), SESSION_NEW));
+      // make sure we register the script code with translations for the months etc. only once!
+      if (!self::$s_baseScriptsRegistered)
+      {
+        self::$s_baseScriptsRegistered = true;
 
-      if (!$this->hasFlag(AF_DATE_NO_CALENDAR))
+        $m_months_short   = array(1 => "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec");
+        $m_months_long    = array(1 => "january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december");
+        $m_weekdays_long  = array("sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday");
+        $m_weekdays_short = array("sun", "mon", "tue", "wed", "thu", "fri", "sat");
+
+        foreach ($m_months_short   as &$m) {$m = atktext($m,"atk");}
+        foreach ($m_months_long    as &$m) {$m = atktext($m,"atk");}
+        foreach ($m_weekdays_long  as &$m) {$m = atktext($m,"atk");}
+        foreach ($m_weekdays_short as &$m) {$m = atktext($m,"atk");}
+
+        $page->register_scriptcode('
+          var m_months_long    = Array("'.implode('","',$m_months_long).'");
+          var m_months_short   = Array("'.implode('","',$m_months_short).'");
+          var m_weekdays_long  = Array("'.implode('","',$m_weekdays_long).'");
+          var m_weekdays_short = Array("'.implode('","',$m_weekdays_short).'");
+        ', true);
+
+        $page->register_script(atkconfig('atkroot').'atk/javascript/class.atkdateattribute.js');
+      }
+
+      if ($useCalendar)
       {
         $page->register_script(atkconfig("atkroot")."atk/javascript/calendar/calendar.js");
         $page->register_script(atkconfig("atkroot")."atk/javascript/calendar/calendar-runner.js");
         $page->register_script(atkconfig("atkroot")."atk/javascript/calendar/lang/calendar-".atkconfig("language").".js");
 
-        $theme = &atkinstance("atk.ui.atktheme");
+        $theme = atkinstance("atk.ui.atktheme");
         $page->register_style($theme->stylePath("atkdateattribute.css"));
       }
     }
@@ -623,7 +671,12 @@
         // plain text search, check if we didn't come from extended search (then current value is an array)
         if (isset($record[$this->fieldName()]) && is_array($record[$this->fieldName()]))
           $record[$this->fieldName()] = NULL;
-        return parent::search($record, $extended, $fieldprefix);
+
+        $maxSize = $this->m_maxsize;
+        $this->m_maxsize = 25; // temporary increase max size to allow from/to dates
+        $result = parent::search($record, $extended, $fieldprefix);
+        $this->m_maxsize = $maxSize;
+        return $result;
       }
 
       // Set default values to null.
@@ -638,73 +691,75 @@
       return $res;
     }
 
-    function searchCondition(&$query, $table, $value, $searchmode)
-    {
-      $query->addSearchCondition($this->getSearchCondition($query, $table, $value, $searchmode));
-    }
-
     function getSearchCondition(&$query, $table, $value, $searchmode)
     {
-    	$db = &$this->getDb();
+      $db = &$this->getDb();
 
-    	// exact mode
-    	if ($searchmode == 'exact' || $searchmode == 'substring')
-    	{
-        $field = $db->func_datetochar($table.".".$this->fieldName());
-    	  $value = $this->fetchValue(array($this->fieldName() => $value));
-    	  $value = $this->value2db(array($this->fieldName() => $value));
-    	  if ($value != NULL)
-          $searchcondition = $query->exactCondition($field, $value);
-    	}
-
-      elseif ($searchmode == 'between')
+      // If we search through datagrid we got no from/to values
+      // Therefore we will simulate them
+      if (!is_array($value))
       {
-        $valueFrom = $this->fetchValue(array($this->fieldName() => $value["from"]));
-        $valueTo = $this->fetchValue(array($this->fieldName() => $value["to"]));
-
-        $fromval = $this->value2db(array($this->fieldName()=>$valueFrom));
-        $toval   = $this->value2db(array($this->fieldName()=>$valueTo));
-
-        $field = $db->func_datetochar($table.".".$this->fieldName());
-
-        if ($fromval==NULL && $toval==NULL); // do nothing
-        else if ($fromval!=NULL && $toval!=NULL)
+        if (substr_count($value, '/') == 1)
         {
-          if ($fromval>$toval)
-          {
-            // User entered dates in wrong order. Let's put them in the right order.
-            $tmp=$fromval; $fromval=$toval; $toval=$tmp;
-          }
-          $searchcondition =
-                     $query->betweenCondition(
-                        $field,
-                        $fromval,
-                        $toval);
+          list($from, $to) = explode('/', $value);
+          $value = array('from' => trim($from), 'to' => trim($to));
         }
-        else if ($fromval!=NULL && $toval==NULL)
+        else if (substr_count($value, '/') == 5)
         {
-          $searchcondition =
-                     $query->greaterthanequalCondition(
-                        $field,
-                        $fromval);
-        }
-        else if ($fromval==NULL && $toval!=NULL)
-        {
-          $searchcondition =
-                     $query->lessthanequalCondition(
-                        $field,
-                        $toval);
-        }
-        else if ((is_array($value["from"])) or (is_array($value["to"])))
-        {
-          $searchcondition = $this->_getDateArraySearchCondition($query,$table,$value);
+          $parts = explode('/', $value);
+          $value = array('from' => trim($parts[0].'/'.$parts[1].'/'.$parts[2]), 'to' => trim($parts[3].'/'.$parts[4].'/'.$parts[5]));
         }
         else
         {
-          // plain text search condition
-          $value = $this->_autoCompleteDateString($value);
-          $searchcondition = $query->exactCondition($field, $value);
+          $value = array('from'=>$value, 'to'=>$value);
         }
+      }
+
+      $valueFrom = $this->fetchValue(array($this->fieldName() => $value["from"]));
+      $valueTo = $this->fetchValue(array($this->fieldName() => $value["to"]));
+
+      $fromval = $this->value2db(array($this->fieldName()=>$valueFrom));
+      $toval   = $this->value2db(array($this->fieldName()=>$valueTo));
+
+      $field = $db->func_datetochar($table.".".$this->fieldName());
+
+      if ($fromval==NULL && $toval==NULL); // do nothing
+      else if ($fromval!=NULL && $toval!=NULL)
+      {
+        if ($fromval>$toval)
+        {
+          // User entered dates in wrong order. Let's put them in the right order.
+          $tmp=$fromval; $fromval=$toval; $toval=$tmp;
+        }
+        $searchcondition =
+                   $query->betweenCondition(
+                      $field,
+                      $fromval,
+                      $toval);
+      }
+      else if ($fromval!=NULL && $toval==NULL)
+      {
+        $searchcondition =
+                   $query->greaterthanequalCondition(
+                      $field,
+                      $fromval);
+      }
+      else if ($fromval==NULL && $toval!=NULL)
+      {
+        $searchcondition =
+                   $query->lessthanequalCondition(
+                      $field,
+                      $toval);
+      }
+      else if ((is_array($value["from"])) or (is_array($value["to"])))
+      {
+        $searchcondition = $this->_getDateArraySearchCondition($query,$table,$value);
+      }
+      else
+      {
+        // plain text search condition
+        $value = $this->_autoCompleteDateString($value);
+        $searchcondition = $query->exactCondition($field, $value);
       }
 
       return $searchcondition;
@@ -843,7 +898,7 @@
       {
         return null;
       }
-      
+
       // array with year / month / day
       else if (is_array($value))
       {

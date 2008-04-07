@@ -36,7 +36,7 @@ class atkDGRenderer extends atkDGComponent
     if (!$this->getGrid()->isUpdate())
     {
       $result = 
-        '<div id="'.$this->getGrid()->getName().'_container">'.
+        '<div id="'.$this->getGrid()->getName().'_container" class="atkdatagrid-container">'.
           $result.
         '</div>';
     }
@@ -87,6 +87,8 @@ class atkDGRenderer extends atkDGComponent
    */
   protected function registerScript() 
   {
+    if ($this->getGrid()->isUpdate()) return;
+    
     atkimport('atk.utils.atkjson');
     
     $name = atkJSON::encode($this->getGrid()->getName());

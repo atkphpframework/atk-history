@@ -126,18 +126,18 @@
       {
         return null;
       }
-      
+
       $myrecord = $record[$this->fieldName()];
 
       if ($this->createDestination() && is_array($myrecord))
       {
         $result = $this->m_destInstance->descriptor($myrecord);
       }
-      else 
+      else
       {
         $result = $this->text('none');
       }
-      
+
       return $result;
     }
 
@@ -377,6 +377,18 @@
     }
 
     /**
+     * Initialize this destinations attribute sizes.
+     */
+    function fetchMeta()
+    {
+      if ($this->hasFlag(AF_ONETOONE_INTEGRATE))
+      {
+        $this->createDestination();
+        $this->getDestination()->setAttribSizes();
+      }
+    }
+
+    /**
      * Convert values from an HTML form posting to an internal value for
      * this attribute.
      *
@@ -490,7 +502,7 @@
           // we put the vars in the postvars, because there is information
           // like atkorgkey in it that is vital.
           // but we restore the postvars after we're done updating
-	         $oldpost = $this->m_destInstance->m_postvars;
+           $oldpost = $this->m_destInstance->m_postvars;
           $this->m_destInstance->m_postvars = $vars;
           $res = $this->m_destInstance->updateDb($vars);
           $this->m_destInstance->m_postvars = $oldpost;
@@ -523,7 +535,7 @@
         }
       }
     }
-    
+
     /**
      * Needs update?
      *
@@ -532,9 +544,9 @@
      */
     function needsUpdate($record)
     {
-      return $this->m_forceupdate || 
-             (parent::needsUpdate($record) && 
-              $this->createDestination() && 
+      return $this->m_forceupdate ||
+             (parent::needsUpdate($record) &&
+              $this->createDestination() &&
               !$this->m_destInstance->hasFlag(NF_READONLY));
     }
 
@@ -707,11 +719,11 @@
             $attrNames = $this->m_destInstance->getAttributeNames();
             foreach ($attrNames as $attrName)
             {
-              $attr = &$this->m_destInstance->getAttribute($attrName);  
+              $attr = &$this->m_destInstance->getAttribute($attrName);
               $attr->addFlag(AF_READONLY);
             }
-          }             
-          
+          }
+
           /* we first check if the record doesn't already exist */
           if (isset($defaults[$this->fieldName()]) && !empty($defaults[$this->fieldName()]))
           {
@@ -764,28 +776,33 @@
            * same name as the relation we don't display a label
            * TODO FIXME
            */
+          if(!is_array($arr['fields'])) $arr['fields']=array();
           if (!$this->hasFlag(AF_ONETOONE_INTEGRATE) && !$this->hasFlag(AF_NOLABEL) && !(count($a["fields"]) == 1 && $a["fields"][0]["name"] == $this->m_name))
           {
             /* separator and name */
-            $arr["fields"][] = array("html"=>"-", "tabs"=>$this->m_tabs);
-            $arr["fields"][] = array("line"=>"<b>".atktext($this->m_name, $this->m_ownerInstance->m_module, $this->m_ownerInstance->m_type)."</b>", "tabs"=>$this->m_tabs);
+            if ($arr['fields'][count($arr['fields'])-1]['html']!=='-') $arr["fields"][] = array("html"=>"-", "tabs"=>$this->m_tabs,'sections'=>$this->getSections());
+            $arr["fields"][] = array("line"=>"<b>".atktext($this->m_name, $this->m_ownerInstance->m_module, $this->m_ownerInstance->m_type)."</b>", "tabs"=>$this->m_tabs,'sections'=>$this->getSections());
           }
-          if(!is_array($arr['fields'])) $arr['fields']=array();
           if (is_array($a["fields"]))
           {
-
             $arr["fields"] = array_merge($arr["fields"], $a["fields"]);
           }
 
           if (!$this->hasFlag(AF_ONETOONE_INTEGRATE) && !$this->hasFlag(AF_NOLABEL) && !(count($a["fields"]) == 1 && $a["fields"][0]["name"] == $this->m_name))
           {
             /* separator */
-            $arr["fields"][] = array("html"=>"-", "tabs"=>$this->m_tabs);
+            $arr["fields"][] = array("html"=>"-", "tabs"=>$this->m_tabs,'sections'=>$this->getSections());
+          }
+
+          $fields = $arr['fields'];
+          foreach ($fields as &$field)
+          {
+            $field['attribute']='';
           }
         }
       }
     }
-    
+
     /**
      * Adds the attribute's view / hide HTML code to the view array.
      *
@@ -801,7 +818,7 @@
     function addToViewArray($mode, &$arr, &$defaults)
     {
       if ($this->hasFlag(AF_HIDE_VIEW)) return;
-      
+
       /* we first check if there is no display override method, if there
        * is this method has the same behaviour as the atkAttribute's method
        */
@@ -818,21 +835,19 @@
 
         $record = $defaults[$this->fieldName()];
         $a = $this->m_destInstance->viewArray($mode, $record, false);
-        
+
         /* editable fields, if AF_NOLABEL is specified or if there is just 1 field with the
          * same name as the relation we don't display a label
          * TODO FIXME
          */
+        if (!is_array($arr['fields'])) $arr['fields']=array();
         if (!$this->hasFlag(AF_ONETOONE_INTEGRATE) && !$this->hasFlag(AF_NOLABEL) && !(count($a["fields"]) == 1 && $a["fields"][0]["name"] == $this->m_name))
         {
           /* separator and name */
-          $arr["fields"][] = array("html"=>"-", "tabs"=>$this->m_tabs);
-          $arr["fields"][] = array("line"=>"<b>".atktext($this->m_name, $this->m_ownerInstance->m_module, $this->m_ownerInstance->m_type)."</b>", "tabs"=>$this->m_tabs);
+          if ($arr['fields'][count($arr['fields'])-1]['html']!=='-') $arr["fields"][] = array("html"=>"-", "tabs"=>$this->m_tabs,'sections'=>$this->getSections());
+          $arr["fields"][] = array("line"=>"<b>".atktext($this->m_name, $this->m_ownerInstance->m_module, $this->m_ownerInstance->m_type)."</b>", "tabs"=>$this->m_tabs,'sections'=>$this->getSections());
         }
-        
-        if (!is_array($arr['fields'])) 
-          $arr['fields']=array();
-          
+
         if (is_array($a["fields"]))
         {
           $arr["fields"] = array_merge($arr["fields"], $a["fields"]);
@@ -841,10 +856,10 @@
         if (!$this->hasFlag(AF_ONETOONE_INTEGRATE) && !$this->hasFlag(AF_NOLABEL) && !(count($a["fields"]) == 1 && $a["fields"][0]["name"] == $this->m_name))
         {
           /* separator */
-          $arr["fields"][] = array("html"=>"-", "tabs"=>$this->m_tabs);
+          $arr["fields"][] = array("html"=>"-", "tabs"=>$this->m_tabs,'sections'=>$this->getSections());
         }
-      }      
-    }    
+      }
+    }
 
     /**
      * Check if a record has an empty value for this attribute.
@@ -876,7 +891,7 @@
       if ($this->hasFlag(AF_ONETOONE_ERROR)&&($mode!="add" || !$this->hasFlag(AF_HIDE_ADD)))
       {
         if ($this->createDestination())
-	      {
+        {
           $this->m_destInstance->validate($record[$this->fieldName()], $mode, array($this->m_refKey));
 
           // only add 'atkerror' record when 1:1 relation contains error
@@ -884,7 +899,7 @@
           {
             $record["atkerror"] = array_merge((array)$record["atkerror"], (array)$record[$this->fieldName()]["atkerror"]);
           }
-	      }
+        }
       }
     }
 
@@ -987,19 +1002,11 @@
         // integrated version, don't add ourselves, but add all columns from the destination.
         if ($this->createDestination())
         {
+          $prefix = $fieldprefix.$this->fieldName()."_AE_";
           foreach (array_keys($this->m_destInstance->m_attribList) as $attribname)
           {
             $p_attrib = &$this->m_destInstance->getAttribute($attribname);
-            $pref = $fieldprefix . "_AE_" .$this->fieldName();
-            $p_attrib->addToListArrayHeader($action, $arr, $pref, $flags, $atksearch[$this->fieldName()], $atkorderby);
-
-            $fieldPointer = &$arr["search"][$pref.$p_attrib->fieldName()];
-            $fieldPointer =
-              str_replace(
-                "atksearch[".$p_attrib->fieldName()."]",
-                "atksearch_" . $pref . "[" . $p_attrib->fieldName()."]",
-                $fieldPointer
-              );
+            $p_attrib->addToListArrayHeader($action, $arr, $prefix, $flags, $atksearch[$this->fieldName()], $atkorderby);
           }
         }
       }
@@ -1044,11 +1051,6 @@
       }
     }
 
-    function searchCondition(&$query, $table, $value, $searchmode)
-    {
-      $this->getSearchCondition($query, $table, $value, $searchmode);
-    }
-
     function getSearchCondition(&$query, $table, $value, $searchmode)
     {
       if (is_array($value))
@@ -1059,9 +1061,10 @@
         {
           // if we aren't searching for anything in this field, there is no need
           // to look any further:
-          if (!$val) continue;
+          if ($val==="" || $val===null) continue;
 
           $p_attrib = &$this->m_destInstance->m_attribList[$key];
+
           if (is_object($p_attrib))
           {
             if ($this->m_refKey && $this->createDestination())
@@ -1078,7 +1081,7 @@
               // (don't worry ATK won't add it when it's already there)
               $query->addJoin($new_table,$new_table,($this->getJoinCondition()),false);
             }
-            $p_attrib->searchCondition($query,$new_table,$val,$searchmode);
+            $p_attrib->searchCondition($query,$new_table,$val,$this->getChildSearchMode($searchmode, $p_attrib->formName()));
           }
           else
           {
@@ -1088,7 +1091,7 @@
             $p_attrib = &$this->m_ownerInstance->m_attribList[$key];
             if (is_object($p_attrib))
             {
-              $p_attrib->searchCondition($query,$p_attrib->getTable($key),$val,$searchmode);
+              $p_attrib->searchCondition($query,$p_attrib->getTable($key),$val,$this->getChildSearchMode($searchmode, $p_attrib->formName()));
             }
             else atkdebug("Field $key was not found in this relation (this is very weird)");
           }
@@ -1135,7 +1138,7 @@
      */
     function getJoinCondition(&$query, $tablename="",$fieldalias="")
     {
-      $condition = $this->m_ownerInstance->m_table . "." . $this->fieldName();
+      $condition  = $this->m_ownerInstance->m_table . "." . $this->fieldName();
       $condition .= "=";
       $condition .= $this->m_destInstance->m_table . "." . $this->m_destInstance->primaryKeyField();
       return $condition;
@@ -1154,20 +1157,14 @@
 
       if ($this->hasFlag(AF_ONETOONE_INTEGRATE) && $this->createDestination())
       {
+        $prefix = $fieldprefix.$this->fieldName()."_AE_";
         foreach (array_keys($this->m_destInstance->m_attribList) as $attribname)
         {
           $p_attrib = &$this->m_destInstance->m_attribList[$attribname];
 
           if (!$p_attrib->hasFlag(AF_HIDE_SEARCH))
           {
-            // TODO: This is an ugly way to make sure date attributes are changed as well
-            //       Furthermore it does nothing to save the javascript functionality
-            //       (which completely breaks) in searching a onetoone something like a 'searchname' should
-            //       be implemented and used.
-            if (method_exists($p_attrib, "atkDateAttribute"))
-              $p_attrib->addToSearchformFields($fields,$node,$record[$this->fieldName()], "_AE_".$this->fieldName()."_AE_", $currentSearchMode[$this->fieldName()]);
-            else
-              $p_attrib->addToSearchformFields($fields,$node,$record[$this->fieldName()], "_AE_".$this->fieldName(), $currentSearchMode[$this->fieldName()]);
+            $p_attrib->addToSearchformFields($fields, $node, $record[$this->fieldName()], $prefix, $currentSearchMode[$this->fieldName()]);
           }
         }
       }
@@ -1176,14 +1173,14 @@
         parent::addToSearchformFields($fields,$node,$record, $fieldprefix, $currentSearchMode);
       }
     }
-    
+
     function value2db($rec)
     {
       if (is_array($rec)&&isset($rec[$this->fieldName()]))
-      {        
+      {
         if (is_array($rec[$this->fieldName()]))
           return $this->escapeSQL($rec[$this->fieldName()][$this->m_destInstance->primaryKeyField()]);
-        else 
+        else
           return $rec[$this->fieldName()];
       }
       return NULL;

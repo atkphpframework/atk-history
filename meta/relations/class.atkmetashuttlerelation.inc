@@ -29,87 +29,69 @@ userelation("atkshuttlerelation");
  */        
 class atkMetaShuttleRelation extends atkShuttleRelation
 {
-  var $m_accessor;
-  var $m_through;
-  var $m_options;
-
+  private $m_localVariants = null;
+  private $m_remoteVariants = null;   
+    
   /**
    * Default constructor.    
    */
-  function atkMetaShuttleRelation($name, $accessor, $template, $options, $flags=0)
+  public function __construct($name, $destination, $through, $template, $options, $flags=0)
   {
-    $this->atkManyToManyRelation($name, $options['through'], $accessor, $flags);
-    $this->m_accessor = $accessor;
-    $this->m_through = $options['through'];
-    $this->m_options = $options;
+    parent::__construct($name, $through, $destination, $flags);
     
     $this->setDescriptorTemplate($template);
     if (isset($options["filter"])) 
       $this->setDestinationFilter($options["filter"]);
-    if (isset($options["source"]))
-      $this->setLocalKey($options["source"]);      
+    if (isset($options["local"]))
+      $this->setLocalKey($options["local"]);      
+    if (isset($options["localVariants"]))
+      $this->m_localVariants = $options['localVariants'];          
     if (isset($options["remote"]))
-      $this->setRemoteKey($options["remote"]);
+      $this->setRemoteKey($options["remote"]);      
+    if (isset($options["remoteVariants"]))
+      $this->m_remoteVariants = $options['remoteVariants'];          
   }
   
   /**
-   * Create the instance of the destination. 
-   *
-   * If succesful, the instance is stored in the m_destInstance member variable.
-   * 
-   * @return boolean true if succesful, false if something went wrong.
-   */
-  function createDestination()
-  {
-    if ($this->m_destInstance != "") return TRUE;
-
-    $policy = &$this->m_ownerInstance->getMetaPolicy();
-
-    $this->m_destination = $policy->findDestination($this->m_accessor, true);
-    atkdebug("atkMetaShuttleRelation: '{$this->m_accessor}' destination '{$this->m_destination}'");
-    
-    if ($this->m_destination == NULL) 
-    {
-      atkerror("No destination found for atkMetaShuttleRelation with accessor '{$this->m_accessor}'!");
-      return FALSE;
-    }
-    else if (!parent::createDestination()) 
-    {
-      atkerror("Cannot instantiate destination '{$this->m_destination}' for atkMetaShuttleRelation with accessor '{$this->m_accessor}'!");        
-      return FALSE;
-    }      
-    
-    return TRUE;
-  }
-  
-  /**
-   * Create instance of the intermediairy link node.
+   * Create the instance of the intermedinary link node.
    *
    * If succesful, the instance is stored in the m_linkInstance member variable.
-   * 
+   *
    * @return boolean true if succesful, false if something went wrong.
    */
-  function createLink()
+  public function createLink()
   {
-    if ($this->m_linkInstance != "") return TRUE;
-
-    $policy = &$this->m_ownerInstance->getMetaPolicy();
-
-    $this->m_link = $policy->findDestination($this->m_through, true);
-    atkdebug("atkMetaShuttleRelation: '{$this->m_through}' link '{$this->m_destination}'");
+    $result = parent::createLink();
     
-    if ($this->m_link == NULL) 
+    if ($result && is_array($this->m_localVariants))
     {
-      atkerror("No link found for atkMetaShuttleRelation with accessor '{$this->m_through}'!");
-      return FALSE;
-    }
-    else if (!parent::createLink()) 
-    {
-      atkerror("Cannot instantiate link '{$this->m_link}' for atkMetaShuttleRelation with accessor '{$this->m_through}'!");        
-      return FALSE;
-    }      
+      foreach ($this->m_localVariants as $variant)
+      { 
+        if ($this->m_linkInstance->getAttribute($variant) != null)
+        {
+          $this->setLocalKey($variant);
+          break;
+        }
+      }
       
-    return TRUE;    
-  }  
+      $this->m_localVariants = null;
+    }
+    
+    if ($result && is_array($this->m_remoteVariants))
+    {
+      foreach ($this->m_remoteVariants as $variant)
+      { 
+        // we *must* use $this->m_linkInstance (not $this->getLink()) else we will create an infinite loop    
+        if ($this->m_linkInstance->getAttribute($variant) != null)
+        {
+          $this->setRemoteKey($variant);
+          break;
+        }
+      }
+      
+      $this->m_remoteVariants = null;
+    }
+
+    return $result;
+  }
 }  
-?>

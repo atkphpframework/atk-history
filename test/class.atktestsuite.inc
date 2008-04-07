@@ -162,7 +162,7 @@
 
       if($reporttype=="html")
       {
-        $test->run(atknew("atk.test.atktestreporter"));
+        $testresults = $test->run(atknew("atk.test.atktestreporter"));
       }
       elseif($reporttype=="arrayHtml")
       {
@@ -174,7 +174,7 @@
       }
       else
       {
-        $test->run(new TextReporter());
+        $testresults = $test->run(new TextReporter());
       }
 
       return $testresults;
@@ -195,7 +195,7 @@
       if(file_exists(getClassPath($class)) && strpos($class, "test_")!=false) $testclass = $class;
       else $testclass = $this->getTestCaseLocationForClass($class);
 
-      if ($class && file_exists(getClassPath($testclass)))
+      if ($class)
       {
         $this->_runTestCase($test,$testclass);
       }
@@ -218,6 +218,12 @@
         $normalDb = &atkGetDb($normal);
         $testDb = &atkGetDb($test);
 
+        if($testDb->getDbStatus() <> DB_SUCCESS)
+        {
+          atkerror("test db '$test' is not acceptable");
+          break;
+        }
+        
         $config = atkconfig('db');
         $clone = !isset($config[$test]['clone_structure']) || $config[$test]['clone_structure'];
 
@@ -228,7 +234,10 @@
         else
         {
           $testDb->toggleForeignKeys(false);
-          $testDb->deleteAll();
+          
+          if ($config['default']['db'] == $config[$test]['db']) atkerror("atkTestSuite::_setupTestDatabases() | testdatabase equals default database: '{$config['default']['db']}'! Database will not be emptied");
+          else $testDb->deleteAll();           
+
           $testDb->commit();
           $testDb->toggleForeignKeys(true);          
         }

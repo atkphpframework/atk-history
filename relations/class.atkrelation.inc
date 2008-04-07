@@ -81,15 +81,58 @@
      */
     function setDestinationFilter($filter)
     {
-      $this->m_destinationFilter = $filter;
+      $this->m_destinationFilter = $this->_cleanupDestinationFilter($filter);
     }
 
+    /**
+     * Remove redundant (more than 1 subsequently) spaces from the filter string.
+     *
+     * This prevents the filter from rapidly becoming too long to be passed in the URL if
+     * enters are used in code to make the filter readable.
+     *
+     * @param string $filter
+     * @return string
+     */
+    function _cleanupDestinationFilter($filter)
+    {
+      $result = '';
+      $filter_length = strlen($filter);
+      $quotes = array("'",'"','`');
+      $quoteStack = array();
+      $lastChar = '';
+
+      for ($i = 0; $i < $filter_length; $i++)
+      {
+        $currentChar = $filter[$i];
+
+        if(in_array($currentChar,$quotes))
+        {
+          if(sizeof($quoteStack) > 0 && $currentChar == $quoteStack[sizeof($quoteStack) - 1])
+          {
+            array_pop($quoteStack);
+          }
+          else
+          {
+            array_push($quoteStack,$currentChar);
+          }
+        }
+
+        // not between quotes
+        if(!($currentChar === ' ' && $lastChar === ' ' && sizeof($quoteStack) == 0))
+        {
+          if($currentChar != "\n") $result .= $currentChar;
+        }
+        $lastChar = $currentChar;
+      }
+      return $result;
+    }
     /**
      * Adds a filter value to the destination filter.
      * @param String $filter Filter to be added to the destination filter.
      */
     function addDestinationFilter($filter)
     {
+      $filter = $this->_cleanupDestinationFilter($filter);
       if($this->m_destinationFilter != "")
         $this->m_destinationFilter = "({$this->m_destinationFilter}) AND ({$filter})";
       else
@@ -161,11 +204,11 @@
 
         // Validate if destination was created succesfully
         if (!is_object($this->m_destInstance))
-	      {
-	        atkerror("Relation with unknown nodetype '".$this->m_destination."' (in node '".$this->m_owner."')");
-	        $this->m_destInstance = NULL;
-	        return false;
-	      }
+        {
+          atkerror("Relation with unknown nodetype '".$this->m_destination."' (in node '".$this->m_owner."')");
+          $this->m_destInstance = NULL;
+          return false;
+        }
 
         if ($this->hasFlag(AF_NO_FILTER))
           $this->m_destInstance->m_flags |= NF_NO_FILTER;
@@ -243,6 +286,20 @@
       // Possible values
       //"regexp","exact","substring", "wildcard","greaterthan","greaterthanequal","lessthan","lessthanequal"
       return array("exact");
+    }
+
+    /**
+     * Get the searchmode for nested/child attributes.
+     *
+     * @param $searchmode string|array searchmode
+     * @param $childname  string       the child attribute's name
+     * @return string|array the child searchmode
+     */
+    protected function getChildSearchMode($searchmode, $childname)
+    {
+      if (is_array($searchmode) && isset($searchmode[$childname]))
+        return $searchmode[$childname];
+      return $searchmode;
     }
 
     /**

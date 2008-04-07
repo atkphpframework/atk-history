@@ -846,7 +846,7 @@
      *                   is added.
      * @return atkAttribute the attribute just added
      */
-    function &add($attribute,$sections=NULL,$order=0)
+    function add($attribute,$sections=NULL,$order=0)
     {
       static $attrib_order = 100;
       static $attrib_index = 0;
@@ -896,7 +896,7 @@
       {
         // when the read optimizer is enabled there is no active tab
         // we circument this by putting all attributes on all tabs
-        if (!($sections === NULL) && is_int($sections))
+        if ($sections !== NULL && is_int($sections))
           $order = $sections;
         $tabs = "*";
         $sections = "*";
@@ -1072,6 +1072,7 @@
 
     /**
      * Returns the table name for this node.
+     * 
      * @return string table name
      */
     function getTable()
@@ -1185,6 +1186,16 @@
     function getFlags()
     {
       return $this->m_flags;
+    }
+    
+    /**
+     * Set node flags.
+     *
+     * @param int $flags node flags
+     */
+    public function setFlags($flags)
+    {
+      $this->m_flags = $flags;
     }
 
     /**
@@ -1331,10 +1342,20 @@
     }
 
     /**
+     * Sets the database connection.
+     *
+     * @param string|atkDb $db database name or object
+     */
+    public function setDb($db)
+    {
+      $this->m_db = $db;
+    }    
+    
+    /**
      * Get the database connection for this node.
      * @return atkDb Database connection instance
      */
-    function &getDb()
+    function getDb()
     {
       if ($this->m_db == NULL)
       {
@@ -3298,17 +3319,19 @@
     * @param string attribname name of the attribute
     * @param array list of exclueded attribs
     * @param array list of inclueded attribs
+    * @param string the action for which the selectDb is called
     * @return bool true in case the attribute needs to be in the select
     */
-    function isAllowedQueryList($attribname,$excludeList="",$includeList="")
+    function isAllowedQueryList($attribname,$excludeList="",$includeList="", $mode = "")
     {
-      return (
-                 in_array($attribname, $this->m_primaryKey)
+      
+      return (in_array($attribname, $this->m_primaryKey)
               || ((is_array($includeList) && in_array($attribname,$includeList))
               || (is_array($excludeList) && !in_array($attribname,$excludeList)))
               || (!is_array($excludeList) && !is_array($includeList))
               || ($this->m_attribList[$attribname]->hasFlag(AF_FORCE_LOAD))
-            );
+            );  
+      
     }
 
     /**
@@ -3660,12 +3683,12 @@
           {
             $querylist[]=$attribname;
           }
-        }
 
-        // ML hack
-        if(is_subclass_of($p_attrib,"atkrelation") && $p_attrib->createDestination() && $p_attrib->m_destInstance->hasFlag(NF_ML))
-        {
-          $cpylist[]=$attribname;
+          // ML hack
+          if(is_subclass_of($p_attrib,"atkrelation") && $p_attrib->createDestination() && $p_attrib->m_destInstance->hasFlag(NF_ML))
+          {
+            $cpylist[]=$attribname;
+          }
         }
       }
 
@@ -3817,17 +3840,21 @@
         foreach (array_keys($this->m_attribList) as $attribname)
         {
           $p_attrib = &$this->m_attribList[$attribname];
-          if(in_array($attribname, $cpylist))
+          
+          if ($this->isAllowedQueryList($attribname,$excludeList,$includeList,$mode))
           {
-            $therecord[$attribname] = $recordcopy[$attribname];
-          }
-          else if ($p_attrib)
-          {
-            $therecord[$attribname] = $p_attrib->db2value($dbrecords[$i]);
-          }
-          else
-          {
-            atkerror("Attribute with name: $attribname and node: ".$this->m_type." is empty in attributelist or does not support db2value method");
+            if(in_array($attribname, $cpylist))
+            {
+              $therecord[$attribname] = $recordcopy[$attribname];
+            }
+            else if ($p_attrib)
+            {
+              $therecord[$attribname] = $p_attrib->db2value($dbrecords[$i]);
+            }
+            else
+            {
+              atkerror("Attribute with name: $attribname and node: ".$this->m_type." is empty in attributelist or does not support db2value method");
+            }
           }
         }
 
@@ -4445,10 +4472,30 @@
     }
 
     /**
+     * Returns the type of this node (this is *not* the full ATK node type!)
+     * 
+     * @return string type
+     */
+    public function getType()
+    {
+      return $this->m_type;
+    }
+    
+    /**
+     * Returns the module for this node.
+     * 
+     * @return string node
+     */
+    public function getModule()
+    {
+      return $this->m_module;
+    }
+    
+    /**
      * Get the full atknodetype of this node (module.nodetype notation).
      * @return String The atknodetype of the node.
      */
-    function atknodetype()
+    function atkNodeType()
     {
       return (empty($this->m_module) ? "" : $this->m_module.".").$this->m_type;
     }

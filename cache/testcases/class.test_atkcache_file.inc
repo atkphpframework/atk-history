@@ -5,27 +5,24 @@
  * in the doc/COPYRIGHT and doc/LICENSE files which should be
  * included in the distribution.
  *
- * @package atk
- * @subpackage meta
+ * Test class for file based caching
  *
- * @copyright (c) 2004-2005 Peter C. Verhage
+ * @package atk
+ * @subpackage cache
+ *
+ * @copyright (c)2008 Sandy Pleyte
+ * @author Sandy Pleyte <sandy@achievo.org>
  * @license http://www.achievo.org/atk/licensing ATK Open Source License
  *
  * @version $Revision$
  * $Id$
  */
- 
-/**
- * The ATK meta class consists of several *static* methods which are used
- * by the ATK meta node and related classes, but might also be used for
- * other purposes.
- * 
- * @author Peter C. Verhage <peter@achievo.org>
- *
- * @package atk
- * @subpackage meta
- */
-class atkMetaTools
+atkimport("atk.test.atkcachetestcase");
+
+class test_atkcache_file extends atkCacheTestCase
 {
+   protected $m_cache;
+
+   protected $m_type= "file";
 }
 ?>

@@ -114,6 +114,21 @@
     }
 
     /**
+     * Returns the parts from the uri like
+     * module, controller and action
+     *
+     * @param string $uri
+     * @return array array(module,controller,action)
+     */
+    protected static function uriParts($uri)
+    {
+      if ($uri{0} == '/')
+        $uri = substr($uri, 1);
+
+      return explode('/', $uri);
+    }
+
+    /**
      * Create controller based on the given URI.
      *
      * @param string $uri uri string
@@ -122,10 +137,7 @@
      */
     protected static function create($uri, $parent=NULL)
     {
-      if ($uri{0} == '/')
-        $uri = substr($uri, 1);
-
-      list($module, $name, $action) = explode('/', $uri);
+      list($module, $name, $action) = self::uriParts($uri);
 
       if ($action == NULL)
         $action = 'index';
@@ -340,7 +352,7 @@
      *
      * @return atkTmpFile
      */
-    private function getActionCacheFile()
+    protected function getActionCacheFile()
     {
       atkimport('atk.utils.atktmpfile');
       $path = 'frontcontrollers/'.$this->m_module.'/'.$this->m_name.'/'.$this->m_action;
@@ -352,7 +364,7 @@
     /**
      * Is this action cached?
      */
-    private function isActionCached()
+    protected function isActionCached()
     {
       // action is never cached
       if (!in_array($this->m_action, $this->m_cacheableActions)) return false;
@@ -364,7 +376,7 @@
     /**
      * Load from action cache.
      */
-    private function loadFromActionCache()
+    protected function loadFromActionCache()
     {
       $file = $this->getActionCacheFile();
 
@@ -381,7 +393,7 @@
     /**
      * Store current action results in cache.
      */
-    private function storeInActionCache()
+    protected function storeInActionCache()
     {
       // action is never cached
       if (!in_array($this->m_action, $this->m_cacheableActions)) return;
@@ -403,7 +415,7 @@
     /**
      * Register styles and scripts using the bridge.
      */
-    private function registerStylesAndScripts()
+    protected function registerStylesAndScripts()
     {
       foreach ($this->m_styleSheets as $entry)
         $this->m_bridge->registerStyleSheet($entry['file'], $entry['media']);
@@ -483,6 +495,8 @@
             header('Content-Type: '.$this->m_contentType);
 
           echo $this->m_result;
+
+          echo atkDebugger::getInstance()->renderDebugAndErrorMessages();
 
           die;
         }
@@ -902,7 +916,10 @@
      */
     protected function registerStyleSheet($file, $media='all')
     {
-      $this->m_styleSheets[] = array('file' => $file, 'media' => $media);
+      if (is_object($this->m_parent))
+        $this->m_parent->registerStyleSheet($file,$media);
+      else
+        $this->m_styleSheets[] = array('file' => $file, 'media' => $media);
     }
 
     /**
@@ -912,7 +929,10 @@
      */
     protected function registerStyleCode($code)
     {
-      $this->m_styleCodes[] = array('code' => $code);
+      if (is_object($this->m_parent))
+        $this->m_parent->registerStyleCode($code);
+      else
+        $this->m_styleCodes[] = array('code' => $code);
     }
 
     /**
@@ -922,7 +942,10 @@
      */
     protected function registerScriptFile($file)
     {
-      $this->m_scriptFiles[] = array('file' => $file);
+      if (is_object($this->m_parent))
+        $this->m_parent->registerScriptFile($file);
+      else
+        $this->m_scriptFiles[] = array('file' => $file);
     }
 
     /**
@@ -932,7 +955,10 @@
      */
     protected function registerScriptCode($code)
     {
-      $this->m_scriptCodes[] = array('code' => $code);
+      if (is_object($this->m_parent))
+        $this->m_parent->registerScriptCode($code);
+      else
+        $this->m_scriptCodes[] = array('code' => $code);
     }
 
     /**
@@ -1046,15 +1072,15 @@
     }
 
     /**
-     * Render template.
+     * Transform the template to use to a filename
      *
-     * @param string $template template name
-     * @param array $vars template variables
-     * @param boolean $partial render partial?
+     * @example getFileForTemplate('tekno'): module/controller/tekno.tpl
      *
-     * @return string rendered template
+     * @param string $template
+     * @param bool   $partial
+     * @return string Filename for the template
      */
-    protected function _render($template, $vars, $partial)
+    protected function getFileForTemplate($template, $vars, $partial=false)
     {
       if ($template{0} != '/')
       {
@@ -1066,7 +1092,21 @@
         $template = implode('/', array_slice($parts, 0, count($parts) - 1)).'/'.($partial ? '_' : '').$parts[count($parts) - 1];
       }
 
-      $template = "{$template}.tpl";
+      return "{$template}.tpl";
+    }
+
+    /**
+     * Render template.
+     *
+     * @param string $template template name
+     * @param array $vars template variables
+     * @param boolean $partial render partial?
+     *
+     * @return string rendered template
+     */
+    protected function _render($template, $vars, $partial)
+    {
+      $template = $this->getFileForTemplate($template, $vars, $partial);
 
       /* @var $smarty Smarty */
       $smarty = atkinstance('atk.ui.atksmarty');
