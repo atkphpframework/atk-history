@@ -10,7 +10,7 @@ table.recordlist td,
 table.recordlist a,
 table.recordlist a:hover
 {
-  font-family: Lucida Sans, Lucida Sans Unicode, Tahoma, Trebuchet MS, Arial, Verdana;
+  font-family: Lucida, Tahoma, Trebuchet MS, Arial, Verdana;
   font-size: 12px;
   border-width: 1px;
 }
@@ -85,15 +85,15 @@ table.recordlist .row2
 
 .recordList th
 {
-	background-color: #749abe;
-	font-weight: normal;
-	color: #FFFFFF !important;
+  background-color: #749abe;
+  font-weight: normal;
+  color: #FFFFFF !important;
 }
 
 .recordList th a
 {
-	color: #FFFFFF !important;
-	text-decoration: underline !important;
+  color: #FFFFFF !important;
+  text-decoration: underline !important;
 }
 
 .recordListTd, .recordListTdFirst
@@ -118,7 +118,7 @@ table.recordlist .row2
 
 .recordListThFirst a
 {
-	font-weight: bold;
+  font-weight: bold;
 }
 
 .actions

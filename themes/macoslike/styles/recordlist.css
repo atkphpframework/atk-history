@@ -9,7 +9,7 @@ TABLE.recordlist TD,
 TABLE.recordlist A,
 TABLE.recordlist A:hover
 {
-  font-family: Lucida Sans, Verdana,Helvetica,Arial;
+  font-family: Lucida, Verdana,Helvetica,Arial;
   font-size: 11px;
   border-width: 1px;
 }

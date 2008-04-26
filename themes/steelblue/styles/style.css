@@ -4,7 +4,7 @@ body
   background: #f3f3f3;
   color: #414141;
   font-size: 12px;
-  font-family: Lucida Sans, Lucida Sans Unicode, Tahoma, Trebuchet MS, Arial, Verdana;
+  font-family: Lucida, Tahoma, Trebuchet MS, Arial, Verdana;
 }
 
 a:link, a:visited, a:active
@@ -33,7 +33,7 @@ a:hover
 
 .stacktrace_end
 {
-  font-family: Lucida Sans, Lucida Sans Unicode, Tahoma, Trebuchet MS, Arial, Verdana;
+  font-family: Lucida, Tahoma, Trebuchet MS, Arial, Verdana;
   font-size: 12px;
   font-style: italic;
   color: #414141;
@@ -41,7 +41,7 @@ a:hover
 
 .fieldlabel
 {
-  font-family: Lucida Sans, Lucida Sans Unicode, Tahoma, Trebuchet MS, Arial, Verdana;
+  font-family: Lucida, Tahoma, Trebuchet MS, Arial, Verdana;
   font-size: 12px;
   color: #414141;
   text-align: left;
@@ -52,7 +52,7 @@ a:hover
 
 .field
 {
-  font-family: Lucida Sans, Lucida Sans Unicode, Tahoma, Trebuchet MS, Arial, Verdana;
+  font-family: Lucida, Tahoma, Trebuchet MS, Arial, Verdana;
   font-size: 12px;
   color: #414141;
   text-align: left;
@@ -67,7 +67,7 @@ a:hover
 
 .tab
 {
-  font-family: Lucida Sans, Lucida Sans Unicode, Tahoma, Trebuchet MS, Arial, Verdana;
+  font-family: Lucida, Tahoma, Trebuchet MS, Arial, Verdana;
   font-size: 12px;
   font-weight: bold;
   color: #ffffff;
@@ -75,7 +75,7 @@ a:hover
 
 .tab_selected
 {
-  font-family: Lucida Sans, Lucida Sans Unicode, Tahoma, Trebuchet MS, Arial, Verdana;
+  font-family: Lucida, Tahoma, Trebuchet MS, Arial, Verdana;
   font-size: 12px;
   font-weight: bold;
   color: #000000;
@@ -94,7 +94,7 @@ a:hover
 .error, .errorlabel
 {
   color: #FF0000;
-  font-family: Lucida Sans, Lucida Sans Unicode, Tahoma, Trebuchet MS, Arial, Verdana;
+  font-family: Lucida, Tahoma, Trebuchet MS, Arial, Verdana;
   font-size: 12px;
   text-align: left;
 }
@@ -103,7 +103,7 @@ a:hover
 {
   background-color: #EEEEEE;
   color: #000000;
-  font-family: Lucida Sans, Lucida Sans Unicode, Tahoma, Trebuchet MS, Arial, Verdana;
+  font-family: Lucida, Tahoma, Trebuchet MS, Arial, Verdana;
   font-size: 12px;
   font-weight: bold;
   text-align: left;
@@ -171,7 +171,7 @@ ul, ol, li
 
   background: #fff url(../images/tabLeft.gif) no-repeat left top;
   font-size: 13px;
-  font-family: Lucida Sans, Lucida Sans Unicode, Tahoma, Trebuchet MS, Arial, Verdana;
+  font-family: Lucida, Tahoma, Trebuchet MS, Arial, Verdana;
   text-transform: capitalize;
   font-weight: bold;
   color: #FFFFFF;
@@ -225,7 +225,7 @@ select,
 textarea
 {
   color: #000000;
-  font-family: Lucida Sans, Lucida Sans Unicode, Tahoma, Trebuchet MS, Arial, Verdana;
+  font-family: Lucida, Tahoma, Trebuchet MS, Arial, Verdana;
   font-size: 12px;
   padding: 1px;
 }
