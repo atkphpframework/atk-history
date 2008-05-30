@@ -43,7 +43,7 @@
     $sessionName = atkconfig("session_name");
     if (empty($sessionName))
       $sessionName = atkconfig("identifier");
-    
+
     session_name($sessionName);
     session_start();
 
@@ -469,7 +469,7 @@
           {
             $recursive = $var{strlen($var) - 1} == '*';
             $var = $recursive ? substr($var, 0, -1) : $var;
-            
+
             if (isset($postvars[$var])&&$postvars[$var]!="")
             {
               if ($postvars[$var]=="clear")
@@ -482,7 +482,7 @@
                 {
                   $currentitem[$var] = array_merge_recursive($currentitem[$var], $postvars[$var]);
                 }
-                else 
+                else
                 {
                   $currentitem[$var] = $postvars[$var];
                 }
@@ -506,17 +506,17 @@
           {
             $recursive = $var{strlen($var) - 1} == '*';
             $var = $recursive ? substr($var, 0, -1) : $var;
-                        
+
             if (isset($postvars[$var])&&count($postvars[$var])>0 && (!$partial || !in_array($var, $lockedVars)))
             {
               if ($recursive && is_array($currentitem[$var]) && is_array($postvars[$var]))
               {
                 $currentitem[$var] = atk_array_merge_recursive($currentitem[$var], $postvars[$var]);
               }
-              else 
+              else
               {
                 $currentitem[$var] = $postvars[$var];
-              }              
+              }
             }
           }
 
@@ -562,7 +562,7 @@
           foreach($currentitem as $var => $value)
           {
             $recursive = in_array("{$var}*", $pageVars);
-            
+
             // don't override what was passed in the url except for
             // recursive mergeable pagevars
             if ($recursive || !isset($postvars[$var]))
@@ -596,10 +596,10 @@
         $node = $stack[$i]["atknodetype"];
         $module = getNodeModule($node);
         $type = getNodeType($node);
-        $action = $stack[$i]["atkaction"];        
+        $action = $stack[$i]["atkaction"];
         $title = $ui->title($module, $type, $action);
         $descriptor = atkArrayNvl($stack[$i], "descriptor", "");
-        
+
         $entry = array(
           'url' => '',
           'title' => $title,
@@ -609,12 +609,12 @@
           'action' => $action,
           'actiontitle' => atktext($action, $type, $module)
         );
-        
+
         if ($i<count($stack)-1)
         {
           $entry['url'] = session_url(getDispatchFile().'?atklevel='.$i);
         }
-        
+
         $res[] = $entry;
       }
 
@@ -962,7 +962,7 @@
     atkDataDecode($_REQUEST);
     $ATK_VARS = array_merge($_GET, $_POST);
     atkDataDecode($ATK_VARS);
-    if ($ATK_VARS['atkfieldprefix'] != '') $ATK_VARS = $ATK_VARS[$ATK_VARS['atkfieldprefix']];
+    if (atkArrayNvl($ATK_VARS, 'atkfieldprefix') != '') $ATK_VARS = $ATK_VARS[$ATK_VARS['atkfieldprefix']];
 
     $g_sessionManager->session_read($ATK_VARS);
 
@@ -1127,7 +1127,7 @@
     $name = atkconfig("session_name");
     if (empty($name))
       $name = atkconfig("identifier");
-      
+
     $sessionid = "";
     global ${$name};
 

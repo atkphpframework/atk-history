@@ -15,7 +15,7 @@
    * @version $Revision$
    * $Id$
    */
-  
+
   /**
    * Some defines for return behaviour
    */
@@ -45,8 +45,8 @@
   class atkActionHandler
   {
     /**
-     * @var atkNode 
-     * @access private 
+     * @var atkNode
+     * @access private
      */
     var $m_node = NULL;
 
@@ -55,19 +55,19 @@
 
     /** @access private */
     var $m_partial = NULL;
-    
+
     /** @access private */
     var $m_renderBoxVars = array();
-    
+
     /** @access private */
     var $m_rejecting = false;
-    
+
     /** @access private */
     var $m_returnbehaviour = ATK_ACTION_STAY;
-    
+
     /**
      * Render mode, defaults to "box" but can be changed to "dialog".
-     * 
+     *
      * @var string
      * @access protected
      */
@@ -85,8 +85,8 @@
      *
      * The default implementation invokes an action_$action override (if
      * present) and stores the postvars. Custom handlers may override this
-     * behavior. If there is no node action override and a partial is set 
-     * for the action we don't invoke the action_$action override but 
+     * behavior. If there is no node action override and a partial is set
+     * for the action we don't invoke the action_$action override but
      * instead let the partial method handle the action.
      *
      * @param atkNode $node The node on which the action should be performed.
@@ -100,9 +100,9 @@
       $this->m_node = &$node;
       $this->m_action = $action;
       $this->m_partial = $node->m_partial;
-      
+
       $this->invoke("action_".$action);
-           
+
       // when we're finished, cleanup any atkrejects (that we haven't set ourselves).
       if (!$this->m_rejecting)
       {
@@ -110,7 +110,7 @@
         $this->getRejectInfo(); // this will clear it.
       }
     }
-    
+
     /**
      * Returns the node object.
      *
@@ -120,9 +120,9 @@
     {
       return $this->m_node;
     }
-    
+
     function getRejectInfo()
-    {      
+    {
       global $atklevel;
       atkdebug("looking for rejectinfo");
       $sm = &atkGetSessionManager();
@@ -130,14 +130,14 @@
       $stackid = atkStackID(($atklevel==-1));
       if (isset($session["atkreject"][$sm->m_namespace][$stackid][atkLevel()]))
       {
-        atkdebug("rejectinfo found");        
-        $result = $session["atkreject"][$sm->m_namespace][$stackid][atkLevel()];        
+        atkdebug("rejectinfo found");
+        $result = $session["atkreject"][$sm->m_namespace][$stackid][atkLevel()];
         unset($session["atkreject"][$sm->m_namespace][$stackid][atkLevel()]);
         return $result;
       }
       return NULL;
     }
-    
+
     function setRejectInfo($data)
     {
       global $atklevel;
@@ -156,8 +156,8 @@
     function setNode(&$node)
     {
       $this->m_node = &$node;
-      $this->m_partial = $node->m_partial;  
-      $this->m_postvars = &$node->m_postvars;    
+      $this->m_partial = $node->m_partial;
+      $this->m_postvars = &$node->m_postvars;
     }
 
     /**
@@ -177,20 +177,20 @@
     {
       $this->m_postvars = &$postvars;
     }
-    
+
     /**
      * Sets the render mode ("box" or "dialog").
-     * 
+     *
      * @param string $mode render mode
      */
     function setRenderMode($mode)
     {
       $this->m_renderMode = $mode;
     }
-    
+
     /**
      * Returns the render mode.
-     * 
+     *
      * @return string render mode
      */
     function getRenderMode()
@@ -260,7 +260,7 @@
       if ($this->m_node!==NULL && method_exists($this->m_node, $methodname))
       {
         atkdebug("Invoking '$methodname' override on node");
-        // We pass the original object as first parameter to the override. 
+        // We pass the original object as first parameter to the override.
         array_unshift($arguments, $this);
         $arguments[0] = &$this; // reference copy workaround;
         return call_user_func_array(array(&$this->m_node, $methodname), $arguments);
@@ -293,15 +293,15 @@
       $filename = atkconfig("atkroot")."atk/handlers/class.atk".$action."handler.inc";
       if (file_exists($filename))
       {
-        return atknew("atk.handlers.atk".$action."handler");
+        $actionhandler = atknew("atk.handlers.atk".$action."handler");
       }
       else
       {
         // We don't have handlers yet for other actions.
         $actionhandler = new atkActionHandler(); // The default handler will automatically
                                                  // invoke the node methods.
-        return $actionhandler;
       }
+      return $actionhandler;
     }
 
     function getRecordlistCache()
@@ -330,22 +330,22 @@
     {
       $this->m_node->notify($action, $record);
     }
-    
+
     function addRenderBoxVar($key, $value)
     {
       $this->m_renderBoxVars[$key] = $value;
     }
-    
+
     function setReturnBehaviour($returnbehaviour)
     {
       $this->m_returnbehaviour = $returnbehaviour;
     }
-    
+
     function getReturnBehaviour()
     {
       return $this->m_returnbehaviour;
     }
-    
+
     /**
      * Current action allowed on the given record?
      *
@@ -365,48 +365,48 @@
       $page = &$this->m_node->getPage();
       $page->addContent($this->_getAccessDeniedPage());
     }
-    
+
     function _getAccessDeniedPage()
     {
     	$controller = &atkController::getInstance();
       $controller->setNode($this->m_node);
       return $controller->accessDeniedPage();
     }
-    
+
     /**
      * Render access denied dialog contents.
      */
     function renderAccessDeniedDialog()
     {
-      $message = 
+      $message =
         $this->m_node->text('access_denied').
         "<br><br>".
         $this->m_node->text("error_node_action_access_denied");
-        
+
       return $this->renderMessageDialog($message);
     }
-    
+
     /**
      * Render message dialog contents.
      */
     function renderMessageDialog($message)
     {
       atkimport('atk.ui.atkdialog');
-      $ui = &$this->m_node->getUi();      
-  	
-      $params = array();    	
+      $ui = &$this->m_node->getUi();
+
+      $params = array();
       $params["content"] = "<br />".$message."<br />";
       $params["buttons"][] = '<input type="button" class="btn_cancel" value="'.$this->m_node->text('close').'" onClick="'.atkDialog::getCloseCall().'" />';
       $content = $ui->renderAction($this->m_action, $params);
-      
+
       $params = array();
       $params["title"] = $this->m_node->actionTitle($this->m_action);
-      $params["content"] = $content;  
-      $content = $ui->renderDialog($params);     
-      
+      $params["content"] = $content;
+      $content = $ui->renderDialog($params);
+
       return $content;
     }
-    
+
     /**
      * Outputs JavaScript for updating the existing dialog contents.
      *
@@ -419,7 +419,7 @@
       $page = &$this->getPage();
       $page->register_loadscript($script);
     }
-    
+
     /**
      * Output JavaScript to close the dialog.
      */
@@ -430,7 +430,7 @@
       $page = &$this->getPage();
       $page->register_loadscript($script);
     }
-    
+
     /**
      * Handle partial.
      *
@@ -445,13 +445,13 @@
       {
         $content = '<span style="color: red; font-weight: bold">Invalid partial \''.$this->m_partial.'\'!</span>';
       }
-      else 
+      else
       {
         $content = $this->$method($partial);
       }
-      
-      $page = &$this->getPage();      
+
+      $page = &$this->getPage();
       $page->addContent($content);
-    }     
+    }
   }
 ?>

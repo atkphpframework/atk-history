@@ -355,9 +355,11 @@ class atkDataGrid
       $allVars = (array)$node->m_postvars;
     }
 
-    $vars = @$GLOBALS['ATK_VARS']['atkdg'][$name];
+    if (isset($GLOBALS['ATK_VARS']['atkdg'][$name]) && is_array($GLOBALS['ATK_VARS']['atkdg'][$name]))
+      $vars = $GLOBALS['ATK_VARS']['atkdg'][$name];
+    else
+      $vars = array();
 
-    $vars = !is_array($vars) ? array() : $vars;
     $this->setPostvars(array_merge($allVars, $vars));
 
     $this->loadSession();

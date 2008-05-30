@@ -239,7 +239,7 @@
         $this->m_stylesheets[$file] = $media;
       }
     }
-    
+
     /**
      * Unregister a Cascading Style Sheet.
      *
@@ -308,9 +308,7 @@
     {
       $res = "<head>\n  <title>$title</title>\n";
 
-      // $Name$ is the CVS tag.
       $version = atkversion();
-      if ("\$Name$"!="\$"."Name:  $") $version.=" ($Name$)";
       $res.= '  <meta name="atkversion" content="'.$version.'" />'."\n";
 
       $res.= '  <meta http-equiv="Content-Type" content="text/html; charset='.atktext("charset","atk").'" />'."\n";
@@ -336,27 +334,27 @@
      */
     function addScripts(&$res, $partial=false)
     {
-      
+
       $count_scriptcode = count($this->m_scriptcode['before']);
       if($count_scriptcode>0) $res .= '  <script type="text/javascript">'."\n";
       $res.= $this->renderScriptCode("before");
 
       if($count_scriptcode>0) $res .= "  </script>\n";
-      
+
       if (!$partial)
       {
         for ($i = 0; $i < count($this->m_scriptfiles); $i++)
           $res .= '  <script type="text/javascript" src="'.$this->m_scriptfiles[$i].'"></script>'."\n";
       }
-      else 
+      else
       {
-        
+
         $files = '';
         for ($i = 0; $i < count($this->m_scriptfiles); $i++)
         {
           $files .= "ATK.Tools.loadScript('".$this->m_scriptfiles[$i]."');\n";
-        }          
-        
+        }
+
         if (!empty($files))
         {
           $res .= '<script type="text/javascript">'.$files.'</script>';
@@ -369,18 +367,18 @@
       $res.=$this->renderScriptCode("after");
 
       $res.=$this->_getGlobalSubmitScriptCode($partial);
-      $res.=$this->_getGlobalLoadScriptCode($partial);  
+      $res.=$this->_getGlobalLoadScriptCode($partial);
 
       $res .= "  </script>\n\n";
     }
-    
+
     /**
      * Renders the registered javascripts, if $position is set to "before" the scripts will be
      * placed before the scripts that are already present. Otherwise they will be appended
      * at the end.
      *
      * @param string $position ("before" or "after")
-     * @return string 
+     * @return string
      */
     function renderScriptCode($position)
     {
@@ -399,7 +397,7 @@
       {
         return "";
       }
-      
+
       $res = "\n    function globalSubmit(form)\n";
       $res .= "    {\n";
       $res .= "      var retval = true;\n";
@@ -461,7 +459,7 @@
     {
       $this->m_content.=$content;
     }
-    
+
     /**
      * Returns the current page content.
      *
@@ -471,7 +469,7 @@
     {
       return $this->m_content;
     }
-    
+
     /**
      * Sets the page content (overwriting current content).
      *
@@ -543,7 +541,7 @@
       $page.= $this->renderHiddenVars();
       if (hasFlag($flags,HTML_BODY)) $page.= "</body>\n";
       $page.= "</html>\n";
-      
+
       return $page;
     }
 
