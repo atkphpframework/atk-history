@@ -1,54 +1,42 @@
 <?php
   /**
-   * This class is a non-authenticating authentication thingee. (it 
-   * is used for applacations that don't need security)
+   * This file is part of the Achievo ATK distribution.
+   * Detailed copyright and licensing information can be found
+   * in the doc/COPYRIGHT and doc/LICENSE files which should be
+   * included in the distribution.
    *
-   * <b>Todo's</b>   : - everything
+   * @package atk
+   * @subpackage security
    *
-   * @author Ivo Jansch (ivo@achievo.com)
+   * @copyright (c)2000-2004 Ivo Jansch
+   * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * <b>Changes</b>:
-   *    
+   * @version $Revision$
    * $Id$
-   * $Log$
-   * Revision 1.1  2001/04/23 10:17:14  ivo
-   * Initial revision
+   */
+
+  /**
+   * Dummy driver for non-authentication. When using 'none' as authentication
+   * method, any loginname and any password will be accepted.
    *
-   * Revision 1.4  2001/04/02 08:22:58  ivo
-   * Improved groupbased attribute security.
-   *
-   * Revision 1.3  2001/03/16 07:52:00  ivo
-   * Improved group-based security.
-   *
-   * Revision 1.2  2001/02/15 19:04:59  martin
-   * Fixed parse error line 27! (bleh)
-   *
-   * Revision 1.1  2001/02/15 16:20:24  ivo
-   * Major new feature: security.
-   *
+   * @author Ivo Jansch <ivo@achievo.org>
+   * @package atk
+   * @subpackage security
    *
    */
-   
    class auth_none extends auth_interface
    {
      function validateUser($user, $passwd)
      {
-       return true;
+       if ($user == "")
+        return AUTH_SUCCESS;
+       else
+        return AUTH_MISMATCH;
      }
-     
-     function getUser($user)
+
+     function canMd5()
      {
-       return Array("name"=>"","level"=>-1);
-     }
-     
-     function getEntity($node,$action)
-     {
-       return Array();
-     }
-     
-     function getAttribEntity($node, $attrib, $mode)
-     {
-       return Array();
+       return false;
      }
    }
 

@@ -1,109 +1,127 @@
 <?php
   /**
-   * The atkRelation class defines a relation to an attribute
-   * (or a relation between two attributes?)
-   * (maybe a source and destination node?)
-   * (and should we distinguish between 1:1, 1:N, N:M relations?)
-   * Note        : A relation is a (very) special kind of attribute.
-   * @author      : Ivo Jansch <ivo@achievo.com>
-   * @version     : 0.5
+   * This file is part of the Achievo ATK distribution.
+   * Detailed copyright and licensing information can be found
+   * in the doc/COPYRIGHT and doc/LICENSE files which should be
+   * included in the distribution.
    *
+   * @package atk
+   * @subpackage relations
+   *
+   * @copyright (c)2000-2004 Ivo Jansch
+   * @license http://www.achievo.org/atk/licensing ATK Open Source License
+   *
+   * @version $Revision$
    * $Id$
-   * $Log$
-   * Revision 1.1  2001/04/23 10:17:13  ivo
-   * Initial revision
+   */
+
+  /** @internal include baseclass. */
+  userelation("atkmanytomanyrelation");
+
+  /**
+   * Attribute flag. When used the atkManyBoolRelation shows add links to add records for the related table
+   */
+  define("AF_MANYBOOL_AUTOLINK", AF_SPECIFIC_1);
+
+  /**
+   * Many-to-many relation.
    *
-   * Revision 1.4  2001/04/10 14:43:24  ivo
-   * Removed debug output.
+   * The relation shows a list of available records, and a set of checkboxes
+   * to link the records with the current record on the source side.
    *
-   * Revision 1.3  2001/04/10 13:11:57  ivo
-   * Fixes and optimisations to all relations.
-   *
-   * Revision 1.2  2001/02/22 22:47:16  peter
-   * changed search/edit API, some clean-up of code
-   *
-   * Revision 1.1.1.1  2001/01/10 13:57:59  sandy
-   * Achievo Tool Kit
+   * @author Ivo Jansch <ivo@achievo.org>
+   * @package atk
+   * @subpackage relations
    *
    */
   class atkManyBoolRelation extends atkManyToManyRelation
   {
- 
-    /** 
-    * Constructor
-    * @param $name
-    * @param $destination
-    * @param $flags
-    */
-    function atkManyBoolRelation($name, $destination, $flags=0)
-    {
-      $this->atkManyToManyRelation($name, $destination, $flags);
-    }
-    
-    /** 
+    var $m_cols=3;
+
+    /**
      * Return a piece of html code to edit the attribute
      * @param $record Current record
-     * @result piece of html code
+     * @return String piece of html code
      */
-    function edit($record="")
+    function edit($record="", $fieldprefix="", $mode="")
     {
-    //var_dump($record);
-      $this->createDestination();    
+      $cols = $this->m_cols;
+      $modcols = $cols-1;
+      $this->createDestination();
+      $this->createLink();
+      $result = "";
 
-      $selectedPk = array();
+      $selectedPk = $this->getSelectedRecords($record);
+
+      $recordset = $this->_getSelectableRecords($record, $mode);
+      $total_records = count($recordset);
+      if($total_records>0)
+      {
+        $page = &atkPage::getInstance();
+        $page->register_script(atkconfig("atkroot")."atk/javascript/class.atkprofileattribute.js.php");
+  
+        $result .='<div align="left"><font size="-2">
+                  [<a href="javascript:void(0)" onclick="profile_checkAll(\''.$this->getHtmlId($fieldprefix).'\'); return false;">'.
+                       atktext("check_all", "atk").
+                  '</a> <a href="javascript:void(0)" onclick="profile_checkNone(\''.$this->getHtmlId($fieldprefix).'\'); return false;">'.
+                       atktext("check_none", "atk").
+                  '</a> <a href="javascript:void(0)" onclick="profile_checkInvert(\''.$this->getHtmlId($fieldprefix).'\'); return false;">'.
+                       atktext("invert_selection", "atk").'</a>]</font></div>';
       
-      // first the selected records..
-      for ($i=0;$i<count($record[$this->m_name]);$i++)
-      {
-        $this->m_destInstance->m_records[0] = $record[$this->m_name][$i][$this->remoteKey()];
-        $selectedPk[] = $this->m_destInstance->primaryKey();
-      }     
-
-      // now select all records 
-      $this->m_destInstance->selectDb();
-
-      for ($this->m_destInstance->m_currentRec=0;$this->m_destInstance->m_currentRec<count($this->m_destInstance->m_records);$this->m_destInstance->m_currentRec++)
-      {
-
-        if (in_array($this->m_destInstance->primaryKey(),$selectedPk))
+        $result.= '<table border="0"><tr>';
+        for ($i=0;$i<$total_records;$i++)
         {
-          $sel = "checked";
+          $detaillink = "&nbsp;";
+          $selector="";
+          if (in_array($this->m_destInstance->primaryKey($recordset[$i]),$selectedPk))
+          {
+            $sel = "checked";
+            if (!$this->m_linkInstance->hasFlag(NF_NO_EDIT)&&$this->m_linkInstance->allowed("edit"))
+            {
+              $selector = $this->m_linkInstance->m_table.'.'.$this->getLocalKey()."='".$record[$this->m_ownerInstance->primaryKeyField()]."'".
+                ' AND '.$this->m_linkInstance->m_table.'.'.$this->getRemoteKey().
+                "='".$recordset[$i][$this->m_destInstance->primaryKeyField()]."'";
+  
+              // Create link to details.
+              $detaillink = href(dispatch_url($this->m_link, "edit", array("atkselector"=>$selector)),
+                "[".atktext("details", "atk")."]",
+                SESSION_NESTED,
+                true);
+            }
+          }
+          else
+          {
+            $sel = "";
+          }
+          $result.= '<td class="table"><input type="checkbox" name="'.
+                         $this->getHtmlId($fieldprefix).
+                         '[]['.$this->getRemoteKey().
+                         ']" value="'.
+                         $recordset[$i][$this->m_destInstance->primaryKeyField()].
+                         '" '.$this->getCSSClassAttribute("atkcheckbox").' '.$sel.'></td><td class="table">'.
+                         $this->m_destInstance->descriptor($recordset[$i]).
+                         '</td><td class="table">'.$detaillink.'</td>';
+          if ($i%$cols == $modcols) $result .="</tr><tr>\n";
         }
-        else
-        {
-          $sel = "";
+        $result.="</tr></table>\n";
         }
-        $result.= '<input type="checkbox" name="'.$this->fieldName().'_AMDAE_'.$this->remoteKey().'[]" value="'.$this->m_destInstance->m_records[$this->m_destInstance->m_currentRec][$this->m_destInstance->primaryKeyField()].'" '.$sel.'>'.$this->m_destInstance->descriptor().'<br>'."\n";
+      else 
+      {
+        $nodename = $this->m_destInstance->m_type;
+        $modulename = $this->m_destInstance->m_module;;
+        $result .= atktext('select_none', $modulename, $nodename)." ";
       }
+      // Add the add link if AF_MANYBOOL_AUTOLINK used
+      if (($this->hasFlag(AF_MANYBOOL_AUTOLINK)) && ($this->m_destInstance->allowed("add")))
+        $result.= href(dispatch_url($this->m_destination, "add"), $this->getAddLabel(), SESSION_NESTED) . "\n";
+
       return $result;
     }
 
-    /**
-     * Stores the values in the database
-     * @param $notused Not used
-     * @param $record Current record
-     */    
-    function store($notused, $record)
+    function setCols($cols)
     {
-      $classname = $this->m_name;
-      include "class.".$classname.".inc";
-      $rel = new $classname();
-      
-      $this->createOwner();
-      $this->createDestination();
-      
-      $rel->deleteDb($this->localKey()."=".$record[$this->m_ownerInstance->primaryKeyField()]);     
-      
-      for ($i=0;$i<count($record[$this->fieldName()]);$i++)
-      { 
-        // magical stuff..
-        
-        $rel->m_records[0][$this->remoteKey()][$this->m_destInstance->primaryKeyField()] = $record[$this->fieldName()][$i][$this->remoteKey()];        
-    
-        $rel->m_records[0][$this->localKey()][$this->m_ownerInstance->primaryKeyField()] = $record[$this->m_ownerInstance->primaryKeyField()];
-        
-        $rel->addDb();
-      }
-    }   
+      $this->m_cols = $cols;
+    }
 
   }
+?>

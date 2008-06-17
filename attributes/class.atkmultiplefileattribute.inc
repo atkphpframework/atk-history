@@ -1,31 +1,29 @@
 <?php
   /**
-   * This is an extend of the famous atkfileattribute :). Now its possible to insert one or more
-   * files in one database field
-   * <br>
-   * <b>Changes:</b>
-   *        0.1      - initial import! (martin)    
+   * This file is part of the Achievo ATK distribution.
+   * Detailed copyright and licensing information can be found
+   * in the doc/COPYRIGHT and doc/LICENSE files which should be 
+   * included in the distribution.
    *
-   * <b>Todo</b>     : deleting files from HD
-   *                    
+   * @package atk
+   * @subpackage attributes
    *
-   * @author Martin Roest (martin@ibuildings.nl)
-   * @version 0.1 
+   * @copyright (c)2000-2004 Ibuildings.nl BV
+   * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
+   * @version $Revision$
    * $Id$
-   * $Log$
-   * Revision 1.1  2001/04/23 10:17:09  ivo
-   * Initial revision
+   */
+  useattrib("atkFileAttribute");
+   
+  /**
+   * This is an extend of the famous atkfileattribute :). Now its possible 
+   * to insert one or more files in one database field
    *
-   * Revision 1.7  2001/02/22 22:46:18  peter
-   * changed edit/search API, new member vars, clean-up of code
+   * @author Martin Roest <martin@ibuildings.nl>
+   * @package atk
+   * @subpackage attributes
    *
-   * Revision 1.6  2001/02/07 21:27:28  martin
-   * fixed tiny dinske in display value
-   *
-   * Revision 1.5  2001/02/07 21:22:12  martin
-   * *** empty log message ***
-   *    
    */
   class atkMultipleFileAttribute extends atkFileAttribute
   {
@@ -40,9 +38,9 @@
      * @param $dir Can be a string with the Directory with images/files or an array with a Directory and a Display Url
      * @param $flags Flags for this attribute
      */
-    function atkMultipleFileAttribute($name, $dir, $flags=0)
-    {
-      $this->atkAttribute($name,$flags|AF_CASCADE_DELETE); // base class constructor
+    function atkMultipleFileAttribute($name, $dir, $flags=0, $size=0)
+    {            
+      $this->atkFileAttribute($name,$flags|AF_CASCADE_DELETE, $size); // base class constructor
       if(is_array($dir))
       {
         $this->m_dir = $this->AddSlash($dir[0]);
@@ -52,8 +50,7 @@
       {
         $this->m_dir = $this->AddSlash($dir);
         $this->m_url = $this->AddSlash($dir);
-      }
-      $GLOBALS['g_layout']->register_script("atk/javascript/class.atkfileattribute.js.php");
+      }            
     }
 
     /**
@@ -66,18 +63,6 @@
     {
       if($del == "") $del = $this->m_delimiter; 
       return explode($del, $str);
-    }
-
-    /**
-     * This is done for PHP3 and PHP4 version conflicts
-     * @param $needle (see php manual)
-     * @param $haystack (see php manual)
-     * @return in case of a match returns true
-     */
-    function in_array($needle,$haystack) 
-    { 
-      for($i=0;$i<count($haystack) && $haystack[$i] !=$needle;$i++); 
-      return ($i!=count($haystack)); 
     }
 
     /**
@@ -99,7 +84,7 @@
       }
       else
       {
-        return text("no_valid_directory");
+        return atktext("no_valid_directory");
       }
 
       if(count($file_arr)>0)
@@ -128,13 +113,11 @@
      */
     function value2db($rec)
     {
-      $select = "select_".$this->fieldName();
-      global $$select;
-      global $HTTP_POST_VARS;
+      $select = $_REQUEST["select_".$this->fieldName()];      
 
-      if(!$this->isEmpty($HTTP_POST_VARS))
+      if(!$this->isEmpty($_POST))
       {
-        $file = $this->fetchValue($HTTP_POST_VARS);
+        $file = $this->fetchValue($_POST);
         $file[filename] = str_replace(' ','_',$file["filename"]);
         if($file[filename]!="")
         {
@@ -162,7 +145,7 @@
      * @return Filename or Nothing
      */
     function display($record)
-    {
+    {              
       $files = explode($this->m_delimiter, $record[$this->fieldName()][orgfilename]);
       $prev_type = Array("jpg","jpeg","gif","tif","png","bmp","htm","html","txt");  // file types for preview
       $imgtype_prev = Array("jpg","jpeg","gif","png");  // types whitch are supported by GetImageSize
@@ -182,6 +165,9 @@
              {
               $imagehw=Array("0"=>"640","1"=>"480");
              }
+             
+             $page = &atkPage::getInstance();
+             $page->register_script(atkconfig("atkroot")."atk/javascript/newwindow.js");
              $r .=  '<a href="'.$this->m_url.$files[$i].'" alt="'.$files[$i].'" onclick="NewWindow(this.href,\'name\',\''.($imagehw[0]+50).'\',\''.($imagehw[1]+50).'\',\'yes\');return false;">'.$files[$i].'</a><br>';
           }
           else
@@ -191,10 +177,15 @@
         }
         else
         {
-          if(strlen($files[$i])>0) $r .= $files[$i]."(<font color=\"#ff0000\">".text("file_not_exist")."</font><br>)";
+          if(strlen($files[$i])>0) $r .= $files[$i]."(<font color=\"#ff0000\">".atktext("file_not_exist")."</font><br>)";
         }
       }
       return $r;
+    }
+    
+    function dbFieldType()
+    {
+      return "string";
     }
   }
 ?>
