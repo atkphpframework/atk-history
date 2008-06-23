@@ -364,6 +364,7 @@ Changed in ATK 6.2
 * Fixed bug in Ajax script load mechanism. [Peter]
 * Fixed loading of attributes with 'alltabs', would not be shown at all. [Boy]
 * Fixed broken if-statement in atkCustomRecordlist. [JorgeG]
+* Fixed height of search box in top.tpl too small in Steelblue. [Guido]
 - Removed atkMetaHandler because it wasn't very useful. [Peter]
 - Removed support for regexes in atkMetaPolicy's setIncludes/setExcludes
   because it wasn't very useful and wasn't used anyway. [Peter]

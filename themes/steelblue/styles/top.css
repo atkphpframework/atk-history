@@ -35,7 +35,7 @@
 {
   position: absolute;
   right: 20px;
-  top: 5px;
+  top: 4px;
   padding: 0;
   margin: 0;
   height: 12px;
@@ -51,11 +51,6 @@ textarea
   color: #000000;
   font-family: Lucida Sans, Lucida Sans Unicode, Tahoma, Trebuchet MS, Arial, Verdana;
   font-size: 11px;
-}
-
-input
-{
-  height: 12px;
 }
 
 INPUT.omsearch
