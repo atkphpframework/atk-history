@@ -7,18 +7,49 @@ Please do not exceed 80 characters per line.
 
 Changes in ATK 6.2
 ------------------
-+ Added atkClassLoader::mountClassPath($prefix, $path) which makes it
-  possible to mount paths outside the atkroot inside the class loader using
-  a special prefix. [Peter]
-+ Added atkDataGrid::setDefaultOrderBy which makes it possible to set 
-  a different default order by clause then is defined for the node. [Peter]
-+ Added support for using multiple columns [RikW,Danny]
-+ Added support for custom actions to the atkmanytomanyselectrelation, also
++ Added atkCache, see http://www.achievo.org/wiki/ATK_Cache. [Sandy]
++ Added the atkDataGrid which replaces atkRecordList for the admin and
+  select handlers and the atkOneToManyRelation. The atkDataGrid allows
+  browsing through records without page reloads. [Peter]
++ Added atkConsoleController for creating standardized console scripts. [Vito]
++ Added a new theme called stillblue, which is based on steelblue but with
+  more workspace and frameless [Erik]
++ Added support for caching of the meta node code. This makes the meta node
+  just as fast as an ordinary node. Caching is automatically turned on for meta
+  nodes which either don't have a meta method defined or have their meta method
+  defined as being static. During development the caching can be turned of
+  by setting the new $config_meta_caching configuration option to false. [Peter]
++ Added the atkMetaCompiler which transforms the meta policy contents to code.
+  If you want to use your own compiler class you can override the new
+  $config_meta_compiler configuration option. [Peter]
++ Added support for setting the default value for meta node attributes using
+  atkMetaPolicy's new setDefaultValue method. [Peter]
++ Added support for forcing the insertion of meta node attributes using
+  atkMetaPolicy's new setForceInsert/removeForceInsert methods. [Peter]
++ Added support for setting a handler/callback for the atkMetaPolicy which
+  should be called instead of the meta node's meta method, this supercedes
+  the atkMetaHandler class. You can set the handler for a node by specifying
+  it as a meta option either by passing it to the parent constructor or
+  creating a protected instance variable called $handler. [Peter]
++ Added support for caching database table meta data. This is in addition
+  to the atkMetaNode caching. [Martin]
++ Added atkPageBuilder (can be instantiated using $node->createPageBuilder())
+  which provides a fluent interface for building generalized ATK pages.
+  [Peter]
++ Added atkFieldSet attribute which can be used to combine attributes in
+  edit/view mode. [Peter]
++ Added atkManyToManySelectRelation, a new variant of the many to many relation
+  which allows you to add items to the relation using auto-completion. Useful
+  for many-to-many relations which have many selectable options. [Peter]
++ Added atkRadioDetailsAttribute, displays radio buttons with options to choose
+  from just like the atkRadioAttribute but allows you to use other attributes
+  for detail selections once certain options are selected. [Peter]  
++ Added support for custom actions to the atkManyToManySelectRelation, also
   added the posibility to define a custom relation class for hasMany relations.
   [Erik,Peter]
 + Added a way to set a limit to the amount of elements that will be returned
-  with the atkshuttle attribute. [Erik]
-+ added a function setUseThousandsSeparator to enable the thousandsseparator
+  with the atkShuttle attribute. [Erik]
++ Added a function setUseThousandsSeparator to enable the thousandsseparator
   when display the number. Default no thousandsseperator is displayed. [Martijn]
 + The atkNumberAttribute and atkCurrency now supports the thousands separator.
   It's possible to add a number with a thousand seperator included. According
@@ -29,8 +60,6 @@ Changes in ATK 6.2
   to change the sorting order of the years dropdown. [Martijn]
 + Added simple mode on the atkDateAttribute. With the simple mode enabled
   no javascript is used to update the dropdowns [Martijn]
-+ Added a new theme called stillblue, which is based on steelblue but with
-  more workspace and frameless [Erik]
 + atkFileEditor is now able to browse through subdirectories. [Bjorn]
 + Added support for muliple dependant attributes in a radiodetails attribute
   and added support for labels for the detail attributes. [Tjeerd]
@@ -56,8 +85,6 @@ Changes in ATK 6.2
   a array of country iso codes. After setting the list you can just request
   the custom list like you would with the "world" or "europe" list.
   [Erik]
-+ atkFrontController will now register scripts and styles in child
-  controllers after the main controller [Harrie]
 + Added unregister_style() method to atkPage to unregister a stylesheet.
   [Tjeerd]
 + atkBoolAttribute now uses getLabel for displaying it's label if it uses the
@@ -78,20 +105,20 @@ Changes in ATK 6.2
   from now. [Yury]
 + Adding getAvailableIndices() to atknavigator, so it display only available
   letter now. (bug #714) [Yury]
-+ Adding atkindex to $pageVars - it contain current index letter. [Yury]
-+ Adding 'clear_index' and 'clear_search' link to navigator, so we can clear
++ Added atkindex to $pageVars - it contain current index letter. [Yury]
++ Added 'clear_index' and 'clear_search' link to navigator, so we can clear
   search and index creteria separately. [Yury]
-+ For the atkFckAttribute it is now possible to load an additional configuration
-  file where you can override some of the default settings. [Tjeerd, Dennis]
 + Add NF_EDITAFTERCOPY flag and handling of 'editcopy'actions - record coping
   and open for editing. (bug #524) [Yury]
 + Added ATK wrapper of the PHP iconv function - atk_iconv. Check if iconv
   function is present in the system. If yes - use it for converting string, if
   no - save string untouch and make warning about it. [Yury]
-+ The attributename and nodename are now available in the editform.tpl and
-  viewform.tpl templates. [Peter, Dennis]
 + Added support for dialog render mode for atkViewHandler and atkAdminHandler.
   [Peter]
++ For the atkFckAttribute it is now possible to load an additional configuration
+  file where you can override some of the default settings. [Tjeerd, Dennis]  
++ The attributename and nodename are now available in the editform.tpl and
+  viewform.tpl templates. [Peter, Dennis]
 + Access denied pages of dialogs now also have a close button. [Dennis]
 + When registering a menuitem, the enabled parameter now also supports a
   callback function to determine wether a menu item should be enabled.
@@ -142,30 +169,8 @@ Changes in ATK 6.2
   (default this is on). [Sandy]
 + Added validation of tags, they may not contain HTML or linefeeds. Also
   added testcase for validation. [Dennis]
-+ Added the atkDataGrid which replaces atkRecordList for the admin and
-  select handlers and the atkOneToManyRelation. The atkDataGrid allows
-  browsing through records without page reloads. [Peter]
 + Added atkTextAttribute::setWrapMode to specify the wrap mode for
   the textarea (by default "soft"). [Peter]
-+ Added support for caching of the meta node code. This makes the meta node
-  just as fast as an ordinary node. Caching is automatically turned on for meta
-  nodes which either don't have a meta method defined or have their meta method
-  defined as being static. During development the caching can be turned of
-  by setting the new $config_meta_caching configuration option to false. [Peter]
-+ Added the atkMetaCompiler which transforms the meta policy contents to code.
-  If you want to use your own compiler class you can override the new
-  $config_meta_compiler configuration option. [Peter]
-+ Added support for setting the default value for meta node attributes using
-  atkMetaPolicy's new setDefaultValue method. [Peter]
-+ Added support for forcing the insertion of meta node attributes using
-  atkMetaPolicy's new setForceInsert/removeForceInsert methods. [Peter]
-+ Added support for setting a handler/callback for the atkMetaPolicy which
-  should be called instead of the meta node's meta method, this supercedes
-  the atkMetaHandler class. You can set the handler for a node by specifying
-  it as a meta option either by passing it to the parent constructor or
-  creating a protected instance variable called $handler. [Peter]
-+ Added support for caching database table meta data. This is in addition
-  to the AtkMetaNode caching. [Martin]
 + Added support for specifying the character set for the atkOci9Db driver. 
   [Peter]
 + Added support for modifying add / add-or-copy dialogs from inside the node by
@@ -175,41 +180,34 @@ Changes in ATK 6.2
 + Added support for dynamically loading stylesheets (for Ajax requests). [Peter]
 + Added $config_application_dir which can be used to separate ATK from your
   application code. [Boy]
-+ Added atkManyToManySelectRelation, a new variant of the many to many relation
-  which allows you to add items to the relation using auto-completion. Useful
-  for many-to-many relations which have many selectable options. [Peter]
-+ Added atkRadioDetailsAttribute, displays radio buttons with options to choose
-  from just like the atkRadioAttribute but allows you to use other attributes
-  for detail selections once certain options are selected. [Peter]
-+ AtkZip: added parameter to add files to specified filepath [Jeroen]
-+ tbsooo|Changes for DocX support. SaveXmlToDoc: specify filepath,
++ Added parameter to atkZip to add files to specified filepath [Jeroen]
++ tbsooo; changes for DocX support. SaveXmlToDoc: specify filepath,
   ClearProcessDir: remove recursivly [Jeroen]
 + Added atkDocxWriter for Word2007 .docx templates. Enhancement: Create output
   dir if it doesn't exist.
   Please check: http://www.achievo.org/wiki/AtkDocumentWriter for tips and
   limitations [Jeroen]
-+ Added addHeader support [Peter]
-+ Added atkCache, see http://www.achievo.org/wiki/ATK_Cache. [Sandy]
-+ Added atkFieldSet which can be used to combine attributes in
-  edit/view mode. [Peter]
-+ Added atkPageBuilder (can be instantiated using $node->createPageBuilder())
-  which provides a fluent interface for building generalized ATK pages.
-  [Peter]
++ Added addHeader support to atkPage. [Peter]
 + Added support for different node lock modes (exclusive and shared). [Peter]
 + Added atkDateFormat function which can be used to do localized formatting
   of a time stamp, compatible with PHP's date function. [Peter]
-+ Added Prototype UI window library which will eventually replace window.js
++ Added Prototype UI window library which will eventually replaces window.js
   and improves stability for atkDialog. [Peter]
-+ Added atkthemeicon Smarty plug-in for including theme icons inside
-  templates. [Peter]
-+ Added fetchByPk to atkNode. [Michael]
++ Added atkthemeicon Smarty plug-in for including theme icons inside templates.
+  [Peter]
++ Added fetchByPk to fetch a single row by primary key to atkNode. [Michael]
 + Added atknavigator and atknavigatorinfo Smarty block plug-ins, which make it
-  to create page navigation bars or show navigation info. [Peter]
+  easy to create page navigation bars or show navigation info. [Peter]
 + Added AF_MANYTOONE_OBLIGATORY_NULL_ITEM flag to atkManyToOneRelation. [Guido]
 + Added UI resource for Smarty which makes it easier to include templates
   somewhere inside your ATK root e.g. {include file="ui:modules/..."} [Peter]
-+ Added atkcontroller var which can be used to load a custom
-  controller. [Maurice]
++ Added atkcontroller var which can be used to load a custom controller. 
+  [Maurice]
++ Added atkClassLoader::mountClassPath($prefix, $path) which makes it
+  possible to mount paths outside the atkroot inside the class loader using
+  a special prefix. [Peter]
+* atkFrontController will now register scripts and styles in child
+  controllers after the main controller [Harrie]  
 * Improved recordlist icon searching, an icon can now be prefixed with
   a module or module and node to make it possible to have different actions
   for the same action name for different nodes. [Peter]
@@ -257,17 +255,6 @@ Changes in ATK 6.2
   cannot be NULL and made the language key always uppercase [Yannick]
 * Upgraded Prototype to 1.6.0.2, Scriptaculous to 1.8.1 and Window.js to
   1.3.2. Might cause certain backwards incompatiblities! [Peter]
-* Admin datagrids can now be modified from within the node by implementing
-  the modifyDataGrid($grid) method. [Peter]
-* One-to-many relation datagrid can now be modified by implementing the
-  modifyDataGrid($grid) method inside the destination node or by
-  implementing an <attribute>_modifyDataGrid($grid) method inside the
-  owner node. [Peter]
-* The default datagrid template now reserves space for components named top
-  or bottom, which makes it easy to add your own custom components
-  without having the need to create a custom template. [Peter]
-* Multi-record-action modes MRA_SINGLE_SELECT and MRA_NO_SELECT
-  are now properly supported by the datagrid. [Peter]
 * atkMetaPolicy's remove method now takes multiple arguments. [Peter]
 * Extendable shuttle relation filters are now taken into account when
   initlally rendering the shuttle. [Peter]
@@ -501,14 +488,13 @@ Changes in ATK 6.2
 * Fixed unnecesary call to atkClassLoader::getAllClasses() when php tries to
   find a class with empty name (such classes don't exists). [Guido]
 * Fixed atkRadioAttribute. When using the value 0 in an option, it was never
-  evaluated as being CHECKED. [Arjen Tebbenhof, Dennis]
+  evaluated as being CHECKED. [Arjen]
 * Fixed (possible) memory leak in atkOneToManyRelation (avoid creation of
   an anonymous function using create_function() in load()). [Patrick]
 * Fixed support for multiple authentication types on PHP5 platforms.
   [Guido,Dennis]
 * Fixed bug in NF_TRACK_CHANGES mechanism which wasn't triggered properly
   before preUpdate was called from inside the atkUpdateHandler. [Peter]
-* Fixed using an embedded datagrid in view action [Arjen Tebbenhof, Dennis]
 * Moved a lot of atk/include/initial.inc includes to sperate files,
   introducing include/basics.inc for the basics of an ATK app. [Boy,Peter]
 * Moved session initialisation code to atksession_init function,
