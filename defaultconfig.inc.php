@@ -562,7 +562,7 @@
    *
    * @var String
    */
-  $config_defaulttheme = "default";
+  $config_defaulttheme = "stillblue";
 
   /**
    * Fullscreen mode (IE only)
