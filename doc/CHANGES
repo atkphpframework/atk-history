@@ -206,6 +206,7 @@ Changes in ATK 6.2
 + Added atkClassLoader::mountClassPath($prefix, $path) which makes it
   possible to mount paths outside the atkroot inside the class loader using
   a special prefix. [Peter]
++ Added Canadian French translation (cf.lng). [MartinR]
 * atkFrontController will now register scripts and styles in child
   controllers after the main controller [Harrie]  
 * Improved recordlist icon searching, an icon can now be prefixed with
@@ -346,7 +347,7 @@ Changes in ATK 6.2
 * Fixed support for searching number 0 in atkNumberAttribute (bug #726) [Yury]
 * Fixed display of obligatory fields in integrated form. (bug #845) [Yury]
 * Change hard coded "seq_" to atkConfig("database_sequenceprefix"). (bug #859)
-  [michele.rota] [Yury]
+  [Michele, Yury]
 * Fixed Ajax calls handling of special characters. (bug #880) [Yury]
 * Fixed SQL query error when going back from viewing role of team member.
   (bug #757) [Yury]
@@ -446,7 +447,6 @@ Changes in ATK 6.2
 * Moved buttons from confirmAction to getFormButtons function. [PeterB]
 * Improved the atkRadioAttribute so it can use the same functions like the list
   attribute to fill the items dynamicly (with the addOption function) [Sandy]
-* Added dutch, english, german and french translations. [Boy]
 * Added getDebugging method to atkOutput class. [Boy]
 * Improved WinXP theme. [Boy]
 * Added fieldprefix to atkreturnbehaviour field. [Lineke]
@@ -517,6 +517,10 @@ Changes in ATK 6.2
 * Steelblue theme no longer displays 'log out' and 'logged in as' in 
   applications without authentication. [Ivo]
 * Upgraded FCKeditor to latest version (2.6.3). [Vito]
+* Updated Brazilian Portuguese translation. [Carlisson, DanielB]
+* Updated Norwegian translation. [Olav]
+* Updated Swedish translation. [Thomas]
+* Updated Spanish translation. [Raul]
 - Removed atkMetaHandler because it wasn't very useful. [Peter]
 - Removed support for regexes in atkMetaPolicy's setIncludes/setExcludes
   because it wasn't very useful and wasn't used anyway. [Peter]
