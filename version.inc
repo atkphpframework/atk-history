@@ -20,6 +20,6 @@
   /**
    * The current atk version
    */
-  $atk_version = "6.2";
+  $atk_version = "6.2.0";
   $atk_state   = "stable";
 ?>
