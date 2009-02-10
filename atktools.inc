@@ -1950,6 +1950,38 @@
    */
   function atk_htmlentities($string, $quote_style=ENT_COMPAT, $charset=null)
   {
+    $charset = get_charset($charset);
+
+    return htmlentities($string, $quote_style, $charset);
+  }
+
+  /**
+   * ATK version of the PHP html_entity_decode function. Works just like PHP's
+   * html_entity_decode function, but falls back to the in the language file
+   * configured charset instead of PHP's default charset, if no
+   * charset is given.
+   *
+   * @param String $string    string to convert
+   * @param int $quote_style  quote style (defaults to ENT_COMPAT)
+   * @param String $charset   character set to use (default to atktext('charset', 'atk'))
+   *
+   * @return String encoded string
+   */  
+  function atk_html_entity_decode($string, $quote_style=ENT_COMPAT, $charset=null)
+  {
+    $charset = get_charset($charset);
+    
+    return html_entity_decode($string, $quote_style, $charset);
+  }
+  
+  /**
+   * Check if charset is allowed, else falls back to the in the language file
+   * configured charset. If invalid as well, fall back to 'iso-8859-1'
+   *
+   * @return string $charset allowed charset
+   */
+  function get_charset($charset=null)
+  {
     $acceptedCharsets = array('iso-8859-1', 'iso-8859-15', 'utf-8', 'cp866', 'ibm866', '866',
                               'cp1251', 'windows-1251', 'win-1251', '1251', 'cp1252', 'windows-1252', '1252',
                               'koi8-r', 'koi8-ru', 'koi8r', 'big5', '950', 'gb2312', '936', 'big5-hkscs',
@@ -1961,9 +1993,9 @@
     // check if charset is allowed, else use default charset for this function
     if(!in_array(strtolower($charset),$acceptedCharsets)) $charset = 'iso-8859-1';
 
-    return htmlentities($string, $quote_style, $charset);
+    return $charset;
   }
-
+  
   /**
    * Looks up a value using the given key in the given array and returns
    * the value if found or a default value if not found.

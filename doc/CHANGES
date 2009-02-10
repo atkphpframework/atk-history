@@ -521,6 +521,7 @@ Changes in ATK 6.2
 * Updated Norwegian translation. [Olav]
 * Updated Swedish translation. [Thomas]
 * Updated Spanish translation. [Raul]
+* Fixed displaying of special chars in atkmanytoonerelation dropdowns [Sandy,Jeroen]
 - Removed atkMetaHandler because it wasn't very useful. [Peter]
 - Removed support for regexes in atkMetaPolicy's setIncludes/setExcludes
   because it wasn't very useful and wasn't used anyway. [Peter]
