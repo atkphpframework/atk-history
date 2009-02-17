@@ -193,8 +193,8 @@
 
       return $this;
     }
-    
-    
+
+
     /**
      * Add multiple fields at once
      *
@@ -266,24 +266,8 @@
     */
     function &addJoin($table, $alias, $condition, $outer=false)
     {
-      if ($outer)
-      {
-        $jointype="LEFT JOIN ";
-        $join = " ".$jointype.$this->quoteField($table)." ".$this->quoteField($alias)." ON ".$condition." ";
-
-        if (!in_array($join, $this->m_joins)) $this->m_joins[]= $join;
-      }
-      else
-      {
-        $jointype="JOIN ";
-        $join = " ".$jointype.$this->quoteField($table)." ".$this->quoteField($alias);
-        if (!in_array($join, $this->m_joins))
-        {
-          $this->m_joins[]= $join;
-          $this->addCondition($condition);
-        }
-      }
-
+      $join = " ".($outer ? "LEFT JOIN " : "JOIN ").$this->quoteField($table)." ".$this->quoteField($alias)." ON (".$condition.") ";
+      if (!in_array($join, $this->m_joins)) $this->m_joins[] = $join;
       return $this;
     }
 
@@ -318,7 +302,7 @@
      */
     function &addCondition($condition)
     {
-      if ($condition!="") $this->m_conditions[] = $condition;
+      if ($condition!="" && !in_array($condition,$this->m_conditions)) $this->m_conditions[] = $condition;
       return $this;
     }
 
@@ -511,7 +495,7 @@
 
       if (count($this->m_conditions)>0)
       {
-        $result.= " WHERE ".implode(" AND ",$this->m_conditions);
+        $result.= " WHERE (".implode(") AND (",$this->m_conditions).")";
       }
 
       if (count($this->m_searchconditions)>0)
@@ -671,9 +655,16 @@
 
     /**
      * Generate a searchcondition that checks whether $value matches $field exactly.
+     * @param string full qualified table column
+     * @param mixed string/number/decimal expected column value
+     * @param string $dbFieldType help determine exact search method
+     * @return string piece of where clause to use in your SQL statement
      */
-    function exactCondition($field, $value)
+    function exactCondition($field, $value, $dbFieldType=null)
     {
+      if(in_array($dbFieldType,array("decimal","number")))
+        return self::exactNumberCondition($field,$value);
+
       if($value[0]=='!')
       {
         return "UPPER(".$field.")!=UPPER('".substr($value,1,strlen($value))."')";
@@ -682,6 +673,17 @@
       {
         return "UPPER(".$field.")=UPPER('".$value."')";
       }
+    }
+
+    /**
+     * Generate a searchcondition that check number/decimal literal values
+     * @param string $field full qualified table column
+     * @param mixed integer/float/double etc.
+     * @return string piece of where clause to use in your SQL statement
+     */
+    public static function exactNumberCondition($field, $value)
+    {
+      return "$field = $value";
     }
 
     /**

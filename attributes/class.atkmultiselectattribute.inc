@@ -34,18 +34,25 @@
    */
   class atkMultiSelectAttribute extends atkListAttribute
   {
-
     // number of cols
-    var $m_cols;
+    public $m_cols;
+
+    /**
+     * Default field separator
+     *
+     * @var string separator
+     */
+    protected $m_fieldSeparator = "|";
 
     /**
      * Constructor
-     * @param $name Name of the attribute
-     * @param $optionArray Array with options
-     * @param $valueArray Array with values. If you don't use this parameter,
+     * @param string $name Name of the attribute
+     * @param array $optionArray Array with options
+     * @param array $valueArray Array with values. If you don't use this parameter,
      *                    values are assumed to be the same as the options.
-     * @param $flags Flags for this attribute
-     * @param $size  Size of the attribute.
+     * @param int $cols Number of columns
+     * @param int $flags Flags for this attribute
+     * @param int $size  Size of the attribute.
      */
     function atkMultiSelectAttribute($name, $optionArray, $valueArray="", $cols="", $flags=0, $size="")
     {
@@ -63,10 +70,19 @@
         }
       }
       $this->atkListAttribute($name, $optionArray, $valueArray, $flags, $size); // base class constructor
-      $this->m_dbfieldtype = "text"; // since we store the selection labels as values separated by '|', we always store as text.
       ($cols<1)?$this->m_cols=3:$this->m_cols=$cols;
     }
 
+    /**
+     * Returns a piece of html code for hiding this attribute in an HTML form,
+     * while still posting its value. (<input type="hidden">)
+     *
+     * @param array $record The record that holds the value for this attribute
+     * @param String $fieldprefix The fieldprefix to put in front of the name
+     *                            of any html form element for this attribute.
+     * @return String A piece of htmlcode with hidden form elements that post
+     *                this attribute's value without showing it.
+     */
     function hide($record="", $fieldprefix="")
     {
       if(is_array($record[$this->fieldName()]))
@@ -82,24 +98,62 @@
       return $result;
     }
 
+    /**
+     * Converts the internal attribute value to one that is understood by the
+     * database.
+     *
+     * @param array $rec The record that holds this attribute's value.
+     * @return String The database compatible value
+     */
     function value2db($rec)
     {
       //atkdebug("multiselectattribute::value2db()");
       if(is_array($rec[$this->fieldName()]) && count($rec[$this->fieldName()]>=1))
       {
-        return $this->escapeSQL(implode("|",$rec[$this->fieldName()]));
+        return $this->escapeSQL(implode($this->m_fieldSeparator,$rec[$this->fieldName()]));
       }
       else return "";
     }
 
+    /**
+     * Converts a database value to an internal value.
+     *
+     * @param array $rec The database record that holds this attribute's value
+     * @return mixed The internal value
+     */
     function db2value($rec)
     {
       if (isset($rec[$this->fieldName()]) && $rec[$this->fieldName()]!=='')
-        return explode("|",$rec[$this->fieldName()]);
+        return explode($this->m_fieldSeparator,$rec[$this->fieldName()]);
       else return array();
     }
 
-    function display($record)
+    /**
+     * Allows you to set the field separator
+     * which is used to separate values in the
+     * database. i.e use a comma separator for
+     * mysql set datatype
+     *
+     * @param string $separator
+     * @return void
+     */
+    public function setFieldSeparator($separator)
+    {
+      $this->m_fieldSeparator = $separator;
+    }
+
+    /**
+     * Returns a displayable string for this value, to be used in HTML pages.
+     *
+     * @param array $record The record that holds the value for this attribute
+     * @param String $mode The display mode ("view" for viewpages, or "list"
+     *                     for displaying in recordlists, "edit" for
+     *                     displaying in editscreens, "add" for displaying in
+     *                     add screens. "csv" for csv files. Applications can
+     *                     use additional modes.
+     * @return String HTML String
+     */
+    function display($record, $mode="")
     {
        $values = $record[$this->fieldName()];
        $res=array();
@@ -114,9 +168,12 @@
      * Returns a piece of html code that can be used in a form to edit this
      * attribute's value.
      * @param $record Array with fields
+     * @param String $fieldprefix The fieldprefix to put in front of the name
+     *                            of any html form element for this attribute.
+     * @param String $mode The mode we're in ('add' or 'edit')
      * @return piece of html code with radioboxes
      */
-    function edit($record="", $fieldprefix="")
+    function edit($record="", $fieldprefix="", $mode="")
     {
       global $config_atkroot;
       $this->m_record = $record;
@@ -132,8 +189,6 @@
       if (!$this->hasFlag(AF_LINKS_BOTTOM)) $result.=$this->_addLinks($fieldprefix);
 
       $result .="\n<table><tr>\n";
-
-
 
       $values = $this->getValues($record);
       if(!is_array($record[$this->fieldname()]))
@@ -163,6 +218,16 @@
       return $result;
     }
 
+    /**
+     * @todo code below can't possibly work.
+     *  really needs to be fixed.
+     *
+     * @param atkquery $query
+     * @param string $table
+     * @param mixed $value
+     * @param string $searchmode
+     * @return string condition to use in a where clause
+     */
     function getSearchCondition(&$query, $table, $value, $searchmode)
     {
       // Multiselect attribute has only 1 searchmode, and that is substring.
@@ -175,15 +240,35 @@
         }
         else
         {
-          foreach($value as $str)
-          {
-            $searchcondition = $query->substringCondition($table.".".$this->fieldName(),$this->escapeSQL($str));
-          }
+        foreach($value as $str)
+        {
+          $searchcondition = $query->substringCondition($table.".".$this->fieldName(),$this->escapeSQL($str));
         }
+      }
       }
       return $searchcondition;
     }
 
+    /**
+     * Return the database field type of the attribute.
+     *
+     * @return String The 'generic' type of the database field for this
+     *                attribute.
+     */
+    function dbFieldType()
+    {
+      if (empty($this->m_dbfieldtype))
+      {
+        return 'text';
+      }
+      return $this->m_dbfieldtype;
+    }
+
+    /**
+     * Retrieve the list of searchmodes supported by the attribute.
+     *
+     * @return array List of supported searchmodes
+     */
     function getSearchModes()
     {
       // exact match and substring search should be supported by any database.
@@ -194,6 +279,12 @@
       return array("substring");
     }
 
+    /**
+     * Add the checkall, checknone and checkinvert links
+     *
+     * @param string $fieldprefix The fieldprefix
+     * @return a piece of htmlcode with the links
+     */
     function _addLinks($fieldprefix)
     {
       if (count($this->m_values)>4 && !hasFlag($this->m_flags,AF_NO_TOGGLELINKS))

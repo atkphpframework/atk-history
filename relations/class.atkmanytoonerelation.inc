@@ -18,20 +18,44 @@
    */
 
   /**
-   * flag(s) specific for atkManyToOneRelation
+   * Create edit/view links for the items in a manytoonerelation dropdown.
    */
-  define("AF_RELATION_AUTOLINK",  AF_SPECIFIC_1);     // create edit/view links for the items in a manytoonerelation dropdown.
-  define("AF_MANYTOONE_AUTOLINK", AF_RELATION_AUTOLINK);     // create edit/view links for the items in a manytoonerelation dropdown.
+  define("AF_RELATION_AUTOLINK",  AF_SPECIFIC_1);
 
-  define("AF_RELATION_NO_NULL_ITEM",  AF_SPECIFIC_2); // do not add null option ever
-  define("AF_MANYTOONE_NO_NULL_ITEM", AF_RELATION_NO_NULL_ITEM); // do not add null option ever
+  /**
+   * Create edit/view links for the items in a manytoonerelation dropdown.
+   */
+  define("AF_MANYTOONE_AUTOLINK", AF_RELATION_AUTOLINK);
 
-  define("AF_RELATION_AUTOCOMPLETE",  AF_SPECIFIC_3); // use auto-completition instead of drop-down / selection page
+  /**
+   * Do not add null option under any circumstance
+   */
+  define("AF_RELATION_NO_NULL_ITEM",  AF_SPECIFIC_2);
+
+  /**
+   * Do not add null option ever
+   */
+  define("AF_MANYTOONE_NO_NULL_ITEM", AF_RELATION_NO_NULL_ITEM);
+
+  /**
+   * Use auto-completition instead of drop-down / selection page
+   */
+  define("AF_RELATION_AUTOCOMPLETE",  AF_SPECIFIC_3);
+
+  /**
+   * Use auto-completition instead of drop-down / selection page
+   */
   define("AF_MANYTOONE_AUTOCOMPLETE", AF_RELATION_AUTOCOMPLETE);
 
-  define("AF_MANYTOONE_LAZY", AF_SPECIFIC_4);        // lazy load
+  /**
+   * Lazy load
+   */
+  define("AF_MANYTOONE_LAZY", AF_SPECIFIC_4);
 
-  define("AF_MANYTOONE_OBLIGATORY_NULL_ITEM", AF_SPECIFIC_5); // Add a default null option to obligatory relations
+  /**
+   * Add a default null option to obligatory relations
+   */
+  define("AF_MANYTOONE_OBLIGATORY_NULL_ITEM", AF_SPECIFIC_5);
 
   /**
    * @internal include base class
@@ -166,6 +190,13 @@
      */
     var $m_autocomplete_minrecords = -1;
 
+    /**
+     * Destination node for auto links (edit, new)
+     *
+     * @var string
+     */
+    protected $m_autolink_destination = "";
+
     // override onchangehandler init
     var $m_onchangehandler_init = "newvalue = el.options[el.selectedIndex].value;\n";
 
@@ -176,6 +207,14 @@
      * @var boolean
      */
     var $m_useFilterForAddLink = true;
+    
+    /**
+     * Set a function to use for determining the descriptor in the getConcatFilter function
+     *
+     * @access private
+     * @var string
+     */
+    var $m_concatDescriptorFunction = '';
 
     /**
      * Constructor.
@@ -320,6 +359,27 @@
     function setUseFilterForAddLink($useFilter)
     {
       $this->m_useFilterForAddLink = $useFilter;
+    }
+    
+    /**
+     * Set the function for determining the descriptor in the getConcatFilter function
+     * This function should be implemented in the destination node
+     *
+     * @param string $function
+     */
+    function setConcatDescriptorFunction($function)
+    {
+      $this->m_concatDescriptorFunction = $function;
+    }
+    
+    /**
+     * Return the function for determining the descriptor in the getConcatFilter function
+     *
+     * @return string
+     */
+    function getConcatDescriptorFunction()
+    {
+      return $this->m_concatDescriptorFunction;
     }
 
     /**
@@ -553,7 +613,7 @@
       else if (!$fullOrFields)
         $includes = $this->m_destInstance->descriptorFields();
 
-      $result = $this->m_destInstance->selectDb($this->m_destInstance->primaryKey($record[$this->fieldName()]), "", "", "", $includes);
+      $result = $this->m_destInstance->selectDb($this->m_destInstance->primaryKey($record[$this->fieldName()]), $this->m_destInstance->getColumnConfig()->getOrderByStatement(), "", "", $includes);
       if (count($result))
       {
         list($record[$this->fieldName()]) = $result;
@@ -574,12 +634,11 @@
       $newsel = $id;
       $filter = $this->parseFilter($this->m_destinationFilter, $record);
       $links[] = $this->_getSelectLink($newsel, $filter);
-
       if ($this->hasFlag(AF_RELATION_AUTOLINK)) // auto edit/view link
       {
         if ($this->m_destInstance->allowed("add"))
         {
-          $links[] = href(dispatch_url($this->m_destination,"add",array("atkpkret"=>$id."_newsel","atkfilter"=>($filter!=""?$filter:""))),
+          $links[] = href(dispatch_url($this->getAutoLinkDestination(),"add",array("atkpkret"=>$id."_newsel","atkfilter"=>($filter!=""?$filter:""))),
                           atktext("new"),SESSION_NESTED,true);
         }
 
@@ -587,12 +646,37 @@
         {
           //we laten nu altijd de edit link zien, maar eigenlijk mag dat niet, want
           //de app crasht als er geen waarde is ingevuld.
-          $editUrl = session_url(dispatch_url($this->m_destination,"edit",array("atkselector"=>"REPLACEME")),SESSION_NESTED);
+          $editUrl = session_url(dispatch_url($this->getAutoLinkDestination(),"edit",array("atkselector"=>"REPLACEME")),SESSION_NESTED);
           $links[] = "<span id=\"".$id."_edit\" style=\"\"><a href='javascript:atkSubmit(mto_parse(\"".atkurlencode($editUrl)."\", document.entryform.".$id.".value))'>".atktext('edit')."</a></span>";
         }
       }
 
       return implode("&nbsp;", $links);
+    }
+
+
+    /**
+     * Set destination node for the Autolink links (new/edit)
+     *
+     * @param string $node
+     */
+    function setAutoLinkDestination($node)
+    {
+      $this->m_autolink_destination = $node;
+    }
+
+    /**
+     * Get destination node for the Autolink links (new/edit)
+     *
+     * @return string
+     */
+    function getAutoLinkDestination()
+    {
+      if(!empty($this->m_autolink_destination))
+      {
+        return $this->m_autolink_destination;
+      }
+      return $this->m_destination;
     }
 
     /**
@@ -677,7 +761,7 @@
             {
               $pk = $this->m_destInstance->primaryKey($recordset[$i]);
               if (($newlyadded!="" && $newlyadded==$pk) || ($newlyadded=="" && $pk==$currentPk)) $sel = "selected"; else $sel = "";
-              $result.= '<option value="'.$pk.'" '.$sel.'>'.htmlspecialchars($this->m_destInstance->descriptor($recordset[$i]));
+              $result.= '<option value="'.$pk.'" '.$sel.'>'.str_replace(' ', '&nbsp;', atk_htmlentities($this->m_destInstance->descriptor($recordset[$i])));
             }
             $result.='</select>';
           }
@@ -721,8 +805,9 @@
       $result = "";
       // we use the current level to automatically return to this page
       // when we come from the select..
-      $atktarget = getDispatchFile()."?atklevel=".atkLevel()."&".$selname."=[atkprimkey]";
-      $linkname = atktext("link_select_".getNodeType($this->m_destination), getNodeModule($this->m_destination),getNodeType($this->m_destination),'','',true);
+      $atktarget = atkurlencode(getDispatchFile()."?atklevel=".atkLevel()."&".$selname."=[atkprimkey]");
+      $linkname = atktext("link_select_".getNodeType($this->m_destination), $this->getOwnerInstance()->getModule(), $this->getOwnerInstance()->getType(),'','',true);
+      if (!$linkname) $linkname = atktext("link_select_".getNodeType($this->m_destination), getNodeModule($this->m_destination),getNodeType($this->m_destination),'','',true);
       if (!$linkname) $linkname = atktext("select_a").' '.strtolower(atktext(getNodeType($this->m_destination), getNodeModule($this->m_destination),getNodeType($this->m_destination)));
       if ($this->m_destinationFilter!="")
       {
@@ -799,12 +884,12 @@
 
         if ($this->m_destInstance->allowed("edit"))
         {
-          $editlink = session_url(dispatch_url($this->m_destination,"edit",array("atkselector"=>"REPLACEME")),SESSION_NESTED);
+          $editlink = session_url(dispatch_url($this->getAutoLinkDestination(),"edit",array("atkselector"=>"REPLACEME")),SESSION_NESTED);
           $autolink['edit'] = "&nbsp;<a href='javascript:atkSubmit(mto_parse(\"".atkurlencode($editlink)."\", document.entryform.".$id.".value))'>".atktext('edit')."</a>";
         }
         if ($this->m_destInstance->allowed("add"))
         {
-          $autolink['add'] = "&nbsp;".href(dispatch_url($this->m_destination,"add",array("atkpkret"=>$id."_ret","atkfilter"=>($this->m_useFilterForAddLink && $filter != "" ? $filter : ""))),
+          $autolink['add'] = "&nbsp;".href(dispatch_url($this->getAutoLinkDestination(),"add",array("atkpkret"=>$id."_ret","atkfilter"=>($this->m_useFilterForAddLink && $filter != "" ? $filter : ""))),
                                                         atktext("new"),SESSION_NESTED,true);
         }
       }
@@ -950,6 +1035,10 @@
           if ($extended)
           {
             $result.='multiple size="'.min(5,count($recordset)+1).'"';
+
+            if(isset($record[$this->fieldName()][$this->fieldName()]))
+              $record[$this->fieldName()] = $record[$this->fieldName()][$this->fieldName()];
+
           }
 
           $result.='name="'.$this->getSearchFieldName($fieldprefix).'[]">';
@@ -966,7 +1055,7 @@
 
             if (is_array($record)&&isset($record[$this->fieldName()])&&
                        atk_in_array($pk, $record[$this->fieldName()])) $sel = "selected"; else $sel = "";
-            $result.= '<option value="'.$pk.'" '.$sel.'>'.$this->m_destInstance->descriptor($recordset[$i]).'</option>';
+            $result.= '<option value="'.$pk.'" '.$sel.'>'.str_replace(' ', '&nbsp;', atk_htmlentities($this->m_destInstance->descriptor($recordset[$i]))).'</option>';
           }
           $result.='</select>';
           return $result;
@@ -1074,49 +1163,58 @@
             }
           }
         }
+        
+        if (isset($value[$this->fieldName()]))
+        {
+          $value = $value[$this->fieldName()];
+        }
       }
 
-      if (!$this->hasFlag(AF_LARGE) && !$this->hasFlag(AF_RELATION_AUTOCOMPLETE))
+      if (empty($value))
+      {
+        return '';
+      }
+      else if (!$this->hasFlag(AF_LARGE) && !$this->hasFlag(AF_RELATION_AUTOCOMPLETE))
       {
         // We only support 'exact' matches.
         // But you can select more than one value, which we search using the IN() statement,
         // which should work in any ansi compatible database.
-        if (is_array($value)) // This last condition is for when the user selected the 'search all' option, in which case, we don't add conditions at all.
+        if (!is_array($value)) // This last condition is for when the user selected the 'search all' option, in which case, we don't add conditions at all.
         {
-          $value = isset($value[0]) ? $value : $value[$this->fieldName()];
-
-          if (!is_array($value)) return '';
-
-          if (count($value)==1) // exactly one value
+          $value = array($value);
+        }
+        
+        if (count($value)==1) // exactly one value
+        {
+          if ($value[0] == "__NONE__")
           {
-            if ($value[0] == "__NONE__")
-            {
-              return $query->nullCondition($table.".".$this->fieldName(), true);
-            }
-            elseif ($value[0] != "")
-            {
-              return $query->exactCondition($table.".".$this->fieldName(),$this->escapeSQL($value[0]));
-            }
+            return $query->nullCondition($table.".".$this->fieldName(), true);
           }
-          else // search for more values using IN()
+          elseif ($value[0] != "")
           {
-            return $table.".".$this->fieldName()." IN ('".implode("','",$value)."')";
+            return $query->exactCondition($table.".".$this->fieldName(),$this->escapeSQL($value[0]));
           }
         }
-        else
+        else // search for more values using IN()
         {
-          return $query->exactCondition($table.".".$this->fieldName(),$this->escapeSQL($value));
+          return $table.".".$this->fieldName()." IN ('".implode("','",$value)."')";
         }
-      }
-      else if (empty($value)) // nothing to search for
-      {
-        return '';
       }
       else // AF_LARGE || AF_RELATION_AUTOCOMPLETE
       {
-        // ask the destination node for it's search condition
+        // If we have a descriptor with multiple fields, use CONCAT
+        $attribs = $this->m_destInstance->descriptorFields();
         $alias = $fieldaliasprefix . $this->fieldName();
-        return $this->m_destInstance->getSearchCondition($query, $alias, $fieldaliasprefix, $value, $this->getChildSearchMode($searchmode, $this->formName()));
+        if(count($attribs)>1)
+        {
+          $searchcondition = $this->getConcatFilter($value,$alias);
+        }
+        else
+        {
+          // ask the destination node for it's search condition
+          $searchcondition = $this->m_destInstance->getSearchCondition($query, $alias, $fieldaliasprefix, $value, $this->getChildSearchMode($searchmode, $this->formName()));
+        }
+        return $searchcondition;
       }
     }
 
@@ -1150,7 +1248,7 @@
         {
           for ($i=0, $_i=count($this->m_refKey); $i<$_i; $i++)
           {
-            if ($rec[$this->fieldName()]==NULL)
+            if ($rec[$this->fieldName()]===NULL)
             {
               $query->addField($this->m_refKey[$i],"NULL","","",false);
             }
@@ -1428,7 +1526,7 @@
       $this->createDestination();
 
       $selector = $this->createFilter($record);
-      $result = $this->m_destInstance->selectDb($selector,"","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey),$mode);
+      $result = $this->m_destInstance->selectDb($selector,$this->m_destInstance->getColumnConfig()->getOrderByStatement(),"","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey),$mode);
 
       return $result;
     }
@@ -1490,35 +1588,73 @@
       return parent::addToEditArray($mode, $arr, $defaults, $error, $fieldprefix);
     }
 
-    function getOrderByStatement($extra='')
+    /**
+     * Retrieves the ORDER BY statement for the relation.   
+     *
+     * @param Array $extra A list of attribute names to add to the order by
+     *                     statement
+     * @param String $table The table name (if not given uses the owner node's table name)
+     * @param String $direction Sorting direction (ASC or DESC)
+     * @return String The ORDER BY statement for this attribute
+     */
+    function getOrderByStatement($extra='', $table='', $direction='ASC')
     {
       if (!$this->createDestination())
         return parent::getOrderByStatement();
 
+      if (!empty($table))
+      {
+        $table = $table.'_AE_'.$this->fieldName();  
+      }
+      else 
+      {
+        $table = $this->fieldName();
+      }       
+        
       if (!empty($extra) && in_array($extra, $this->m_listColumns))
       {
-        return $this->fieldName().".".$extra;
+        return $this->getDestination()->getAttribute($extra)->getOrderByStatement('', $table, $direction);
       }
 
       $order = $this->m_destInstance->getOrder();
       if (!empty($order))
       {
-        // check for multiple order fields
-        $orderfields = explode(",",$order);
-        $neworderfields = array();
-
-        foreach ($orderfields as $field)
+        $newParts = array();
+        $parts = explode(',', $order);
+        
+        foreach ($parts as $part)
         {
-          // realias if destination order contains a tablename.
-          if (strpos($field, $this->m_destInstance->m_table.'.') !== false)
-            $neworderfields[] = str_replace($this->m_destInstance->m_table.'.', $this->fieldName().'.', $field);
-          else if (strpos($field, '.') === false)
-            $neworderfields[] = str_replace(trim($field), $this->fieldName().".".trim($field), $field);
-          else
-            $neworderfields[] = $field;
-        }
+          $part = trim($part);
+          list($field, $fieldDirection) = preg_split('/\s+/', $part);
+          
+          $fieldDirection = strtoupper($fieldDirection);
+          $fieldDirection = empty($fieldDirection) ? 'ASC' : $fieldDirection;
 
-        return implode(",",$neworderfields);
+          // if our default direction is DESC (the opposite of the default ASC)
+          // we always have to switch the given direction to be the opposite, e.g.
+          // DESC => ASC and ASC => DESC, this way we respect the default ordering
+          // in the destination node even if the default is descending
+          if ($fieldDirection == 'DESC')
+          {
+            $fieldDirection = $direction == 'DESC' ? 'ASC' : 'DESC';
+          }
+          
+          if (strpos($field, '.') !== false)
+          {
+            list(,$field) = explode('.', $field);
+          }
+          
+          $newPart = $this->getDestination()->getAttribute($field)->getOrderByStatement('', $table, $fieldDirection);
+          
+          // realias if destination order contains the wrong tablename.
+          if (strpos($newPart, $this->m_destInstance->m_table.'.') !== false)
+          {
+            $newPart= str_replace($this->m_destInstance->m_table.'.', $table.'.', $newPart);
+          }
+          $newParts[] = $newPart;
+        }
+        
+        return implode(', ', $newParts);
       }
       else
       {
@@ -1528,7 +1664,7 @@
 
         $order = "";
         foreach ($fields as $field)
-          $order .= (empty($order) ? '' : ', ').$this->fieldName().".".$field;
+          $order .= (empty($order) ? '' : ', ').$table.".".$field;
 
         return $order;
       }
@@ -1742,7 +1878,7 @@
       $result =
         '<input type="hidden" id="'.$id.'" name="'.$id.'" value="'.$value.'" />
          <input type="text" id="'.$id.'_search" value="'.atk_htmlentities($label).'" class="atkmanytoonerelation_search" size="30" onfocus="this.select()" />
-         <img id="'.$id.'_spinner" src="atk/images/spinner.gif" style="vertical-align: middle; display: none"> '.$links.'<br />
+         <img id="'.$id.'_spinner" src="atk/images/spinner.gif" style="vertical-align: middle; display: none"> '.$links.'
          <div id="'.$id.'_result" style="display: none" class="atkmanytoonerelation_result"></div>';
 
       // register JavaScript code that attaches the auto-complete behaviour to the search box
@@ -1894,8 +2030,90 @@
       }
 
       if (count($mainFilter) > 0)
-        return "(".implode(") AND (", $mainFilter).")";
-      else return "";
+        $searchFilter =  "(".implode(") AND (", $mainFilter).")";
+      else $searchFilter = "";
+
+      // When no searchfields are specified and we use the CONTAINS mode
+      // add a concat filter
+      if($this->m_autocomplete_searchmode == self::SEARCH_MODE_CONTAINS && $this->m_autocomplete_searchfields=="")
+      {
+         $filter = $this->getConcatFilter($searchvalue);
+         if($filter)
+         {
+           if($searchFilter!='') $searchFilter.= " OR ";
+           $searchFilter.= $filter;
+         }
+      }
+      return $searchFilter;
+   }
+
+
+   /**
+    * Get Concat filter
+    *
+    * @param string $searchValue Search value
+    * @param string $fieldaliasprefix Field alias prefix
+    * @return string|boolean
+    */
+    function getConcatFilter($searchValue,$fieldaliasprefix="")
+    {
+      // If we have a descriptor with multiple fields, use CONCAT
+      $attribs = $this->m_destInstance->descriptorFields();
+      if(count($attribs)>1)
+      {
+        $fields = array();
+        foreach($attribs as $attribname)
+        {
+          $post = '';
+          if (strstr($attribname, '.'))
+          {
+            if ($fieldaliasprefix != '') $table = $fieldaliasprefix.'_AE_';
+            else $table = '';
+            $post = substr($attribname,strpos($attribname,'.'));
+            $attribname = substr($attribname,0,strpos($attribname,'.'));
+          }
+          elseif($fieldaliasprefix!='') $table = $fieldaliasprefix.".";
+          else $table = $this->m_destInstance->m_table.".";
+
+          $p_attrib = $this->m_destInstance->m_attribList[$attribname];
+          $fields[$p_attrib->fieldName()] = $table.$p_attrib->fieldName().$post;
+        }
+        $value = $this->escapeSQL(trim($searchValue));
+        $value = str_replace("  " , " ", $value);
+        if(!$value)
+        {
+          return false;
+        }
+        else
+        {
+          $function = $this->getConcatDescriptorFunction();
+          if ($function != '' && method_exists($this->m_destInstance, $function))
+          {
+            $descriptordef = $this->m_destInstance->$function();
+          }
+          elseif ($this->m_destInstance->m_descTemplate != NULL)
+          {
+            $descriptordef = $this->m_destInstance->m_descTemplate;
+          }
+          elseif(method_exists($this->m_destInstance,"descriptor_def"))
+          {
+            $descriptordef = $this->m_destInstance->descriptor_def();
+          }
+          else
+          {
+            $descriptordef = $this->m_destInstance->descriptor();
+          }
+
+          atkimport("atk.utils.atkstringparser");
+          $parser = new atkStringParser($descriptordef);
+          $concatFields = $parser->getAllParsedFieldsAsArray($fields);
+
+          $db = $this->m_destInstance->getDb();
+          $searchcondition = "(UPPER(".$db->func_concat($concatFields).") LIKE UPPER('%".$value."%'))";
+        }
+        return $searchcondition;
+      }
+      return false;
     }
 
   }

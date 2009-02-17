@@ -25,15 +25,15 @@
 
   /**
    * The application root, used to set the cookiepath when using PHP sessions.
-   * 
+   *
    * If you're using urlrewrites within your httpd or htaccess configuration this should be '/'
    * be careful with this setting because it could create a security vulnerability.
-   * 
+   *
    * @var String The application root
    */
   $config_application_root = "/";
 
-  if ($config_atkroot == "" || (ini_get('register_globals') && isset($_REQUEST['config_atkroot']))) // may not be passed in request (register_globals danger) 
+  if ($config_atkroot == "" || (ini_get('register_globals') && isset($_REQUEST['config_atkroot']))) // may not be passed in request (register_globals danger)
   {
     /**
      * The root of the ATK application, where the atk/ directory resides
@@ -41,14 +41,14 @@
      */
      $config_atkroot = "./";
   }
-  
-  if (!$config_application_dir || (ini_get('register_globals') && isset($_REQUEST['config_application_dir'])))
+
+  if (!isset($config_application_dir) || empty($config_application_dir) || (ini_get('register_globals') && isset($_REQUEST['config_application_dir'])))
   {
     /**
      * Root directory of your application code (modules/themes/configuration files/etc)
      * relative to the script calling ATK.
      * Defaults to the atkroot.
-     * 
+     *
      * @var String Directory where the application code can be found
      */
     $config_application_dir = $config_atkroot;
@@ -95,13 +95,13 @@
    * @var String
    */
   $config_meta_compiler = "atk.meta.compiler.atkmetacompiler";
-  
+
   /**
    * Cache compiled meta node code?
    * @var bool
    */
   $config_meta_caching = true;
-  
+
   /**
    * Use the given class for creating datagrids.
    */
@@ -206,19 +206,29 @@
   $config_guestpassword = "";
 
   /**
+   * The method to use for user/password validation.
+   *
+   * Currently supported are:
+   * - "none": No authentication
+   * - "db"  : the credentials are stored in the database.
+   * - "pop3": the passwords are validated against a pop3 server.
+   * - "config": the credentials are stored in the configurationfile.
+   * - "imap": the passwords are validated against an IMAP server.
+   * - "ldap": the passwords are validated against an LDAP server.
+   * - "server": Authentication is done through the webserver.
    *
    * @var String
    */
   $config_authentication = "none";
 
   /**
-   *
+   * Wether your authentication method supports MD5 passwords
    * @var boolean
    */
   $config_authentication_md5 = true;
 
   /**
-   *
+   * Use a cookie to store authentication information.
    * @var boolean
    */
   $config_authentication_cookie = false;
@@ -236,12 +246,18 @@
   $config_state_cookie_expire = 10080;
 
   /**
-   *
+   * Use the session to store authentication information.
    * @var boolean
    */
   $config_authentication_session = true;
 
   /**
+   * The scheme to use for security.
+   *
+   * Currently supported are:
+   * - "none": No security scheme is used.
+   * - "group": Use group-based security.
+   * - "level": Use level-based security.
    *
    * @var String
    */
@@ -305,11 +321,11 @@
 
   /**
    * If left empty auth_levelfield is used.
-   * 
+   *
    * @var String
    */
   $config_auth_accessfield = "";
-  
+
   /**
    *
    * @var String
@@ -530,11 +546,12 @@
   $config_menu_align = "center";
 
   /**
-   * Auto-include logout link in menu?
+   * Auto-include logout link in menu? (only supported for atkDropDownMenu
+   * at the moment).
    *
    * @var Boolean
    */
-  $config_menu_logout_link = true;
+  $config_menu_logout_link = false;
 
   /**
    * 0 = no   - 1 = yes
@@ -546,7 +563,7 @@
    *
    * @var String
    */
-  $config_defaulttheme = "default";
+  $config_defaulttheme = "stillblue";
 
   /**
    * Fullscreen mode (IE only)
@@ -703,16 +720,16 @@
   /****************** MISCELLANEOUS CONFIGURATION OPTIONS ********************/
 
   /**
-   * The session name. If this configuration option is not set the 
+   * The session name. If this configuration option is not set the
    * $config_identifier option is used instead.
-   * 
+   *
    * @var string
    */
   $config_session_name = "";
-  
+
   /**
-   * The application identifier. 
-   *  
+   * The application identifier.
+   *
    * @var String
    * @todo update this bit of documentation as it doesn't really say much
    */
@@ -753,7 +770,7 @@
    * @var Array
    */
   $config_allowed_includes = array("atk/lock/lock.php", "atk/lock/lock.js.php",
-                                   "atk/popups/help.inc", "atk/popups/colorpicker.inc", 
+                                   "atk/popups/help.inc", "atk/popups/colorpicker.inc",
                                    "atk/ext/captcha/img/captcha.jpg.php");
 
   /**
@@ -793,6 +810,20 @@
   $config_session_cache_limiter = "nocache";
 
   /**
+   * Initialize sessions by default.
+   *
+   * When atksessionmanager is included, if this configuration value is true (by default),
+   * ATK will configure and start a PHP session for you.
+   * When you do not want this (in CLI environnements?) you can disable this in your script.
+   *
+   * DO NOT ENABLE IN THIS CONFIG or you won't be able to set it in your script.
+   * Appears here for documentation purposes only.
+   *
+   * @var bool
+   */
+  //$config_session_init = true;
+
+  /**
    * Default sequence prefix.
    * @var String
    */
@@ -815,11 +846,19 @@
   $config_enable_ssl_encryption = false;
 
   /**
-   * Enable / disable sending of e-mails (works only if the atk.utils.atkMail::mail
+   * Enable / disable sending of e-mails (works only if the atk.utils.atkMailer::Send
    * function has been used for sending e-mails).
+   * Note: atk.utils.atkMail::mail is deprecated but is still enabled/disabled by this setting.
    * @var boolean
    */
   $config_mail_enabled = true;
+
+  /**
+   * Redirect e-mails to a specified address (works only if the atk.utils.atkMailer::Send
+   * function has been used for sending e-mails).
+   * @var string
+   */
+  $config_mail_redirect = "";
 
   /**
    * Default extended search action. This action can always be overriden
@@ -889,4 +928,10 @@
  */
 
 //  $config_module_dirs = array("/modules");
+
+// --------- FCK Image Upload Option ---------
+
+$config_fck_filemanager_enabled = false;
+$config_fck_upload_path = '../atktmp/';
+
 ?>

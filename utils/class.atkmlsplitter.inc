@@ -137,9 +137,13 @@
         }
         $record["atkprimkey"] = $node->primaryKey($record)." AND ".$node->m_table.".".$node->m_lngfield."='$language' ";
 
-        if($atklngrecordmodes[$language]["mode"]=="add") $mode="add"; // override the mode in case of missing lngrecords
+        $editMode = $mode;
+        if($atklngrecordmodes[$language]["mode"]=="add") 
+        {
+          $editMode="add"; // override the mode in case of missing lngrecords
+        }
 
-        switch($mode)
+        switch($editMode)
         {
           case "update":
             $node->updateDb($record);
@@ -187,7 +191,7 @@
       if($node->hasFlag(NF_ML) && $mode!="edit" && $mode!="copy")
       {
         $fieldname = $joinalias.".".$node->m_lngfield;
-        $query->addCondition("({$fieldname} IS NULL OR UPPER({$fieldname})='".strtoupper($lng)."')");
+        $query->addCondition("({$fieldname} = '' OR {$fieldname} IS NULL OR UPPER({$fieldname})='".strtoupper($lng)."')");
       }
     }
 
@@ -283,7 +287,7 @@
           $ml_record[0]["atklngrecordmodes"] = array_merge($ml_record[0]["atklngrecordmodes"],$recordset[$i]["atklngrecordmodes"]);
         foreach($lngattribs as $lngattribname=>$lngattrib)
         {
-          $lngattribvalues[$lngattribname][$recordset[$i][$node->m_lngfield]]=$recordset[$i][$lngattribname];
+          $lngattribvalues[$lngattribname][strtoupper($recordset[$i][$node->m_lngfield])]=$recordset[$i][$lngattribname];
         }
       }
       foreach($lngattribvalues as $lngattribname=>$value)

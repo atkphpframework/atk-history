@@ -173,8 +173,7 @@
           return $this->fixture($method, isset($args[0]) ? $args[0] : NULL, isset($args[1]) ? $args[1] : NULL);
       }
 
-      atkerror("Invalid method name $method for ".get_class($this)." (fixture not loaded?)!");
-      return NULL;
+      throw new Exception("Invalid method name $method for ".get_class($this)." (fixture not loaded?)!");
     }
 
     /**
@@ -286,7 +285,7 @@
     function _getPath()
     {
       static $s_path = array();
-      $class = get_class($this);
+      $class = strtolower(get_class($this));
 
       if (!isset($s_path[$class]))
       {

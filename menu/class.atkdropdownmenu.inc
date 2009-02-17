@@ -35,6 +35,7 @@
       return $page->render("Menu", true);
     }
 
+    function getMenu() { return $this->load(); }
     function load()
     {
       global $ATK_VARS,$g_menu;
@@ -79,7 +80,7 @@
       $enable = $this->isEnabled($menuitem);
       if ($enable)
       {
-        if (!$menuitem['url'] && $g_menu[$menuitem['name']])
+        if ($g_menu[$menuitem['name']])
         {
           $submenu=$indentation."<ul>\n";
           foreach ($g_menu[$menuitem['name']] as $submenuitem)
@@ -102,7 +103,7 @@
       $delimiter = atkconfig("menu_delimiter");
 
       $name = $this->getMenuTranslation($menuitem['name'],$menuitem['module']);
-      if ($menuitem['name']=='-') return "<li><a href=\"#\">-</a></li>\n";
+      if ($menuitem['name']=='-') return "<li class=\"separator\"><div></div></li>\n";
       if ($menuitem['url']) $href = href($menuitem['url'],$this->getMenuTranslation($menuitem['name'],$menuitem['module']), SESSION_NEW);
       else $href = '<a href="#">'.$name.'</a>';
 

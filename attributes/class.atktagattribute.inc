@@ -48,9 +48,6 @@
 
     function atkTagAttribute($name, $destination, $destinationfield ,$link, $mode=TA_ADD, $flags=0, $size=0)
     {
-      $page = &atkinstance('atk.ui.atkpage');
-      $page->register_script(atkconfig("atkroot")."atk/javascript/class.atktagattribute.js");
-
       if ($size==0)
       {
         $size = $this->maxInputSize();
@@ -66,6 +63,19 @@
       /** @todo: add translations */
       /** @todo: add validation if flag OBLIGATORY is set. */
       /** @todo: add setDestinationFilter */
+    }
+    
+    /**
+     * Fetch value.
+     * 
+     * @param array $vars post vars
+     * 
+     * @return string fetched value
+     */
+    public function fetchValue($vars)
+    {
+      $value = parent::fetchValue($vars);
+      return trim($value, ' ,');
     }
 
     /**
@@ -149,6 +159,9 @@
     function edit($rec="", $prefix="", $mode="")
     {
       atkdebug("edit of attribute '$this->fieldName()'");
+      
+      $page = &atkinstance('atk.ui.atkpage');
+      $page->register_script(atkconfig("atkroot")."atk/javascript/class.atktagattribute.js");
 
       if ($this->createDestinationInstance())
       {

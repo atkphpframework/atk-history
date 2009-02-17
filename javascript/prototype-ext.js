@@ -8,93 +8,57 @@
 // to add functions etc. in the document's context.
 String.prototype.evalScripts = function() {
   return this.extractScripts().map(function(script) { 
-    if (window.execScript) {
-      return window.execScript(script);
-    } else if (navigator.userAgent.indexOf('Safari') != -1) {
-      window.setTimeout(script, 0);
-    } else {
-      return window.eval(script);
-    }      
+    atkEval(script);
   });
 };
 
-// Changed:
-// for (var name in headers)
-//   this.transport.setRequestHeader(name, headers[name]);
-//
-// To:
-// for (var name in headers)
-//   if (typeof headers[name] != 'function')
-//     this.transport.setRequestHeader(name, headers[name]);
-//
-// Because it was causing problems with rico.js! 
-// For more information, visit: http://forum.openrico.org/topic/2228
-Ajax.Request.prototype.setRequestHeaders = function() {
-  var headers = {
-    'X-Requested-With': 'XMLHttpRequest',
-    'X-Prototype-Version': Prototype.Version,
-    'Accept': 'text/javascript, text/html, application/xml, text/xml, */*'
-  };
-
-  if (this.method == 'post') {
-    headers['Content-type'] = this.options.contentType +
-      (this.options.encoding ? '; charset=' + this.options.encoding : '');
-
-    /* Force "Connection: close" for older Mozilla browsers to work
-     * around a bug where XMLHttpRequest sends an incorrect
-     * Content-length header. See Mozilla Bugzilla #246651.
-     */
-    if (this.transport.overrideMimeType &&
-        (navigator.userAgent.match(/Gecko\/(\d{4})/) || [0,2005])[1] < 2005)
-          headers['Connection'] = 'close';
-  }
-
-  // user-defined headers
-  if (typeof this.options.requestHeaders == 'object') {
-    var extras = this.options.requestHeaders;
-
-    if (typeof extras.push == 'function')
-      for (var i = 0, length = extras.length; i < length; i += 2)
-        headers[extras[i]] = extras[i+1];
-    else
-      $H(extras).each(function(pair) { headers[pair.key] = pair.value });
-  }
-
-  for (var name in headers)
-    if (typeof headers[name] != 'function')
-      this.transport.setRequestHeader(name, headers[name]);
+function atkEval(script) {
+	if (window.execScript) {
+	  return window.execScript(script);
+	} else if (navigator.userAgent.indexOf('Safari') != -1) {
+	  window.setTimeout(script, 0);
+	} else {
+	  return window.eval(script);
+	}      
 };
 
-// Updater extends Request, also update the setRequestHeaders method.
-Ajax.Updater.prototype.setRequestHeaders = Ajax.Request.prototype.setRequestHeaders;
-
-
-// Fix for toQueryString which encodes a value twice instead of once
-// if you are using the same key more then once.
-Object.extend(Hash, {
-  toQueryString: function(obj) {
-    var parts = [];
-
-	  this.prototype._each.call(obj, function(pair) {
-      if (!pair.key) return;
-
-      if (pair.value && pair.value.constructor == Array) {
-        var values = pair.value.compact();
-        if (values.length < 2) pair.value = values.reduce();
-        else {
-        	key = encodeURIComponent(pair.key);
-          values.each(function(value) {            
-            value = value != undefined ? encodeURIComponent(value) : '';
-            //parts.push(key + '=' + encodeURIComponent(value)); // <-- OLD VERSION
-            parts.push(key + '=' + value); // <-- NEW VERSION
-          });
-          return;
-        }
+if (Prototype.Browser.IE) {
+  $w('positionedOffset viewportOffset').each(function(method) {
+    Element.Methods[method] = Element.Methods[method].wrap(
+      function(proceed, element) {
+        element = $(element);
+        var position = element.getStyle('position');
+        if (position !== 'static') return proceed(element);
+        // Trigger hasLayout on the offset parent so that IE6 reports
+        // accurate offsetTop and offsetLeft values for position: fixed.
+        var offsetParent = element.getOffsetParent();
+        if (offsetParent && offsetParent.getStyle && offsetParent.getStyle('position') === 'fixed')
+          offsetParent.setStyle({ zoom: 1 });
+        element.setStyle({ position: 'relative' });
+        var value = proceed(element);
+        element.setStyle({ position: position });
+        return value;
       }
-      if (pair.value == undefined) pair[1] = '';
-      parts.push(pair.map(encodeURIComponent).join('='));
-	  });
+    );
+  });
 
-    return parts.join('&');
-  }
-});
+  Element.Methods.getStyle = function(element, style) {
+    element = $(element);
+    style = (style == 'float' || style == 'cssFloat') ? 'styleFloat' : style.camelize();
+    var value = ( element.style ? element.style[style] : '');
+    if (!value && element.currentStyle) value = element.currentStyle[style];
+
+    if (style == 'opacity') {
+      if (value = (element.getStyle('filter') || '').match(/alpha\(opacity=(.*)\)/))
+        if (value[1]) return parseFloat(value[1]) / 100;
+      return 1.0;
+    }
+
+    if (value == 'auto') {
+      if ((style == 'width' || style == 'height') && (element.getStyle('display') != 'none'))
+        return element['offset' + style.capitalize()] + 'px';
+      return null;
+    }
+    return value;
+  };
+}

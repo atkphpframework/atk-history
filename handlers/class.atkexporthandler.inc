@@ -70,17 +70,18 @@
     function _getInitHtml()
     {
       $action = dispatch_url($this->m_node->m_module.'.'.$this->m_node->m_type, "export");
-      $content = atktext("export_config_explanation", "atk", $this->m_node->m_type);
-      $content.= '<br><br><form name="entryform" enctype="multipart/form-data" action="'.$action.'" method="post">';
-      $content.= session_form();
-      $content.= '<input type="hidden" name="phase" value="process">';
-      $content.= $this->_getOptions();
 
-      $content.= '<br><br><input type="submit" value="'.atktext("export","atk").'"> ';
-      $content.= atkButton(atktext("back","atk"), "", SESSION_BACK, true);
+      $params = array();
+      $params["formstart"] = '<form name="entryform" enctype="multipart/form-data" action="'.$action.'" method="post">';
+      $params["formstart"] .= session_form();
+      $params["formstart"] .= '<input type="hidden" name="phase" value="process"/>';
+      $params["buttons"][] = '<input class="btn" type="submit" value="'.atkText("export", "atk").'"/>';
+      $params["buttons"][] = atkButton(atktext("back", "atk"), "", SESSION_BACK, true);
+      $params["content"] = atkText("export_config_explanation", "atk", $this->m_node->m_type).'<br/><br/>';
+      $params["content"] .= $this->_getOptions();
+      $params["formend"] = '</form>';
 
-      $content.= '</form><br><br>';
-      return $content;
+      return atkInstance("atk.ui.atkui")->renderAction("export", $params, $this->m_node->m_module);
     }
 
     /**
@@ -218,9 +219,9 @@
       foreach($atts as $name => $object)
       {
         $att = &$node_bk->getAttribute($name);
-        if(in_array($name, $list_includes))
+        if(in_array($name, $list_includes) && $att->hasFlag(AF_HIDE_LIST))
           $att->removeFlag(AF_HIDE_LIST);
-        else
+        elseif (!in_array($name, $list_includes))
           $att->addFlag(AF_HIDE_LIST);
       }
 
@@ -231,7 +232,8 @@
       $rl = &atknew("atk.recordlist.atkcustomrecordlist");
       $flags = ($node_bk->hasFlag(NF_MRA) ? RL_MRA : 0) | ($node_bk->hasFlag(NF_MRPA) ? RL_MRPA : 0) | ($node_bk->hasFlag(NF_LOCK) ? RL_LOCK : 0);
       $node_bk->m_postvars = $session_back;
-      $recordset = $node_bk->selectDb($session_back['atkselector'], $atkorderby, "", "", $list_includes, "export");
+      $atkfilter = atkArrayNvl($source, 'atkfilter', "");
+      $recordset = $node_bk->selectDb($session_back['atkselector'].($session_back['atkselector'] != '' && $atkfilter != '' ? ' AND ' : '').$atkfilter, $atkorderby, "", "", $list_includes, "export");
       if (method_exists($this->m_node, "assignExportData")) $this->m_node->assignExportData($list_includes, $recordset);
       $recordset_new = array();
 

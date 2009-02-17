@@ -80,12 +80,12 @@
      * 
      * @return array
      */
-    function _getSelectableRecords($record=array(), $mode="")
+    function _getSelectableRecords($record=array(), $mode="", $force=false)
     {
       $method = $this->fieldName()."_selection";
       if (method_exists($this->m_ownerInstance, $method))
         return $this->m_ownerInstance->$method($record, $mode);
-      else return $this->getSelectableRecords($record, $mode);
+      else return $this->getSelectableRecords($record, $mode, $force);
     }
     
     /**
@@ -157,9 +157,9 @@
         $filter = $this->parseDestinationFilter($record);
 
         $filterkey = md5($this->m_destInstance->atkNodeType().".".$filter);
-        if (!array_key_exists($filterkey, $resultList))
+        if (!array_key_exists($filterkey, $resultList) || $force)
         {
-          $resultList[$filterkey] = $this->m_destInstance->selectDb($filter,"","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
+          $resultList[$filterkey] = $this->m_destInstance->selectDb($filter,"",(is_numeric($this->m_limit) ? $this->m_limit : "" ),"",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
         }
 
         return $resultList[$filterkey];
@@ -464,7 +464,9 @@
         $filter = "NOT IN ('".implode("','",$checked)."')";
 
       $selector = "(".$this->_getLoadWhereClause($record).")".($filter!=""?" AND ".$this->m_linkInstance->m_table.'.'.$this->getRemoteKey()." $filter":"");
-
+      $selector .= " AND ".$this->m_linkInstance->m_table.'.'.$this->getRemoteKey()." IS NOT NULL";
+      
+      
       //append the store deletion filter (if set)
       if($this->m_store_deletion_filter!="")
       {
@@ -475,6 +477,9 @@
 
       if (is_object($rel) && $rel->deleteDb($selector))
       {
+        if (!is_array($record[$this->fieldName()]))
+          return true;
+          
         for ($i=0;$i<count($record[$this->fieldName()]);$i++)
         {
           // magical stuff..

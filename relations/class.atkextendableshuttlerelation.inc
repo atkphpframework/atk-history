@@ -34,6 +34,8 @@ class atkExtendableShuttleRelation extends atkManyToManyRelation
   protected $m_controlsBySection = array();
   protected $m_selectedFields = null;
   protected $m_availableFields = null;
+  protected $m_limit = null;
+  protected $m_descriptor_tooltip_template = null;
 
   public function __construct($name, $link, $destination, $flags=0)
   {
@@ -67,13 +69,23 @@ class atkExtendableShuttleRelation extends atkManyToManyRelation
     $record = $this->getOwnerInstance()->updateRecord();
     $mode   = $ATK_VARS["atkaction"];
     $prefix = $this->getOwnerInstance()->m_postvars['atkfieldprefix'];
-
+    
     foreach ($this->m_controlsBySection[$record[$this->fieldName()]["section"]] as $control)
     {
       if (is_a($control, 'atkShuttleFilter'))
       {
         $redraw = true;
-        $control->getFilter($record);
+
+        $filter = $control->getFilter($record);
+        if (!empty($filter))
+        {
+          // add filter immediately because we are only refreshing a single section
+          $this->createDestination();          
+          $this->getDestination()->addFilter($filter);
+        } 
+        
+        $limit = $control->getLimit();
+        if ($limit!==null) $this->m_limit = $limit;
       }
     }
 
@@ -175,7 +187,34 @@ class atkExtendableShuttleRelation extends atkManyToManyRelation
     $this->addOnChangeHandler("shuttle_refresh('$url', '".$this->getHtmlId($fieldprefix).'[cselected][]['.$this->getRemoteKey().']'."', '".$prefix.$this->fieldName()."[section]', el);");
     $this->_renderChangeHandler($fieldprefix);
     
-    $this->loadFieldData($record, $mode);
+    $filtersBySection = array();
+    foreach (array(atkShuttleControl::AVAILABLE, atkShuttleControl::SELECTED) as $section)
+    {
+      foreach ($this->m_controlsBySection[$section] as $control)
+      {
+        if (is_a($control, 'atkShuttleFilter'))
+        {
+          $filter = $control->getFilter($record);
+          if (!empty($filter)) 
+          {
+            $filtersBySection[$section][] = $filter;
+          }
+          
+          $limit = $control->getLimit();
+          if ($limit!==null) $this->m_limit = $limit;
+        }
+      }
+    }   
+
+    $availableFilter = '';
+    if (count($filtersBySection[atkShuttleControl::AVAILABLE]) > 0)
+      $availableFilter = '('.implode(') AND (', $filtersBySection[atkShuttleControl::AVAILABLE]).')';
+
+    $selectedFilter = '';
+    if (count($filtersBySection[atkShuttleControl::SELECTED]) > 0)
+      $selectedFilter = '('.implode(') AND (', $filtersBySection[atkShuttleControl::SELECTED]).')';
+      
+    $this->loadFieldData($record, $mode, $availableFilter, $selectedFilter);
     
     // Get controls for 'available' side
     foreach ($this->m_controlsBySection[atkShuttleControl::AVAILABLE] as $control)
@@ -218,7 +257,6 @@ class atkExtendableShuttleRelation extends atkManyToManyRelation
     // on submit, we must select all items in the right selector, as unselected items will not be posted.
     $page = &$this->m_ownerInstance->getPage();
     $page->register_script(atkconfig("atkroot")."atk/javascript/class.atkextendableshuttlerelation.js");
-    $page->register_script(atkconfig("atkroot")."atk/javascript/json/json.js");
     $page->register_submitscript("shuttle_selectAll('".$rightname."');");
 
     $ui = ATKUI::getInstance();
@@ -297,12 +335,31 @@ class atkExtendableShuttleRelation extends atkManyToManyRelation
 
     $valName = $this->getHtmlId($fieldprefix).'[selected][]['.$this->getRemoteKey().']';
     $result = '<select class="shuttle_select" id="'.$name.'" name="'.$name.'" multiple size="10" onDblClick="shuttle_move(\''.$name.'\', \''.$opposite.'\',\''.$action.'\',\''.$valName.'\');'.$onchangecode.'">';
+    
+    $parser = null;
+    // Only import the stringparser once.
+    if (isset($this->m_descriptor_tooltip_template)) 
+    {
+      atkimport("atk.utils.atkstringparser");
+      $parser = new atkStringParser($this->m_descriptor_tooltip_template);
+    }
+    
     for($i=0, $_i=count($recordset); $i<$_i; $i++)
     {
-      $result.= '<option value="'.$recordset[$i][$this->m_destInstance->primaryKeyField()].'">'.$this->m_destInstance->descriptor($recordset[$i]).'</option>';
+      $title = $this->m_destInstance->descriptor($recordset[$i]);
+      $ttip = isset($this->m_descriptor_tooltip_template) ? $parser->parse($recordset[$i]) : $title; 
+      
+      $ttip = str_replace('\r\n',' ',strip_tags($ttip));
+      
+      $result.= '<option value="'.$recordset[$i][$this->m_destInstance->primaryKeyField()].'" title="'.$ttip.'">'.atk_htmlentities($title).'</option>';
     }
     $result.= '</select>';
     return $result;
+  }
+  
+  public function setDescriptorTooltipTemplate($template)
+  { 
+    $this->m_descriptor_tooltip_template = $template;
   }
 
   /**
@@ -339,23 +396,54 @@ class atkExtendableShuttleRelation extends atkManyToManyRelation
    * @param Array $record The record
    * @param String $mode The current mode.
    */
-  private function loadFieldData($record, $mode)
+  private function loadFieldData($record, $mode, $availableFilter='', $selectedFilter='')
   {        
-    $this->m_availableFields = array();
-    $this->m_selectedFields = array();
+    $selectedFields = $this->getSelectedFieldsFromRecord($record);    
     
-    $recs = $this->_getSelectableRecords($record, $mode);
-    $selectedFields = $this->getSelectedFieldsFromRecord($record);
-          
+    // available fields
+    if (!empty($availableFilter))
+    {
+      $this->getDestination()->addFilter($availableFilter);  
+      $recs = $this->_getSelectableRecords($record, $mode, true);
+      $this->getDestination()->removeFilter($availableFilter);
+    }
+    else 
+    {
+      $recs = $this->_getSelectableRecords($record, $mode, true);
+    }
+
+    $this->m_availableFields = array();    
+    foreach ($recs as $rec)
+    {
+      if (!in_array($this->m_destInstance->primaryKey($rec),$selectedFields))
+      {
+        $this->m_availableFields[] = $rec;
+      }
+    }  
+
+    // selected fields
+    if ($availableFilter != $selectedFilter)
+    {
+      if (count($selectedFields)>0)
+      {
+        if (empty($selectedFilter))
+          $selectedFilter = " (".implode(') OR (',$selectedFields).")  "; 
+
+        $this->getDestination()->addFilter($selectedFilter);
+        $recs = $this->_getSelectableRecords($record, $mode, true);
+        $this->getDestination()->removeFilter($selectedFilter);
+      }
+      else
+      {
+        $recs = array();
+      }
+    }
+    $this->m_selectedFields = array();    
     foreach ($recs as $rec)
     {
       if (in_array($this->m_destInstance->primaryKey($rec),$selectedFields))
       {
         $this->m_selectedFields[] = $rec;
-      }
-      else 
-      {
-        $this->m_availableFields[] = $rec;
       }
     }
   }

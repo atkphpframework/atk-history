@@ -73,9 +73,10 @@ class atkDGList extends atkDGComponent
     $list = $this->listArray($recordset, "", $actions, $suppressList, $embedprefix);
 
     /* Check if some flags are still valid or not... */
-    if ($grid->hasFlag(atkDataGrid::MULTI_RECORD_ACTIONS) && (count($list["mra"]) == 0 || count($list["rows"]) == 0))
+    $hasMRA = $grid->hasFlag(atkDataGrid::MULTI_RECORD_ACTIONS);
+    if ($hasMRA && (count($list["mra"]) == 0 || count($list["rows"]) == 0))
     {
-      $grid->removeFlag(atkDataGrid::MULTI_RECORD_ACTIONS);
+      $hasMRA = false;
     }
     
     if ($grid->hasFlag(atkDataGrid::SEARCH) && count($list["search"]) == 0) 
@@ -111,13 +112,14 @@ class atkDGList extends atkDGComponent
         $headercols[] = array("content"=>"&nbsp;");
       }
     }
-    if ($grid->hasFlag(atkDataGrid::MULTI_RECORD_ACTIONS) || $grid->hasFlag(atkDataGrid::MULTI_RECORD_PRIORITY_ACTIONS))
+    if ($hasMRA || $grid->hasFlag(atkDataGrid::MULTI_RECORD_PRIORITY_ACTIONS))
     {
       $headercols[] = array("content"=>""); // Empty leader on top of mra action list.
     }
     if ($grid->hasFlag(atkDataGrid::LOCKING))
     {
-      $headercols[] = array("content"=>'<img src="'.atkconfig("atkroot").'atk/images/lock_head.gif">');
+      $lockHeadIcon = atkTheme::getInstance()->iconPath('lock_'.$grid->getNode()->getLockMode().'_head', 'lock', $grid->getNode()->m_module);      
+      $headercols[] = array("content"=>'<img src="'.$lockHeadIcon.'">');
     }
     if (($orientation == "left" || $orientation == "both") && ($this->_hasActionColumn($list) && count($list["rows"]) > 0))
     {
@@ -132,7 +134,7 @@ class atkDGList extends atkDGComponent
       }
       else
       {
-        $call = htmlentities($grid->getUpdateCall(array('atkorderby' => $head['order'])));
+        $call = atk_htmlentities($grid->getUpdateCall(array('atkorderby' => $head['order'])));
         $link = '<a href="javascript:void(0)" onclick="'.$call.'">'.$head["title"].'</a>';
         $headercols[] = array("content" => $link);
       }
@@ -162,9 +164,9 @@ class atkDGList extends atkDGComponent
     $sortend="";
     if ($grid->hasFlag(atkDataGrid::EXTENDED_SORT))
     {
-      $call = htmlentities($grid->getUpdateCall(array('atkstartat' => 0), array(), 'ATK.DataGrid.extractExtendedSortOverrides'));
+      $call = atk_htmlentities($grid->getUpdateCall(array('atkstartat' => 0), array(), 'ATK.DataGrid.extractExtendedSortOverrides'));
       $button = '<input type="button" value="'.atktext("sort").'" onclick="'.$call.'">';
-      if ($grid->hasFlag(atkDataGrid::MULTI_RECORD_ACTIONS) || $grid->hasFlag(atkDataGrid::MULTI_RECORD_PRIORITY_ACTIONS))
+      if ($hasMRA || $grid->hasFlag(atkDataGrid::MULTI_RECORD_PRIORITY_ACTIONS))
       {
         $sortcols[] = array("content"=>""); // Empty leader on top of mra action list.
       }
@@ -197,7 +199,7 @@ class atkDGList extends atkDGComponent
     $searchend="";
     if ($grid->hasFlag(atkDataGrid::SEARCH))
     {
-      $call = htmlentities($grid->getUpdateCall(array('atkstartat' => 0), array(), 'ATK.DataGrid.extractSearchOverrides'));
+      $call = atk_htmlentities($grid->getUpdateCall(array('atkstartat' => 0), array(), 'ATK.DataGrid.extractSearchOverrides'));
       $buttonType = $grid->isEmbedded() ? "button" : "submit";
       $button = '<input type="'.$buttonType.'" class="btn_search" value="'.atktext("search").'" onclick="'.$call.' return false;">';
       if ($grid->hasFlag(atkDataGrid::EXTENDED_SEARCH))
@@ -208,7 +210,7 @@ class atkDGList extends atkDGComponent
      // $searchstart = '<a name="searchform"></a>';
      $searchstart = "";
 
-      if ($grid->hasFlag(atkDataGrid::MULTI_RECORD_ACTIONS) || $grid->hasFlag(atkDataGrid::MULTI_RECORD_PRIORITY_ACTIONS))
+      if ($hasMRA || $grid->hasFlag(atkDataGrid::MULTI_RECORD_PRIORITY_ACTIONS))
       {
         $searchcols[] = array("content"=>"");
       }
@@ -243,11 +245,11 @@ class atkDGList extends atkDGComponent
     /*******************************************/
     $liststart = "";
     $listend = "";
-    if ($grid->hasFlag(atkDataGrid::MULTI_RECORD_ACTIONS) || $grid->hasFlag(atkDataGrid::MULTI_RECORD_PRIORITY_ACTIONS))
+    if ($hasMRA || $grid->hasFlag(atkDataGrid::MULTI_RECORD_PRIORITY_ACTIONS))
     {
       $page->register_script(atkconfig("atkroot")."atk/javascript/formselect.js");
 
-      if ($grid->hasFlag(atkDataGrid::MULTI_RECORD_ACTIONS))
+      if ($hasMRA)
       {
         $liststart.= '<script language="javascript" type="text/javascript">var '.$listName.' = new Object();</script>';
       }
@@ -303,7 +305,7 @@ class atkDGList extends atkDGComponent
       if ($grid->hasFlag(atkDataGrid::MULTI_RECORD_PRIORITY_ACTIONS))
       {
         $select = '<select name="'.$listName.'_atkselector[]">'.
-                    '<option value="'.htmlentities($list["rows"][$i]["selector"]).'"></option>';
+                    '<option value="'.atk_htmlentities($list["rows"][$i]["selector"]).'"></option>';
         for ($j = $grid->getNode()->m_priority_min; $j <= $grid->getNode()->m_priority_max; $j++)
           $select .= '<option value="'.$j.'">'.$j.'</option>';
         $select .= '</select>';
@@ -311,14 +313,37 @@ class atkDGList extends atkDGComponent
       }
 
       /* multi-record-actions -> checkbox */
-      elseif ($grid->hasFlag(atkDataGrid::MULTI_RECORD_ACTIONS))
+      elseif ($hasMRA)
       {
         if (count($list["rows"][$i]["mra"]) > 0)
+        {
+          $inputHTML = '';
+          
+          switch ($grid->getMRASelectionMode())
+          {
+            case MRA_SINGLE_SELECT:
+              $inputHTML = '<input type="radio" name="'.$listName.'_atkselector[]" value="'.$list["rows"][$i]["selector"].'" class="atkradiobutton" onclick="if (this.disabled) this.checked = false">';                
+              break;
+            case MRA_NO_SELECT:
+              $inputHTML = 
+                '<input type="checkbox" disabled="disabled" checked="checked">'.
+                '<input type="hidden" name="'.$listName.'_atkselector[]" value="'.$list["rows"][$i]["selector"].'">';
+              break;
+            case MRA_MULTI_SELECT:
+            default:
+              $inputHTML = '<input type="checkbox" name="'.$listName.'_atkselector[]" value="'.$list["rows"][$i]["selector"].'" class="atkcheckbox" onclick="if (this.disabled) this.checked = false">';                
+          }              
+          
           $record["cols"][] = array(
-                       "content"=>'<input type="checkbox" name="'.$listName.'_atkselector[]" value="'.htmlentities($list["rows"][$i]["selector"]).'" class="atkcheckbox" onclick="if (this.disabled) this.checked = false">'.
-                                  '<script language="javascript"  type="text/javascript">'.$listName.'["'.htmlentities($list["rows"][$i]["selector"]).'"] = new Array("'.implode($list["rows"][$i]["mra"], '","').'");</script>',
-                        "type" => "mra");
-
+            "content" =>
+              $inputHTML.'
+              <script language="javascript"  type="text/javascript">'.
+                $listName.'["'.atk_htmlentities($list["rows"][$i]["selector"]).'"] = 
+                  new Array("'.implode($list["rows"][$i]["mra"], '","').'");
+              </script>',
+            "type" => "mra"
+          );
+        }
         else $record["cols"][] = array("content"=>"");
       }
 
@@ -327,8 +352,10 @@ class atkDGList extends atkDGComponent
       {
         if (is_array($list["rows"][$i]["lock"]))
         {
-          $alt = $list["rows"][$i]["lock"]["user_id"]." / ".$list["rows"][$i]["lock"]["user_ip"];
-          $record["cols"][] = array("content"=>'<img src="'.atkconfig("atkroot").'atk/images/lock.gif" alt="'.$alt.'" border="0">', "type" => "lock");
+          $this->getPage()->register_script(atkconfig('atkroot').'atk/javascript/overlibmws/overlibmws.js');
+          $lockIcon = atkTheme::getInstance()->iconPath('lock_'.$grid->getNode()->getLockMode(), 'lock', $grid->getNode()->m_module);
+          $lockInfo = addslashes(str_replace(array("\r\n", "\r", "\n"), " ", atk_htmlentities($this->getLockInfo($list["rows"][$i]["lock"]))));          
+          $record["cols"][] = array("content"=>'<img src="'.$lockIcon.'" onmouseover="return overlib(\''.$lockInfo.'\', NOFOLLOW, FULLHTML);" onmouseout="nd();" border="0">', "type" => "lock");
         }
         else $record["cols"][] = array("content"=>"");
       }
@@ -349,17 +376,26 @@ class atkDGList extends atkDGComponent
         {
           $actionloader.="\nrl_a['{$listName}'][{$i}]['{$name}'] = '$url';";
         }
-
-        $link = $name;
-
-        if($icons == true)
+        
+        $module = $grid->getNode()->m_module;
+        $nodetype = $grid->getNode()->m_type;
+        $actionKeys = array(
+          'action_'.$module.'_'.$nodetype.'_'.$name,
+          'action_'.$nodetype.'_'.$name,
+          'action_'.$name,
+          $name
+        );
+        
+        $link = atk_htmlentities($this->text($actionKeys));
+          
+        if ($icons == true)
         {
-          $icon = $theme->iconPath(strtolower($name),"recordlist", $grid->getNode()->m_module);
-          $link = sprintf('<img class="recordlist" border="0" src="%1$s" alt="%2$s" title="%2$s">', $icon, atktext($name, $grid->getNode()->m_module, $grid->getNode()->m_type));
-        }
-        else
-        {
-          $link = atktext($name, $grid->getNode()->m_module, $grid->getNode()->m_type);
+          $icon = $theme->iconPath($module.'_'.$nodetype.'_'.strtolower($name),"recordlist", $module, '', false);
+          if (!$icon)          
+            $icon = $theme->iconPath($module.'_'.strtolower($name),"recordlist", $module, '', false);
+          if (!$icon)          
+            $icon = $theme->iconPath(strtolower($name),"recordlist", $grid->getNode()->m_module);
+          $link = sprintf('<img class="recordlist" border="0" src="%1$s" alt="%2$s" title="%2$s">', $icon, $link);
         }
 
         $confirmtext= "false";
@@ -400,7 +436,7 @@ class atkDGList extends atkDGComponent
 
     }
 
-    $page->register_loadscript($actionloader);
+    $page->register_scriptcode($actionloader);
     $this->m_actionloader = $actionloader;
 
     /*************/
@@ -410,7 +446,7 @@ class atkDGList extends atkDGComponent
 
     if (count($list["total"]) > 0)
     {
-      if ($grid->hasFlag(atkDataGrid::MULTI_RECORD_ACTIONS) || $grid->hasFlag(atkDataGrid::MULTI_RECORD_PRIORITY_ACTIONS)) $totalcols[] = array("content"=>"");
+      if ($hasMRA || $grid->hasFlag(atkDataGrid::MULTI_RECORD_PRIORITY_ACTIONS)) $totalcols[] = array("content"=>"");
       if ($grid->hasFlag(atkDataGrid::LOCKING)) $totalcols[] = array("content"=>"");
       if (($orientation == "left" || $orientation == "both") && ($this->_hasActionColumn($list) && count($list["rows"]) > 0))
         $totalcols[] = array("content"=>"");
@@ -457,16 +493,19 @@ class atkDGList extends atkDGComponent
     /****************************************/
     /* MULTI-RECORD-ACTION FORM (CONTINUED) */
     /****************************************/
-    elseif ($grid->hasFlag(atkDataGrid::MULTI_RECORD_ACTIONS))
+    elseif ($hasMRA)
     {
       $target = session_url(atkSelf().'?atknodetype='.$grid->getNode()->atkNodeType().'&atktarget='.$grid->getNode()->m_postvars['atktarget'].'&atktargetvar='.$grid->getNode()->m_postvars['atktargetvar'].'&atktargetvartpl='.$grid->getNode()->m_postvars['atktargetvartpl'], SESSION_NESTED);
 
-      $mra = (count($list["rows"]) > 1 ?
+      $mra = (count($list["rows"]) > 1 && $grid->getMRASelectionMode() == MRA_MULTI_SELECT ?
                   '<a href="javascript:void(0)" onclick="updateSelection(\''.$listName.'\', $(this).up(\'form\'), \'all\')">'.atktext("select_all").'</a> / '.
                   '<a href="javascript:void(0)" onclick="updateSelection(\''.$listName.'\', $(this).up(\'form\'), \'none\')">'.atktext("deselect_all").'</a> / '.
                   '<a href="javascript:void(0)" onclick="updateSelection(\''.$listName.'\', $(this).up(\'form\'), \'invert\')">'.atktext("select_invert").'</a> '
                  :
                   '');
+                 
+      $module = $grid->getNode()->m_module;
+      $nodetype = $grid->getNode()->m_type;
 
       /* multiple actions -> dropdown */
       if (count($list["mra"]) > 1)
@@ -478,7 +517,14 @@ class atkDGList extends atkDGComponent
         {
           if ($grid->getNode()->allowed($name))
           {
-            $mra .= '<option value="'.$name.'">'.atktext($name, $grid->getNode()->m_module, $grid->getNode()->m_type).'</option>';
+            $actionKeys = array(
+              'action_'.$module.'_'.$nodetype.'_'.$name,
+              'action_'.$nodetype.'_'.$name,
+              'action_'.$name,
+              $name
+            );            
+            
+            $mra .= '<option value="'.$name.'">'.atktext($actionKeys, $grid->getNode()->m_module, $grid->getNode()->m_type).'</option>';
           }
         }
         
@@ -492,10 +538,19 @@ class atkDGList extends atkDGComponent
       {
         if ($grid->getNode()->allowed($list["mra"][0]))
         {
+          $name = $list["mra"][0];
+          
+          $actionKeys = array(
+            'action_'.$module.'_'.$nodetype.'_'.$name,
+            'action_'.$nodetype.'_'.$name,
+            'action_'.$name,
+            $name
+          );            
+          
           $embedded = $this->getGrid()->isEmbedded() ? 'true' : 'false';
-          $mra .= '&nbsp; <input type="hidden" name="'.$listName.'_atkaction" value="'.$list["mra"][0].'">'.
+          $mra .= '&nbsp; <input type="hidden" name="'.$listName.'_atkaction" value="'.$name.'">'.
           $this->getCustomMraHtml().
-                     '<input type="button" class="btn" value="'.atktext($list["mra"][0],$grid->getNode()->m_module, $grid->getNode()->m_type).'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\', '.$embedded.', false)">';
+                     '<input type="button" class="btn" value="'.atktext($actionKeys,$grid->getNode()->m_module, $grid->getNode()->m_type).'" onclick="atkSubmitMRA(\''.$listName.'\', this.form, \''.$target.'\', '.$embedded.', false)">';
         }
       }
     }
@@ -522,6 +577,17 @@ class atkDGList extends atkDGComponent
                             "mra"=>$mra);
 
     return $recordListData;
+  }
+  
+  /**
+   * Returns an HTML snippet which is used to display information about locks
+   * on a certain record in a small popup.
+   *
+   * @param array $locks lock(s) array
+   */
+  protected function getLockInfo($locks)
+  {
+    return $this->getUi()->render('lockinfo.tpl', array('locks' => $locks), $this->getNode()->m_module);
   }
 
   /**
@@ -608,6 +674,7 @@ class atkDGList extends atkDGComponent
    * @param String  $embedprefix  The prefix for embeded fields
    *
    * The result array contains the following information:
+   *  "name"     => the name of the recordlist
    *  "heading"  => for each visible column an array containing: "title" {, "url"}
    *  "search"   => for each visible column HTML input field(s) for searching
    *  "rows"     => list of rows, per row: "data", "actions", "mra", "record"
@@ -624,10 +691,10 @@ class atkDGList extends atkDGComponent
     $flags = $this->convertDataGridFlags();
     
     if (!is_array($suppress)) $suppress = array();
-    $result = array("heading" => array(), "search" => array(), "rows" => array(),
+    $result = array("name"=>$grid->getName(), "heading" => array(), "search" => array(), "rows" => array(),
                     "totalraw" => array(), "total" => array(), "mra" => array());
 
-    $columnConfig = &$grid->getNode()->getColumnConfig();
+    $columnConfig = &$grid->getNode()->getColumnConfig($grid->getName());
 
     /* get the heading and search columns */
     $atksearchpostvar = $grid->getPostvar("atksearch");
@@ -662,8 +729,8 @@ class atkDGList extends atkDGComponent
       /* locked */
       if ($grid->hasFlag(atkDataGrid::LOCKING))
       {
-        $result["rows"][$i]["lock"] = $grid->getNode()->m_lock->isLocked($result["rows"][$i]["selector"], $grid->getNode()->m_table);
-        if (is_array($result["rows"][$i]["lock"]))
+        $result["rows"][$i]["lock"] = $grid->getNode()->m_lock->isLocked($result["rows"][$i]["selector"], $grid->getNode()->m_table, $grid->getNode()->getLockMode());
+        if (is_array($result["rows"][$i]["lock"]) && $grid->getNode()->getLockMode() == atkLock::EXCLUSIVE)
         {
           unset($row["actions"]["edit"]);
           unset($row["actions"]["delete"]);

@@ -31,7 +31,9 @@
   define("AF_ONETOONE_ERROR",           AF_SPECIFIC_2);
 
   /**
-   * Invisibly integrate a onetoonerelation as if the fields where part of the current node.
+   * Invisibly integrate a onetoonerelation as if the fields where part of the current node.  
+   * If the relation is integrated, no divider is drawn, and the section heading is suppressed.
+   * (Integration does not affect the way data is stored or manipulated, only how it is displayed.)
    */
   define("AF_ONETOONE_INTEGRATE",       AF_SPECIFIC_3);
 
@@ -91,7 +93,8 @@
      *
      * @param String $name The unique name of the attribute. In slave mode,
      *                     this corresponds to the foreign key field in the
-     *                     database table.
+     *                     database table.  (The name is also used as the section 
+     *                     heading.)
      * @param String $destination the destination node (in module.nodename
      *                            notation)
      * @param String $refKey In master mode, this specifies the foreign key
@@ -437,7 +440,15 @@
      */
     function storageType($mode)
     {
-      if ($this->m_refKey!="")
+      // Mode specific storage type.
+      if (isset($this->m_storageType[$mode]) && $this->m_storageType[$mode] !== null)
+        return $this->m_storageType[$mode];
+        
+      // Global storage type (key null is special!)
+      else if (isset($this->m_storageType[null]) && $this->m_storageType[null] !== null)
+        return $this->m_storageType[null];
+      
+      else if ($this->m_refKey!="")
       {
         // foreign key is in destination node, so we must store the
         // destination AFTER we stored the master record.
@@ -473,14 +484,14 @@
      */
     function loadType($mode)
     {
-      if ($this->hasFlag(AF_ONETOONE_LAZY))
-      {
+      if (isset($this->m_loadType[$mode]) && $this->m_loadType[$mode] !== null)
+        return $this->m_loadType[$mode];
+      else if (isset($this->m_loadType[null]) && $this->m_loadType[null] !== null)
+        return $this->m_loadType[null];      
+      else if ($this->hasFlag(AF_ONETOONE_LAZY))
         return POSTLOAD|ADDTOQUERY;
-      }
       else
-      {
         return ADDTOQUERY;
-      }
     }
 
     /**
@@ -783,8 +794,19 @@
             if ($arr['fields'][count($arr['fields'])-1]['html']!=='-') $arr["fields"][] = array("html"=>"-", "tabs"=>$this->m_tabs,'sections'=>$this->getSections());
             $arr["fields"][] = array("line"=>"<b>".atktext($this->m_name, $this->m_ownerInstance->m_module, $this->m_ownerInstance->m_type)."</b>", "tabs"=>$this->m_tabs,'sections'=>$this->getSections());
           }
+          
           if (is_array($a["fields"]))
           {
+            // in non-integration mode we move all the fields to the one-to-one relations tabs/sections
+            if (!$this->hasFlag(AF_ONETOONE_INTEGRATE))
+            {
+              foreach (array_keys($a['fields']) as $key)
+              {
+                $a['fields'][$key]['tabs'] = $this->m_tabs;
+                $a['fields'][$key]['sections'] = $this->getSections();
+              }
+            }
+                        
             $arr["fields"] = array_merge($arr["fields"], $a["fields"]);
           }
 
@@ -1053,7 +1075,7 @@
 
     function getSearchCondition(&$query, $table, $value, $searchmode)
     {
-      if (is_array($value))
+      if ($this->createDestination() && is_array($value))
       {
         // we are a relation, so instead of hooking ourselves into the
         // query, hook the attributes in the destination node onto the query
@@ -1079,7 +1101,7 @@
 
               // we need to left join the destination table into the query
               // (don't worry ATK won't add it when it's already there)
-              $query->addJoin($new_table,$new_table,($this->getJoinCondition()),false);
+              $query->addJoin($new_table,$new_table,($this->getJoinCondition($query)),false);
             }
             $p_attrib->searchCondition($query,$new_table,$val,$this->getChildSearchMode($searchmode, $p_attrib->formName()));
           }

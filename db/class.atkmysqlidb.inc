@@ -445,21 +445,24 @@
     * Return the available table names
     * @return array with table names etc.
     */
-   function table_names()
+   function table_names($includeViews=true)
    {
-     /* query */
-     $this->query("SHOW TABLES");
+     // query 
+     $this->query("SHOW ".(!$includeViews ? "FULL" : "")." TABLES");
 
-     /* get table names */
+     // get table names
      $result = array();
      for ($i=0; $info = mysqli_fetch_row($this->m_query_id); $i++)
      {
+       // ignore views?
+       if (!$includeViews && strtoupper($info[1]) == 'VIEW') continue;
+       
        $result[$i]["table_name"]      = $info[0];
        $result[$i]["tablespace_name"] = $this->m_database;
        $result[$i]["database"]        = $this->m_database;
      }
 
-     /* return result */
+     // return result
      return $result;
    }
 
@@ -475,17 +478,37 @@
      }
      return true;
    }
+   
+   /**
+    * Set savepoint with the given name.
+    *
+    * @param $name savepoint name
+    */
+   function savepoint($name)
+   {
+     atkdebug(get_class($this)."::savepoint $name");
+     $this->query('SAVEPOINT '.$name);
+   }
 
-   /*
+   /**
     * Rollback the the current transaction.
     */
-   function rollback()
+   function rollback($savepoint="")
    {
-     if($this->m_link_id)
-     {
-       atkdebug("Rollback");
-       mysqli_rollback($this->m_link_id);
+     if ($this->m_link_id)
+     { 
+       if (!empty($savepoint))
+       {
+         atkdebug(get_class($this)."::rollback (rollback to savepoint $savepoint)");        
+         $this->query('ROLLBACK TO SAVEPOINT '.$savepoint);
+       } 
+       else 
+       {
+         atkdebug("Rollback");
+         mysqli_rollback($this->m_link_id);
+       }
      }
+      
      return true;
    }
 

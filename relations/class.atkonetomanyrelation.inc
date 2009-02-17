@@ -111,6 +111,13 @@
      * @var boolean
      */
     var $m_useFilterForEditLink = true;
+    
+    /**
+     * Use referential key for load filter?
+     *
+     * @var boolean
+     */
+    protected $m_useRefKeyForFilter = true;
 
     /**
      * Function names for recordlist header/footer generation
@@ -120,6 +127,15 @@
      */
     var $m_headerName = "";
     var $m_footerName = "";
+    
+    /**
+     * Fields to exclude in the grid
+     *
+     * @access private
+     * @var array
+     */
+    var $m_excludes = array();
+    
     /**
      * Default constructor.
      *
@@ -147,10 +163,6 @@
      */
     function atkOneToManyRelation($name, $destination, $refKey="", $flags=0)
     {
-      $page = &atkinstance('atk.ui.atkpage');
-      $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");
-      $page->register_script(atkconfig("atkroot")."atk/javascript/class.atkonetomanyrelation.js");
-
       $this->atkRelation($name, $destination, $flags|AF_HIDE_ADD|AF_NO_SORT);
       // 1toM Relations are NEVER edited when adding a rec. And for now, we
       // cannot search or sort them.
@@ -159,10 +171,15 @@
       {
         $this->m_refKey = $refKey;
       }
+      else if (empty($refKey))
+      {
+        $this->m_refKey = array();
+      }
       else
       {
         $this->m_refKey[] = $refKey;
       }
+      $this->setGridExcludes($this->m_refKey);
     }
 
     function setOwnerFields($ownerfields)
@@ -182,7 +199,7 @@
     /**
      * Use destination filter for auto add link?
      *
-     * @param boolean $useFilter use destnation filter for add link?
+     * @param boolean $useFilter use destination filter for add link?
      */
     function setUseFilterForAddLink($useFilter)
     {
@@ -197,6 +214,17 @@
     function setUseFilterForEditLink($useFilter)
     {
       $this->m_useFilterForEditLink = $useFilter;
+    }
+    
+    /**
+     * Use referential key for filtering the records. If you disable this only the
+     * explicitly set destination filter will be used.
+     *
+     * @param bool $useRefKey
+     */
+    public function setUseRefKeyForFilter($useRefKey)
+    {
+      $this->m_useRefKeyForFilter = $useRefKey;
     }
 
     /**
@@ -232,13 +260,15 @@
 
       $grid->setBaseUrl(partial_url($this->getOwnerInstance()->atkNodeType(), $action, 'attribute.'.$this->fieldName().'.grid'));
 
-      $grid->setExcludes($this->m_refKey);
+      $grid->setExcludes($this->getGridExcludes());
 
       $grid->addFilter($this->_getLoadWhereClause($record));
       if ($this->m_destinationFilter != '')
       {
         $grid->addFilter($this->parseFilter($this->m_destinationFilter, $record));
       }
+      
+      $this->modifyDataGrid($grid, atkDataGrid::CREATE);
 
       return $grid;
     }
@@ -253,7 +283,30 @@
       $this->createDestination();
       $node = $this->getDestination();
       atkimport('atk.datagrid.atkdatagrid');
-      return atkDataGrid::resume($node)->render();
+      $grid = atkDataGrid::resume($node);
+      $this->modifyDataGrid($grid, atkDataGrid::RESUME);
+      return $grid->render();
+    }
+    
+    /**
+     * Modify grid.
+     * 
+     * @param atkDataGrid $grid grid
+     * @param int         $mode CREATE or RESUME
+     */
+    protected function modifyDataGrid(atkDataGrid $grid, $mode)
+    {
+      $method = 'modifyDataGrid';
+      if (method_exists($this->getDestination(), $method))
+      {
+        $this->getDestination()->$method($grid, $mode);
+      }
+      
+      $method = $this->fieldName().'_modifyDataGrid';
+      if (method_exists($this->getOwnerInstance(), $method))
+      {
+        $this->getOwnerInstance()->$method($grid, $mode);
+      }      
     }
 
     /**
@@ -273,8 +326,9 @@
       // for the view mode we use the datagrid and load the records ourselves
       if ($mode == 'view')
       {
-        $grid = $this->createGrid($record, $mode, 'view');
+        $grid = $this->createGrid($record, 'admin', 'view');
         $grid->loadRecords(); // load records early
+        $grid->setEmbedded(false);
 
         // no records
         if ($grid->getCount() == 0)
@@ -352,7 +406,11 @@
      */
     public function edit($record="", $fieldprefix="", $mode='')
     {
-      $grid = $this->createGrid($record, $mode, $mode);
+      $page = &atkinstance('atk.ui.atkpage');
+      $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");
+      $page->register_script(atkconfig("atkroot")."atk/javascript/class.atkonetomanyrelation.js");
+
+      $grid = $this->createGrid($record, 'admin', $mode);
 
       $params = array();
       if ($this->m_useFilterForEditLink && $this->m_destinationFilter != "")
@@ -480,6 +538,7 @@
       $title = $ui->title($this->m_destInstance->m_module, $this->m_destInstance->m_type, $action);
       $dialog->setTitle($title);
       $dialog->setModifierObject($this->m_destInstance);
+      $dialog->setSessionStatus(SESSION_PARTIAL);
       $onClick = $dialog->getCall();
 
       return '<a href="javascript:void(0)" onclick="'.$onClick.'" class="valignMiddle">'.$this->getAddLabel().'</a>';
@@ -534,20 +593,39 @@
         for ($i=0, $_i=count($this->m_refKey); $i<$_i; $i++)
         {
           $primkeyattr = &$this->m_ownerInstance->m_attribList[$ownerfields[$i]];
-          $filterelems[] = $this->m_destInstance->getTable().".".$this->m_refKey[$i]."='".$this->escapeSQL($primkeyattr->value2db($record))."'";
+          $filterelems[] = $this->m_refKey[0].".".$ownerfields[$i]."='".$this->escapeSQL($primkeyattr->value2db($record))."'";         
         }
       }
       else
       {
         for ($i=0, $_i=count($this->m_refKey); $i<$_i; $i++)
         {
-          $filterelems[] = $this->m_destInstance->getTable().".".$this->m_refKey[$i]."='".$this->escapeSQL($record[$ownerfields[$i]])."'";
+          $filterelems[] = $this->_addTablePrefix($this->m_refKey[$i])."='".$this->escapeSQL($record[$ownerfields[$i]])."'";
         }
       }
 
       return $filterelems;
     }
 
+    /**
+     * Prefix the passed column name with the table name if there is no prefix in the column name yet.
+     *
+     * @param string $columnName
+     * @param string $destAlias
+     * @return string
+     */
+    function _addTablePrefix($columnName, $destAlias = '')
+    {
+      $prefix = '';
+      if (strpos($columnName, '.') === false)
+      {
+        $prefix = $destAlias ? $destAlias : ($this->m_destInstance->getTable());
+        $prefix .= '.';
+      }
+
+      return $prefix . $columnName;
+    }
+    
     /**
      * Attempts to get a translated label which can be used when composing an "add" link
      *
@@ -630,6 +708,8 @@
      */
     function _getLoadWhereClause($record)
     {
+      if (!$this->m_useRefKeyForFilter) return '';
+      
       $whereelems = array();
 
       if (count($this->m_refKey)==0||$this->m_refKey[0]=="") $this->m_refKey[0]=$this->m_owner;
@@ -641,13 +721,18 @@
 
         if (!$primkeyattr->isEmpty($record))
         {
-          $whereelems[] = $this->m_destInstance->m_table.".".$this->m_refKey[$i]."='".$primkeyattr->value2db($record)."'";
+          $whereelems[] = $this->_addTablePrefix($this->m_refKey[$i])."='".$primkeyattr->value2db($record)."'";
         }
       }
 
       $result = implode(" AND ", $whereelems);
       return $result == '' ? '1=0' : $result;
     }
+
+    /**
+     * Define a dummy function to use as a dummy handler function in load() below
+     */
+    public function ___dummyCount() {}
 
     /**
      * Retrieve detail records from the database.
@@ -674,9 +759,9 @@
       if (($mode != 'add' && $mode != 'edit' && $mode != 'view') ||
           ($mode == 'view' && method_exists($this->getOwnerInstance(), $this->fieldName()."_display")))
       {
-        $grid = $this->createGrid($record, $mode, $mode, false);
+        $grid = $this->createGrid($record, $mode == 'copy' ? 'copy' : 'admin', $mode, false);
         $grid->setPostvar('atklimit', -1); // all records
-        $grid->setCountHandler(create_function('', '')); // don't count
+        $grid->setCountHandler(array(get_class(), '___dummyCount')); // don't count
         $grid->loadRecords();
         $result = $grid->getRecords();
         $grid->destroy(); // clean-up
@@ -727,7 +812,7 @@
       for ($i=0, $_i = count($this->m_refKey); $i<$_i; $i++)
       {
          $primkeyattr = &$this->m_ownerInstance->m_attribList[$ownerfields[$i]];
-         $whereelems[] = $rel->m_table.".".$this->m_refKey[$i]."='".$primkeyattr->value2db($record)."'";
+         $whereelems[] = $this->_addTablePrefix($this->m_refKey[$i])."='".$primkeyattr->value2db($record)."'";
       }
       $where = implode(" AND ", $whereelems);
 
@@ -843,15 +928,12 @@
       if ($ownerAlias == "")
         $ownerAlias = $this->m_ownerInstance->m_table;
 
-      if ($destAlias == "")
-        $destAlias = $this->m_destInstance->m_table;
-
       $conditions = array();
       $ownerfields = $this->getOwnerFields();
 
       for ($i = 0, $_i = count($this->m_refKey); $i < $_i; $i++)
       {
-        $conditions[] = $destAlias.".".$this->m_refKey[$i]."=".$ownerAlias.".".$ownerfields[$i];
+        $conditions[] = $this->_addTablePrefix($this->m_refKey[$i], $destAlias)."=".$ownerAlias.".".$ownerfields[$i];
       }
 
       return implode(" AND ", $conditions);
@@ -1077,10 +1159,15 @@
      */
     function partial_add_dialog()
     {
-       $this->createDestination();
+      $this->createDestination();
       $this->m_destInstance->m_partial = 'dialog';
       $handler = &$this->m_destInstance->getHandler('add');
       $handler->m_postvars = $this->m_ownerInstance->m_postvars;
+
+      // Reset postvars of ownerinstance because it might interfere with relations
+      // which point back to this ownerinstance and it doesn't need them anymore anyway.
+      $this->m_ownerInstance->m_postvars = array();
+
       $handler->setDialogSaveUrl(partial_url($this->m_ownerInstance->atkNodeType(), 'edit', 'attribute.'.$this->fieldName().'.add_process'));
       $result = $handler->renderAddDialog();
       $page = &$this->m_ownerInstance->getPage();
@@ -1095,6 +1182,11 @@
       $this->createDestination();
       $handler = &$this->m_destInstance->getHandler('save');
       $handler->m_postvars = $this->m_ownerInstance->m_postvars;
+
+      // Reset postvars of ownerinstance because it might interfere with relations
+      // which point back to this ownerinstance and it doesn't need them anymore anyway.
+      $this->m_ownerInstance->m_postvars = array();
+
       $handler->setDialogSaveUrl(partial_url($this->m_ownerInstance->atkNodeType(), 'edit', 'attribute.'.$this->fieldName().'.add_process'));
       $handler->handleSave(partial_url($this->m_ownerInstance->atkNodeType(), 'edit', 'attribute.'.$this->fieldName().'.refresh'));
     }
@@ -1125,6 +1217,11 @@
       {
         $handler = &$this->m_destInstance->getHandler('addorcopy');
         $handler->m_postvars = $this->m_ownerInstance->m_postvars;
+
+        // Reset postvars of ownerinstance because it might interfere with relations
+        // which point back to this ownerinstance and it doesn't need them anymore anyway.
+        $this->m_ownerInstance->m_postvars = array();
+
         $handler->handleCopy(partial_url($this->m_ownerInstance->atkNodeType(), 'edit', 'attribute.'.$this->fieldName().'.refresh'));
       }
 
@@ -1144,6 +1241,7 @@
           $dialog = new atkDialog($this->m_ownerInstance->atkNodeType(), 'edit', 'attribute.'.$this->fieldName().'.add_dialog', array('atkfilter' => $filter));
           $title = $ui->title($this->m_destInstance->m_module, $this->m_destInstance->m_type, 'add');
           $dialog->setTitle($title);
+          $dialog->setSessionStatus(SESSION_PARTIAL);
           $script .= $dialog->getCall(true, false);
         }
         else
@@ -1166,6 +1264,11 @@
       $this->m_destInstance->m_partial = 'dialog';
       $handler = &$this->m_destInstance->getHandler('edit');
       $handler->m_postvars = $this->m_ownerInstance->m_postvars;
+
+      // Reset postvars of ownerinstance because it might interfere with relations
+      // which point back to this ownerinstance and it doesn't need them anymore anyway.
+      $this->m_ownerInstance->m_postvars = array();
+
       $handler->setDialogSaveUrl(partial_url($this->m_ownerInstance->atkNodeType(), 'edit', 'attribute.'.$this->fieldName().'.edit_process'));
       $result = $handler->renderEditDialog();
       $page = &$this->m_ownerInstance->getPage();
@@ -1180,6 +1283,11 @@
       $this->createDestination();
       $handler = &$this->m_destInstance->getHandler('update');
       $handler->m_postvars = $this->m_ownerInstance->m_postvars;
+
+      // Reset postvars of ownerinstance because it might interfere with relations
+      // which point back to this ownerinstance and it doesn't need them anymore anyway.
+      $this->m_ownerInstance->m_postvars = array();
+
       $handler->setDialogSaveUrl(partial_url($this->m_ownerInstance->atkNodeType(), 'edit', 'attribute.'.$this->fieldName().'.edit_process'));
       $handler->handleUpdate(partial_url($this->m_ownerInstance->atkNodeType(), 'edit', 'attribute.'.$this->fieldName().'.refresh'));
     }
@@ -1200,6 +1308,26 @@
     function setFooter($name)
     {
       $this->m_footerName = $name;
+    }
+    
+    /**
+     * Set the exclude fields for the grid
+     *
+     * @param array $excludes
+     */
+    function setGridExcludes($excludes)
+    {
+      $this->m_excludes = $excludes;
+    }
+    
+    /**
+     * Get the exclude fields for the grid
+     *
+     * @return array with exclude fields
+     */
+    function getGridExcludes()
+    {
+      return $this->m_excludes;
     }
   }
 ?>

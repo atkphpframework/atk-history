@@ -58,7 +58,7 @@
     /**
      * Register a new listener.
      *
-     * @param atkSecurityListener listener
+     * @param atkSecurityListener $listener
      */
     function addListener(&$listener)
     {
@@ -68,8 +68,8 @@
     /**
      * Notify listeners of a certain event.
      *
-     * @param string event name
-     * @param string username (might be null)
+     * @param string $event name
+     * @param string $username (might be null)
      */
     function notifyListeners($event, $username)
     {
@@ -101,7 +101,7 @@
      * full classname like module.mymodule.myauthtype
      *
      * @param string $authentication_type
-     * @return array authetication types
+     * @return array authentication types
      */
     function _getAuthTypes($authentication_type)
     {
@@ -124,6 +124,10 @@
     /**
      * Constructor
      * @access private
+     * 
+     * @param string $authentication_type The type of authentication (user/password verification) to use
+     * @param string $authorization_type The type of authorization (mostly the same as the authentication_type)
+     * @param string $securityscheme The security scheme that will be used to determine who is allowed to do what
      */
     function atkSecurityManager($authentication_type="none", $authorization_type="none", $securityscheme="none")
     {
@@ -185,7 +189,7 @@
 
       $db = &$usernode->getDB();
       $db->commit();
-      
+
       // Send an email containing the new password to user
       $subject = atktext("auth_passwordmail_subjectnew_password", "atk");
       $body = atktext("auth_passwordmail_explanation", "atk") . "\n\n";
@@ -231,8 +235,11 @@
         $this->notifyListeners("preLogout", $auth_user);
 
         session_destroy();
+
         $cookie_params = session_get_cookie_params();
-        session_set_cookie_params($cookie_params["lifetime"], dirname($_SERVER["SCRIPT_NAME"]));
+        $cookiepath   = atkconfig("application_root");
+        $cookiedomain = (atkconfig("cookiedomain") != "") ? atkconfig("cookiedomain") : NULL;
+        session_set_cookie_params($cookie_params["lifetime"], $cookiepath, $cookiedomain);
         @session_start();
         $session = array();
         $session["relogin"]=1;
@@ -445,7 +452,7 @@
         {
           $location.= (strpos($location,'?')===false) ? '?' : '&';
           $location.='login='.$auth_user.'&error='.$response;
-                    
+
           if (atkconfig("debug")>=2)
           {
             $debugger = &atkinstance('atk.utils.atkdebugger');
@@ -521,6 +528,10 @@
     /**
      * Display a login form.
      * @access private
+     *
+     * @param string $defaultname The username that might already be known
+     * @param int    $lastresponse The lastresponse when trying to login 
+     *                              possible values: AUTH_MISMATCH, AUTH_LOCKED, AUTH_MISSINGUSERNAME, AUTH_PASSWORDSENT
      */
     function loginForm($defaultname, $lastresponse)
     {
@@ -629,6 +640,8 @@
      * Generate field for entering the username (dropdown or input box,
      * depending on settings.
      * @access private
+     * 
+     * @param string $defaultname The username that might already be known
      */
     function auth_userField($defaultname)
     {
@@ -778,6 +791,12 @@
       }
     }
 
+    /**
+     * If we are using cookies to store the login information this function will generate 
+     * the cookiename 
+     *
+     * @return cookiename based on the application title
+     */
     function _getAuthCookieName()
     {
       return "atkauth_3".str_replace(" ","_",atktext("app_title"));

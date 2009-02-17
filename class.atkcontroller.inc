@@ -22,6 +22,22 @@
    */
   class atkController
   {
+    
+    /**
+     * The name of the wizard.
+     * @access protected
+     * @var String
+     */
+    var $m_name;
+
+    
+    /**
+     * The module of the wizard.
+     * @access protected
+     * @var String
+     */
+    var $m_module_name;
+    
     /**
      * Reference to the instance of currently selected atkNode
      *
@@ -29,10 +45,27 @@
      */
     var $m_node = NULL;
 
+    /**
+     * The postvars in this pageload
+     *
+     * @var array Key/value
+     */
     var $m_postvars = NULL;
 
+    /**
+     * The file to use when creating url's
+     *
+     * @var string filename
+     */
     var $m_php_file = "";
 
+    /**
+     * By this property is determined if the output of the
+     * handleRequest method should be returned as a string
+     * or the output should be outputted by atkOutput.
+     *
+     * @var unknown_type
+     */
     var $m_return_output = false;
 
     /**
@@ -43,8 +76,23 @@
     var $m_hidden_vars = array();
 
 
+    /**
+     * Constructor of atkController
+     *
+     * @param string $controllerName
+     * @param string $moduleName
+     * @return atkController object
+     */
     function atkController()
-    {
+    {   
+    	global $g_sessionManager;    
+    	$atkControllerClass = $g_sessionManager->stackVar("atkcontroller");
+
+      //Its not so nice to use the getNodeModule and getNodeType functions, 
+      //because the name suggests they work with atkNodes. But they also do 
+      //the job when using other class names.
+      $this->m_name = getNodeType($atkControllerClass);
+      $this->m_module_name = getNodeModule($atkControllerClass);
     }
 
     /**
@@ -60,13 +108,19 @@
       static $s_object=NULL;
       if(!is_object($s_object) || $replace)
       {
-        if (empty($class) && isset($_REQUEST['atkcontroller']))
-          $class = $_REQUEST['atkcontroller'];
+        global $ATK_VARS;
+        if (empty($class) && isset($ATK_VARS['atkcontroller']))
+          $class = $ATK_VARS['atkcontroller'];
         if (empty($class))
           $class = "atk.atkcontroller";
-        atkdebug("atkcontroller::_instance() make new one ".$class);
+          
+        //We save the controller in stack, so the controller constructor
+        //can store the Controller name and module. It is also saved for other
+        //atk levels if we move down the stack.
+        global $g_sessionManager;
+        $g_sessionManager->stackVar("atkcontroller", $class);
 
-        $s_object = atknew($class);
+        $s_object = atknew($class);      
       }
       return $s_object;
     }
@@ -78,7 +132,6 @@
     */
     function &getInstance()
     {
-      atkdebug("atkcontroller::getInstance()");
       $object = &atkcontroller::_instance();
       return $object;
     }
@@ -92,6 +145,13 @@
     function &createInstance($controller)
     {
       atkdebug("atkcontroller::createInstance() ".$controller);
+      //First check if another controller is active. If so make sure this 
+      //controller will use atkOutput to return output
+      $currentController = atkController::getInstance();
+      if(is_object($currentController))
+        $currentController->setReturnOutput(true);
+        
+      //Now create new controller
       $controller = &atkController::_instance($controller, true);
       return $controller;
     }
@@ -115,8 +175,7 @@
       $node = &$this->getNode();
       $node->m_postvars = $postvars;
       if(!is_object($node) || !method_exists($node,'getUi')) return "";
-
-      $ui = &$node->getUi();
+      
       $page = &$node->getPage();
 
       // backwards compatibility mode
@@ -136,7 +195,7 @@
       $screen = '';
       if (!$page->isEmpty() || hasFlag($flags, HTML_PARTIAL)) // Only output an html output if there is anything to output.
       {
-        $screen = $page->render(atktext('app_shorttitle')." - ".$ui->title($node->m_module, $node->m_type,$node->m_postvars['atkaction']), $flags);
+        $screen = $page->render(null, $flags);
       }
 
       if(!$this->m_return_output)
@@ -156,6 +215,16 @@
         return $screen;
       }
       return "";
+    }
+    
+    /**
+     * Return the html title for the content frame. Default we show node name and action. 
+     */
+    protected function getHtmlTitle()
+    {
+      $node = &$this->getNode();
+      $ui = &$node->getUi();
+      return atktext('app_shorttitle')." - ".$ui->title($node->m_module, $node->m_type,$node->m_postvars['atkaction']);
     }
 
     /**
@@ -234,12 +303,7 @@
       }
 
       $page = &$node->getPage();
-
-      $page->register_script(atkconfig("atkroot")."atk/javascript/prototype/prototype.js");
-      $page->register_script(atkconfig("atkroot")."atk/javascript/prototype-ext.js");
-      $page->register_script(atkconfig("atkroot")."atk/javascript/scriptaculous/scriptaculous.js");
-      $page->register_script(atkconfig("atkroot")."atk/javascript/class.atktools.js");
-      $page->register_script(atkconfig("atkroot")."atk/javascript/atkbusy.js");
+      $page->setTitle(atktext('app_shorttitle')." - ".$this->getUi()->title($node->m_module, $node->m_type, $node->m_action));
 
       if ($node->allowed($node->m_action))
       {
@@ -327,13 +391,24 @@
       {
         $blocks = ($blocks==""?array():array($blocks));
       }
-
       $node = &$this->getNode();
       $ui = &$node->getUi();
-
+      
       // todo: overridable action templates
       return $ui->render("actionpage.tpl", array("blocks"=>$blocks,
-                                                 "title"=>$ui->title($node->m_module, $node->m_type, $action)));
+                                                 "title"=>$this->actionPageTitle()));
+    }
+    
+    /**
+     * Return the title to be show on top of an Action Page
+     *
+     * @return string The title
+     */
+    function actionPageTitle()
+    {
+      $node = &$this->getNode();
+      $ui = &$node->getUi();
+      return $ui->title($node->m_module, $node->m_type, $action);
     }
 
     /**
@@ -420,7 +495,7 @@
         // the 'saveandclose' and 'cancel' button. Unless, a feedback screen is configured.
         if (atkLevel() >0 || hasFlag(atkArrayNvl($node->m_feedback, "update", 0), ACTION_SUCCESS))
         {
-          $result[] = $this->getButton('saveandclose');
+          $result[] = $this->getButton('saveandclose', true);
         }
         $result[] = $this->getButton('save');
 
@@ -431,11 +506,22 @@
       }
       elseif ($mode == "add")
       {
-        $result[] = ($node->hasFlag(NF_EDITAFTERADD) === TRUE ) ? $this->getButton('saveandedit') : $this->getButton('save');
+        if($node->hasFlag(NF_EDITAFTERADD) === true && $node->allowed('edit'))
+        {
+          $result[] = $this->getButton('saveandedit', true);
+        }
+        else
+        {
+          if($node->hasFlag(NF_EDITAFTERADD) === true)
+          {
+            atkwarning("NF_EDITAFTERADD found but no 'edit' privilege.");
+          }
+          $result[] = $this->getButton('saveandclose', true);
+        }
 
         // if action is admin, we don't show the cancelbutton or the add next button
         if ($node->hasFlag(NF_ADDAFTERADD) && !$node->hasFlag(NF_EDITAFTERADD))
-          $result[] = $this->getButton('saveandnext');
+          $result[] = $this->getButton('saveandnext', false);
 
         $result[] = $this->getButton('cancel');
       }
@@ -467,7 +553,7 @@
       * @param String $action
       * @return HTML
       */
-    function getButton($action)
+    function getButton($action, $default=false)
      {
        $name = "";
        $class = "";
@@ -508,7 +594,10 @@
 
       if (!isset($value))
         $value = atktext($action, "atk");
-
+        
+      if ($default)
+        $class .= (!empty($class) ? ' ' : '').'atkdefaultbutton';
+        
       if ($class != "")
         $class = "class=\"$class\" ";
 
@@ -611,12 +700,21 @@
       return $varString;
     }
 
+    /**
+     * Configure if you want the html returned or leave it up to atkOutput.
+     *
+     * @param bool $returnOutput
+     */
     function setReturnOutput($returnOutput)
     {
       $this->m_return_output = $returnOutput;
     }
 
-
+  /**
+   * Return the setting for returning output
+   *
+   * @return bool
+   */
     function getReturnOutput()
     {
       return $this->m_return_output;
@@ -699,5 +797,26 @@
       }
       atkerror("atkcontroller::invoke() Undefined method '$methodname' in atkController");
     }
+    
+    /**
+     * Return module name of controller
+     *
+     * @return string module name
+     */
+    function getModuleName()
+    {
+      return $this->m_module_name;      
+    }
+    
+    /**
+     * Return controller name
+     *
+     * @return string controller name
+     */
+    function getName()
+    {
+      return $this->m_name;
+    }
+    
   }
 ?>

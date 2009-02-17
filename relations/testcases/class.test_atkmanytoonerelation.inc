@@ -1,6 +1,24 @@
 <?php
+  /**
+   * This file is part of the Achievo ATK distribution.
+   * Detailed copyright and licensing information can be found
+   * in the doc/COPYRIGHT and doc/LICENSE files which should be
+   * included in the distribution.
+   *
+   * @package atk
+   * @subpackage testcases
+   *
+   * @copyright (c)2008 Ibuildings.nl BV
+   * @license http://www.achievo.org/atk/licensing ATK Open Source License
+   *
+   * @version $Revision$
+   */
+
 /**
  * atkManyToOneRelation test-case.
+ * @internal
+ * @package atk
+ * @subpackage testcases
  */
 class test_atkManyToOneRelation extends atkTestCase 
 {
@@ -56,15 +74,18 @@ class test_atkManyToOneRelation extends atkTestCase
     $this->assertEqual($attr->getOrderByStatement("name"), "test.id");
     
     $attr->m_destInstance->setOrder("name");
-    $this->assertEqual($attr->getOrderByStatement(), "test.name");
+    $this->assertEqual($attr->getOrderByStatement(), "test.name ASC");
     
     $attr->m_destInstance->setOrder("sortorder desc");
-    $this->assertEqual($attr->getOrderByStatement(), "test.sortorder desc");
+    $this->assertEqual($attr->getOrderByStatement(), "test.sortorder DESC");
+    
+    $attr->m_destInstance->setOrder("sortorder  desc");
+    $this->assertEqual($attr->getOrderByStatement(), "test.sortorder DESC");
     
     $attr->m_destInstance->setOrder("sortorder, name");
-    $this->assertEqual($attr->getOrderByStatement(), "test.sortorder, test.name");
+    $this->assertEqual($attr->getOrderByStatement(), "test.sortorder ASC, test.name ASC");
     
     $attr->m_destInstance->setOrder("sortorder asc , name desc");
-    $this->assertEqual($attr->getOrderByStatement(), "test.sortorder asc , test.name desc");
+    $this->assertEqual($attr->getOrderByStatement(), "test.sortorder ASC, test.name DESC");
   }
 }

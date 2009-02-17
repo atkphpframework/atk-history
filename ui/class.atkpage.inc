@@ -102,6 +102,13 @@
      * @var Array
      */
     var $m_hiddenvars = array();
+    
+    /**
+     * Page title.
+     * 
+     * @var string
+     */
+    protected $m_title = '';
 
     /**
      * Retrieve the one-and-only atkPage instance.
@@ -116,6 +123,20 @@
         atkdebug("Created a new atkPage instance");
       }
       return $s_page;
+    }
+    
+    /**
+     * Constructor.
+     */
+    public function __construct()
+    {
+      // register default scripts
+      $this->register_script(atkconfig("atkroot")."atk/javascript/prototype/prototype.js");
+      $this->register_script(atkconfig("atkroot")."atk/javascript/prototype-ext.js");
+      $this->register_script(atkconfig("atkroot")."atk/javascript/scriptaculous/scriptaculous.js");
+      $this->register_script(atkconfig("atkroot")."atk/javascript/scriptaculous-ext.js");      
+      $this->register_script(atkconfig("atkroot")."atk/javascript/class.atktools.js");
+      $this->register_script(atkconfig("atkroot")."atk/javascript/atkbusy.js");            
     }
 
     /**
@@ -157,6 +178,17 @@
         }
       }
     }
+    
+    
+    /**
+     * Unregister all registered javascripts
+     *
+     */
+    function unregister_all_scripts()
+    {
+      $this->m_scriptfiles=array();
+    }
+    
 
     /**
      * Return all javascript files
@@ -308,9 +340,7 @@
     {
       $res = "<head>\n  <title>$title</title>\n";
 
-      // $Name$ is the CVS tag.
       $version = atkversion();
-      if ("\$Name$"!="\$"."Name:  $") $version.=" ($Name$)";
       $res.= '  <meta name="atkversion" content="'.$version.'" />'."\n";
 
       $res.= '  <meta http-equiv="Content-Type" content="text/html; charset='.atktext("charset","atk").'" />'."\n";
@@ -336,7 +366,6 @@
      */
     function addScripts(&$res, $partial=false)
     {
-      
       $count_scriptcode = count($this->m_scriptcode['before']);
       if($count_scriptcode>0) $res .= '  <script type="text/javascript">'."\n";
       $res.= $this->renderScriptCode("before");
@@ -358,7 +387,8 @@
         
         if (!empty($files))
         {
-          $res .= '<script type="text/javascript">'.$files.'</script>';
+          // prepend script files
+          $res = '<script type="text/javascript">'.$files.'</script>'.$res;
         }
       }
 
@@ -463,7 +493,8 @@
         
         if (!empty($files))
         {
-          $res .= '<script type="text/javascript">'.$files.'</script>';
+          // prepend stylesheets
+          $res = '<script type="text/javascript">'.$files.'</script>'.$res;
         }        
       }
     }
@@ -516,6 +547,16 @@
     }
 
     /**
+     * Sets the page title.
+     * 
+     * @param string $title page title
+     */
+    public function setTitle($title)
+    {
+      $this->m_title = $title;
+    }
+    
+    /**
      * Render the complete page, including head and body.
      * @param String $title Title of the HTML page.
      * @param boolean $flags Set to true to generate <body> tags. It is useful
@@ -527,8 +568,13 @@
      * @param string $extrabodyprops  Extra attributes to add to the <body> tag.
      * @return String The HTML page, including <html> and </html> tags.
      */
-    function render($title, $flags=HTML_STRICT,$extrabodyprops="", $extra_header="")
+    function render($title=null, $flags=HTML_STRICT,$extrabodyprops="", $extra_header="")
     {
+      if ($title == null)
+      {
+        $title = $this->m_title;
+      }
+      
       $ui = &atkinstance('atk.ui.atkui');
       $theme = &atkinstance('atk.ui.atktheme');
 
@@ -567,9 +613,9 @@
      */
     function renderPartial()
     {
-      $result = $this->m_content;
+      $result = $this->m_content;     
       $this->addScripts($result, true);
-      $this->addStyles($result, true);
+      $this->addStyles($result, true);      
       return $result;
     }
 
@@ -593,13 +639,6 @@
       return $page;
     }
 
-    /**
-     * Default constructor.
-     * @access private
-     */
-    function atkPage()
-    {
-    }
 
     /**
      * Check if the page is empty (no content).

@@ -9,11 +9,10 @@
    * @package atk
    *
    * @copyright (c)2000-2007 Ivo Jansch
-   * @copyright (c)2000-2007 Ibuildings.nl BV
+   * @copyright (c)2000-2008 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
    * @version $Revision$
-   * $Id$
    */
 
   /**
@@ -732,6 +731,21 @@
     var $m_edit_fieldprefix = '';
 
     /**
+     * Lock mode.
+     *
+     * @var int
+     */
+    private $m_lockMode = 'exclusive'; // atkLock::EXCLUSIVE (would mean atkLock needs to be available!)
+
+    /**
+     * Multiple columns.
+     *
+     * @var array
+     */
+    var $m_columnAttributes = array();
+
+
+    /**
      * Constructor.
      *
      * This initialises the node. Derived classes should always call their
@@ -750,7 +764,7 @@
       $this->m_type = $type;
       $this->m_flags = $flags;
       $this->m_module = atkModule::getModuleScope();
-      
+
       $this->setEditFieldPrefix(atkconfig('edit_fieldprefix', ''));
     }
 
@@ -846,7 +860,7 @@
      *                   is added.
      * @return atkAttribute the attribute just added
      */
-    function add($attribute,$sections=NULL,$order=0)
+    public function add($attribute,$sections=NULL,$order=0)
     {
       static $attrib_order = 100;
       static $attrib_index = 0;
@@ -981,11 +995,28 @@
         $this->m_relations[strtolower(get_class($attribute))][$attribute->fieldName()]=&$attribute;
       }
       $attribute->setTabs($this->m_attributeTabs[$attribute->fieldName()]);
+      $attribute->setSections($this->m_attribIndexList[$attribute->m_index]['sections']);
 
 
       return $attribute;
     }
 
+    /**
+     * Add fieldset.
+     *
+     * To include an attribute label use [attribute.label] inside your
+     * template. To include an attribute edit/display field use
+     * [attribute.field] inside your template.
+     *
+     * @param string $name     name
+     * @param string $template template string
+     * @param int    $flags    attribute flags
+     */
+    public function addFieldSet($name, $template, $flags=0, $sections=NULL, $order=0)
+    {
+      useattrib('atkfieldset');
+      $this->add(new atkFieldSet($name, $template, $flags), $sections, $order);
+    }
 
     /**
      * Retrieve the tabnames from the sections string (tab.section).
@@ -1072,7 +1103,7 @@
 
     /**
      * Returns the table name for this node.
-     * 
+     *
      * @return string table name
      */
     function getTable()
@@ -1087,9 +1118,8 @@
      */
     function &getAttribute($name)
     {
-      if (isset($this->m_attribList[$name]))
-        return $this->m_attribList[$name];
-      else return NULL;
+      $returnValue = isset($this->m_attribList[$name]) ? $this->m_attribList[$name] : NULL;
+      return $returnValue;
     }
 
     /**
@@ -1187,7 +1217,7 @@
     {
       return $this->m_flags;
     }
-    
+
     /**
      * Set node flags.
      *
@@ -1258,7 +1288,7 @@
         $primKey.=$this->m_table.".".$this->m_primaryKey[$i]."='".$p_attrib->value2db($rec)."'";
         if ($i<($nrOfElements-1)) $primKey.=" AND ";
       }
-      
+
       return $primKey;
     }
 
@@ -1271,6 +1301,12 @@
      */
     function primaryKeyField()
     {
+    	if (count($this->m_primaryKey) === 0)
+    	{
+    		atkwarning($this->atkNodeType()."::primaryKeyField() called, but there are no primary key fields defined!");
+    		return null;
+    	}
+    	
       return $this->m_primaryKey[0];
     }
 
@@ -1349,8 +1385,8 @@
     public function setDb($db)
     {
       $this->m_db = $db;
-    }    
-    
+    }
+
     /**
      * Get the database connection for this node.
      * @return atkDb Database connection instance
@@ -1507,7 +1543,7 @@
         foreach ($this->m_sectionList[$action] as $element)
         {
           list($tab,$sec) = (strpos($element, ".") !== false) ? explode(".",$element) : array($element, null);
-  
+
           //if this section is on an active tab, we return it.
           if($tab == $this->getActiveTab() && $sec!==NULL)
             $sections[] = $sec;
@@ -1658,9 +1694,16 @@
       {
         foreach ($this->m_sectionList[$mode] as $section)
         {
-          if (substr($section,0,strlen($tab))==$tab && in_array($section, $this->m_default_expanded_sections))
+          if (substr($section, 0, strlen($tab)) == $tab)
           {
-            $activeSections[] = $section;
+            atkimport("atk.session.atkstate");                
+            $sectionName = 'section_'.str_replace('.', '_', $section);
+            $key = array("nodetype" => $this->atknodetype(), "section" => $sectionName);
+            $defaultOpen = in_array($section, $this->m_default_expanded_sections);
+            if (atkState::get($key, $defaultOpen ? 'opened' : 'closed') != 'closed')
+            {
+              $activeSections[] = $section;
+            }
           }
         }
       }
@@ -1704,6 +1747,7 @@
         if (is_numeric($key))
         {
           unset($this->m_fuzzyFilters[$key]);
+          $this->m_fuzzyFilters = array_values($this->m_fuzzyFilters);
           return true;
         }
       }
@@ -1956,6 +2000,9 @@
       /* default values */
       if (!empty($record)) $defaults = $record;
       else $defaults = array();
+
+      $result['hide'] = array();
+      $result['fields'] = array();
 
       /* edit mode */
       if ($mode == "edit")
@@ -2267,11 +2314,20 @@
     function initial_values()
     {
       $record = array();
-
+      
       foreach (array_keys($this->m_attribList) as $attrName)
       {
         $attr = &$this->getAttribute($attrName);
-        $value = $attr->initialValue();
+        
+        if (is_array($this->m_postvars) && isset($this->m_postvars[$attrName])) 
+        {
+          $value = $attr->fetchValue($this->m_postvars);
+        }
+        else 
+        {
+          $value = $attr->initialValue();
+        }
+        
         if ($value !== NULL)
           $record[$attr->fieldName()] = $value;
       }
@@ -2579,10 +2635,10 @@
           $formstart.='<input type="hidden" name="atkselector[]" value="'.$selector.'">';
       }
 
-      $buttons = $this->getFormButtons($action, array());      
+      $buttons = $this->getFormButtons($action, array());
       if (count($buttons) == 0)
       {
-        $buttons[] = '<input name="confirm" type="submit" class="btn_ok" value="'.$this->text('yes').'">';
+        $buttons[] = '<input name="confirm" type="submit" class="btn_ok atkdefaultbutton" value="'.$this->text('yes').'">';
         $buttons[] = '<input name="cancel" type="submit" class="btn_cancel" value="'.$this->text('no').'">';
       }
 
@@ -2592,6 +2648,7 @@
       {
         // 1 record, put it in the page title (with the actionTitle call, a few lines below)
         $record = $recs[0];
+        $this->getPage()->setTitle(atktext('app_shorttitle')." - ".$this->actionTitle($action, $record));
       }
       else
       {
@@ -2604,13 +2661,13 @@
           $content.= "<ul>";
           for ($i=0, $_i=count($recs); $i<$_i; $i++)
           {
-            $content.="<li> ".$this->descriptor($recs[$i]);
+            $content.="<li>".str_replace(' ', '&nbsp;', atk_htmlentities($this->descriptor($recs[$i])));
           }
           $content.= "</ul>";
         }
       }
 
-      $content.= '<br>'.$this->confirmActionText($atkselector, $action, $checkoverride);
+      $content.= '<br>'.$this->confirmActionText($atkselector, $action, true);
 
       $output=$ui->renderAction($action, array("content"=>$content,
                                                 "formstart"=>$formstart,
@@ -2872,6 +2929,17 @@
     {
       $page = &atkinstance("atk.ui.atkpage");
       return $page;
+    }
+
+    /**
+     * Returns a new page builder instance.
+     *
+     * @return atkPageBuilder
+     */
+    public function createPageBuilder()
+    {
+      atkimport('atk.ui.atkpagebuilder');
+      return new atkPageBuilder($this);
     }
 
     /**
@@ -3151,6 +3219,26 @@
     }
 
     /**
+     * Sets the lock mode.
+     *
+     * @param int $lockMode lock mode (atkLock::EXCLUSIVE, atkLock::SHARED)
+     */
+    public function setLockMode($lockMode)
+    {
+      $this->m_lockMode = $lockMode;
+    }
+
+    /**
+     * Returns the lock mode.
+     *
+     * @return int lock mode (atkLock::EXCLUSIVE, atkLock::SHARED)
+     */
+    public function getLockMode()
+    {
+      return $this->m_lockMode;
+    }
+
+    /**
      * Validates a record.
      *
      * Validates unique fields, required fields, dataformat etc.
@@ -3194,45 +3282,69 @@
     }
 
     /**
+     * Called by updateDb to load the original record inside the record if the
+     * NF_TRACK_CHANGES flag is set.
+     *
+     * NOTE: this method is made public because it's called from the update handler
+     *
+     * @param array $record
+     * @param array $excludes
+     * @param array $includes
+     */
+    public function trackChangesIfNeeded(&$record, $excludes='', $includes='')
+    {
+      if (!$this->hasFlag(NF_TRACK_CHANGES) || isset($record['atkorgrec'])) return;
+
+      // We need to add the NO_FILTER flag in case the new values would filter the record.
+      $flags = $this->m_flags;
+
+      $this->addFlag(NF_NO_FILTER);
+
+      $record["atkorgrec"] =
+        $this->select()
+             ->where($record['atkprimkey'])
+             ->excludes($excludes)
+             ->includes($includes)
+             ->mode('edit')
+             ->firstRow();
+
+      // Need to restore the NO_FILTER bit back to its original value.
+      $this->m_flags = $flags;
+    }
+
+    /**
      * Update a record in the database.
      *
      * The record should already exist in the database, or this method will
      * fail.
+     *
+     * NOTE: Does not commit your transaction! If you are using a database that uses
+     * transactions you will need to call 'atkGetDb()->commit()' manually.
+     *
      * @param array $record The record to update in the database.
      * @param bool wether to execute the pre/post update triggers
      * @param array $excludes exclude list (these attribute will *not* be updated)
      * @param array $includes include list (only these attributes will be updated)
      * @return boolean True if succesful, false if not.
      */
-	  function updateDb(&$record, $exectrigger=true, $excludes="", $includes="")
+    function updateDb(&$record, $exectrigger=true, $excludes="", $includes="")
     {
       $db = &$this->getDb();
       $query = &$db->createQuery();
 
       $query->addTable($this->m_table);
 
-      // The record that must be updated is indicated by 'atkorgkey'
+      // The record that must be updated is indicated by 'atkprimkey'
       // (not by atkselector, since the primary key might have
-      // changed, so we use the atkorgkey, which is the value before
+      // changed, so we use the atkprimkey, which is the value before
       // any update happened.)
       if ($record['atkprimkey']!="")
       {
-        $pk = $record['atkprimkey'];
-
-        // If we need to track changes, we first load the original values..
-        if ($this->hasFlag(NF_TRACK_CHANGES))
-        {
-          //We need to add the NO_FILTER flag in case the new values would filter the record.
-          //Need to restore the NO_FILTER bit back to its original value.
-          $flags = $this->m_flags;
-          $this->addFlag(NF_NO_FILTER);
-          $recordset = $this->selectDb($pk,"","",$excludes,$includes,"edit"); // we need the same record we got when editing.
-          $this->m_flags = $flags;
-          $record["atkorgrec"] = $recordset[0];
-        }
-
+        $this->trackChangesIfNeeded($record, $excludes, $includes);
+        
         if($exectrigger) $this->executeTrigger("preUpdate",$record);
 
+        $pk = $record['atkprimkey'];
         $query->addCondition($pk);
 
         $storelist = array("pre"=>array(), "post"=>array(), "query"=>array());
@@ -3324,14 +3436,14 @@
     */
     function isAllowedQueryList($attribname,$excludeList="",$includeList="", $mode = "")
     {
-      
+
       return (in_array($attribname, $this->m_primaryKey)
               || ((is_array($includeList) && in_array($attribname,$includeList))
               || (is_array($excludeList) && !in_array($attribname,$excludeList)))
               || (!is_array($excludeList) && !is_array($includeList))
               || ($this->m_attribList[$attribname]->hasFlag(AF_FORCE_LOAD))
-            );  
-      
+            );
+
     }
 
     /**
@@ -3516,8 +3628,8 @@
     {
       // add original record
       $original = $record; // force copy
-      $record['atkorgrec'] = $original;      
-      
+      $record['atkorgrec'] = $original;
+
       //notify precopy listeners
       $this->preNotify("precopy", $record);
 
@@ -3635,9 +3747,9 @@
           $searching = true;
         }
       }
-      
+
       if (array_key_exists("atkfilter", $this->m_postvars))
-       $query->addCondition($this->validateFilter($this->m_postvars["atkfilter"]));      
+       $query->addCondition($this->validateFilter($this->m_postvars["atkfilter"]));
 
       if (!$this->hasFlag(NF_NO_FILTER))
       {
@@ -3840,7 +3952,7 @@
         foreach (array_keys($this->m_attribList) as $attribname)
         {
           $p_attrib = &$this->m_attribList[$attribname];
-          
+
           if ($this->isAllowedQueryList($attribname,$excludeList,$includeList,$mode))
           {
             if(in_array($attribname, $cpylist))
@@ -3879,6 +3991,19 @@
       }
       return $recordset;
     }
+
+	/**
+     * Returns a record (array) as identified by a primary key (usually an "id" column),
+     * including applicable relations.
+     *
+     * @param int $pk primary key identifying the record
+     * @return array the associated record, or null if no such record exists
+     */
+
+	public function fetchByPk($pk)
+	{
+	  return $this->select($this->getTable().".".$this->primaryKeyField().'='.$pk)->firstRow();
+	}
 
     /**
      * Apply the given search criteria to the given query object.
@@ -3982,7 +4107,7 @@
       // If allfields is set, we load the entire record.. otherwise, we only
       // load the important fields (descriptor and primary key fields)
       // this is mainly used by onetoonerelation.
-      if ($allfields || $mode=="copy")
+      if ($allfields)
       {
         $usedFields = array_keys($this->m_attribList);
       }
@@ -4088,6 +4213,9 @@
      * The record is passed by reference, because any autoincrement field gets
      * its value when stored to the database. The record is updated, so after
      * the call to addDb you can use access the primary key fields.
+     *
+     * NOTE: Does not commit your transaction! If you are using a database that uses
+     * transactions you will need to call 'atkGetDb()->commit()' manually.
      *
      * @param array $record The record to save.
      * @param boolean $exectrigger Indicates whether the postAdd trigger
@@ -4223,6 +4351,9 @@
      * on any attribute that has the AF_CASCADE_DELETE flag set, the delete()
      * method is invoked.
      *
+     * NOTE: Does not commit your transaction! If you are using a database that uses
+     * transactions you will need to call 'atkGetDb()->commit()' manually.
+     *
      * @todo There's a discrepancy between updateDb, addDb and deleteDb:
      *       There should be a deleteDb which accepts a record, instead
      *       of a selector.
@@ -4268,8 +4399,10 @@
         }
       }
 
-      $db = &$this->getDb();
-      if ($db->query("DELETE FROM ".$this->m_table." WHERE ".$selector))
+      $query = $this->getDb()->createQuery();
+      $query->addTable($this->m_table);
+      $query->addCondition($selector);
+      if ($query->executeDelete())
       {
         if($exectrigger)
         {
@@ -4472,27 +4605,30 @@
     }
 
     /**
-     * Returns the type of this node (this is *not* the full ATK node type!)
-     * 
+     * Returns the type of this node.  (This is *not* the full ATK node type; 
+     * see atkNodeType() for the full node type.)
+     *
      * @return string type
      */
     public function getType()
     {
       return $this->m_type;
     }
-    
+
     /**
      * Returns the module for this node.
-     * 
+     *
      * @return string node
      */
     public function getModule()
     {
       return $this->m_module;
     }
-    
+
     /**
-     * Get the full atknodetype of this node (module.nodetype notation).
+     * Get the full atknodetype of this node (module.nodetype notation).  This is sometimes
+     * referred to as the node name (or nodename) or node string.
+     * 
      * @return String The atknodetype of the node.
      */
     function atkNodeType()
@@ -4673,7 +4809,9 @@
     {
       if ($lockstatus)
       {
-        return '<img src="'.atkconfig("atkroot").'atk/images/lock.gif" name="_lock_">';
+        atkimport('atk.ui.atktheme');
+        $icon = atkTheme::getInstance()->iconPath('lock_'.$this->getLockMode(), 'lock', $this->m_module);
+        return '<img src="'.$icon.'" border="0" name="_lock_">';
       }
       return "";
     }
@@ -5092,12 +5230,14 @@
     /**
      * Get the column configuration object
      *
+     * @param string $id optional column config id
+     * 
      * @return atkColumnConfig
      */
-    function &getColumnConfig()
+    function &getColumnConfig($id=NULL)
     {
       atkimport("atk.recordlist.atkcolumnconfig");
-      $columnConfig = &atkColumnConfig::getConfig($this);
+      $columnConfig = &atkColumnConfig::getConfig($this, $id);
       return $columnConfig;
     }
 
@@ -5119,7 +5259,7 @@
     {
       return $this->atkNodeType();
     }
-    
+
     /**
      * Set the edit fieldprefix to use in atk
      *
@@ -5129,7 +5269,7 @@
     {
       $this->m_edit_fieldprefix = $prefix;
     }
-    
+
     /**
      * Get the edit fieldprefix to use
      *
@@ -5141,5 +5281,32 @@
       if ($this->m_edit_fieldprefix == '') return '';
       else return $this->m_edit_fieldprefix.($atk_layout ? '_AE_' : '');
     }
+
+    /**
+     * Escape SQL string, uses the node's database to do the escaping.
+     *
+     * @param string $string string to escape
+     *
+     * @return string escaped string
+     */
+    public function escapeSQL($string)
+    {
+      return $this->getDb()->escapeSQL($string);
+    }
+
+    /**
+     * Set column attributes
+     *
+     * @param array $attributes
+     */
+    public function setColumnAttribs($attributes=array())
+    {
+      foreach ( $attributes as $attribute )
+      {
+        $this->m_columnAttributes[$attribute] = 1;
+      }
+    }
+
   }
+
 ?>

@@ -7,6 +7,11 @@ body
   font-family: Lucida Sans, Lucida Sans Unicode, Tahoma, Trebuchet MS, Arial, Verdana;
 }
 
+.clickable 
+{
+	cursor: pointer;
+}
+
 a:link, a:visited, a:active
 {
   color: #414141;
@@ -220,14 +225,23 @@ ul, ol, li
 /* EDIT FORM */
 /* ------------------------------------------------------------------ */
 
-input,
+input[type="text"],
+input[type="password"],
 select,
 textarea
 {
-  color: #000000;
   font-family: Lucida Sans, Lucida Sans Unicode, Tahoma, Trebuchet MS, Arial, Verdana;
   font-size: 12px;
   padding: 1px;
+}
+
+input {
+	font-size: 12px;
+}
+
+textarea
+{
+	padding: 2px;
 }
 
 input.btn,
@@ -237,12 +251,10 @@ input.btn_saveandclose,
 input.btn_saveandcontinue,
 input.btn_saveandnext
 {
-  color: #000000;
-  height: 25px;
-  padding: 1px;
+  color: #000;
 }
 
-input.btn_saveandclose
+input.atkdefaultbutton
 {
   font-weight: bold;
 }
@@ -251,22 +263,6 @@ input.btn_saveandclose
 {
   padding-right: 12px;
   /* white-space: nowrap; */
-}
-
-#editform input[type="text"],
-#editform textarea,
-#editform select,
-.contentBlock input[type="text"],
-.contentBlock textarea,
-.contentBlock select
-{
-  padding: 1px;
-}
-
-.atkcheckbox, .atkradio, .atkbutton, #editform .atkbutton, .contentBlock .atkbutton
-{
-  border: auto !important;
-  padding: 1px;
 }
 
 #changeView
@@ -393,15 +389,9 @@ input.btn_saveandclose
   text-align: center;
 }
 
-.btn_saveandclose, .btn_save, .btn_ok, .btn_cancel
-{
-  padding: 2px !important;
-  margin: 0px !important;
-}
-
 #editform td.field
 {
-  padding-top: 2px;
+  padding-top: 5px;
   padding-bottom: 2px;
   vertical-align: top;
 }
@@ -413,11 +403,6 @@ hr
   height: 1px; /* whatever the total width of the border-top and border-bottom equal */
   margin-top: 4px;
   margin-bottom: 4px;
-}
-
-#remark
-{
-  width: 95%;
 }
 
 .atkboolattribute
@@ -480,6 +465,12 @@ p img
   clear: both;
 }
 
+form
+{
+	margin: 0;
+	padding: 0;
+}
+
 #atkbusy
 {
   position: absolute;
@@ -499,4 +490,182 @@ p img
 .atkAttrRowHidden
 {
   display: none !important;
+}
+
+
+/* DIALOG */
+/* ------------------------------------------------------------------ */
+ 
+.atkdialog .nw {
+  background:transparent url(../images/atkdialog_corners_top.gif) no-repeat scroll 0 -25px;
+  height:25px;
+  padding-left:10px;
+}
+
+.atkdialog .ne {
+  background:transparent url(../images/atkdialog_corners_top.gif) no-repeat scroll right 0;
+  height:25px;
+  padding-right:10px;
+}
+
+.atkdialog .n {
+  background:transparent url(../images/atkdialog_corners_top.gif) repeat-x scroll 0 -50px;
+  font-size: 13px;
+  font-family: Lucida Sans, Lucida Sans Unicode, Tahoma, Trebuchet MS, Arial, Verdana;
+  text-transform: capitalize;
+  font-weight: bold;
+  color: #FFFFFF;
+  height:25px;
+  margin:0;
+  padding:0;
+  text-align:center;      
+  padding-right: 60px;
+  padding-top: 3px;   
+  overflow: hidden;
+}
+
+.atkdialog .content {
+  background-color:#FDFDFD;
+  color:#000;
+  font-size: 12px;
+  font-family: Lucida Sans, Lucida Sans Unicode, Tahoma, Trebuchet MS, Arial, Verdana;
+  overflow:auto;
+  padding: 0px;
+  margin: 0px;
+}
+
+.atkdialog .w {
+  border-left:1px solid #B9B9B9;
+  border-right:1px solid #B9B9B9;
+}
+
+.atkdialog .e {
+  border-left:1px solid #FFF;
+  border-right:1px solid #FFF;
+}
+
+.atkdialog .sw {
+  background:transparent url(../images/atkdialog_corners_bottom.gif) no-repeat scroll 0 -12px;
+  font-size:2px;
+  height:12px;
+  padding-left:6px;
+}
+
+.atkdialog .se {
+  background:transparent url(../images/atkdialog_corners_bottom.gif) no-repeat scroll right 0;
+  font-size:2px;
+  height:12px;
+  padding-right:6px;
+}
+
+.atkdialog .s {
+  background:transparent url(../images/atkdialog_corners_bottom.gif) repeat-x scroll 0 -24px;
+  font-size:11px;
+  height:12px;  
+  overflow:hidden;
+} 
+
+.atkdialog .se_resize_handle {
+  background:transparent url(../images/atkdialog_sizer.gif) no-repeat scroll right 0;
+  font-size:2px;
+  height:12px;
+  padding-right:12px;
+}
+
+.atkdialog .se_sizer { 
+  width:12px;
+  height:12px;
+}          
+
+.atkdialog .buttons {
+  position: absolute;
+  top:1px;
+  right:10px;
+  height: 20px;   
+}                
+
+.atkdialog .buttons a.close {
+  background:transparent url(../images/atkdialog_buttons.gif) no-repeat 0 0;
+  display:block;
+  height:18px;
+  float:left;
+  width:23px;
+  font-size:1px;
+  padding-top:2px; /* padding-top = buttons order, it will be reset to 0, do not use padding, use margin*/       
+}
+
+.atkdialog .buttons a:hover.close {
+  background:transparent url(../images/atkdialog_buttons.gif) no-repeat 0 -18px;
+}
+
+.atkdialog .buttons a.maximize {
+  background:transparent url(../images/atkdialog_buttons.gif) no-repeat 0 -36px;
+  display:block;
+  height:18px;
+  float:left;
+  width:23px;
+  font-size:1px;
+  padding-top:1px; /* padding-top = buttons order, it will be reset to 0, do not use padding, use margin*/       
+}
+.atkdialog .buttons a:hover.maximize {
+  background:transparent url(../images/atkdialog_buttons.gif) no-repeat 0 -54px;
+}
+
+.atkdialog .buttons a.minimize {
+  background:transparent url(../images/atkdialog_buttons.gif) no-repeat 0 -72px;
+  display:block;
+  height:18px;
+  float:left;
+  width:23px;
+  font-size:1px;
+ padding-top:0px; /* padding-top = buttons order, it will be reset to 0, do not use padding, use margin*/       
+}                            
+
+.atkdialog .buttons a:hover.minimize {
+  background:transparent url(../images/atkdialog_buttons.gif) no-repeat 0 -90px;
+}      
+
+.atkdialog .buttons a.minimize.disabled, .atkdialog .buttons.over a.minimize.disabled  {
+  background:transparent url(../images/atkdialog_buttons.gif) no-repeat 0 -108px !important; 
+}
+
+.atkdialog_overlay {
+  background-color: #ddd;
+  filter:alpha(opacity=60);
+  -moz-opacity: 0.6;
+  opacity: 0.6;
+}
+
+.atkdialog_wired {
+  background:#FFF;
+  border:1px #000 dashed;
+  filter:alpha(opacity=60);
+  opacity:0.6;  
+  position:absolute;
+  -moz-opacity:0.6;
+} 
+
+.load_criteria {
+  font-family: Lucida Sans, Lucida Sans Unicode, Tahoma, Trebuchet MS, Arial, Verdana;
+  font-size: 12px;
+  color: #414141;
+  text-align: left;
+  padding-left: 12px;
+  padding: 3px 0px 15px 0px;
+  vertical-align: middle;
+}
+.load_criteria img {
+  vertical-align: middle;
+}
+
+.save_criteria {
+  font-family: Lucida Sans, Lucida Sans Unicode, Tahoma, Trebuchet MS, Arial, Verdana;
+  font-size: 12px;
+  color: #414141;
+  text-align: left;
+  padding-left: 12px;
+  padding: 15px 0px 3px 0px;
+}
+.save_criteria #save_criteria {
+  margin-left: 21px;
 }

@@ -266,9 +266,16 @@
 
       if ($label=="")
       {
+        $actionKeys = array(
+          'action_'.$module.'_'.$nodetype.'_'.$action,
+          'action_'.$nodetype.'_'.$action,
+          'action_'.$action,
+          $action
+        );
+        
         if ($actiononly)
         {
-          return atktext($action, $module);
+          return atktext($actionKeys, $module);
         }
         else
         {
@@ -277,9 +284,45 @@
           if ($label == "")
             $label = $node->text($nodetype);
           if ($action != NULL)
-            $label .= " - ".atktext($action, $module);
+            $label .= " - ".atktext($actionKeys, $module);
         }
       }
+      return $label;
+    }
+    
+    
+    /**
+     * This function returns a suitable title text for an Wizardpanel.
+     * Example: echo $ui->title("departmentwizard", "employee", "add"); might return:
+     *          'Departmen wizard - Add employees - Step 2 of 3'
+     * @param String $wizard the wizard object
+     * @param String $panel the panel object
+     * @param String $action the atk action that we are trying execute in the panel
+     * @return String the title for this wizardpanel
+     */
+    function getWizardTitle($wizard, $panel, $action=NULL)
+    {
+      if ($wizard == NULL) return "";
+                            
+      $module = $wizard->getModuleName();
+      $wizardName = $wizard->getName();
+      $panelName = $panel->getPanelName();
+      
+      $keys = array('title_'.$module.'_'.$wizardName,
+                      'title_'.$wizardName);
+      $wizardTitle = atktext($keys, NULL, "", "", true);
+      
+      $keys = array('title_'.$module.'_'.$panelName.'_'.$action,
+                      'title_'.$panelName.'_'.$action);
+
+      $panelTitle = atktext($keys, NULL, "", "", true);
+
+      if($wizard->getWizardAction() !== 'finish')
+        $status = atktext("Step"). " " .($wizard->m_currentPanelIndex + 1) . " " . atktext("of"). " " . count($wizard->m_panelList);
+      else
+        $status = atktext("finished");
+      $label .= $wizardTitle . " - " . $panelTitle . " - " . $status;
+                                  
       return $label;
     }
   }

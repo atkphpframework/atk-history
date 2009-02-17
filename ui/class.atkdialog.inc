@@ -29,6 +29,7 @@ class atkDialog
   protected $m_action;
   protected $m_partial;
   protected $m_params;
+  protected $m_sessionStatus = SESSION_NEW;
 
   protected $m_title;
 
@@ -100,7 +101,26 @@ class atkDialog
     return $this->m_partial;
   }
 
-  
+  /**
+   * Returns the dialog sessionStatus.
+   *
+   * @return int sessionStatus (SESSION_BACK=3, SESSION_DEFAULT=0, SESSION_NESTED=2, SESSION_NEW=1, SESSION_PARTIAL=5, SESSION_REPLACE=4)
+   */
+  public function getSessionStatus()
+  {
+    return $this->m_sessionStatus;
+  }
+
+  /**
+   * Sets the dialog sessionStatus.
+   *
+   * @param int sessionStatus (SESSION_BACK=3, SESSION_DEFAULT=0, SESSION_NESTED=2, SESSION_NEW=1, SESSION_PARTIAL=5, SESSION_REPLACE=4)
+   */
+  public function setSessionStatus($sessionStatus)
+  {
+    $this->m_sessionStatus = (int) $sessionStatus;
+  }
+
   /**
    * Sets the dialog title.
    *
@@ -206,13 +226,15 @@ class atkDialog
     atkimport('atk.ui.atkpage');
 
     $page = &atkPage::getInstance();
-    $page->register_script(atkconfig('atkroot').'atk/javascript/window/window.js');
+    $page->register_script(atkconfig('atkroot').'atk/javascript/prototype-ui/window/window.packed.js');
+    $page->register_script(atkconfig('atkroot').'atk/javascript/prototype-ui-ext.js');    
     $page->register_script(atkconfig('atkroot').'atk/javascript/class.atkdialog.js');
-    $page->register_style(atkconfig('atkroot').'atk/javascript/window/themes/default.css');
-
+    $page->register_style(atkconfig('atkroot').'atk/javascript/prototype-ui/window/themes/window/window.css');
+    $page->register_style(atkconfig('atkroot').'atk/javascript/prototype-ui/window/themes/shadow/mac_shadow.css');    
+      
     if ($this->m_themeLoad)
     {
-      $page->register_style(atkconfig('atkroot').'atk/javascript/window/themes/'.$this->m_themeName.'.css');
+      $page->register_style(atkconfig('atkroot').'atk/javascript/prototype-ui/window/themes/window/'.$this->m_themeName.'.css');
     }
   }
 
@@ -224,7 +246,7 @@ class atkDialog
    */
   function getUrl()
   {
-    return partial_url($this->getNodeType(), $this->m_action, $this->m_partial, $this->m_params);
+    return partial_url($this->getNodeType(), $this->m_action, $this->m_partial, $this->m_params, $this->m_sessionStatus);
   }
 
   /**
@@ -270,7 +292,7 @@ class atkDialog
    *
    * @return string JavaScript call for opening the dialog
    */
-  function getCall($load=true, $encode=true, $callModifier=true)
+  function getCall($load=true, $encode=true, $callModifier=true, $lateParamBinding=false)
   {
     if ($load)
     {
@@ -289,7 +311,7 @@ class atkDialog
 
     atkimport('atk.utils.atkjson');
 
-    $call = "(new ATK.Dialog(%s, %s, %s, %s, %s)).show();";
+    $call = "(new ATK.Dialog(%s, %s, ".($lateParamBinding ? 'params' : '{}').", %s, %s, %s)).show();";
     $params = array(
       atkJSON::encode($this->m_title),
       atkJSON::encode($this->getUrl()),
@@ -299,7 +321,10 @@ class atkDialog
     );
 
     $result = vsprintf($call, $params);
-    return $encode ? htmlentities($result) : $result;
+    $result = $encode ? atk_htmlentities($result) : $result;
+    $result = $lateParamBinding ? "function(params) { $result }" : $result;
+        
+    return $result;
   }
 
   /**
@@ -326,7 +351,7 @@ class atkDialog
     );
 
     $result = vsprintf($call, $params);
-    return $encode ? htmlentities($result) : $result;
+    return $encode ? atk_htmlentities($result) : $result;
   }
 
   /**
@@ -359,11 +384,11 @@ class atkDialog
     $params = array(
       atkJSON::encode($url),
       atkJSON::encode($formName),
-      atkJSON::encode($extraParams)
+      count($extraParams) == 0 ? '{}' : atkJSON::encode($extraParams)
     );
 
     $result = vsprintf($call, $params);
-    return $encode ? htmlentities($result) : $result;
+    return $encode ? atk_htmlentities($result) : $result;
   }
 
   /**
@@ -382,7 +407,7 @@ class atkDialog
     $params = array(atkJSON::encode($content));
 
     $result = vsprintf($call, $params);
-    return $encode ? htmlentities($result) : $result;
+    return $encode ? atk_htmlentities($result) : $result;
   }
 
   /**

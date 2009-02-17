@@ -642,7 +642,7 @@ class atkMetaPolicy
    */
   protected function _getDefaultValue($name, $meta)
   {
-    if ($meta['default'] == "NOW" && in_array($meta['gentype'], array('date', 'time', 'datetime')))
+    if (array_key_exists('default', $meta) && $meta['default'] == "NOW" && in_array($meta['gentype'], array('date', 'time', 'datetime')))
     {
       $stamp = getdate();
       $date = array('day' => $stamp['yday'], 'month' => $stamp['mon'], 'year' => $stamp['year']);
@@ -670,6 +670,26 @@ class atkMetaPolicy
   protected function _call($method, $params)
   {
     return call_user_func_array(array($this, $method), $params);
+  }
+  
+  /**
+   * Import attribute of the given type, we do this as soon as attributes
+   * are added to the meta node or the type has been changed so that the
+   * flags for the attribute are available.
+   * 
+   * @param string $type attribute type
+   */
+  public function importAttribute($type)
+  {
+    if (strpos($type, '.') === false && atkexists("attribute", $this->getNode()->getModule().'.'.$type))
+      atkuse("attribute", $this->getNode()->getModule().'.'.$type);
+    elseif (strpos($type, '.') === false && atkexists("relation", $this->getNode()->getModule().'.'.$type))
+      atkuse("relation", $this->getNode()->getModule().'.'.$type);
+    elseif (atkexists("attribute", $type))
+      atkuse("attribute", $type);
+    elseif (atkexists("relation", $type))
+      atkuse("relation", $type);
+    else atkimport($type);    
   }
 
   /**
@@ -1069,6 +1089,8 @@ class atkMetaPolicy
    */
   public function setTypeAndParams($attr, $type, $params=array())
   {
+    $this->importAttribute($type);
+    
     $attrs = is_array($attr) ? $attr : array($attr);
     foreach ($attrs as $attr)
     {
@@ -1305,30 +1327,38 @@ class atkMetaPolicy
     {
       $options['local'] = $options['source'];
     }
+    
+    if (isset($options['class']))
+    {
+      $type = $options['class'];
+    }
 
     $destination = $this->_findDestination($accessor, true);
 
     if (isset($options['through']))
     {
-      switch ($options['type'])
+      if (!isset($type))
       {
-        case 'bool':
-        case 'boolean':
-          $type = "atk.meta.relations.atkmetamanyboolrelation";
-          break;
-        case 'list':
-          $type = "atk.meta.relations.atkmetamanytomanylistrelation";
-          break;
-        case 'select':
-          $type = "atk.meta.relations.atkmetamanytomanyselectrelation";
-          break;
-        case 'eshuttle':
-        case 'extendableshuttle':
-          $type = "atk.meta.relations.atkmetaextendableshuttlerelation";
-          break;
-        case 'shuttle':
-        default:
-          $type = "atk.meta.relations.atkmetashuttlerelation";
+        switch (@$options['type'])
+        {
+          case 'bool':
+          case 'boolean':
+            $type = "atk.meta.relations.atkmetamanyboolrelation";
+            break;
+          case 'list':
+            $type = "atk.meta.relations.atkmetamanytomanylistrelation";
+            break;
+          case 'select':
+            $type = "atk.meta.relations.atkmetamanytomanyselectrelation";
+            break;
+          case 'eshuttle':
+          case 'extendableshuttle':
+            $type = "atk.meta.relations.atkmetaextendableshuttlerelation";
+            break;
+          case 'shuttle':
+          default:
+            $type = "atk.meta.relations.atkmetashuttlerelation";
+        }
       }
 
       $through = $this->_findDestination($options['through'], true);
@@ -1350,8 +1380,11 @@ class atkMetaPolicy
     }
     else
     {
-      $type = "atk.meta.relations.atkmetaonetomanyrelation";
-
+      if (!isset($type))
+      {
+        $type = "atk.meta.relations.atkmetaonetomanyrelation";
+      }
+      
       $variants = $this->_getDestinationAttributeVariants();
       $options['variants'] = $variants;
 
@@ -1451,16 +1484,18 @@ class atkMetaPolicy
   /**
    * Add / replace (custom) attribute.
    *
-   * @param string|array $name    attribute name or list of attributes
-   * @param string       $type    attribute type
-   * @param array        $params  attribute parameters, excluding flags (optional)
-   * @param int          $flags   attribute flags (optional)
-   * @param string|array $tabs    tabs to display the attribute on
-   * @param int          $order   order of the attribute
-   * @param mixed        $default default value
+   * @param string|array $name     attribute name or list of attributes
+   * @param string       $type     attribute type
+   * @param array        $params   attribute parameters, excluding flags (optional)
+   * @param int          $flags    attribute flags (optional)
+   * @param string|array $sections sections/tabs to display the attribute on
+   * @param int          $order    order of the attribute
+   * @param mixed        $default  default value
    */
-  public function add($name, $type, $params=array(), $flags=0, $tabs=NULL, $order=NULL, $default=self::NO_DEFAULT_VALUE)
+  public function add($name, $type, $params=array(), $flags=0, $sections=NULL, $order=NULL, $default=self::NO_DEFAULT_VALUE)
   {
+    $this->importAttribute($type);
+    
     $names = is_array($name) ? $name : array($name);
     foreach ($names as $name)
     {
@@ -1474,7 +1509,7 @@ class atkMetaPolicy
           "type" => $type,
           "params" => $params,
           "flags" => $flags,
-          "tabs" => $tabs,
+          "tabs" => $sections,
           "order" => $order
         );
 
@@ -1484,15 +1519,38 @@ class atkMetaPolicy
       }
     }
   }
+  
+  /**
+   * Add fieldset.
+   * 
+   * To include an attribute label use [attribute.label] inside your
+   * template. To include an attribute edit/display field use 
+   * [attribute.field] inside your template.
+   *
+   * @param string       $name     name
+   * @param string       $template template string
+   * @param int          $flags    attribute flags
+   * @param string|array $sections sections/tabs to display the attribute on
+   * @param int          $order    order of the attribute
+   */
+  public function addFieldSet($name, $template, $flags=0, $sections=NULL, $order=NULL)
+  {
+    $this->add($name, 'atk.attributes.atkfieldset', array($template), $flags, $sections, $order);
+  }  
 
   /**
    * Remove attribute.
    *
-   * @param string $name attribute name
+   * @param string|array $name attribute name
    */
   public function remove($name)
   {
-    unset($this->m_attrs[$name]);
+    $names = is_array($name) ? $name : func_get_args();
+    
+    foreach ($names as $name)
+    {
+      unset($this->m_attrs[$name]);
+    }
   }
 
   /**
@@ -1580,13 +1638,20 @@ class atkMetaPolicy
   {
     $db = atkGetDb($this->getNodeDatabase());
     $cols = $this->getMetaData();
+    $sequence = NULL;
 
     foreach ($cols as $name => $meta)
+    {
       if (isset($meta['sequence']) && strlen($meta['sequence']) > 0)
+      {
         $sequence = $meta['sequence'];
+      }
+    }
 
     if ($sequence == NULL)
+    {
       $sequence = atkConfig("database_sequenceprefix").$this->getNodeTable();
+    }
 
     return $sequence;
   }
@@ -1733,7 +1798,10 @@ class atkMetaPolicy
     $this->_meta();
     $code = $this->_compile();
 
-    atk_var_dump("\n\n$code", "atkMetaPolicy::apply - ".$this->getNode()->atkNodeType());
+    if (atkconfig('debug') > 2)
+    {
+      atk_var_dump("\n\n$code", "atkMetaPolicy::apply - ".$this->getNode()->atkNodeType());
+    }
 
     $node = $this->getNode();
 

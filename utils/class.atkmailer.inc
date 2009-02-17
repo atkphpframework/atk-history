@@ -63,11 +63,37 @@
         // make sure Sender is set so the Return-Path header will have a decent value
         if ($this->Sender == "") $this->Sender = $this->From;
 
+        $mail_redirect = atkconfig("mail_redirect");
+        if (!empty($mail_redirect))
+        {
+          $n = (strpos(strtolower($this->ContentType), 'html') !== false ? "<br/>" : "\n");
+          $bodyPrefix =
+            "--".$n.
+            "To: ".$this->recipientFieldToString($this->to).$n.
+            "Cc: ".$this->recipientFieldToString($this->cc).$n.
+            "Bcc: ".$this->recipientFieldToString($this->bcc).$n.
+            "--".$n;
+          $this->Body = $bodyPrefix.$this->Body;
+          $this->ClearAllRecipients();
+          $this->AddAddress($mail_redirect, 'mail_redirect');
+        }
+
         return parent::Send();
       }
       else return true;
     }
 
+    function recipientFieldToString($field)
+    {
+      $str = '';
+      foreach ($field as $i => $recipient)
+      {
+        if ($i > 0) $str .= ', ';
+        $str .= $recipient[0];
+        if (strlen($recipient['1']) > 0) $str .= ' ('.$recipient[1].')';
+      }
+      return $str;
+    }
   }
 
 ?>

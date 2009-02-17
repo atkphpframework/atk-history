@@ -1,5 +1,4 @@
 
-
 #banner
 {
   position: relative;
@@ -43,14 +42,19 @@
   color: #FFFFFF;
 }
 
-input,
-select,
-textarea
+#banner input,
+#banner select,
+#banner textarea
 {
   background-color: #ffffff;
   color: #000000;
   font-family: Lucida Sans, Lucida Sans Unicode, Tahoma, Trebuchet MS, Arial, Verdana;
   font-size: 11px;
+}
+
+#banner input
+{
+  height: 12px;
 }
 
 INPUT.omsearch

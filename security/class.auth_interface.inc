@@ -88,7 +88,7 @@
      * Specific implementations of the method may add more information if
      * necessary.
      *
-     * @param String The login of the user to retrieve.
+     * @param String $user The login of the user to retrieve.
      * @return array Information about a user.
      */
     function getUser($user)
@@ -250,7 +250,7 @@
     
     /**
      * This function returns the list of users that may login. This can be
-     * used to display a dropdown of user from which to choose.
+     * used to display a dropdown of users from which to choose.
      *
      * Implementations that do not support retrieval of a list of users, 
      * should either not implement this method, or return an empty array.

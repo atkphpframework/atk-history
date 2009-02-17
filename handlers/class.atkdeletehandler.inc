@@ -47,6 +47,10 @@
         if ($this->_checkLocked()) return;
 
         if (!$this->checkAttributes()) return;
+
+        // Clear the atkfilter postvar, if we don't it will hold filters from previous actions and it will break stuff.
+        unset($this->m_postvars['atkfilter']);
+
         // If we got here, then the node is not locked and we haven't displayed the
         // confirmation page yet, so we display it
         $page = &$this->getPage();
@@ -101,8 +105,8 @@
       // Something is wrong here, the deleteDb failed
       else
       {
+        $location = $this->m_node->feedbackUrl("delete",ACTION_FAILED,null,$db->getErrorMsg());
         $db->rollback();
-        $location = $this->m_node->feedbackUrl("delete",ACTION_FAILED,$db->getErrorMsg());
         $this->m_node->redirect($location);
       }
     }
@@ -123,9 +127,9 @@
         if (is_array($this->m_postvars['atkselector']))
         {
           foreach ($this->m_postvars['atkselector'] as $selector)
-           if (!$this->m_node->m_lock->lock($selector, $this->m_node->m_table)) $locked = FALSE;
+           if (!$this->m_node->m_lock->lock($selector, $this->m_node->m_table, $this->m_node->getLockMode())) $locked = FALSE;
         }
-        elseif (!$this->m_node->m_lock->lock($this->m_postvars['atkselector'], $this->m_node->m_table)) $locked = FALSE;
+        elseif (!$this->m_node->m_lock->lock($this->m_postvars['atkselector'], $this->m_node->m_table, $this->m_node->getLockMode())) $locked = FALSE;
 
         // If the node is locked, we proceed to display the 'locked' page
         if (!$locked)

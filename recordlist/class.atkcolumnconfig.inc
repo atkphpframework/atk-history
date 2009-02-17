@@ -54,12 +54,13 @@
       return $this->m_node;
     }
 
-    function &getConfig(&$node)
+    function &getConfig(&$node, $id=null)
     {
       global $g_sessionManager;
       static $s_instances = array();
 
-      $id = $node->atkNodeType();
+      if ($id == null)
+        $id = $node->atkNodeType();
 
       if (!isset($s_instances[$id]))
       {
@@ -206,8 +207,8 @@
       {
         if (atkArrayNvl($config, "sortorder", 0)>0 && is_object($this->m_node->m_attribList[$field]))
         {
-          $direction = ($config["direction"]=="desc"?" DESC":"");
-          $res = $this->m_node->m_attribList[$field]->getOrderByStatement($config['extra']).$direction;
+          $direction = ($config["direction"]=="desc"?" DESC":"ASC");
+          $res = $this->m_node->m_attribList[$field]->getOrderByStatement($config['extra'], '', $direction);
           if ($res) $result[] = $res;
         }
       }
@@ -274,6 +275,8 @@
       }
       else if (isset($this->m_node->m_postvars["atkorderby"]) && ($this->m_node->m_postvars["atkorderby"]!=""))
       {
+        $this->clearOrder(); // clear existing order
+        
         // oldfashioned order by.
         $this->m_custom_atkorderby = $this->m_node->m_postvars["atkorderby"];
 

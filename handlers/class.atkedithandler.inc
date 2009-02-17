@@ -44,8 +44,8 @@
       {
         $this->partial($this->m_partial);
         return;
-      }      
-      
+      }
+
       $node = &$this->m_node;
 
       $record = $this->getRecord();
@@ -62,7 +62,7 @@
       $this->notify("edit", $record);
       if ($node->hasFlag(NF_LOCK))
       {
-        if ($node->m_lock->lock($node->primaryKey($record), $node->m_table))
+        if ($node->m_lock->lock($node->primaryKey($record), $node->m_table, $node->getLockMode()))
         {
           $res = $this->invoke("editPage", $record, true);
         }
@@ -85,7 +85,7 @@
       $node = &$this->m_node;
 
       $record = $this->getRejectInfo(); // Check reject info first
-      
+
       if($record == null) //If reject info not set -  do select
       {
         list($record) = $node->selectDb(atkArrayNvl($this->m_postvars, 'atkselector', ""),"","","","","edit");
@@ -197,6 +197,8 @@
 
       if (is_object($ui))
       {
+        $this->getPage()->setTitle(atktext('app_shorttitle')." - ".$node->actionTitle('edit', $record));
+
         $output = $ui->renderAction("edit", $params, $node->m_module);
         $this->addRenderBoxVar("title", $node->actionTitle('edit', $record));
         $this->addRenderBoxVar("content", $output);
@@ -285,9 +287,9 @@
     {
       $field = &$fields[$index];
 
-	    // visible sections, both the active sections and the tab names (attribute that are
-	    // part of the anonymous section of the tab)
-	    $visibleSections = array_merge($this->m_node->getActiveSections($tab, $mode), $this->m_node->getTabs($mode));
+      // visible sections, both the active sections and the tab names (attribute that are
+      // part of the anonymous section of the tab)
+      $visibleSections = array_merge($this->m_node->getActiveSections($tab, $mode), $this->m_node->getTabs($mode));
 
       $tplfield = array();
 
@@ -316,19 +318,19 @@
       }
 
       $tplfield["class"] = implode(" ", $classes);
-	    $tplfield["tab"] = $tplfield["class"]; // for backwards compatibility
+      $tplfield["tab"] = $tplfield["class"]; // for backwards compatibility
 
-	    // Todo fixme: initial_on_tab kan er uit, als er gewoon bij het opstarten al 1 keer showTab aangeroepen wordt (is netter dan aparte initial_on_tab check)
-	    // maar, let op, die showTab kan pas worden aangeroepen aan het begin.
-  		$tplfield["initial_on_tab"] =
-  		   ($field["tabs"] == "*" || in_array($tab, $field["tabs"])) &&
+      // Todo fixme: initial_on_tab kan er uit, als er gewoon bij het opstarten al 1 keer showTab aangeroepen wordt (is netter dan aparte initial_on_tab check)
+      // maar, let op, die showTab kan pas worden aangeroepen aan het begin.
+      $tplfield["initial_on_tab"] =
+         ($field["tabs"] == "*" || in_array($tab, $field["tabs"])) &&
          (!is_array($field["sections"]) || count(array_intersect($field['sections'], $visibleSections)) > 0);
 
       // ar_ stands voor 'attribrow'.
-	    $tplfield["rowid"] = "ar_".($field['id']!=''?$field['id']:getUniqueID("anonymousattribrows")); // The id of the containing row
+      $tplfield["rowid"] = "ar_".($field['id']!=''?$field['id']:getUniqueID("anonymousattribrows")); // The id of the containing row
 
-	    /* check for separator */
-      if ($field["html"] == "-" && $index > 0 && $data["fields"][$index-1]["html"] != "-")
+      // check for separator 
+      if ($field["html"] == "-" && $index > 0 && $fields[$index-1]["html"] != "-")
       {
         $tplfield["type"] = "line";
         $tplfield["line"] = "<hr>";
@@ -379,7 +381,7 @@
         }
         else
         {
-        	$tplfield["label"]="AF_NO_LABEL";
+          $tplfield["label"]="AF_NO_LABEL";
         }
 
         /* obligatory indicator */
@@ -409,11 +411,21 @@
           $tplfield["tooltip"] = $tooltip;
           $editsrc.=$tooltip."&nbsp;";
         }
-
+        
         $tplfield['id']=str_replace('.','_',$this->m_node->atknodetype().'_'.$field["id"]);
 
         $tplfield["full"] = $editsrc;
+
+        $column = (($this->m_node->m_columnAttributes[$field['id']]) ? 1 : 0);
+        $tplfield["column"] = $column;
       }
+      
+      // allow passing of extra arbitrary data, for example if a user overloads the editArray method
+      // to pass custom extra data per attribute to the template      
+      if (isset($field['extra']))
+      {
+        $tplfield['extra'] = $field['extra'];
+      }        
 
       return $tplfield;
     }
@@ -494,14 +506,14 @@
 
             /* Error messages should be rendered in templates using message, label and the link to the tab. */
             $err = array("message"=>$error['msg'], "tablink"=>$tabLink, "label"=>$label);
-            
-            /** 
-             * @deprecated: For backwards compatibility, we still support the msg variable as well. 
+
+            /**
+             * @deprecated: For backwards compatibility, we still support the msg variable as well.
              * Although the message, tablink variables should be used instead of msg and tab.
              */
             $err = array_merge($err, array("msg"=>$error['msg'].$error_tab));
-            
-            $errors[] = $err;            
+
+            $errors[] = $err;
           }
         }
         if (count($pk_err_attrib)>0) // Make primary key error message
@@ -581,15 +593,15 @@
           $params['fieldspart'] = $this->_renderTabs($fields, $tabTpl);
           $result .= $ui->render("editform_common.tpl",$params);
         }
-        else 
+        else
         {
           $result .= $ui->render($node->getTemplate($mode, $record, $tab), $params);
         }
       }
-      
-	    return $result;
+
+            return $result;
     }
-    
+
     function getTabLink(&$node, $error)
     {
       if (count($node->getTabs($node->m_action)) < 2) return '';

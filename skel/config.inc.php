@@ -36,8 +36,7 @@
 
   // Currently supported drivers are:
   // "mysql"   - All MySQL versions since 3.23
-  // "mysql41" - MySQL 4.1+. On top of the "mysql" driver, this one
-  //             has transaction support. (requires PHP5, mysqli extension)
+  // "mysqli"  - MySQL 4.1+. This one has transaction support. 
   // "oci805"  - Oracle 8.0.5
   // "oci8"    - All Oracle 8i versions
   // "oci9"    - Oracle9i+ (also works for 10G)
@@ -85,7 +84,7 @@
 
   // The theme defines the layout of your application. You can see which
   // themes there are in the directory atk/themes.
-  $config_defaulttheme = "steelblue";
+  $config_defaulttheme = "stillblue";
 
   // The language of the application. You can use any language for which
   // a language file is present in the atk/languages directory.

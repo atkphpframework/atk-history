@@ -112,7 +112,7 @@
     {
       $ui = &$this->getUi();
 
-      $vars = array("title"=>$this->m_node->actionTitle('admin'),
+      $vars = array("title"=>$this->m_node->actionTitle($this->getNode()->m_action),
                     "content"=>$this->renderAdminList());
 
       if ($this->getRenderMode() == 'dialog')
@@ -139,11 +139,13 @@
 
       atkimport('atk.datagrid.atkdatagrid');
       $grid = atkDataGrid::create($this->getNode(), 'admin');
-
+      
       if (is_array($actions))
       {
         $grid->setDefaultActions($actions);
       }
+      
+      $this->modifyDataGrid($grid, atkDataGrid::CREATE);
 
       if ($this->redirectToSearchAction($grid))
       {
@@ -167,6 +169,8 @@
     {
       atkimport('atk.datagrid.atkdatagrid');
       $grid = atkDataGrid::resume($this->getNode());
+      
+      $this->modifyDataGrid($grid, atkDataGrid::RESUME);      
 
       if ($this->redirectToSearchAction($grid))
       {
@@ -174,6 +178,21 @@
       }
 
       return $grid->render();
+    }
+     
+    /**
+     * Modify grid.
+     * 
+     * @param atkDataGrid $grid grid
+     * @param int         $mode CREATE or RESUME
+     */
+    protected function modifyDataGrid(atkDataGrid $grid, $mode)
+    {    
+      $method = 'modifyDataGrid';
+      if (method_exists($this->getNode(), $method))
+      {
+        $this->getNode()->$method($grid, $mode);
+      }
     }
 
     /**
@@ -275,7 +294,13 @@
       $link = "";
       if ($this->m_node->allowed("view") && $this->m_node->allowed("export") && $this->m_node->hasFlag(NF_EXPORT))
       {
-        $link.= href(dispatch_url($this->m_node->atkNodeType(), "export"), atktext("export", "atk", $this->m_node->m_type), SESSION_NESTED);
+        $filter = '';    
+        if(count($this->m_node->m_fuzzyFilters) > 0)
+        {
+          $filter = implode(' AND ', $this->m_node->m_fuzzyFilters); 
+        }
+
+        $link.= href(dispatch_url($this->m_node->atkNodeType(), "export", array('atkfilter'=>$filter)), atktext("export", "atk", $this->m_node->m_type), SESSION_NESTED);
       }
       return $link;
     }
@@ -304,6 +329,7 @@
 					atkimport('atk.ui.atkdialog');
 					$dialog = new atkDialog($this->m_node->atkNodeType(), $action, 'dialog');
 					$dialog->setModifierObject($this->m_node);
+					$dialog->setSessionStatus(SESSION_PARTIAL);
 					$onClick = $dialog->getCall();
 
 					return '

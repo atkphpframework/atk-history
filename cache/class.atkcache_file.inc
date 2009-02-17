@@ -18,6 +18,7 @@
  * $Id$
  */
 atkimport("atk.cache.atkcache");
+useattrib('atkFileAttribute');
 
 class atkCache_file extends atkCache
 {
@@ -56,9 +57,31 @@ class atkCache_file extends atkCache
        $this->m_context = stream_context_create(array());
     }
     $this->m_context = stream_context_create(array());
-    $this->m_path = $this->getCacheConfig('path',atkconfig('atktempdir')."cache/");
-    atkFileAttribute::mkdir($this->m_path);
+    $this->setCachePath();
+  }
 
+  /**
+   * Set the directory that the cache should be written in.
+   */
+  protected function setCachePath()
+  {
+    $this->m_path = $this->getCacheConfig('path',atkconfig('atktempdir')."cache/").$this->getFileSafeNamespace().'/';
+    atkFileAttribute::mkdir($this->m_path);
+  }
+
+  public function setNamespace($namespace)
+  {
+    parent::setNamespace($namespace);
+    $this->setCachePath();
+  }
+
+  /**
+   * Get the namespace and make it 'filesafe', a.k.a. safe for usage as directoryname
+   * @return string
+   */
+  public function getFileSafeNamespace()
+  {
+    return strtolower(preg_replace('/([\s\/])/','_',$this->getNamespace()));
   }
 
   /**
@@ -255,7 +278,7 @@ class atkCache_file extends atkCache
   }
 
   /**
-   * Removes all cache entries.
+   * Removes all cache entries for the current namespace
    *
    * @return boolean success
    */

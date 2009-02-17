@@ -113,7 +113,21 @@ class atkDataNode extends atkNode
       'selector' => $selector
     );
 
-    return count($this->findData($params));
+    return $this->countData($params);
+  }
+  
+  /**
+   * Count "rows".
+   *
+   * Supported parameters are: selector, limit, offset and order.
+   * 
+   * @param array $params parameters
+   * 
+   * @return int number of "records"
+   */
+  protected function countData($params=array())
+  {
+    return count($this->findData($params));    
   }
 
   /**
@@ -203,28 +217,39 @@ class atkDataNode extends atkNode
    */
   protected function getCriteria($selector)
   {
+    $criteria = $this->m_filters;
+    
     if (empty($selector))
     {
-      return array();
+      return $criteria;
     }
-
-    $criteria = array();
-    $keyValueSet = decodeKeyValueSet($selector);
-
-    foreach ($keyValueSet as $column => $value)
+    
+    $selectors = explode(") OR (", $selector);
+    foreach ($selectors as $selector)
     {
-      $column = trim($column);
-      $value = trim($value);
-
-      if (strpos($column, '.') !== false)
+      $keyValueSet = decodeKeyValueSet($selector);
+      foreach ($keyValueSet as $column => $value)
       {
-        list($table, $column) = explode('.', $column);
-        if ($table != $this->getTable()) continue;
+        $column = trim($column, ' ()');
+        $value = trim($value, ' ()');
+  
+        if (strpos($column, '.') !== false)
+        {
+          list($table, $column) = explode('.', $column);
+          if ($table != $this->getTable()) continue;
+        }
+  
+        $value = stripslashes(stripQuotes($value));
+  
+        if (isset($criteria[$column]))
+        {
+          $criteria[$column] = array_merge((array)$criteria[$column], (array)$value);
+        }
+        else 
+        {
+          $criteria[$column] = $value;
+        }
       }
-
-      $value = stripslashes(stripQuotes($value));
-
-      $criteria[$column] = $value;
     }
 
     return $criteria;
@@ -270,8 +295,6 @@ class atkDataNode extends atkNode
   protected function translateOrder($order)
   {
     if (empty($order)) return false;
-
-    $order = strtolower($order);
 
     list($column, $direction) = explode(' ', $order);
 

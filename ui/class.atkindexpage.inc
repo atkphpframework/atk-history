@@ -82,7 +82,7 @@
 
       $this->atkGenerateDispatcher();
 
-      $this->m_output->output($this->m_page->render(($this->m_title!=""?$this->m_title:atkText("app_title")), $this->m_flags));
+      $this->m_output->output($this->m_page->render($this->m_title != "" ? $this->m_title : null, $this->m_flags));
       $this->m_output->outputFlush();
     }
 
@@ -101,7 +101,6 @@
     function atkGenerateTop()
     {
       $this->m_page->register_style($this->m_theme->stylePath("style.css"));
-      $this->m_page->register_stylecode("form{display: inline;}");
       $this->m_page->register_style($this->m_theme->stylePath("top.css"));
 
       //Backwards compatible $content, that is what will render when the box.tpl is used instead of a top.tpl
@@ -109,14 +108,16 @@
       $content = '<br />'.$loggedin.' &nbsp; <a href="index.php?atklogout=1">'.ucfirst(atkText("logout")).' </a>&nbsp;<br /><br />';
 
       $top = $this->m_ui->renderBox(array("content"=> $content,
-      "logintext" => atktext("logged_in_as"),
-      "logouttext" => ucfirst(atkText("logout", "atk")),
-      "logoutlink" => "index.php?atklogout=1",
-      "logouttarget"=>"_top",
-      "centerpiece_links"=>$this->m_topcenterpiecelinks,
-      "searchpiece"=>$this->m_topsearchpiece,
-      "title" => ($this->m_title!=""?$this->m_title:atkText("app_title")),
-      "user"   => ($this->m_username?$this->m_username:$this->m_user["name"])),
+        "logintext" => atktext("logged_in_as"),
+        "logouttext" => ucfirst(atkText("logout", "atk")),
+        "logoutlink" => "index.php?atklogout=1",
+        "logouttarget"=>"_top",
+        "centerpiece_links"=>$this->m_topcenterpiecelinks,
+        "searchpiece"=>$this->m_topsearchpiece,
+        "title" => ($this->m_title!=""?$this->m_title:atkText("app_title")),
+        "user"   => ($this->m_username?$this->m_username:$this->m_user["name"]),
+        "fulluser" => $this->m_user
+       ),
       "top");
       $this->m_page->addContent($top);
     }

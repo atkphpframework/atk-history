@@ -272,7 +272,7 @@
 
 		    $tplfield["initial_on_tab"] = $tplfield["tab"]==$tab;
 
-		    $tplfield["class"] = "tabbedPaneAttr tabbedPaneTab{$field[tabs]}";
+		    $tplfield["class"] = "tabbedPaneAttr tabbedPaneTab{$field['tabs']}";
 
 		    // Check if there are attributes initially hidden on this tabbedpane
 		    if ($field["attribute"]->isInitialHidden($defaults))
@@ -479,7 +479,7 @@
     {
       $activeTabName = "tabbedPaneTab".$this->getDefaultTab();
       $list = $this->getPaneTabs($action);
-      if (count($list) > 1)
+      if (count($list) > 0)
       {
         $node = &$this->m_ownerInstance;
         $node->addStyle("tabs.css");
