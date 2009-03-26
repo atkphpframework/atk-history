@@ -631,7 +631,7 @@
     {
       $links = array();
 
-      $newsel = $id;
+      $newsel = $id."_newsel";
       $filter = $this->parseFilter($this->m_destinationFilter, $record);
       $links[] = $this->_getSelectLink($newsel, $filter);
       if ($this->hasFlag(AF_RELATION_AUTOLINK)) // auto edit/view link
