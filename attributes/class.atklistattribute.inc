@@ -81,6 +81,14 @@
      var $m_emptyvalue;
 
      /**
+     * Label to use for the 'none' option.
+     *
+     * @access private
+     * @var String
+     */
+    private $m_noneLabel = NULL;
+
+     /**
       * The width of the dropdown list in pixels
       * @var int
       */
@@ -322,7 +330,7 @@
           ((atkconfig("list_obligatory_null_item")&&!$this->hasFlag(AF_LIST_NO_OBLIGATORY_NULL_ITEM))||
            ($this->hasFlag(AF_LIST_OBLIGATORY_NULL_ITEM)))))
       {
-        $ret = '<option value="'.$this->m_emptyvalue.'">'.atk_htmlentities($this->text(array($this->fieldName().'_'.$text_key, $text_key))).'</option>';
+        $ret = '<option value="'.$this->m_emptyvalue.'">'.$this->getNoneLabel();
       }
       return $ret;
     }
@@ -632,6 +640,33 @@
       return $this;
     }
 
+    /**
+     * Set none label.
+     */
+    function setNoneLabel($label)
+    {
+      $this->m_noneLabel = $label;
+    }
+
+    /**
+     * Get none label.
+     */
+    function getNoneLabel()
+    {
+      //Are we have custom none label?
+      if ($this->m_noneLabel !== NULL)
+      {
+        $res = $this->m_noneLabel;
+      }
+      else 
+      {
+        // use a different (more descriptive) text for obligatory items
+        $text_key = $this->hasFlag(AF_OBLIGATORY) ? "list_null_value_obligatory" : "list_null_value";
+        $res = atk_htmlentities($this->text(array($this->fieldName().'_'.$text_key, $text_key)));
+      }
+      return $res;
+        
+    }
   }
 
 ?>
