@@ -31,6 +31,17 @@
   define("AF_ONETOMANY_ADD_DIALOG", AF_SPECIFIC_2);
 
   /**
+   * Use embedded forms for adding records
+   * @deprecated Replaced by AF_ONETOMANY_ADD_DIALOG.
+   */
+  define("AF_ONETOMANY_EMBED", AF_ONETOMANY_ADD_DIALOG);
+
+  /**
+   * Use pop-up dialog for whatever a new record must be copied or must be added.
+   */
+  define("AF_ONETOMANY_ADDORCOPY_DIALOG", AF_SPECIFIC_3);
+
+  /**
    * Show the OTM in add mode.
    * Warning! Not on by default because this only works in simple cases.
    *
@@ -43,18 +54,7 @@
    * - Nodes with unique records (AF_UNIQUE always just checks the database)
    * - Combined primary keys
    */
-  define("AF_ONETOMANY_SHOW_ADD", AF_SPECIFIC_3);
-
-  /**
-   * Use embedded forms for adding records
-   * @deprecated Replaced by AF_ONETOMANY_ADD_DIALOG.
-   */
-  define("AF_ONETOMANY_EMBED", AF_ONETOMANY_ADD_DIALOG);
-
-  /**
-   * Use pop-up dialog for whatever a new record must be copied or must be added.
-   */
-  define("AF_ONETOMANY_ADDORCOPY_DIALOG", AF_SPECIFIC_3);
+  define("AF_ONETOMANY_SHOW_ADD", AF_SPECIFIC_4);
 
   /**
    * Implementation of one-to-many relationships.
@@ -178,8 +178,7 @@
      */
     function atkOneToManyRelation($name, $destination, $refKey="", $flags=0)
     {
-      if (!hasFlag($flags, AF_ONETOMANY_SHOW_ADD)) $flags|=AF_HIDE_ADD;
-      $this->atkRelation($name, $destination, $flags|AF_NO_SORT);
+      $this->atkRelation($name, $destination, $flags|AF_NO_SORT|AF_HIDE_ADD);
 
       if (is_array($refKey))
       {
@@ -194,6 +193,16 @@
         $this->m_refKey[] = $refKey;
       }
       $this->setGridExcludes($this->m_refKey);
+    }
+
+    public function addFlag($flag)
+    {
+      $ret = parent::addFlag($flag);
+      if (hasFlag($this->m_flags, AF_ONETOMANY_SHOW_ADD))
+      {
+        $this->removeFlag(AF_HIDE_ADD);
+      }
+      return $ret;
     }
 
     /**
@@ -516,7 +525,6 @@
     function _getAddLink($myrecords, $record, $saveform=true, $mode="", $fieldprefix="")
     {
       $params=array();
-      atkdebug("OTM for ".$this->m_ownerInstance->atkNodeType()." MODE: $mode");
       if ($mode==='add')
       {
         $ownerfields = $this->getOwnerFields();
@@ -553,7 +561,7 @@
 
     private function getSessionAddFakeId()
     {
-      return "#NEWID#";
+      return "-999999";
     }
 
     private function getSessionStoreKey()

@@ -152,7 +152,7 @@
       return $location;
     }
 
-    private function storeRecord($record)
+    private function storeRecord(&$record)
     {
       $atkstoretype = "";
       $sessionmanager = atkGetSessionManager();
@@ -164,14 +164,14 @@
       }
     }
 
-    private function storeRecordInSession($record)
+    private function storeRecordInSession(&$record)
     {
       atkdebug("STORING RECORD IN SESSION");
       $result = atkinstance('atk.session.atksessionstore')->addDataRow($record, $this->m_node->primaryKeyField());
       return ($result!==false);
     }
 
-    private function storeRecordInDb($record)
+    private function storeRecordInDb(&$record)
     {
       if (!$this->m_node->addDb($record, true, "add")) return false;
 

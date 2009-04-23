@@ -80,13 +80,6 @@
       $page->addContent($node->renderActionPage("edit", $res));
     }
 
-    private function getRecordFromDb()
-    {
-      $selector = atkArrayNvl($this->m_node->m_postvars, 'atkselector', "");
-      list($record) = $this->m_node->selectDb($selector,"","","","","edit");
-      return $record;
-    }
-
     /**
      * check if there are postvars set that overwrite the record contents, this can
      * happen when a new selection is made using the select handler etc.

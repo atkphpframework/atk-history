@@ -36,7 +36,7 @@
      *
      * @return Array The record for editing
      */
-    function getRecord()
+    public function getRecord()
     {
       $record = $this->getRejectInfo(); // Check reject info first
 
@@ -54,13 +54,15 @@
       return $record;
     }
 
-    private function getRecordFromDb()
+    protected function getRecordFromDb()
     {
-      list($record) = $this->m_node->selectDb();
+      $selector = atkArrayNvl($this->m_node->m_postvars, 'atkselector', "");
+      atk_var_dump($selector,"SELECTOR FOR GETTING RECORD");
+      list($record) = $this->m_node->selectDb($selector,"","","","","edit");
       return $record;
     }
 
-    private function getRecordFromSession()
+    protected function getRecordFromSession()
     {
       $selector = atkArrayNvl($this->m_node->m_postvars, 'atkselector','');
       return atkinstance('atk.session.atksessionstore')->getDataRowForSelector($selector);
