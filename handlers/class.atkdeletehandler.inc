@@ -89,7 +89,9 @@
     }
 
     /**
-     * We have a confirmed delete, so we proceed to delete
+     * Given an confirmed delete, determine where the record
+     * needs to be deleted (session or dabase), delete it
+     * and redirect to the feedback url.
      */
     function _doDelete()
     {
@@ -108,6 +110,11 @@
       $this->m_node->redirect($location);
     }
 
+    /**
+     * Delete the record in the database
+     *
+     * @return mixed Results, true or string with errormessage
+     */
     private function _doDeleteDb()
     {
       $db = &$this->m_node->getDb();
@@ -124,6 +131,11 @@
       }
     }
 
+    /**
+     * Delete the database in the session
+     *
+     * @return bool Results, true or false
+     */
     private function _doDeleteSession()
     {
       $selector = atkArrayNvl($this->m_postvars, 'atkselector','');

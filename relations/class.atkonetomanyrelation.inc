@@ -451,13 +451,17 @@
 
       if ($mode==='add')
       {
+        //All actions in the grid should be done in session store mode
         $params['atkstore']='session';
         $params['atkstore_key']=$this->getSessionStoreKey();
 
+        // Make the grid use the OTM Session Grid Handler
+        // which makes the grid get it's records from the session.
         $handler = new atkOneToManyRelationSessionGridHandler($this->getSessionStoreKey());
 
         $grid->setCountHandler( array($handler, 'countHandlerForAdd'));
         $grid->setSelectHandler(array($handler, 'selectHandlerForAdd'));
+        // No searching and sorting on session data... for now...
         $grid->removeFlag(atkDataGrid::SEARCH);
         $grid->removeFlag(atkDataGrid::SORT);
         $grid->removeFlag(atkDataGrid::EXTENDED_SORT);
@@ -559,11 +563,29 @@
       else                 return $this->_getNestedAddLink($myrecords, $record, $saveform, $fieldprefix, $params);
     }
 
+    /**
+     * Return a fake ID for adding to the session.
+     *
+     * We use a high negative number because we have to sneak this in
+     * as if it's a REAL id for the owner, tricking MTOs in the destination
+     * that point back to us into thinking they already have an id.
+     * But we also have to make sure it's recognizable, so when we
+     * persist the records from the session to the database, then
+     * we can set the proper id.
+     *
+     * @return string
+     */
     private function getSessionAddFakeId()
     {
       return "-999999";
     }
 
+    /**
+     * Return the key to use when storing records for the OTM destination
+     * in the session if the OTM is used in add mode.
+     *
+     * @return string
+     */
     private function getSessionStoreKey()
     {
       return $this->getOwnerInstance()->atkNodeType().':'.$this->fieldName();
@@ -907,9 +929,15 @@
      * Store detail records in the database.
      *
      * For onetomanyrelation, this function does not have much use, since it
-     * stores records using its 'add link'. Thehe copyDb function however uses
-     * this method to clone detail records.
-     * If mode is anything other than "copy" this method does not do anything.
+     * stores records using its 'add link'.
+     * There are however two modes that use this:
+     * - 'copy' mode
+     *   The copyDb function, to clone detail records.
+     * - 'add' mode
+     *   When the OTM was used in add mode, we have to transfer
+     *   the records stored in the session to the database.
+     *
+     * other than those this method does not do anything.
      *
      * @param atkDb $db The database used by the node.
      * @param array $record The master record which has the detail records
@@ -927,6 +955,14 @@
       }
     }
 
+    /**
+     * Persist records from the session (in add mode) to the database.
+     *
+     * @param atkDb $db
+     * @param array $record
+     * @param string $mode
+     * @return bool
+     */
     private function storeAdd(atkDb $db, $record, $mode)
     {
       if (!$this->createDestination()) return false;
@@ -942,6 +978,14 @@
       return true;
     }
 
+    /**
+     * Recursive method to look for the fake id in the record and replace it
+     * with the proper id.
+     *
+     * @param array $row    Destination record
+     * @param mixed $id     Fake id to look for
+     * @param array $record Owner record
+     */
     private function updateSessionAddFakeId(&$row, $id, $record)
     {
       $row_keys = array_keys($row);
@@ -958,6 +1002,14 @@
       }
     }
 
+    /**
+     * Copy detail records.
+     *
+     * @param atkDb  $db     Datbase connection to use
+     * @param array  $record Owner record
+     * @param string $mode   Mode ('copy')
+     * @return bool
+     */
     private function storeCopy(atkDb $db, $record, $mode)
     {
       $onetomanyrecs = $record[$this->fieldName()];
@@ -1488,15 +1540,31 @@
     }
   }
 
+  /**
+   * The OTM Session Grid Handler
+   * Provides the OTM grid with data from the session,
+   * when the OTM is in add mode.
+   */
   class atkOneToManyRelationSessionGridHandler
   {
     private $_key;
 
+    /**
+     * Create a OTM session grid handler
+     *
+     * @param string $key
+     */
     public function __construct($key)
     {
       $this->_key = $key;
     }
 
+    /**
+     * Select handler, returns the records for the grid
+     *
+     * @param atkDataGrid $grid
+     * @return array Records for the grid
+     */
     public function selectHandlerForAdd(atkDataGrid $grid)
     {
       $records = $this->getRecordsFromSession();
@@ -1505,13 +1573,17 @@
       $offset = $grid->getOffset();
       $records_count = count($records);
 
-      // If we don't need to limit the result, we don't
+      // If we don't need to limit the result, then we don't
       if ((int)$offset===0 && $limit>=$records_count)
       {
+        // We have to sort the data first, because the datagrid
+        // is very sensitive with regards to it's numerical keys
+        // being sequential
         sort($records);
         return $records;
       }
 
+      // Limit the search results and return the limited results
       $ret = array();
       $records_keys = array_keys($records);
       for ($i=$offset,$j=0;$i<$records_count && $j<$limit;$i++,$j++)
@@ -1521,11 +1593,21 @@
       return $ret;
     }
 
+    /**
+     * Count handler, return the number of records there are in the session
+     *
+     * @return int
+     */
     public function countHandlerForAdd()
     {
       return count($this->getRecordsFromSession());
     }
 
+    /**
+     * Get all records for the current key from the session
+     *
+     * @return array
+     */
     private function getRecordsFromSession()
     {
       atkimport('atk.session.atksessionstore');

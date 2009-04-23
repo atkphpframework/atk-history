@@ -98,7 +98,7 @@
           }
           else
           {
-            $location = $this->getReturnURL($record);
+            $location = $this->getSuccessReturnURL($record);
             $this->m_node->redirect($location, $record);
           }
         }
@@ -111,7 +111,13 @@
       }
     }
 
-    private function getReturnURL($record)
+    /**
+     * Get the URL to redirect to after successfully saving a record.
+     *
+     * @param array $record Saved record
+     * @return string Location to redirect to
+     */
+    private function getSuccessReturnURL($record)
     {
       $location="";
       if ($this->m_node->hasFlag(NF_EDITAFTERADD) && $this->m_node->allowed('edit'))
@@ -152,6 +158,12 @@
       return $location;
     }
 
+    /**
+     * Store a record, either in the database or in the session
+     *
+     * @param array $record Record to store
+     * @return bool Successfull save?
+     */
     private function storeRecord(&$record)
     {
       $atkstoretype = "";
@@ -164,6 +176,12 @@
       }
     }
 
+    /**
+     * Store a record in the session
+     *
+     * @param array $record Record to store in the session
+     * @return bool Successfull save?
+     */
     private function storeRecordInSession(&$record)
     {
       atkdebug("STORING RECORD IN SESSION");
@@ -171,6 +189,12 @@
       return ($result!==false);
     }
 
+    /**
+     * Store a record in the database
+     *
+     * @param array $record Record to store in the database
+     * @return bool Successfull save?
+     */
     private function storeRecordInDb(&$record)
     {
       if (!$this->m_node->addDb($record, true, "add")) return false;

@@ -32,9 +32,9 @@
   class atkViewEditBase extends atkActionHandler
   {
     /**
-     * Get the record for editing
+     * Get the record to view/edit
      *
-     * @return Array The record for editing
+     * @return Array The record for viewing/editting
      */
     public function getRecord()
     {
@@ -54,14 +54,23 @@
       return $record;
     }
 
+    /**
+     * Get the record for the database with the current selector
+     *
+     * @return array
+     */
     protected function getRecordFromDb()
     {
       $selector = atkArrayNvl($this->m_node->m_postvars, 'atkselector', "");
-      atk_var_dump($selector,"SELECTOR FOR GETTING RECORD");
       list($record) = $this->m_node->selectDb($selector,"","","","","edit");
       return $record;
     }
 
+    /**
+     * Get the current record from the database with the current selector
+     *
+     * @return array
+     */
     protected function getRecordFromSession()
     {
       $selector = atkArrayNvl($this->m_node->m_postvars, 'atkselector','');

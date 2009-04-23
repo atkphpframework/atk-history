@@ -51,7 +51,6 @@
 
     /**
      * Perform the update action
-     *
      */
     public function doUpdate()
     {
@@ -113,9 +112,13 @@
     }
 
     /**
-     * Handle action when user has clicked atknoclose, atksaveandclose or atkwizardaction
+     * Process a record (preUpdate/validate/store)
      *
-     * @param array $record
+     * @param array  $record                 Record to store
+     * @param string $error_handler_method   Error handler method to call on current handler
+     * @param string $success_handler_method Success handler method to call on current handler
+     * @param array  $extra_params           Extra params to pass along to error/success handler methods
+     * @return bool Wether the process succeeded in storing the record
      */
     public function handleProcess($record, $error_handler_method='handleError', $success_handler_method="redirectForUpdateResult", $extra_params=array())
     {
@@ -142,14 +145,15 @@
 
       $result = $this->updateRecord($record);
       $this->$success_handler_method($record, $result, $extra_params);
+      return true;
     }
 
     /**
      * Check if there is an error (this can be determined by the
      * variable atkerror in the record).
      *
-     * @param array $record
-     * @return Boolean True on error, false otherwise
+     * @param array $record Record to check for errors
+     * @return bool Error detected?
      */
     public function hasError($record)
     {
@@ -165,6 +169,12 @@
       return $error;
     }
 
+    /**
+     * Update a record, determines wether to update it to the session or the database
+     *
+     * @param array $record Record to update
+     * @return mixed Result of the update, true, false or string with error
+     */
     private function updateRecord(&$record)
     {
       $atkstoretype = "";
@@ -178,6 +188,12 @@
       return $result;
     }
 
+    /**
+     * Update a record in the database
+     *
+     * @param array $record Record to update
+     * @return mixed Result of the update, true, false or string with error
+     */
     private function updateRecordInDb(&$record)
     {
       $db = &$this->m_node->getDb();
@@ -201,6 +217,12 @@
       }
     }
 
+    /**
+     * Update a record in the session
+     *
+     * @param array $record Record to update
+     * @return mixed Result of the update, true or false
+     */
     private function updateRecordInSession($record)
     {
       $selector = atkArrayNvl($this->m_postvars, 'atkselector','');
@@ -219,6 +241,12 @@
       $this->m_node->redirect($location);
     }
 
+    /**
+     * Given a record and a result from the update redirects to a new location, if necessary
+     *
+     * @param array $record Record that was possibly saved
+     * @param mixed $result Result of the update, true, false or string with error
+     */
     private function redirectForUpdateResult($record, $result)
     {
       $location = false;
@@ -248,6 +276,11 @@
       if ($location) $this->m_node->redirect($location);
     }
 
+    /**
+     * Load up a page with the error for a given record that failed to update
+     *
+     * @param array $record Record to use with the error page
+     */
     private function loadEditPageWithError($record)
     {
       global $ATK_VARS;
@@ -328,6 +361,11 @@
       $page->register_loadscript($script);
     }
 
+    /**
+     * Update the edit dialog for a failed update
+     *
+     * @param array $record Record that failed update
+     */
     private function loadEditDialogWithErrors($record)
     {
       // Re-render the edit dialog.
