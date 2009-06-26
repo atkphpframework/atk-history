@@ -32,6 +32,13 @@
 
   	var $m_exportcsv = true;
   	protected $m_mode;
+  	protected $m_attribList = array();
+    protected $sol;
+    protected $sof;
+    protected $eof;
+    protected $eol;
+    protected $fsep;
+    protected $empty;
 
     /**
      * Creates a special Recordlist that can be used for exporting to files or to make it printable
@@ -58,6 +65,7 @@
     {
       $this->setNode($node);
       $this->m_mode = $mode;
+
       // example      html         csv
 
       // $sol     = '<tr>'         or  ''
@@ -72,105 +80,175 @@
       $totals = array();
       if ($type=="0")
       {
-        $empty = "&nbsp;";
+        $this->empty = "&nbsp;";
       }
       if ($type=="1")
       {
-        $output="";
-        $empty="";
+        $output = "";
+        $this->empty = "";
+      }
+      $this->sol = $sol;
+      $this->sof = $sof;
+      $this->eof = $eof;
+      $this->eol = $eol;
+      $this->fsep = $fsep;
+
+      $funcList = array();
+
+      foreach (array_keys($this->m_node->m_attribList) as $attribname)
+      {
+        $p_attrib = &$this->m_node->m_attribList[$attribname];
+        $musthide=(is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList));
+        if (!$this->isHidden($p_attrib) && !$musthide)
+        {
+          $this->m_attribList[] = &$p_attrib;
+
+          $funcname = $attribname."_display";
+          if (method_exists($this->m_node,$funcname))
+          {
+            $funcList[] =array(&$this->m_node,$funcname);
+          }
+          else
+          {
+            // otherwise, the display function of the particular attribute
+            // is called.
+            $funcList[] = array(&$p_attrib,"display");
+          }
+
+          // the totalisable check..
+          // Since we are looping the attriblist anyway, we also check if there
+          // are totalisable collumns.
+          if ($p_attrib->hasFlag(AF_TOTAL))
+          {
+            $totalisable = true;
+          }
+        }
       }
 
       if ($titlerow)
       {
-        $output .= $sol;
+        $output .= $this->sol;
 
         // display a headerrow with titles.
-        // Since we are looping the attriblist anyway, we also check if there
-        // are totalisable collumns.
-        foreach (array_keys($this->m_node->m_attribList) as $attribname)
+        for ($j=0, $_j=count($this->m_attribList); $j<$_j; $j++)
         {
-          $p_attrib = &$this->m_node->m_attribList[$attribname];
-          $musthide=(is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList));
-          if (!$this->isHidden($p_attrib) && !$musthide)
-          {
-            $output.=$sof.$this->eolreplace(atktext($p_attrib->fieldName(), $this->m_node->m_module, $this->m_node->m_type), $rfeplace).$eof.$fsep;
-
-            // the totalisable check..
-            if ($p_attrib->hasFlag(AF_TOTAL))
-            {
-              $totalisable = true;
-            }
-          }
+          $output.=$this->sof.$this->eolreplace($this->m_attribList[$j]->label(), $rfeplace).$this->eof.$this->fsep;
         }
-
-        $output.=$eol;
+        $output.=$this->eol;
       }
 
       // Display the values
-      for ($i = 0, $_i = count($recordset); $i < $_i; $i++)
-      {
-        $output.=$sol;
-        foreach (array_keys($this->m_node->m_attribList) as $attribname)
-        {
-          $p_attrib = &$this->m_node->m_attribList[$attribname];
-          $musthide=(is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList));
-          
-          if (!$this->isHidden($p_attrib) && !$musthide)
-          {
-            // An <attributename>_display function may be provided in a derived
-            // class to display an attribute.
-            $funcname = $p_attrib->m_name."_display";
+      $columnConfig = &$this->m_node->getColumnConfig();
 
-            if (method_exists($this->m_node,$funcname))
+      if($columnConfig->hasSubTotals())
+      {
+        $result = array();
+        $lastvalues = array();
+
+        $totalizers = $columnConfig->totalizableColumns();
+        $subtotalfields = $columnConfig->subtotalColumns();
+
+        $subtotals = array();
+
+        for ($i = 0, $_i = count($recordset); $i < $_i; $i++)
+        {
+          for ($j=count($subtotalfields)-1; $j>=0; $j--) // reverse loop, to ensure right-to-left subtotalling
+          {
+            $fieldname = $subtotalfields[$j];
+            $value = $recordset[$i][$fieldname];
+            $p_subtotalling_attrib = &$this->m_node->getAttribute($fieldname);
+
+            if (isset($lastvalues[$fieldname]) && !$p_subtotalling_attrib->equal($recordset[$i], $lastvalues))
             {
-              $value=$this->eolreplace($this->m_node->$funcname($recordset[$i], $this->m_mode), $rfeplace);
+              $output .= $this->_subTotalRow($recordset[$i], $subtotals, $fieldname, $totalizers);
             }
-            else
+
+            foreach($totalizers as $totalfield)
             {
-              // otherwise, the display function of the particular attribute
-              // is called.
-              $value = $this->eolreplace($p_attrib->display($recordset[$i], $this->m_mode), $rfeplace);
+              $p_attrib = &$this->m_node->getAttribute($totalfield);
+              $subtotals[$totalfield][$fieldname] = $p_attrib->sum($subtotals[$totalfield][$fieldname], $recordset[$i]);
             }
-            if (atktext("charset") != "" && $decode) $value = atk_html_entity_decode(atk_htmlentities($value, ENT_NOQUOTES, atktext("charset")), ENT_NOQUOTES, atktext("charset"));
-            $output.=$sof.($value==""?$empty:$value).$eof.$fsep;
+            $lastvalues[$fieldname] = $value;
+          }
+
+          $output.=$this->sol;
+          for ($j=0, $_j=count($this->m_attribList); $j<$_j; $j++)
+          {
+            $value = $funcList[$j][0]->$funcList[$j][1]($recordset[$i], $this->m_mode);
+            $output.=$this->sof.($value==""?$this->empty:$value).$this->eof.$this->fsep;
 
             // Calculate totals..
-            if ($p_attrib->hasFlag(AF_TOTAL))
+            if ($this->m_attribList[$j]->hasFlag(AF_TOTAL))
             {
-              $totals[$attribname] = $p_attrib->sum($totals[$attribname], $recordset[$i]);
+              $totals[$this->m_attribList[$j]->fieldName()] = $this->m_attribList[$j]->sum($totals[$this->m_attribList[$j]->fieldName()], $recordset[$i]);
             }
           }
+          $output .= $this->eol;
         }
+        // leftovers, subtotals of last rows
+        if (count($recordset))
+        {
+          for ($j=count($subtotalfields)-1; $j>=0; $j--) // reverse loop, to ensure right-to-left subtotalling
+          {
+            $fieldname = $subtotalfields[$j];
+            $output .= $this->_subTotalRow($recordset[count($recordset)-1], $subtotals, $fieldname, $totalizers);
+          }
+        }
+        // end of leftovers
+      }
+      elseif ($totalisable)
+      {
+        for ($i = 0, $_i = count($recordset); $i < $_i; $i++)
+        {
+          $output.=$this->sol;
+          for ($j=0, $_j=count($this->m_attribList); $j<$_j; $j++)
+          {
+            $value = $funcList[$j][0]->$funcList[$j][1]($recordset[$i], $this->m_mode);
+            $output.=$this->sof.($value==""?$this->empty:$value).$this->eof.$this->fsep;
 
-        $output.=$eol;
+            // Calculate totals..
+            if ($this->m_attribList[$j]->hasFlag(AF_TOTAL))
+            {
+              $totals[$this->m_attribList[$j]->fieldName()] = $this->m_attribList[$j]->sum($totals[$this->m_attribList[$j]->fieldName()], $recordset[$i]);
+            }
+          }
+          $output.=$this->eol;
+        }
+      }
+      else
+      {
+        for ($i = 0, $_i = count($recordset); $i < $_i; $i++)
+        {
+          $output.=$this->sol;
+          for ($j=0, $_j=count($this->m_attribList); $j<$_j; $j++)
+          {
+            $value = $funcList[$j][0]->$funcList[$j][1]($recordset[$i], $this->m_mode);
+            $output.=$this->sof.($value==""?$this->empty:$value).$this->eof.$this->fsep;
+          }
+          $output.=$this->eol;
+        }
       }
 
       // totalrow..
       if ($totalisable)
       {
-        $totalRow = $sol;
+        $totalRow = $this->sol;
 
         // Third loop.. this time for the totals row.
-        foreach (array_keys($this->m_node->m_attribList) as $attribname)
+        for ($j=0, $_j=count($this->m_attribList); $j<$_j; $j++)
         {
-          $p_attrib = &$this->m_node->m_attribList[$attribname];
-        $musthide=(is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList));
-          if (!$this->isHidden($p_attrib) && !$musthide)
+          if ($this->m_attribList[$j]->hasFlag(AF_TOTAL))
           {
-            if ($p_attrib->hasFlag(AF_TOTAL))
-            {
-              $value = $this->eolreplace($p_attrib->display($totals[$attribname], $this->m_mode), $rfeplace);
-              $totalRow.=$sof.($value=="" ? $empty : $value).$eof.$fsep;
-
-            }
-            else
-            {
-              $totalRow.= $sof.$empty.$eof.$fsep;
-            }
+            $value = $this->eolreplace($this->m_attribList[$j]->display($totals[$this->m_attribList[$j]->fieldName()], $this->m_mode), $rfeplace);
+            $totalRow.=$this->sof.($value=="" ? $this->empty : $value).$this->eof.$this->fsep;
+          }
+          else
+          {
+            $totalRow.= $this->sof.$this->empty.$this->eof.$this->fsep;
           }
         }
 
-        $totalRow .= $eol;
+        $totalRow .= $this->eol;
 
         $output .= $totalRow;
 
@@ -182,8 +260,6 @@
         $output = '<table border="1" cellspacing="0" cellpadding="2">'.$output."</table>";
       }
 
-      atkdebug(html_entity_decode($output));
-
       // To a File
       if (!array_key_exists("filename", $outputparams))
         $outputparams["filename"] = "achievo";
@@ -191,15 +267,15 @@
       if ($this->m_exportcsv)
       {
         $ext = ($type == "0" ? "html" : "csv");
-        $exporter = &atknew("atk.utils.atkfileexport");       
-        $exporter->export($output, $outputparams["filename"], $ext, $ext, $compression);       
+        $exporter = &atknew("atk.utils.atkfileexport");
+        $exporter->export($output, $outputparams["filename"], $ext, $ext, $compression);
       }
       else
       {
       	return $output;
       }
     }
-    
+
     protected function isHidden(atkAttribute $attribute)
     {
       if ($attribute->hasFlag(AF_HIDE)) return true;
@@ -230,6 +306,46 @@
 
       return $string;
     }
+
+    private function _subTotalRow($row, &$totals, $fieldforsubtotal, $totalizers)
+    {
+      $subtotalcols = array();
+      foreach($totalizers as $totalfield)
+      {
+        $p_attrib = &$this->m_node->getAttribute($totalfield);
+        $subtotalcols[$totalfield] = $p_attrib->display($totals[$totalfield][$fieldforsubtotal]);
+
+        // reset walking total
+        $totals[$totalfield][$fieldforsubtotal] = "";
+      }
+
+
+      return $this->_createSubTotalRowFromRow($row, $fieldforsubtotal, $subtotalcols);
+    }
+
+    function _createSubTotalRowFromRow($row, $fieldname, $subtotalcolumns)
+    {
+      $subRow =  $this->sol;
+      for ($j=0, $_j=count($this->m_attribList); $j<$_j; $j++)
+      {
+        $col = $this->m_attribList[$j]->fieldname();
+        if ($col==$fieldname)
+        {
+          $value = atktext("subtotal");
+        }
+        elseif (isset($subtotalcolumns[$col]))
+        {
+          $value = $subtotalcolumns[$col];
+        }
+        else
+        {
+          $value = $this->empty;
+        }
+        $subRow .= $this->sof.$value.$this->eof.$this->fsep;
+      }
+      return $subRow.$this->eol;
+    }
+
   }
 
 ?>
