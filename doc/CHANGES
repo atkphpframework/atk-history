@@ -8,6 +8,7 @@ Latest changes go on top, different types of changes may be mixed.
 
 Changes in ATK 6.3
 ------------------
+* Massively improved API documentation. [Lineke]
 * Improved translations of actions and node/action titles (you can
   now prefix the title/action with the node name just like other
   translations). [Peter]
