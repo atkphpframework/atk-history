@@ -4,6 +4,12 @@
 Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 [names] are references to people in the AUTHORS file.
 
+Changed in Scheldnet branch
+---------------------------
+* Merge of changeset 6053 within the trunk into this branch:
+  Added validation of the ATK_VARS['atklng'] variable, the given language
+  must be supported. [Dennis]
+
 Changed in ATK 6.2
 ------------------
 * Fix use of non-numeric keys in atkOneToManyRelation [Marc]
@@ -139,7 +145,7 @@ Changed in ATK 6.2
 * Added setMasterNode in atkAttributeEditHandler and a testcase for it. [Dennis, Peter]
 * atkNode now uses the method nodeTitle() instead of title() to retrieve the title.
   [Peter, Dennis]
-* Added fix for toQueryString for prototype calls which encoded a value twice instead 
+* Added fix for toQueryString for prototype calls which encoded a value twice instead
   of once, when you are using the same key more then once (an array of values).
   [Peter, Dennis]
 * Added a zIndex for the calendar.js script to make sure calendars are also on top in
