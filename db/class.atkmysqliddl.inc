@@ -12,7 +12,7 @@
   * @copyright (c)2005 Ibuildings.nl BV
   * @license http://www.achievo.org/atk/licensing ATK Open Source License
   *
-  * @version $Revision$
+  * @version $Revision: 6323 $
   * $Id$
   *
   */
@@ -35,7 +35,11 @@
   */
  class atkMysqliDDL extends atkMysqlDDL
  {
-   
+   /**
+    * Convert an database specific type to an ATK generic datatype.
+    *
+    * @param string $type  The database specific datatype to convert.
+    */
    function getGenericType($type)
     {
       $type = strtolower($type);
@@ -90,6 +94,16 @@
       return "CREATE VIEW $name AS ".$select.($with_check_option ? " WITH CHECK OPTION" : "");
     }
 
+    /**
+     * Build DROP VIEW query
+     *
+     * @param string $name - name of view
+     * @return string CREATE VIEW query string
+     */
+    function dropView($name)
+    {
+      return "DROP VIEW $name";
+    }
    
  }
 ?>

@@ -13,7 +13,7 @@
    * @copyright (c)2005 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6102 $
    * $Id$
    */
 
@@ -36,7 +36,8 @@
      * Setup the testcase.
      */
     function setup()
-    {          
+    {        
+      parent::setUp();   
     }
     
     /**
@@ -88,6 +89,22 @@
       // call with 2 params
       $this->assertEqual("Blue Banana", atkClassLoader::invokeFromString("atk.utils.testcases.test_atkclassloader#methodparams", array("Blue", "Banana")), "with params %s");      
     }    
+    
+    /**
+     * Test if we can mount a class path.
+     */
+    function test_mount_class_path()
+    {
+      $path = atkconfig('atkroot').'../fake/path/';
+
+      $this->assertEqual(atkClassLoader::getClassPath('test_prefix.myclass'), atkconfig('atkroot').'test_prefix/class.myclass.inc'); 
+      $this->assertEqual(atkClassLoader::getClassPath('test_prefix.nested.myclass'), atkconfig('atkroot').'test_prefix/nested/class.myclass.inc');      
+      
+      atkClassLoader::mountClassPath('test_prefix', $path);
+      
+      $this->assertEqual(atkClassLoader::getClassPath('test_prefix.myclass'), $path.'class.myclass.inc'); 
+      $this->assertEqual(atkClassLoader::getClassPath('test_prefix.nested.myclass'), $path.'nested/class.myclass.inc');      
+    }
     
     /**
      * Utility method for classloader test.

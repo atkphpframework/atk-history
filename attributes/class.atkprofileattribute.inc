@@ -11,7 +11,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6177 $
    * $Id$
    */
 
@@ -30,6 +30,14 @@
     var $m_parentAttrName;
     var $m_accessField;
 
+    /**
+     * Constructor
+     *
+     * @param string $name The name of the attribute
+     * @param string $parentAttrName
+     * @param int $flags The flags of this attribute
+     * @return atkProfileAttribute
+     */
     function atkProfileAttribute($name, $parentAttrName="", $flags=0)
     {
       if (is_numeric($parentAttrName))
@@ -46,6 +54,13 @@
         $this->m_accessField = atkconfig('auth_levelfield');
     }
 
+    /**
+     * Load this record
+     *
+     * @param atkDb $db The database object
+     * @param array $record The record
+     * @return array Array with loaded values
+     */
     function load(&$db, $record)
     {
       $query = "SELECT *
@@ -61,6 +76,13 @@
       return $result;
     }
 
+    /**
+     * Get child groups
+     *
+     * @param atkDb $db The database object
+     * @param int $id The id to search for
+     * @return array
+     */
     function getChildGroups(&$db, $id)
     {
       $result = array();
@@ -82,13 +104,21 @@
       return $result;
     }
 
+    /**
+     * Store the value of this attribute in the database
+     *
+     * @param atkDb $db The database object
+     * @param array $record The record which holds the values to store
+     * @param string $mode The mode we're in
+     * @return bool True if succesfull, false if not
+     */
     function store(&$db, $record, $mode)
     {
       global $g_user;
 
       // Read the current actions available/editable and user rights before changing them
       $isAdmin = ($g_user['name']=='administrator' || $this->canGrantAll());
-      $allActions = $this->getAllActions($record);
+      $allActions = $this->getAllActions($record, false);
       $editableActions = $this->getEditableActions($record);
 
       $delquery = "DELETE FROM ".atkconfig("auth_accesstable")."
@@ -150,6 +180,16 @@
       return true;
     }
 
+    /**
+     * Returns a piece of html code for hiding this attribute in an HTML form,
+     * while still posting its value. (<input type="hidden">)
+     *
+     * @param array $record The record that holds the value for this attribute
+     * @param String $fieldprefix The fieldprefix to put in front of the name
+     *                            of any html form element for this attribute.
+     * @return String A piece of htmlcode with hidden form elements that post
+     *                this attribute's value without showing it.
+     */
     function hide($record="", $fieldprefix="")
     {
       // get checks
@@ -171,8 +211,11 @@
 
     /**
      * Retrieve all possible module/node actions.
+     * 
+     * @param array $record The record
+     * @return array Array with actions
      */
-    function getAllActions($record)
+    function getAllActions($record, $splitPerSection=false)
     {
       global $g_modules, $g_moduleflags, $g_nodes;
 
@@ -191,7 +234,7 @@
         {
           $module = getNodeModule($row['node']);
           $node = getNodeType($row['node']);
-          $result[$module][$node][] = $row['action'];
+          $result[$module][$module][$node][] = $row['action'];
         }
       }
 
@@ -213,14 +256,27 @@
               $instance->getNodes();
           }
         }
+        
         // retrieve all actions after we registered all actions
-        foreach (array_keys($g_modules) as $module)
+        $result = $g_nodes;
+        
+        if (!$splitPerSection)
         {
-          // retrieve actions for each node
-          $nodes = isset($g_nodes[$module]) ? $g_nodes[$module] : array();
-          foreach ($nodes as $node => $actions)
-            if (is_array($actions))
-              $result[$module][$node] = $actions;
+          $temp = array();
+          foreach ($result as $section => $modules)
+          {
+            foreach ($modules as $module => $nodes)
+            {
+              if (!is_array($temp[$module]))
+              {
+                $temp[$module] = array();
+              }
+              
+              $temp[$module] = array_merge($temp[$module], $nodes);
+            }
+          }
+          
+          $result = $temp;
         }
       }
 
@@ -229,6 +285,9 @@
 
     /**
      * Returns a list of actions that should be edittable by the user.
+     * 
+     * @param array $record The record
+     * @return array Array with editable actions
      */
     function getEditableActions($record)
     {
@@ -266,6 +325,9 @@
     
     /**
      * Returns the currently selected actions.
+     * 
+     * @param array $record The record
+     * @return array array with selected actions
      */
     function getSelectedActions($record)
     {
@@ -282,24 +344,25 @@
       return $result;
     }
 
-    function edit($record)
+    /**
+     * Display rights.
+     * It will only display the rights & nodes that are selected for the user.
+     *
+     * @param array $record
+     *
+     * @return string Displayable string
+     */
+    public function display($record)
     {
       $user = getUser();
       $page = &atkPage::getInstance();
       $page->register_script(atkconfig("atkroot")."atk/javascript/class.atkprofileattribute.js.php");
-
       $this->_restoreDivStates($page);
 
-      $result='<div align="right">
-                  [<a href="javascript:void(0)" onclick="profile_checkAll(\''.$this->fieldName().'\'); return false;">'.
-                    atktext("check_all").
-             '</a> <a href="javascript:void(0)" onclick="profile_checkNone(\''.$this->fieldName().'\'); return false;">'.
-                    atktext("check_none").
-             '</a> <a href="javascript:void(0)" onclick="profile_checkInvert(\''.$this->fieldName().'\'); return false;">'.
-                    atktext("invert_selection").'</a>]</div>';
-
+      $result  = '';
       $isAdmin =  ($user['name']=='administrator' || $this->canGrantAll());
-      $allActions = $this->getAllActions($record);
+      
+      $allActions      = $this->getAllActions($record, false);
       $editableActions = $this->getEditableActions($record);
       $selectedActions = $this->getSelectedActions($record);
 
@@ -309,6 +372,7 @@
 
       foreach ($allActions as $module => $nodes)
       {
+        // If we have more then one module, split up the module results by collapsable div's
         if ($showModule)
         {
           $result .= "<br><hr>";
@@ -319,74 +383,200 @@
           $result .= "<b><a href=\"javascript:void(0)\" onclick=\"profile_swapProfileDiv('div_$module','".atkConfig("atkroot")."'); return false;\"><img src='".atkConfig("atkroot")."atk/images/plus.gif' border='0' id='img_div_$module'></a>&nbsp;</b>".atktext(array("title_$module", $module), $module)."<br>";
           $result .= "<div id='div_$module' name='div_$module' style='display: none;'>";
           $result .= "<input type='hidden' name=\"divstate['div_$module']\" id=\"divstate['div_$module']\" value='closed' />";
-          $result.='<div>
-                  [<a href="javascript:void(0)" onclick="profile_checkAllByValue(\''.$this->fieldName().'\',\''.$module.'.\'); return false;">'.
-                    atktext("check_all", "atk").
-             '</a> <a href="javascript:void(0)" onclick="profile_checkNoneByValue(\''.$this->fieldName().'\',\''.$module.'.\'); return false;">'.
-                    atktext("check_none", "atk").
-             '</a> <a href="javascript:void(0)" onclick="profile_checkInvertByValue(\''.$this->fieldName().'\',\''.$module.'.\'); return false;">'.
-                    atktext("invert_selection", "atk").'</a>]</div>';
           $result .= "<br>";
         }
-
+        
         foreach ($nodes as $node => $actions)
         {
           $showBox = $isAdmin || count(array_intersect($actions, (is_array($editableActions[$module][$node])?$editableActions[$module][$node]:array()))) > 0;
+          $display_node_str       = false;
+          $display_tabs_str       = false;
+          $node_result            = '';
+          $permissions_string     = '';
+          $tab_permissions_string = '';
 
-          if ($showBox)
-            $result .= "<b>".atktext($node, $module)."</b><br>";
-
-          $tabs_str = "";
-          $display_tabs_str = false;
-
-          // Draw action checkboxes
           foreach ($actions as $action)
           {
-            $temp_str = "";
-
-            $isEditable = $isAdmin || atk_in_array($action, $editableActions[$module][$node]);
             $isSelected = isset($selectedActions[$module][$node]) && in_array($action, $selectedActions[$module][$node]);
 
-            if ($isEditable)
+            // If the action of a node is selected for this user we will show the node,
+            // otherwise we won't
+            if ($isSelected) 
             {
+              $display_node_str = true;
               if (substr($action,0,4) == "tab_")
+              {
                 $display_tabs_str = true;
-
-              $temp_str .= '<input type="checkbox" name="'.$this->formName().'[]" '.$this->getCSSClassAttribute("atkcheckbox").' value="'.$module.".".$node.".".$action.'" ';
-              $temp_str .= ($isSelected ? ' checked="checked"' : '').'></input> ';
-              $temp_str .= $this->permissionName($action, $node, $module).'&nbsp;&nbsp;&nbsp;';
+                $tab_permissions_string .= $this->permissionName($action, $node, $module) . '&nbsp;&nbsp;&nbsp;';
+              }
+              else
+              {
+                $permissions_string     .= $this->permissionName($action, $node, $module) . '&nbsp;&nbsp;&nbsp;';
+              }
             }
-
-            if (substr($action,0,4) == "tab_")
-              $tabs_str .= $temp_str;
-            else
-              $result .= $temp_str;
           }
-
-          if ($display_tabs_str)
-            $result .= "<br>Tabs:&nbsp;";
-
-          $result .= $tabs_str;
-
+          
           if ($showBox)
-            $result .= "<br /><br />\n";
+          {
+            $node_result .= "<b>".atktext($node, $module)."</b><br>";
+            $node_result .=   $permissions_string;
+            if ($display_tabs_str)
+              $node_result .= "<br>Tabs:&nbsp;".$tab_permissions_string;
+            $node_result .= "<br /><br />\n";
+          }else{
+            $node_result .= $permissions_string;
+            if ($display_tabs_str)
+              $node_result .= "<br>Tabs:&nbsp;".$tab_permissions_string;
+          }
+            
+          if ($display_node_str)
+            $result .= $node_result;
         }
-
-
       }
 
+      return $result;
+    }
+    
+    /**
+     * Returns a piece of html code that can be used in a form to edit this
+     * attribute's value.
+     *
+     * @param array $record The record that holds the value for this attribute.
+     * @param String $fieldprefix The fieldprefix to put in front of the name
+     *                            of any html form element for this attribute.
+     * @param String $mode The mode we're in ('add' or 'edit')
+     * @return String A piece of htmlcode for editing this attribute
+     */
+    function edit($record="", $fieldprefix="", $mode="")
+    {
+      $user = getUser();
+      $page = &atkPage::getInstance();
+      $page->register_script(atkconfig("atkroot")."atk/javascript/class.atkprofileattribute.js.php");
+
+      $this->_restoreDivStates($page);
+
+      $result='<div align="right">
+                  [<a href="javascript:void(0)" onclick="profile_checkAll(\''.$this->fieldName().'\'); return false;">'.
+                    atktext("check_all").
+             '</a> | <a href="javascript:void(0)" onclick="profile_checkNone(\''.$this->fieldName().'\'); return false;">'.
+                    atktext("check_none").
+             '</a> | <a href="javascript:void(0)" onclick="profile_checkInvert(\''.$this->fieldName().'\'); return false;">'.
+                    atktext("invert_selection").'</a>]</div>';
+
+      $isAdmin =  ($user['name']=='administrator' || $this->canGrantAll());
+      $allActions = $this->getAllActions($record, true);
+      $editableActions = $this->getEditableActions($record);
+      $selectedActions = $this->getSelectedActions($record);
+
+      $showSection = count($allActions) > 1 && ($isAdmin || count($editableActions) > 1);
+
+      foreach ($allActions as $section => $modules)
+      {
+        if ($showSection)
+        {
+          $result .= "</div><br>";
+          $result .= "<span style=\"font-size: 120%; font-weight: bold\"><a href=\"javascript:void(0)\" onclick=\"profile_swapProfileDiv('div_$section','".atkConfig("atkroot")."'); return false;\"><img src='".atkConfig("atkroot")."atk/images/plus.gif' border='0' id='img_div_$section'></a>&nbsp;".atktext(array("title_$section", $section), $section)."</span><br/>";
+          $result .= "<div id='div_$section' name='div_$section' style='display: none; padding-left: 15px'>";
+          $result .= "<input type='hidden' name=\"divstate['div_$section']\" id=\"divstate['div_$section']\" value='closed' />";
+          $result.='<div style="font-size: 80%; margin-top: 4px; margin-bottom: 4px" >
+                  [<a  style="font-size: 100%" href="javascript:void(0)" onclick="profile_checkAllByValue(\''.$this->fieldName().'\',\''.$section.'.\'); return false;">'.
+                    atktext("check_all", "atk").
+             '</a> | <a  style="font-size: 100%" href="javascript:void(0)" onclick="profile_checkNoneByValue(\''.$this->fieldName().'\',\''.$section.'.\'); return false;">'.
+                    atktext("check_none", "atk").
+             '</a> | <a  style="font-size: 100%" href="javascript:void(0)" onclick="profile_checkInvertByValue(\''.$this->fieldName().'\',\''.$section.'.\'); return false;">'.
+                    atktext("invert_selection", "atk").'</a>]</div>';
+          $result .= "<br>";
+        }
+                  
+        foreach ($modules as $module => $nodes)
+        {
+          foreach ($nodes as $node => $actions)
+          {
+            $showBox = $isAdmin || count(array_intersect($actions, (is_array($editableActions[$module][$node])?$editableActions[$module][$node]:array()))) > 0;
+  
+            if ($showBox)
+              $result .= "<b>".atktext($node, $module)."</b><br>";
+  
+            $tabs_str = "";
+            $display_tabs_str = false;
+  
+            // Draw action checkboxes
+            foreach ($actions as $action)
+            {
+              $temp_str = "";
+  
+              $isEditable = $isAdmin || atk_in_array($action, $editableActions[$module][$node]);
+              $isSelected = isset($selectedActions[$module][$node]) && in_array($action, $selectedActions[$module][$node]);
+  
+              if ($isEditable)
+              {
+                if (substr($action,0,4) == "tab_")
+                  $display_tabs_str = true;
+  
+                $temp_str .= '<input type="checkbox" name="'.$this->formName().'[]" '.$this->getCSSClassAttribute("atkcheckbox").' value="'.$section.".".$module.".".$node.".".$action.'" ';
+                $temp_str .= ($isSelected ? ' checked="checked"' : '').'></input> ';
+                $temp_str .= $this->permissionName($action, $node, $module).'&nbsp;&nbsp;&nbsp;';
+              }
+  
+              if (substr($action,0,4) == "tab_")
+                $tabs_str .= $temp_str;
+              else
+                $result .= $temp_str;
+            }
+  
+            if ($display_tabs_str)
+              $result .= "<br>Tabs:&nbsp;";
+  
+            $result .= $tabs_str;
+  
+            if ($showBox)
+              $result .= "<br /><br />\n";
+          }
+        }
+      }
+      
+      $result = '<div style="min-width: 700px">'.$result.'</div>';
+      
       return $result;
     }
 
     /**
      * Return the translated name of a permission.
+     * 
+     * @param string $action The name of the action
+     * @param string $nodename The name of the node
+     * @param string $modulename The name of the module
+     * @return String The translated permission name
      */
     function permissionName($action, $nodename="", $modulename="")
     {
-      $label = atktext(array("permission_".$action, $action), $modulename, $nodename);
+      $keys = array(
+        'permission_'.$modulename.'_'.$nodename.'_'.$action,
+        'action_'.$modulename.'_'.$nodename.'_'.$action,
+        'permission_'.$nodename.'_'.$action,
+        'action_'.$nodename.'_'.$action,
+        'permission_'.$action,
+        'action_'.$action,
+        $action
+      );
+      
+      // don't use text() function of attribute, because of auto module detection
+      $label = atktext($keys, $modulename, $nodename);
+      
       return $label;
     }
 
+    /**
+     * Convert values from an HTML form posting to an internal value for
+     * this attribute.
+     *
+     * For the regular atkAttribute, this means getting the field with the
+     * same name as the attribute from the html posting.
+     *
+     * @param array $postvars The array with html posted values ($_POST, for
+     *                        example) that holds this attribute's value.
+     * @return String The internal value
+     */
     function fetchValue($postvars)
     {
       $checkboxes = array();
@@ -394,19 +584,20 @@
       {
         $checkboxes = $postvars[$this->fieldName()];
       }
+
       $actions = Array();
       for($i=0;$i<count($checkboxes);$i++)
       {
         $elems = split("\.",$checkboxes[$i]);
-        if (count($elems)==3)
+        if (count($elems)==4)
         {
-          $node = $elems[0].".".$elems[1];
-          $action = $elems[2];
+          $node = $elems[1].".".$elems[2];
+          $action = $elems[3];
         }
-        else if (count($elems)==2)
+        else if (count($elems)==3)
         {
-          $node = $elems[0];
-          $action = $elems[1];
+          $node = $elems[1];
+          $action = $elems[2];
         }
         else
         {
@@ -415,9 +606,19 @@
         }
         $actions[$node][] = $action;
       }
+
       return $actions;
     }
 
+    /**
+     * Retrieve the list of searchmodes supported by the attribute.
+     *
+     * Note that not all modes may be supported by the database driver.
+     * Compare this list to the one returned by the databasedriver, to
+     * determine which searchmodes may be used.
+     *
+     * @return array List of supported searchmodes
+     */
     function getSearchModes()
     {
       // exact match and substring search should be supported by any database.
@@ -428,6 +629,21 @@
       return array();
     }
 
+    /**
+     * Return the database field type of the attribute.
+     *
+     * Note that the type returned is a 'generic' type. Each database
+     * vendor might have his own types, therefor, the type should be
+     * converted to a database specific type using $db->fieldType().
+     *
+     * If the type was read from the table metadata, that value will
+     * be used. Else, the attribute will analyze its flags to guess
+     * what type it should be. If AF_AUTO_INCREMENT is set, the field
+     * is probaly "number". If not, it's probably "string".
+     *
+     * @return String The 'generic' type of the database field for this
+     *                attribute.
+     */
     function dbFieldType()
     {
       return "";
@@ -453,6 +669,11 @@
       return false;
     }
 
+    /**
+     * Restore divs states
+     *
+     * @param atkPage $page
+     */
     function _restoreDivStates(&$page)
     {
       $postvars = &$this->m_ownerInstance->m_postvars;

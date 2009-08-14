@@ -12,7 +12,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6344 $
    * $Id$
    */
 
@@ -44,6 +44,16 @@
     var $m_indexes = array(); // not yet implemented
     var $m_primarykey = array();
     var $m_db;
+    
+    /**
+     * Postfix for index names                                                      
+     *                                                                              
+     * @access private                                                              
+     * @var string                                                                  
+     */                                                                             
+    protected $m_idxnameFormat = "%s_idx";     
+    
+     
 
     /**
      * Default constructor
@@ -57,6 +67,7 @@
      * method will determine the database type (mysql, oci, etc) and
      * instantiate the correct DDL class.
      *
+     * @param String $database The database driver to use
      * @return atkDDL instance of db specific DDL driver
      */
     function &create($database=NULL)
@@ -83,7 +94,7 @@
      * Set all table data at once using the given table meta data,
      * retrieved using the metadata function of the db instance.
      *
-     * @param $tablemeta table meta data array
+     * @param array $tablemeta table meta data array
      */
     function loadMetaData($tablemeta)
     {
@@ -94,13 +105,13 @@
     /**
      * Add a field to the table definition.
      *
-     * @param $name        The name of the field
-     * @param $generictype The datatype of the field (should be one of the
-     *                     generic types supported by ATK).
-     * @param $size        The size of the field (if appropriate)
-     * @param $flags       The DDL_ flags for this field.
-     * @param $default     The default value to be used when inserting new
-     *                     rows.
+     * @param string $name        The name of the field
+     * @param string $generictype The datatype of the field (should be one of the
+     *                            generic types supported by ATK).
+     * @param int $size        The size of the field (if appropriate)
+     * @param int $flags       The DDL_ flags for this field.
+     * @param mixed $default   The default value to be used when inserting new
+     *                         rows.
      */
     function addField($name, $generictype, $size=0, $flags=0, $default=NULL)
     {
@@ -135,14 +146,13 @@
       list($tmp_size, $decimals) = split(",", $size);
       $tmp_size+=intval($decimals); // we should add the decimals to the size, since
                             // size is specified including the decimals.
-      $size = $tmp_size.",".$decimals;
-      return $size;
+      return sprintf('%d,%d', $tmp_size, $decimals);
     }
 
     /**
      * Drop a field from the table definition.
      *
-     * @param $name        The name of the field
+     * @param string $name The name of the field
      */
     function dropField($name)
     {
@@ -154,7 +164,7 @@
      *
      * NOTE: defaults are not supported yet!
      *
-     * @param $meta   The fields meta data.
+     * @param array $meta   The fields meta data.
      */
     function addFields($meta)
     {
@@ -180,7 +190,7 @@
      * If the database does not have a proper field type, consider using
      * a varchar or number to store the value.
      *
-     * @param $generictype  The datatype to convert.
+     * @param string $generictype  The datatype to convert.
      * @abstract
      */
     function getType($generictype)
@@ -194,7 +204,7 @@
      * This function will be overrided by the database specific subclasses of
      * atkDb.
      *
-     * @param $type  The database specific datatype to convert.
+     * @param string $type  The database specific datatype to convert.
      * @abstract
      */
     function getGenericType($type)
@@ -205,7 +215,7 @@
     /**
      * Set the name of the table.
      *
-     * @param $tablename  The name of the table
+     * @param string $tablename  The name of the table
      */
     function setTable($tablename)
     {
@@ -256,19 +266,17 @@
      */
     function buildAlter()
     {
-      atkimport('atk.db.atkquery');
-      $query = &atkQuery::create();
       if ($this->m_table!="")
       {
         $fields = $this->buildFields();
 
         if ($fields!="" || $this->m_remove_field)
         {
-          $q = "ALTER TABLE ".$this->m_table;
+          $q = "ALTER TABLE ".$this->m_db->quoteIdentifier($this->m_table);
 
           if ($this->m_remove_field)
           {
-            $q.=" DROP\n {$query->m_fieldquote}$this->m_remove_field{$query->m_fieldquote}";
+            $q.=" DROP\n ".$this->m_db->quoteIdentifier($this->m_remove_field);
           }
           else
           {
@@ -301,7 +309,8 @@
     {
       if ($this->m_table!="")
       {
-        $q = "DROP TABLE `".$this->m_table."`";
+      	
+        $q = "DROP TABLE ".$this->m_db->quoteIdentifier($this->m_table)."";
         return $q;
       }
       return "";
@@ -314,17 +323,17 @@
      * number of databases. Databases that won't work with this syntax,
      * should override this method in the database specific ddl class.
      *
-     * @param $name        The name of the field
-     * @param $generictype The datatype of the field (should be one of the
-     *                     generic types supported by ATK).
-     * @param $size        The size of the field (if appropriate)
-     * @param $flags       The DDL_ flags for this field.
-     * @param $default     The default value to be used when inserting new
-     *                     rows.
+     * @param string $name        The name of the field
+     * @param string $generictype The datatype of the field (should be one of the
+     *                            generic types supported by ATK).
+     * @param int $size        The size of the field (if appropriate)
+     * @param int $flags       The DDL_ flags for this field.
+     * @param mixed $default   The default value to be used when inserting new
+     *                         rows.
      */
     function buildField($name, $generictype, $size=0, $flags=0, $default=NULL)
     {
-      $res = $name." ".$this->getType($generictype);
+      $res = $this->m_db->quoteIdentifier($name)." ".$this->getType($generictype);
       if ($size>0 && $this->needsSize($generictype))
       {
         $res.="(".$size.")";
@@ -352,7 +361,7 @@
      * This function will be overrided by the database specific subclasses of
      * atkDDL.
      *
-     * @param $fieldlist  An array of fields that define the primary key.
+     * @param array $fieldlist  An array of fields that define the primary key.
      */
     function buildPrimaryKey($fieldlist=array())
     {
@@ -367,7 +376,7 @@
      * Method to determine whether quotes are needed around the values
      * for a given generic datatype.
      *
-     * @param $generictype  The type of field.
+     * @param string $generictype  The type of field.
      * @return true  if quotes should be put around values for the given type
      *               of field.
      *         false if quotes should not be used.
@@ -381,9 +390,9 @@
      * Method to determine whether a given generic field type needs
      * to have a size defined.
      *
-     * @param $generictype The type of field.
+     * @param string $generictype The type of field.
      * @return true  if a size should be specified for the given field type.
-     *         flase if a size does not have to be specified.
+     *         false if a size does not have to be specified.
      */
     function needsSize($generictype)
     {
@@ -586,7 +595,139 @@
       atkerror("buildView don't support by this db or by this db driver");
       return "";
     }
+
+    /**
+     * Build and execute DROP VIEW query
+     *
+     * @param string $name - name of view
+     * @return  true  if view create successfully
+     *          false if error take place
+     */
+    function executeDropView($name)
+    {
+      if (!isset($this->m_db)) $this->m_db = &atkGetDb();
+
+      $query = $this->dropView($name);
+      if ($query!="")
+      {
+        return $this->m_db->query($query);
+      }
+      else
+      {
+        atkdebug("atkddl::executeDropView: nothing to do!");
+      }
+      return false;
+    }
+
+    /**
+     * Build DROP VIEW query
+     *
+     * @param string $name - name of view
+     * @return string CREATE VIEW query string
+     */
+    function dropView($name)
+    {
+      atkerror("dropView don't support by this db or by this db driver");
+      return "";
+    }
     
+   /**                                                                                                                                       
+     * Create an index                                                                                                                        
+     *                                                                                                                                        
+     * @param string $name Index name                                                                                                         
+     * @param array $definition associative array that defines properties of the index to be created.                                         
+     *                                                                                                                                        
+     *                          example                                                                                                       
+     *                          array('fields' => array('user_id' => array('sorting' => 'ascending'                                           
+     *                                                                     'length' => 3                                                      
+     *                                                                      ),                                                                
+     *                                                  'lastname' => array()                                                                 
+     *                                                  )                                                                                     
+     *                               )                                                                                                        
+     * @return boolean                                                                                                                        
+     */                                                                                                                                       
+    function createIndex($name,$definition)                                                                                                   
+    {                                                                                                                                         
+      $table = $this->m_db->quoteIdentifier($this->m_table);                                                                            
+      $name = $this->m_db->quoteIdentifier($this->getIndexName($name));                                                           
+                                                                                                                                              
+      $query = "CREATE INDEX $name ON $table";                                                                                                
+      $fields = array();                                                                                                                      
+      foreach ($definition['fields'] as $field => $fieldinfo)                                                                                 
+      {                                                                                                                                       
+        if (!empty($fieldinfo['length']))                                                                                                     
+        {                                                                                                                                     
+          $fields[] = $this->m_db->quoteIdentifier($field)."(".$fieldinfo['length'].")";                                                 
+        }                                                                                                                                     
+        else                                                                                                                                  
+        {                                                                                                                                     
+          $fields[] = $this->m_db->quoteIdentifier($field);                                                                              
+        }                                                                                                                                     
+      }                                                                                                                                       
+      $query .= ' ('. implode(', ', $fields) . ')';                                                                                           
+      return $this->m_db->query($query);                                                                                                      
+    }                                                                                                                                         
+        
+
+   /**                                                                                                                                       
+    * Drop an existing index                                                                                                                 
+    *                                                                                                                                        
+    * @param string $name Index name                                                                                                         
+    * @return boolean                                                                                                                        
+    */                                                                                                                                       
+    function dropIndex($name)                                                                                                                 
+    {                                                                                                                                         
+      $table = $this->m_db->quoteIdentifier($this->m_table);                                                                            
+      $name = $this->m_db->quoteIdentifier($this->getIndexName($name));                                                           
+      return $this->m_db->query("DROP INDEX $name ON $table");                                                                                
+    }     
+    
+    
+    /**
+     * Get Indexname
+     *
+     * @param string $name Indexname
+     * @return string
+     */
+    function getIndexName($name)                                                                                                              
+    {                                                                                                                                         
+      return sprintf($this->m_idxnameFormat, preg_replace('/[^a-z0-9_\$]/i', '_', $name));                                                                                     
+    }  
+    
+    /**
+     * Rename sequence
+     *
+     * @param string $name The current sequence name
+     * @param string $new_name The new sequence name
+     * @return bool
+     */
+    function renameSequence($name,$new_name)                                                                                                  
+    {                                                                                                                                         
+      return true;                                                                                                                            
+    }                                                                                                                                         
+
+    /**
+     * Drop sequence
+     *
+     * @param string $name Sequence name
+     * @return bool
+     */
+    function dropSequence($name)                                                                                                              
+    {                                                                                                                                         
+      return true;                                                                                                                            
+    }                                                                                                                                         
+
+    /**
+     * Rename table name
+     *
+     * @param string $name Table name
+     * @param string $new_name New table name
+     * @return bool
+     */
+    function renameTable($name,$new_name)                                                                                                     
+    {                                                                                                                                         
+      return true;                                                                                                                            
+    }          
   }
 
 ?>

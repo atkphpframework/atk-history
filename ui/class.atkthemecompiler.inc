@@ -12,7 +12,7 @@
    * @copyright (c)2004-2006 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6309 $
    * $Id$
    */
   atkimport('atk.ui.atktheme');
@@ -45,6 +45,7 @@
     {
       // Process theme directory structure into data array.
       $data = $this->readStructure($name);
+
       // Write it to the compiled theme file
       if (count($data))
       {
@@ -100,7 +101,7 @@
         }
       }
 
-      $abspath = atkTheme::absPath($path);
+      $abspath = atkTheme::absPath($path,$location);
 
       // First parse the themedef file for attributes
       if ($path!="" && file_exists($abspath."themedef.inc"))
@@ -131,7 +132,7 @@
         }
 
         // Second scan all files in the theme path
-        $this->scanThemePath($path, $data);
+        $this->scanThemePath($path, $abspath, $data);
         $this->scanModulePath($name, $data);
 
         $data["attributes"]["basepath"] = $path;
@@ -160,7 +161,7 @@
           return "module/$module/themes/$name/";
         }
       }
-      else if ($location!="atk"&&file_exists(atkconfig("atkroot")."themes/$name/themedef.inc"))
+      else if ($location!="atk"&&file_exists(atkconfig("application_dir")."themes/$name/themedef.inc"))
       {
         $location = "app";
         return "themes/$name/";
@@ -181,12 +182,12 @@
      * Traverses the theme path and remembers the physical location of all theme files.
      *
      * @param String $path The path of the theme, relative to atkroot.
+     * @param String $abspath The absolute path of the theme
      * @param String $data Reference to the data array in which to report the file locations
      */
-    function scanThemePath($path, &$data)
+    function scanThemePath($path, $abspath, &$data)
     {
       $traverser = &atknew("atk.utils.atkdirectorytraverser");
-      $abspath = atkTheme::absPath($path);
       $subitems = $traverser->getDirContents($abspath);
       foreach($subitems as $name)
       {
@@ -222,6 +223,14 @@
       }
     }
 
+    /**
+     * Traverse module path.
+     *
+     * Traverses the module path and remembers the physical location of all theme files.
+     *
+     * @param String $theme The name of the theme
+     * @param String $data Reference to the data array in which to report the file locations
+     */
     function scanModulePath($theme, &$data)
     {
       global $g_modules;
@@ -261,18 +270,20 @@
       }
     }
 
+    /**
+     * Get files for a directory
+     *
+     * @param string $path The directory to traverse
+     * @return Array with files from the traversed directory
+     */
     function _dirContents($path)
     {
-      $result = array();
+      $files = array();
       $traverser = &atknew("atk.utils.atkdirectorytraverser");
+      $traverser->addExclude('/^\.(.*)/'); // ignore everything starting with a '.'
+      $traverser->addExclude('/^CVS$/');   // ignore CVS directories
       $files = $traverser->getDirContents($path);
-      foreach($files as $file)
-      {
-        if (!in_array($file, array(".", "..", "CVS"))) $result[] = $file;
-      }
-      return $result;
+      return $files;
     }
 
   }
-
-?>

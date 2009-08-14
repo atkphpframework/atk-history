@@ -1,4 +1,4 @@
-<?
+<?php
 
   /**
    * This file is part of the Achievo ATK distribution.
@@ -12,7 +12,7 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6323 $
    * $Id$
    */
 
@@ -83,6 +83,17 @@
       }
     }
 
+    /**
+     * Add's a field to the query
+     * @param string $name Field name
+     * @param string $value Field value
+     * @param string $table Table name
+     * @param string $fieldaliasprefix Field alias prefix
+     * @param bool $quote If this parameter is true, stuff is inserted into the db
+     *               using quotes, e.g. SET name = 'piet'. If it is false, it's
+     *               done without quotes, e.d. SET number = 4.
+     * @return atkQuery The query object itself (for fluent usage)
+     */
     function &addField($name, $value="", $table="", $fieldaliasprefix="", $quote=true)
     {
       if (strstr($name," "))

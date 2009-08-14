@@ -12,7 +12,7 @@
   * @copyright (c)2005 Ibuildings.nl BV
   * @license http://www.achievo.org/atk/licensing ATK Open Source License
   *
-  * @version $Revision$
+  * @version $Revision: 6323 $
   * $Id$
   *
   */
@@ -30,10 +30,20 @@
   */
 class atkMsSqlDDL extends atkDDL
 {
+  /**
+   * Constructor
+   *
+   * @return atkMsSqlDDL
+   */
   function atkMsSqlDDL()
   {
   }
 
+  /**
+   * Convert an ATK generic datatype to a database specific type.
+   *
+   * @param string $generictype  The datatype to convert.
+   */
   function getType($generictype)
   {
     switch ($generictype)
@@ -58,6 +68,11 @@ class atkMsSqlDDL extends atkDDL
     return ""; // in case we have an unsupported type.
   }
 
+  /**
+   * Convert an database specific type to an ATK generic datatype.
+   *
+   * @param string $type  The database specific datatype to convert.
+   */
   function getGenericType($type)
   {
     $type = strtolower($type);

@@ -11,7 +11,7 @@
  * @copyright (c) 2004-2005 Peter C. Verhage
  * @license http://www.achievo.org/atk/licensing ATK Open Source License
  *
- * @version $Revision$
+ * @version $Revision: 5810 $
  * $Id$
  */
  
@@ -30,7 +30,7 @@ class atkDutchMetaGrammar extends atkMetaGrammar
    *
    * @return list of singular rules
    */
-  function getSingularRules()
+  public function getSingularRules()
   {
     return array(
       '/ven$/i' => 'f',    
@@ -49,7 +49,7 @@ class atkDutchMetaGrammar extends atkMetaGrammar
    *
    * @return list of plural rules
    */
-  function getPluralRules()
+  public function getPluralRules()
   {
     return array(
       '/f$/i' => 'ven',

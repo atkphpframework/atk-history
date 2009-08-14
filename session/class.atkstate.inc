@@ -11,7 +11,7 @@
  * @copyright (c)2000-2007 Ivo Jansch
  * @license http://www.achievo.org/atk/licensing ATK Open Source License
  *
- * @version $Revision$
+ * @version $Revision: 6320 $
  * $Id$
  */
 
@@ -38,22 +38,37 @@ class atkState
    * depending where the original value was saved. So the method first looks 
    * in the state cookie if the key exists, if not it looks in the session and
    * if it exists returns it's value. If not a value of NULL is returned.
-   * @param Mixed $key The key 
+   * 
+   * @param Mixed $key     The key
+   * @param Mixed $default default value fallback is the retrieved value === null
+   * 
    * @return mixed The retrieved value.
    */
-  function get($key)
+  public static function get($key, $default=null)
   {
-    $key = atkState::getKey($key);
+    $key = self::getKey($key);
 
-    $value = atkState::_getFromCookie($key);
-    if(!$value)
+    $value = self::_getFromCookie($key);
+    if ($value === null)
     {
-      $value = atkState::_getFromSession($key);
+      $value = self::_getFromSession($key);
     }
+    
+    if ($value === null)
+    {
+      $value = $default;
+    }
+    
     return $value;
   }
   
-  function _getFromCookie($key)
+  /**
+   * Get value from cookie
+   *
+   * @param mixed $key The keyname
+   * @return string The value
+   */
+  protected static function _getFromCookie($key)
   {
     if(isset($_COOKIE[$key]))
     {
@@ -65,7 +80,13 @@ class atkState
     }
   }
   
-  function _getFromSession($key)
+  /**
+   * Get value from session
+   *
+   * @param mixed $key The keyname
+   * @return string The value
+   */
+  protected static function _getFromSession($key)
   {
     if(isset($_SESSION[$key]))
     {
@@ -90,37 +111,55 @@ class atkState
    * the user and doesn't get too big.
    * @param mixed $key The key name
    * @param String $value The value of key
-   * @param String $type The namespace from which to retrieve the
+   * @param String $type The namespace from which to retrieve the value
    * @return mixed The storage method type.
    */
-  function set($key, $value, $type='cookie')
+  public static function set($key, $value, $type='cookie')
   {
     $key = atkState::getKey($key);
 
     switch($type)
     {
       case 'cookie':
-        atkState::_set_using_cookie($key,$value);
+        self::_set_using_cookie($key,$value);
         break;
       case 'session':
-        atkState::_set_using_session($key,$value);
+        self::_set_using_session($key,$value);
         break;
       default:
         atkerror("set method don't exists");
     }
   }
   
-  function _set_using_cookie($key,$value)
+  /**
+   * Set value in cookie
+   *
+   * @param mixed $key
+   * @param string $value
+   */
+  protected static function _set_using_cookie($key,$value)
   {
     setcookie($key, $value, time()+60*(atkconfig("state_cookie_expire")));
   }
 
-  function _set_using_session($key,$value)
+  /**
+   * Set value in session
+   *
+   * @param mixed $key
+   * @param string $value
+   */
+  protected static function _set_using_session($key,$value)
   {
     $_SESSION[$key] = $value;
   }
   
-  function getKey($key)
+  /**
+   * Get the key
+   *
+   * @param string $key
+   * @return string An md5 hash of the key
+   */
+  protected static function getKey($key)
   {
     return md5(print_r($key,true));
   }

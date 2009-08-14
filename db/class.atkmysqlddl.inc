@@ -12,7 +12,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6345 $
    * $Id$
    */
 
@@ -30,13 +30,22 @@
   {
     var $m_table_type = NULL;
 
+    /**
+     * Constructor
+     *
+     * @return atkMysqlDDL
+     */
     function atkMysqlDDL()
     {
     }
 
+    /**
+     * Convert an ATK generic datatype to a database specific type.
+     *
+     * @param string $generictype  The datatype to convert.
+     */
     function getType($generictype)
     {
-      $config_db_mysql_default_text_columntype = "longtext";
       $config = atkconfig('db_mysql_default_'.$generictype.'_columntype');
       if ($config) return $config;
 
@@ -62,6 +71,11 @@
       return ""; // in case we have an unsupported type.
     }
 
+    /**
+     * Convert an database specific type to an ATK generic datatype.
+     *
+     * @param string $type  The database specific datatype to convert.
+     */
     function getGenericType($type)
     {
       $type = strtolower($type);
@@ -71,6 +85,7 @@
           return "number";
         case "float":
         case "real":
+        case "double":
           return "decimal";
         case "varchar":
         case "char":
@@ -97,13 +112,13 @@
      * number of databases. Databases that won't work with this syntax,
      * should override this method in the database specific ddl class.
      *
-     * @param $name        The name of the field
-     * @param $generictype The datatype of the field (should be one of the
-     *                     generic types supported by ATK).
-     * @param $size        The size of the field (if appropriate)
-     * @param $flags       The DDL_ flags for this field.
-     * @param $default     The default value to be used when inserting new
-     *                     rows.
+     * @param string $name        The name of the field
+     * @param string $generictype The datatype of the field (should be one of the
+     *                            generic types supported by ATK).
+     * @param int $size        The size of the field (if appropriate)
+     * @param int $flags       The DDL_ flags for this field.
+     * @param mixed $default   The default value to be used when inserting new
+     *                         rows.
      */
     function buildField($name, $generictype, $size=0, $flags=0, $default=NULL)
     {
@@ -124,7 +139,7 @@
      * Set all table data at once using the given table meta data,
      * retrieved using the metadata function of the db instance.
      *
-     * @param $tablemeta table meta data array
+     * @param array $tablemeta table meta data array
      */
     function loadMetaData($tablemeta)
     {
@@ -136,7 +151,7 @@
      * Sets the table type (for databases that support different
      * table types).
      *
-     * @param string $tableType
+     * @param string $type
      */
     function setTableType($type)
     {
@@ -151,11 +166,61 @@
     function buildCreate()
     {
       $query = parent::buildCreate();
+      
+      if (!empty($this->m_db->m_charset)) {
+            $query.= ' DEFAULT CHARACTER SET '.$this->m_db->m_charset;
+            if (!empty($this->m_db->m_collate)) {
+                $query.= ' COLLATE '.$this->m_db->m_collate;
+            }
+        }
+      
       if (!empty($query) && !empty($this->m_table_type))
       {
         $query .= " TYPE=" .$this->m_table_type;
       }
       return $query;
     }
+    
+    /**
+     * Drop sequence
+     *
+     * @param string $name Sequence name
+     * @return boolean
+     */
+    function dropSequence($name)
+    {
+      $table = $this->m_db->quoteIdentifier($this->db->m_seq_table);
+      return $this->m_db->query("DELETE FROM $table WHERE ".$this->m_db->quoteIdentifier($this->m_db->m_seq_namefield)." = '".$this->escapeSQL($name)."'");
+    }
+
+    /**
+     * Rename sequence
+     *
+     * @param string $name Sequence name
+     * @param string $new_name New sequence name
+     * @return boolean
+     */
+    function renameSequence($name,$new_name)
+    {
+      $name = $this->m_db->escapeSQL($name);
+      $new_name = $this->m_db->escapeSQL($new_name);
+      return $this->m_db->query("UPDATE db_sequence SET seq_name='$new_name'
+                WHERE seq_name='$name'");
+    }
+
+    /**
+     * Rename table name
+     *
+     * @param string $name Table name
+     * @param string $new_name New table name
+     * @return boolean
+     */
+    function renameTable($name,$new_name)
+    {
+      $name = $this->m_db->quoteIdentifier($name);
+      $new_name = $this->m_db->quoteIdentifier($new_name);
+      return $this->m_db->query("ALTER TABLE $name RENAME $new_name");
+    }
+    
   }
 ?>

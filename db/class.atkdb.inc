@@ -12,7 +12,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6345 $
    * $Id$
    */
 
@@ -40,6 +40,7 @@
    * PHP4 doesn't support static class members.
    */
   global $g_dbinstances;
+  $g_dbinstances = array();
 
 
   /**
@@ -99,6 +100,13 @@
     var $m_charset = "";
 
     /**
+     * The collate.
+     * @access private
+     * @var String
+     */
+    var $m_collate = "";
+    
+    /**
      * The mode for the connection.
      * @access private
      * @var String
@@ -111,13 +119,6 @@
      * @var String
      */
     var $m_connection = "";
-
-    /**
-     * The current cluster name.
-     * @access private
-     * @var String
-     */
-    var $m_dbcluster = "";
 
     /**
      * Contains the current record from the result set.
@@ -234,7 +235,14 @@
      * @access private
      */
     var $m_errorLookup = array();
-
+   
+    /**
+     * Indentifier Quoting
+     *
+     * @var unknown_type
+     */
+    protected $m_identifierQuoting = array('start' => '"', 'end' => '"', 'escape' => '"');
+    
     /**
      * Set database sequence value.
      *
@@ -354,7 +362,7 @@
       return "system";
     }
 
-    /*
+    /**
      * Get generic atk errorccode
      * @return int One of the ATK DB_* codes.
      */
@@ -392,11 +400,11 @@
      *
      * Error codes passed to this method will be treated as recoverable user
      * errors.
-     * @param mixed Vendor-dependent database error code
+     * @param mixed $errno Vendor-dependent database error code
      */
     function setUserError($errno)
     {
-      atkdebug("atkdb::setUserError() -> ".$errno);
+      atkdebug(__CLASS__."::setUserError() -> ".$errno);
       $this->m_user_error[]=$errno;
     }
 
@@ -416,7 +424,9 @@
       {
         return 'r';
       }
-      atkdebug('Query mode not detected! Using write mode.');
+
+      atknotice('Query mode not detected! Using write mode.');
+
       return 'w';
     }
 
@@ -484,21 +494,23 @@
      * If haltonerror is set, this will raise an atkerror. If not, it will
      * place the error in atkdebug and continue.
      * @access protected
+     * 
+     * @param String $message
      */
     function halt($message="")
     {
       if ($this->m_haltonerror)
       {
-        if($this->getErrorType()=="system")
+        if($this->getErrorType()==="system")
         {
-          atkdebug("atkdb::halt() on system error");
+          atkdebug(__CLASS__."::halt() on system error");
           if(!in_array($this->m_errno,$this->m_user_error)) $level='critical';
           atkerror($this->getErrorMsg());
           halt($this->getErrorMsg(),$level);
         }
         else
         {
-          atkdebug("atkdb::halt() on user error (not halting)");
+          atkdebug(__CLASS__."::halt() on user error (not halting)");
         }
       }
     }
@@ -514,39 +526,29 @@
 
     /**
      * Connect to the database.
+     * 
+     * @param String $mode The mode to connect
      * @return int Connection status
      * @abstract
      */
     function connect($mode="rw")
     {
-      atknotice("atkdb::connect -> request mode = $mode | current mode: ".$this->m_mode);
-      if($this->m_mode=="r" &&
-         ($mode=="w" || $mode=="rw"))
-      {
-        atkdebug("atkdb::connect -> Switch connection from ".$this->m_mode." TO ".$mode);
-        $this->disconnect();
-        $tmp_db = &$this->getInstance(($this->m_dbcluster!=""?$this->m_dbcluster:$this->m_connection),true,$mode);
-        $this->m_connection = $tmp_db->m_connection;
-        $this->m_host = $tmp_db->m_host;
-        $this->m_user = $tmp_db->m_user;
-        $this->m_password = $tmp_db->m_password;
-        $this->m_port = $tmp_db->m_port;
-        $this->m_charset = $tmp_db->m_charset;
-        $this->m_mode = $tmp_db->m_mode;
-        $this->m_dbcluster = $tmp_db->m_dbcluster;
-        atkdebug("atkdb::connect -> New mode = ".$this->m_mode);
-
-        return $this->doConnect($this->m_host,$this->m_user,$this->m_password,$this->m_database,$this->m_port,$this->m_charset);
-      }
-      elseif($this->m_link_id==NULL)
+      if($this->m_link_id==NULL)
       {
         atkdebug("atkdb::connect -> Don't switch use current db");
         return $this->doConnect($this->m_host,$this->m_user,$this->m_password,$this->m_database,$this->m_port,$this->m_charset);
       }
+      return DB_SUCCESS;
     }
 
     /**
      * Connect to the database
+     * @param string $host The host to connect to
+     * @param string $user The user to connect with
+     * @param string $password The password to connect with
+     * @param string $database The database to connect to
+     * @param int $port The portnumber to use for connecting
+     * @param string $charset The charset to use
      * @abstract
      */
     function doConnect($host, $user, $password, $database, $port, $charset)
@@ -561,7 +563,7 @@
      * Derived classes should implement this method and translate their error
      * codes.
      * @access private
-     * @param mixed Vendor-dependent error code.
+     * @param mixed $errno Vendor-dependent error code.
      * @return int ATK error code
      */
     function _translateError($errno)
@@ -588,7 +590,7 @@
     /**
      * Set savepoint with the given name.
      *
-     * @param $name savepoint name
+     * @param string $name savepoint name
      * @abstract
      */
     function savepoint($name)
@@ -599,7 +601,7 @@
      * Rollback the current transaction.
      * (If a savepoint is given to the given savepoint.)
      *
-     * @param $savepoint savepoint name
+     * @param string $savepoint savepoint name
      *
      * @abstract
      */
@@ -680,7 +682,7 @@
      *
      * If the sequence does not exist, it is created automatically.
      *
-     * @param $sequence The sequence name
+     * @param string $sequence The sequence name
      * @return int The next sequence value
      * @abstract
      */
@@ -711,8 +713,8 @@
      *     ["meta"][field name] index of field named "field name"
      *     The last one is used, if you have a field name, but no index.
      *
-     * @param $table the table name
-     * @param $full all meta data or not
+     * @param string $table the table name
+     * @param bool $full all meta data or not
      * @return array with meta data
      */
     function metadata($table, $full=false)
@@ -723,8 +725,10 @@
     /**
      * Return the available table names
      * @return array with table names etc.
+     *
+     * @param boolean $includeViews include views?
      */
-    function table_names()
+    function table_names($includeViews=true)
     {
       return array();
     }
@@ -733,8 +737,8 @@
      * This function checks the database for a table with
      * the provide name
      *
-     * @param String $tableName the table to find
-     * @return boolean true if found, false if not found
+     * @param string $tableName the table to find
+     * @return bool true if found, false if not found
      */
     function tableExists($tableName)
     {
@@ -750,8 +754,10 @@
      * array into memory. If you retrieve a lot of records,
      * you might hit the memory_limit and your script will die.
      *
-     * @param $query the query
-     * @return array with rows
+     * @param string $query The query
+     * @param int $offset The offset to use
+     * @param int $limit The limit to use
+     * @return array array with rows
      */
     function getrows($query, $offset=-1, $limit=-1)
     {
@@ -780,6 +786,33 @@
       else
         return $default;
     }
+    
+    /**
+     * Get an array with all the values in the (first) column.
+     * 
+     * Note: This is not an efficient way to retrieve
+     * records, as this will load all records into one
+     * array into memory. If you retrieve a lot of records,
+     * you might hit the memory_limit and your script will die.
+     *
+     * @param string $query The query
+     * @param string $key You can change the returning column using this parameter
+     * @param int $offset The offset to use
+     * @param int $limit The limit to use
+     * @return array array with rows
+     */
+    function getValues($query, $key=0, $offset=-1, $limit=-1)
+    {
+      $result = array();
+
+      $this->query($query, $offset, $limit);
+      while ($this->next_record())
+      {
+        $result[] = atkArrayNvl(array_values($this->m_record), $key);
+      }
+
+      return $result;
+    }
 
     /**
      * This function indicates what searchmodes the database supports.
@@ -793,20 +826,74 @@
       return array("exact","substring", "wildcard","greaterthan","greaterthanequal","lessthan","lessthanequal","between");
     }
 
-    function tableMeta($table)
+    /**
+     * Fetches table meta data from database
+     *
+     * @param string $table
+     * @return array
+     */
+    public function tableMeta($table)
     {
-      if (!isset($this->m_tableMeta[$table]))
+      if (isset($this->m_tableMeta[$table]))
       {
-        $meta = $this->metadata($table, false);
-        $this->m_tableMeta[$table] = array();
-        for ($i = 0, $_i = count($meta); $i < $_i; $i++)
-        {
-          $meta[$i]['num'] = $i;
-          $this->m_tableMeta[$table][$meta[$i]['name']] = &$meta[$i];
-        }
+        return $this->m_tableMeta[$table];
+      }
+
+      if (atkconfig('meta_caching'))
+      {
+        $this->m_tableMeta[$table] = $this->_getTableMetaFromCache($table);
+      }
+      else
+      {
+        $this->m_tableMeta[$table] = $this->_getTableMetaFromDb($table);
       }
 
       return $this->m_tableMeta[$table];
+    }
+
+    /**
+     * If cached it'll return the table metadata
+     * from cache.
+     *
+     * @param string $table
+     * @return array
+     */
+    private function _getTableMetaFromCache($table)
+    {
+      atkimport('atk.utils.atktmpfile');
+      $tmpfile = new atkTmpFile('tablemeta/' . $this->m_connection . "/" . $table . ".php");
+
+      if ($tmpfile->exists())
+      {
+        include($tmpfile->getPath());
+      }
+      else
+      {
+        $tablemeta = $this->_getTableMetaFromDb($table);
+        $tmpfile->writeAsPhp("tablemeta", $tablemeta);
+      }
+
+      return $tablemeta;
+    }
+
+    /**
+     * Returns the tablemetadata directly from db
+     *
+     * @param string $table
+     * @return array
+     */
+    protected function _getTableMetaFromDb($table)
+    {
+      $meta = $this->metadata($table, false);
+
+      $result = array();
+      for ($i = 0, $_i = count($meta); $i < $_i; $i++)
+      {
+        $meta[$i]['num'] = $i;
+        $result[$meta[$i]['name']] = $meta[$i];
+      }
+
+      return $result;
     }
 
     /**
@@ -822,6 +909,10 @@
 
     /**
       * get SUBSTRING() equivalent for the current database.
+      * 
+      * @param String $fieldname The database fieldname
+      * @param Integer $startat The position to start from
+      * @param Integer $length The number of characters 
       */
     function func_substring($fieldname, $startat=0, $length=0)
     {
@@ -849,6 +940,43 @@
     }
 
     /**
+     * Get CONCAT() equivalent for the current database.
+     *
+     * @param array $fields
+     * @return unknown
+     */
+    function func_concat($fields)
+    {
+      if(count($fields)==0 or !is_array($fields)) return '';
+      elseif(count($fields)==1) return $fields[0];
+      return "CONCAT(".implode(',',$fields).")";
+    }
+
+    /**
+     * Get CONCAT_WS() equivalent for the current database.
+     *
+     * @param array $fields
+     * @param string $separator
+     * @param boolean $remove_all_spaces remove all spaces in result (atkAggrecatedColumns searches for string without spaces)
+     * 
+     * @return string $query_part
+     */
+    function func_concat_ws($fields, $separator, $remove_all_spaces = false)
+    {
+      if(count($fields)==0 or !is_array($fields)) return '';
+      elseif(count($fields)==1)                   return $fields[0];
+      
+      if ($remove_all_spaces)
+      {
+        return "REPLACE ( CONCAT_WS('$separator', ".implode(',',$fields)."), ' ', '') ";
+      }
+      else
+      {
+        return "CONCAT_WS('$separator', ".implode(',',$fields).")";        
+      }
+    }
+
+    /**
      * Convert a php date() format specifier to a vendor specific format
      * specifier.
      * The default implementation returns the format as used by many
@@ -872,7 +1000,11 @@
     /**
      * Get TO_CHAR() equivalent for the current database.
      *
-     * TODO/FIXME: add format paramater. Current format is always yyyy-mm-dd hh:mi.
+     * TODO/FIXME: add format parameter. Current format is always yyyy-mm-dd hh:mi.
+     * 
+     * @param String $fieldname The field to generate the to_char for.
+     * @return String Piece of sql query that converts a datetime field to char
+     *                for the current database
      */
     function func_datetimetochar($fieldname)
     {
@@ -882,6 +1014,7 @@
     /**
       * Returns the maximum length an identifier (tablename, columnname, etc) may have
       *
+      * @return Integer The maximum identifier length 
       */
     function maxIdentifierLength()
     {
@@ -890,6 +1023,10 @@
 
     /**
      * escapes quotes for use in SQL: ' -> '' (and sometimes % -> %%)
+     * 
+     * @param String $string The string to escape
+     * @param Bool $wildcard Use wildcards?
+     * @return String The escaped SQL string
      */
     function escapeSQL($string, $wildcard=false)
     {
@@ -925,7 +1062,7 @@
      */
     function deleteAll()
     {
-      $tables = $this->table_names();
+      $tables = $this->table_names(false);
       $count = count($tables);
 
       do
@@ -935,7 +1072,9 @@
 
         foreach($tables as $table)
         {
-          if (!$this->query("DELETE FROM ".$table['table_name']))
+          $query = $this->createQuery();
+          $query->addTable($table['table_name']);
+          if (!$query->executeDelete())
           {
             $count++;
           }
@@ -945,7 +1084,7 @@
 
       if ($count > 0)
       {
-        atkerror('atkDb::deleteAll failed, probably because of circular dependencies');
+        atkerror(__CLASS__.'::deleteAll failed, probably because of circular dependencies');
       }
     }
 
@@ -1003,112 +1142,70 @@
      * @static
      * @param String $conn The name of the connection as defined in the
      *                     config.inc.php file (defaults to 'default')
+     * @param Bool $reset Reset the instance to force the creation of a new instance
+     * @param String $mode The mode to connect with the database
      * @return atkDb Instance of the database class.
      */
-    function &getInstance($conn="default", $reset=false, $mode="rw")
+    public function &getInstance($conn="default", $reset=false, $mode="rw")
     {
       global $g_dbinstances;
 
-      // translate connection name
-      $conn = atkDb::getTranslatedDatabaseName($conn);
+      // Resolve any potential aliases
+      $conn = self::getTranslatedDatabaseName($conn);
 
-      if (!isset($g_dbinstances[$conn]) || $reset || !atkdb::hasMode($g_dbinstances[$conn],$mode))
+      if ($reset || !isset($g_dbinstances[$conn]) || !$g_dbinstances[$conn]->hasMode($mode))
       {
-        $new_conn= atkdb::getDbConfig($conn,$mode);
         $dbconfig = atkconfig("db");
-        atkdebug("Creating new db instance for connection $new_conn (".$dbconfig[$new_conn]["driver"].")");
+        $driver = "atk{$dbconfig[$conn]["driver"]}db";
 
-        $g_dbinstances[$conn] = &atknew("atk.db.atk".$dbconfig[$new_conn]["driver"]."db");
-        $g_dbinstances[$conn]->m_connection = $new_conn;
-        $g_dbinstances[$conn]->m_mode = (isset($dbconfig[$new_conn]["mode"])?$dbconfig[$new_conn]["mode"]:"rw");
-        if (isset($dbconfig[$new_conn]["db"]))
-        {
-          $g_dbinstances[$conn]->m_database = $dbconfig[$new_conn]["db"];
-          $g_dbinstances[$conn]->m_user     = $dbconfig[$new_conn]["user"];
-          $g_dbinstances[$conn]->m_password = $dbconfig[$new_conn]["password"];
-          $g_dbinstances[$conn]->m_host     = $dbconfig[$new_conn]["host"];
-          if (isset($dbconfig[$new_conn]["port"]))
-            $g_dbinstances[$conn]->m_port = $dbconfig[$new_conn]["port"];
-          if (isset($dbconfig[$new_conn]["charset"]))
-            $g_dbinstances[$conn]->m_charset = $dbconfig[$new_conn]["charset"];
-          $dbcluster = atkconfig("db_cluster");
-          if(is_array($dbcluster) && isset($dbcluster[$conn]))
-            $g_dbinstances[$conn]->m_dbcluster = $conn;
-        }
+        atkdebug("Creating new database instance with '{$driver}' driver");
+        $dbinstance = atknew("atk.db.{$driver}")->init($conn, $mode);
+
+        $g_dbinstances[$conn] = $dbinstance;
       }
-
       return $g_dbinstances[$conn];
+    }
+
+    /**
+     * (Re)Initialise a database driver with a connection
+     *
+     * @param String $connectionname The connectionname
+     * @param String $mode The mode to connect with
+     * @return atkDb
+     */
+    public function init($connectionname='default', $mode='r')
+    {
+      atkdebug("(Re)Initialising database instance with connection name '$connectionname' and mode '$mode'");
+
+      $config = atkconfig("db");
+      $this->m_connection = $connectionname;
+      $this->m_mode = (isset($config[$connectionname]["mode"])?$config[$connectionname]["mode"]:"rw");
+      if (isset($config[$connectionname]["db"]))
+      {
+        $this->m_database = $config[$connectionname]["db"];
+        $this->m_user     = $config[$connectionname]["user"];
+        $this->m_password = $config[$connectionname]["password"];
+        $this->m_host     = $config[$connectionname]["host"];
+        if (isset($config[$connectionname]["port"]))      $this->m_port =    $config[$connectionname]["port"];
+        if (isset($config[$connectionname]["charset"]))   $this->m_charset = $config[$connectionname]["charset"];
+        if (isset($config[$connectionname]["collate"]))   $this->m_collate = $config[$connectionname]["collate"];
+      }
+      return $this;
     }
 
     /**
      * Check if the current instance has the given mode
      *
-     * @param object $dbinstance Current db instance
      * @param string $mode The mode we want to check
-     * @return boolean True or False
+     * @return bool True or False
      */
-    function hasMode($dbinstance,$mode)
+    public function hasMode($mode)
     {
-      if(is_object($dbinstance) && strpos($dbinstance->m_mode,$mode)!==false)
+      if(strpos($this->m_mode,$mode)!==false)
       {
         return true;
       }
       return false;
-    }
-
-    /**
-     * Get the right connection by checking if the
-     * @param string $conn Connection name
-     * @param string $mode The mode we want, default Read only
-     * @return string The connection name
-     */
-    function getDbConfig($conn,$mode="r")
-    {
-      $dbconfig = atkconfig("db");
-      $dbcluster = atkconfig("db_cluster");
-      $connections = array();
-
-      if(is_array($dbcluster) && isset($dbcluster[$conn]))
-      {
-         atkdebug("Database Cluster found with name: $conn");
-         foreach($dbcluster[$conn] as $db)
-         {
-           if($dbconfig[$db]["mode"]==$mode)
-           {
-            $connections[] = $db;
-           }
-         }
-         $total_connections = count($connections);
-         if($total_connections==0 && $mode!="rw")
-         {
-           // No readonly or writeonly nodes found
-           // now add all read/write nodes
-           atkdebug("NO readonly / writeonly nodes found, try read/write nodes");
-           foreach($dbcluster[$conn] as $db)
-           {
-             if($dbconfig[$db]["mode"]=="rw")
-             {
-               $connections[] = $db;
-             }
-           }
-           $total_connections = count($connections);
-         }
-         if($total_connections>0)
-         {
-           $random = rand(0,($total_connections-1));
-           atkdebug("Random server (".$connections[$random].") choosen from cluster $conn for mode: $mode");
-           return $connections[$random];
-         }
-         else
-         {
-           atkdebug("No Database connection found in the cluster $conn");
-           return false;
-         }
-      }
-      else
-      {
-        return $conn;
-      }
     }
 
     /**
@@ -1131,10 +1228,56 @@
       return $olddb;
     }
 
+    /**
+     * Halt on error or not?
+     *
+     * @param Bool $state
+     */
     function setHaltOnError($state=true)
     {
       $this->m_haltonerror = $state;
     }
+    
+    /**
+     * Check if current db is present and acceptable for current user
+     *
+     * @return DB_SUCCESS if
+     */
+    function getDbStatus()
+    {
+      // We don't want the db class to display error messages, because
+      // we handle the error ourselves.
+      $curhaltval = $this->m_haltonerror;
+      $this->m_haltonerror = false;
+    
+      $res = $this->connect();
+    
+      if ($res === DB_SUCCESS && (strpos($this->m_type, "mysql") === 0))
+      {
+        // This can't be trusted. Mysql returns DB_SUCCESS even
+        // if the user doesn't have access to the database. We only get an
+        // error for this after we performed the first query.
+        $this->table_names();  // this triggers a query
+        $res = $this->_translateError( $this->getDbErrno() );
+      }
+    
+      $this->m_haltonerror = $curhaltval;
+    
+      return $res;
+    }
+    
+   /**
+    * Quote Indentifier
+    *
+    * @param string $str
+    * @return string
+    */
+   function quoteIdentifier($str)                           
+   {                                                                               
+     $str = str_replace($this->m_identifierQuoting['end'], $this->m_identifierQuoting['escape'] . $this->m_identifierQuoting['end'], $str);
+     return $this->m_identifierQuoting['start'] . $str . $this->m_identifierQuoting['end'];                                                
+   } 
+    
   }
 
 ?>

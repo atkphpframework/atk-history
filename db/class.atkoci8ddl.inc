@@ -12,7 +12,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6323 $
    * $Id$
    */
    
@@ -28,11 +28,20 @@
    */
   class atkOci8DDL extends atkDDL
   {
-    
+    /**
+     * Constructor
+     *
+     * @return atkOci8DDL
+     */
     function atkOci8DDL()
     {
     }
     
+    /**
+     * Convert an ATK generic datatype to a database specific type.
+     *
+     * @param string $generictype  The datatype to convert.
+     */
     function getType($generictype)
     {
       switch ($generictype)
@@ -63,7 +72,7 @@
      * This function will be overrided by the database specific subclasses of
      * atkDb.     
      * 
-     * @param $type  The database specific datatype to convert.
+     * @param string $type  The database specific datatype to convert.
      */
     function getGenericType($type)
     {      

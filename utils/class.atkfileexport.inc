@@ -12,7 +12,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6302 $
    * $Id$
    */
 
@@ -47,6 +47,7 @@
     */
    function export($data, $fileName, $type, $ext, $compression="")
    {
+    ob_end_clean();
     if($compression=="bzip")
     {
       $mime_type='application/x-bzip';
@@ -77,7 +78,7 @@
 
     // Fix for downloading (Office) documents using an SSL connection in
     // combination with MSIE.
-    if (($_SERVER["SERVER_PORT"] == "443" || $_SERVER['HTTP_X_FORWARDED_PROTO' ]==='https') && eregi("msie", $_SERVER["HTTP_USER_AGENT"]))
+    if (($_SERVER["SERVER_PORT"] == "443" || atkArrayNvl($_SERVER, 'HTTP_X_FORWARDED_PROTO')=="https") && eregi("msie", $_SERVER["HTTP_USER_AGENT"]))
     {
       header('Pragma: public');
     }
@@ -110,6 +111,8 @@
     {
       echo $data;
     }
+    
+    flush();
 
     exit;
    }

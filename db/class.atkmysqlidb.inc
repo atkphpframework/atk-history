@@ -40,13 +40,21 @@
       }
 
       // set type
-      parent::atkmysqldb();
       $this->m_type = "mysqli";
+      $this->m_vendor = "mysql";
+      $this->m_user_error=array(1451);
     }
 
    /**
     * Connect to the database
-    * @return connection status
+    * 
+    * @param string $host Hostname
+    * @param string $user Username
+    * @param string $password Password
+    * @param string $database The database to connect to
+    * @param int $port The portnumber to use for connecting
+    * @param string $charset The charset to use
+    * @return mixed Connection status
     */
    function doConnect($host,$user,$password,$database,$port,$charset)
    {
@@ -110,9 +118,9 @@
 
    /**
     * Performs a query
-    * @param $query the query
-    * @param $offset offset in record list
-    * @param $limit maximum number of records
+    * @param string $query the query
+    * @param int $offset offset in record list
+    * @param int $limit maximum number of records
     */
    function query($query, $offset=-1, $limit=-1)
    {
@@ -235,7 +243,7 @@
     * Goto a certain position in result set.
     * Not specifying a position will set the pointer
     * at the beginning of the result set.
-    * @param $position the position
+    * @param int $position the position
     */
    function seek($position=0)
    {
@@ -246,8 +254,8 @@
 
    /**
     * Lock a certain table in the database
-    * @param $table the table name
-    * @param $mode the type of locking
+    * @param string $table the table name
+    * @param string $mode the type of locking
     * @return result of locking
     */
    function lock($table, $mode="write")
@@ -326,7 +334,7 @@
    /**
     * Get the next sequence number
     * of a certain sequence.
-    * @param $sequence the sequence name
+    * @param string $sequence the sequence name
     * @return the next sequence id
     */
    function nextid($sequence)
@@ -375,8 +383,8 @@
 
    /**
     * Return the meta data of a certain table
-    * @param $table the table name
-    * @param $full all meta data or not
+    * @param string $table the table name
+    * @param bool $full all meta data or not
     * @return array with meta data
     */
    function metadata($table, $full=false)
@@ -442,28 +450,35 @@
 
    /**
     * Return the available table names
+    * 
+    * @param bool $includeViews Include views?
     * @return array with table names etc.
     */
-   function table_names()
+   function table_names($includeViews=true)
    {
-     /* query */
-     $this->query("SHOW TABLES");
+     // query 
+     $this->query("SHOW ".(!$includeViews ? "FULL" : "")." TABLES");
 
-     /* get table names */
+     // get table names
      $result = array();
      for ($i=0; $info = mysqli_fetch_row($this->m_query_id); $i++)
      {
+       // ignore views?
+       if (!$includeViews && strtoupper($info[1]) == 'VIEW') continue;
+       
        $result[$i]["table_name"]      = $info[0];
        $result[$i]["tablespace_name"] = $this->m_database;
        $result[$i]["database"]        = $this->m_database;
      }
 
-     /* return result */
+     // return result
      return $result;
    }
 
    /**
     * Commit the current transaction.
+    * 
+    * @return bool true
     */
    function commit()
    {
@@ -474,17 +489,39 @@
      }
      return true;
    }
-
-   /*
-    * Rollback the the current transaction.
+   
+   /**
+    * Set savepoint with the given name.
+    *
+    * @param string $name savepoint name
     */
-   function rollback()
+   function savepoint($name)
    {
-     if($this->m_link_id)
-     {
-       atkdebug("Rollback");
-       mysqli_rollback($this->m_link_id);
+     atkdebug(get_class($this)."::savepoint $name");
+     $this->query('SAVEPOINT '.$name);
+   }
+
+   /**
+    * Rollback the the current transaction.
+    * 
+    * @param string $savepoint The savepoint to rollback to
+    */
+   function rollback($savepoint="")
+   {
+     if ($this->m_link_id)
+     { 
+       if (!empty($savepoint))
+       {
+         atkdebug(get_class($this)."::rollback (rollback to savepoint $savepoint)");        
+         $this->query('ROLLBACK TO SAVEPOINT '.$savepoint);
+       } 
+       else 
+       {
+         atkdebug("Rollback");
+         mysqli_rollback($this->m_link_id);
+       }
      }
+      
      return true;
    }
 
@@ -496,6 +533,16 @@
    function toggleForeignKeys($enable)
    {
      $this->query("SET FOREIGN_KEY_CHECKS = ".($enable ? 1 : 0));
+   }
+   
+   /**
+    * Returns the last inserted auto increment value.
+    * 
+    * @return int auto increment value of latest insert query
+    */
+   public function getInsertId()
+   {
+     return mysqli_insert_id($this->m_link_id);
    }
  }
 ?>

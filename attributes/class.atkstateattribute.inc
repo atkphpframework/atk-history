@@ -13,7 +13,7 @@
    * @copyright (c)2006 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6309 $
    * $Id$
    */
 
@@ -50,12 +50,14 @@
     * state_abbrev is the database attribute that holds state abbrevation data as AK,CA,NY
     * It will display the full state name.
     *
-    * @param $name Name of the attribute
-    * @param $switch Choose usa for USA states
-    * @param $optionArray Array with options
-    * @param $valueArray Array with values. If you don't use this parameter,
+    * @param string $name Name of the attribute
+    * @param string $switch Choose usa for USA states
+    * @param array $optionArray Array with options
+    * @param array $valueArray Array with values. If you don't use this parameter,
     *                    values are assumed to be the same as the options.
-    * @param $flags Flags for the attribute
+    * @param int $flags Flags for the attribute
+    * @param bool $defaulttocurrent Set the default selected state to the 
+    *                               current state based on the atk language
     */
     function atkStateAttribute($name,$switch="usa",$optionArray="", $valueArray="", $flags = 0,$defaulttocurrent=true)
     {
@@ -77,13 +79,26 @@
       $this->atkListAttribute($name, $optionsArray,$valueArray, $flags|AF_NO_TRANSLATION, 0);
     }
 
-    function edit($record="",$fieldprefix="")
+    /**
+     * Returns a piece of html code that can be used in a form to edit this
+     * attribute's value.
+     *
+     * @param array $record The record that holds the value for this attribute.
+     * @param String $fieldprefix The fieldprefix to put in front of the name
+     *                            of any html form element for this attribute.
+     * @param String $mode The mode we're in ('add' or 'edit')
+     * @return String A piece of htmlcode for editing this attribute
+     */
+    function edit($record="",$fieldprefix="",$mode="")
     {
       if ($this->m_defaulttocurrent && !$record[$this->fieldName()]) $record[$this->fieldName()] = strtoupper(atkLanguage::getLanguage());
       return parent::edit($record,$fieldprefix);
     }
 
-
+    /**
+     * Fill the state array
+     *
+     */
     function fillStateArray()
     {
       $this->m_state['AL']['en'] = "ALABAMA";
@@ -145,12 +160,17 @@
       $this->m_state['WV']['en'] = "WEST VIRGINIA";
       $this->m_state['WI']['en'] = "WISCONSIN";
       $this->m_state['WY']['en'] = "WYOMING";
-
     }
 
+    /**
+     * Get the state value array
+     *
+     * @param string $switch
+     * @return array with state values
+     */
     function getStateValueArray($switch)
     {
-       if($switch=="usa")
+      if($switch=="usa")
       {
          return $this->m_usa_states;
       }
@@ -163,6 +183,12 @@
       }
     }
 
+    /**
+     * Get the state option array
+     *
+     * @param string $switch
+     * @return array with state options
+     */
     function getStateOptionArray($switch)
     {
       $tmp_array = array();
@@ -179,12 +205,15 @@
       return $tmp_array;
     }
 
+    /**
+     * Get the state option based on the language
+     *
+     * @param string $iso_code
+     * @return String The state option
+     */
     function getStateOption($iso_code)
     {
        return $this->m_state[$iso_code][atkLanguage::getLanguage()];
     }
-
-
-
   }
 ?>

@@ -11,7 +11,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6320 $
    * $Id$
    */
 
@@ -24,7 +24,8 @@
   /**
    * Extension of the atkManyToOneRelation, that is aware of the treestructure
    * (parent/child relation) in the destination node, and renders items in the
-   * dropdown accordingly.
+   * dropdown accordingly. You need to set the AF_PARENT flag to the parent 
+   * column in the destination node in order to make the tree rendering work.
    *
    * @author Sandy Pleyte <sandy@ibuildings.nl>
    * @package atk
@@ -40,11 +41,11 @@
 
     /**
      * Constructor
-     * @param $name ?
-     * @param $destination ?
-     * @param $flags Flags for the relation
+     * @param string $name Name of the attribute
+     * @param string $destination Destination node for this relation
+     * @param int $flags Flags for the relation
      */
-    function atkTreeManyToOneRelation($name, $destination, $flags=0)
+    function atkManyToOneTreeRelation($name, $destination, $flags=0)
     {
       $this->atkManyToOneRelation($name, $destination, $flags);
     }
@@ -52,10 +53,14 @@
     /**
      * Returns a piece of html code that can be used in a form to edit this
      * attribute's value.
-     * @param $record Record
+     * 
+     * @param array $record The record that holds the value for this attribute.
+     * @param String $fieldprefix The fieldprefix to put in front of the name
+     *                            of any html form element for this attribute.
+     * @param String $mode The mode we're in ('add' or 'edit')
      * @return Piece of html code that can  be used in a form to edit this
      */
-    function edit($record="", $fieldprefix="")
+    function edit($record="", $fieldprefix="", $mode="")
     {
       global $m_current;
       $this->createDestination();
@@ -81,9 +86,7 @@
 
     /**
      * Returns a piece of html code that can be used in a form to search
-     * @param $record Record
-     * @param $size Size of the editbox
-     * @param $maxsize Maxsize of the editbox
+     * @param array $record Record
      * @return Piece of html code that can  be used in a form to edit this
      */
     function search($record="")
@@ -105,6 +108,12 @@
       return $result;
     }
 
+    /**
+     * Create all the options
+     *
+     * @param array $recordset
+     * @return string The HTML code for the options
+     */
     function createdd($recordset)
     {
       $t = new tree;
@@ -119,6 +128,13 @@
       return $tmp;
     }
 
+    /**
+     * Render the tree
+     *
+     * @param array $tree Array of tree nodes
+     * @param int $level
+     * @return string The rendered tree
+     */
     function render($tree="",$level=0)
     {
       global $m_current,$m_level;

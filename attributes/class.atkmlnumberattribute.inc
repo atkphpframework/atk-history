@@ -11,7 +11,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6309 $
    * $Id$
    */
 
@@ -30,8 +30,9 @@
   {
     /**
      * Constructor
-     * @param $name name of the attribute
-     * @param $flags flags for this attribute
+     * @param string $name name of the attribute
+     * @param integer $flags flags for this attribute
+     * @param integer $size The size of this attribute
      */
     function atkMlNumberAttribute($name, $flags=0, $size=0)
     {
@@ -40,10 +41,9 @@
 
     /**
      * Validates if value is numeric
-     * @param &$record Record that contains value to be validated.
+     * @param array $record Record that contains value to be validated.
      *                 Errors are saved in this record
-     * @param $mode can be either "add" or "update"
-     * @return $record
+     * @param string $mode can be either "add" or "update"
      */
     function validate(&$record, $mode)
     {

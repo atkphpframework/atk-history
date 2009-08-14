@@ -86,7 +86,15 @@
      return DB_SUCCESS;
    }
 
-   function _translateError()
+   /**
+     * Translate database-vendor dependent error messages into an ATK generic
+     * error code.
+     *
+     * @access private
+     * @param mixed $errno Vendor-dependent error code.
+     * @return int ATK error code
+     */
+   function _translateError($errno)
    {
      // The MSSQL interface can not return detailed error information
      $this->m_errno = 1;
@@ -106,9 +114,9 @@
 
    /**
     * Performs a query
-    * @param $query the query
-    * @param $offset offset in record list
-    * @param $limit maximum number of records
+    * @param string $query the query
+    * @param int $offset offset in record list
+    * @param int $limit maximum number of records
     * @todo implement limit and offset support
     */
    function query($query, $offset=-1, $limit=-1)
@@ -175,7 +183,8 @@
     * Goto a certain position in result set.
     * Not specifying a position will set the pointer
     * at the beginning of the result set.
-    * @param $position the position
+    * @param int $position the position
+    * @param bool $haltOnError 
     */
    function seek($position=0, $haltOnError=true)
    {
@@ -187,8 +196,8 @@
 
    /**
     * Lock a certain table in the database
-    * @param $table the table name
-    * @param $mode the type of locking
+    * @param string $table the table name
+    * @param string $mode the type of locking
     * @return result of locking
     */
    function lock($table, $mode="write")
@@ -258,7 +267,7 @@
    /**
     * Get the next sequence number
     * of a certain sequence.
-    * @param $sequence the sequence name
+    * @param string $sequence the sequence name
     * @return the next sequence id
     */
    function nextid($sequence)
@@ -307,8 +316,8 @@
 
    /**
     * Return the meta data of a certain table
-    * @param $table the table name
-    * @param $full all meta data or not
+    * @param string $table the table name
+    * @param bool $full all meta data or not
     * @return array with meta data
     */
    function metadata($table, $full=false)
@@ -395,8 +404,10 @@
      return true;
    }
 
-   /*
+   /**
     * Rollback the the current transaction.
+    * 
+    * @return bool true
     */
    function rollback()
    {
@@ -408,6 +419,10 @@
      return true;
    }
    
+   /**
+     * Get localized error message (for display in the application)
+     * @return String Error message
+     */
    function getErrorMsg()
    {
      return atktext("db_unknown_mssql_error");
@@ -423,8 +438,10 @@
      * array into memory. If you retrieve a lot of records,
      * you might hit the memory_limit and your script will die.
      *
-     * @param $query the query
-     * @return array with rows
+     * @param string $query the query
+     * @param int $offset The offset to use
+     * @param int $limit The limit to use
+     * @return array array with rows
      */
     function getrows($query, $offset=-1, $limit=-1)
     {

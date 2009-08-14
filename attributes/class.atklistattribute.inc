@@ -12,7 +12,7 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6305 $
    * $Id$
    */
 
@@ -97,12 +97,12 @@
      * implemented, but it has now been removed. Keep this in mind
      * when upgrading from a very old ATK version (pre ATK4).
      *
-     * @param $name Name of the attribute
-     * @param $optionArray Array with options
-     * @param $valueArray Array with values. If you don't use this parameter,
+     * @param string $name Name of the attribute
+     * @param array $optionArray Array with options
+     * @param array $valueArray Array with values. If you don't use this parameter,
      *                    values are assumed to be the same as the options.
-     * @param $flags Flags for this attribute
-     * @param $size  Size of the attribute.
+     * @param int $flags Flags for this attribute
+     * @param int $size  Size of the attribute.
      */
     function atkListAttribute($name, $optionArray, $valueArray="", $flags=0, $size=0)
     {
@@ -128,7 +128,7 @@
       {
         for ($i=0, $_i=count($valueArray); $i<$_i; $i++)
         {
-          $size = max($size, strlen($valueArray[$i]));
+          $size = max($size, atk_strlen($valueArray[$i]));
         }
       }
 
@@ -145,32 +145,51 @@
      */
     function createLookupArray($optionArray,$valueArray)
     {
-      for ($i=0, $_i=count($optionArray); $i<$_i; $i++)
+      foreach ($optionArray AS $id => $option)
       {
-        $this->m_lookup[$valueArray[$i]] = $optionArray[$i];
+        $this->m_lookup[$valueArray[$id]] = $option;
       }
+
       $this->_set("lookup",$this->m_lookup);
     }
 
     /**
-     * get functions to access member variables.
-     * For backwards compatibility we also check the old member variables m_options,
-     * m_values and m_lookup.
+     * Get function to access the member variable for options.
+     * For backwards compatibility we also check the old member variable m_options
+     * 
+     * @param array $rec The record
      */
-    function getOptions($rec=null) {
-    	if(!isset($this->m_types["options"]) || count($this->m_types["options"]) == 0)
-    		return $this->m_options;
-    	return $this->_get("options",$rec);
+    function getOptions($rec=null) 
+    {
+      if(!isset($this->m_types["options"]) || count($this->m_types["options"]) == 0)
+        return $this->m_options;
+      return $this->_get("options",$rec);
     }
-    function getValues($rec=null) {
-    	if(!isset($this->m_types["values"]) || count($this->m_types["values"]) == 0)
-    		return $this->m_values;
-    	return $this->_get("values",$rec);
+    
+    /**
+     * Get functions to access the member variable for values
+     * For backwards compatibility we also check the old member variable m_values
+     * 
+     * @param array $rec The record
+     */
+    function getValues($rec=null) 
+    {
+      if(!isset($this->m_types["values"]) || count($this->m_types["values"]) == 0)
+        return $this->m_values;
+      return $this->_get("values",$rec);
     }
-    function getLookup($rec=null) {
-    	if(!isset($this->m_types["lookup"]) || count($this->m_types["lookup"]) == 0)
-    		return $this->m_lookup;
-    	return $this->_get("lookup",$rec);
+    
+    /**
+     * Get functions to access the member variable for lookup.
+     * For backwards compatibility we also check the old member variable m_lookup
+     * 
+     * @param array $rec The record
+     */
+    function getLookup($rec=null) 
+    {
+      if(!isset($this->m_types["lookup"]) || count($this->m_types["lookup"]) == 0)
+        return $this->m_lookup;
+      return $this->_get("lookup",$rec);
     }
 
     /**
@@ -179,13 +198,25 @@
      * values => valuearray
      * lookup => lookuparray
      *
-     * @param string $type
+     * @param string $type ("options", "values" or "lookup")
+     * @param array $rec The record
+     * @return array with options, values or lookup
      */
     function _get($type,$rec=null)
     {
       return $this->m_types[$type];
     }
 
+    /**
+     * Set's one of the following arrays
+     * options => optionarray
+     * values => valuearray
+     * lookup => lookuparray
+     *
+     * @param string $type ("options", "values" or "lookup)
+     * @param array $value
+     * @return true
+     */
     function _set($type,$value)
     {
       $this->m_types[$type]=$value;
@@ -194,7 +225,7 @@
 
     /**
      * Display's text version of Record
-     * @param $record
+     * @param array $record
      * @return text string of $record
      */
     function display($record)
@@ -206,6 +237,7 @@
      * Translates the database value
      *
      * @param string $value
+     * @param array $rec The record
      * @return string
      */
     function _translateValue($value,$rec=null)
@@ -223,10 +255,13 @@
     /**
      * Returns a piece of html code that can be used in a form to edit this
      * attribute's value.
-     * @param $record Array with fields
+     * @param array $record Array with fields
+     * @param String $fieldprefix The fieldprefix to put in front of the name
+     *                            of any html form element for this attribute.
+     * @param String $mode The mode we're in ('add' or 'edit')
      * @return piece of html code with a checkbox
      */
-    function edit($record="", $fieldprefix="")
+    function edit($record="", $fieldprefix="", $mode="")
     {
       // todo: configurable rows
       $id = $this->getHtmlId($fieldprefix);
@@ -243,8 +278,9 @@
 
       $result.=$this->_addEmptyListOption();
 
-      $values = $this->getValues($record);
+      $values   = $this->getValues($record);
       $recvalue = atkArrayNvl($record,$this->fieldName());
+
       for ($i=0;$i<count($values);$i++)
       {
         // If the current value is selected or occurs in the record
@@ -260,6 +296,7 @@
 
         $result.= '<option value="'.$values[$i].'" '.$sel.'>'.$this->_translateValue($values[$i],$record);
       }
+
       $result.='</select>';
       return $result;
     }
@@ -275,30 +312,44 @@
     function _addEmptyListOption()
     {
       $ret='';
-      
+
       // use a different (more descriptive) text for obligatory items
       $text_key = $this->hasFlag(AF_OBLIGATORY) ? "list_null_value_obligatory" : "list_null_value";
-      
+
       if (!$this->hasFlag(AF_LIST_NO_NULL_ITEM) ||
            ($this->hasFlag(AF_OBLIGATORY) &&
            // CONFIG IS DEPRECATED
           ((atkconfig("list_obligatory_null_item")&&!$this->hasFlag(AF_LIST_NO_OBLIGATORY_NULL_ITEM))||
            ($this->hasFlag(AF_LIST_OBLIGATORY_NULL_ITEM)))))
       {
-        $ret = '<option value="'.$this->m_emptyvalue.'">'.atktext($text_key, "", is_object($this->m_ownerInstance) ? $this->m_ownerInstance->m_type : "");
+        $ret = '<option value="'.$this->m_emptyvalue.'">'.atk_htmlentities($this->text(array($this->fieldName().'_'.$text_key, $text_key))).'</option>';
       }
       return $ret;
     }
 
     /**
-     * Returns a piece of html code that can be used in a form to search values
-     * @param $record Array with fields
-     * @return piece of html code with a checkbox
+     * Returns a piece of html code that can be used to get search terms input
+     * from the user.
+     *
+     * The framework calls this method to display the searchbox
+     * in the search bar of the recordlist, and to display a more extensive
+     * search in the 'extended' search screen.
+     * 
+     * @todo Configurable rows
+     * @param array $record Array with values
+     * @param boolean $extended if set to false, a simple search input is
+     *                          returned for use in the searchbar of the
+     *                          recordlist. If set to true, a more extended
+     *                          search may be returned for the 'extended'
+     *                          search page. The atkAttribute does not
+     *                          make a difference for $extended is true, but
+     *                          derived attributes may reimplement this.
+     * @param string $fieldprefix The fieldprefix of this attribute's HTML element.
+     *
+     * @return String A piece of html-code with a checkbox
      */
     function search($record="", $extended=false, $fieldprefix="")
     {
-      // todo: configurable rows
-
       $values = $this->getValues($record);
       $result = '<select ';
       if ($extended)
@@ -306,16 +357,13 @@
         $result.='multiple size="'.min(5,count($values)+1).'"';
       }
 
-      if (strstr($fieldprefix,"]["))
-        $result.='name="atksearch['. $fieldprefix.$this->fieldName().'][]">';
-      else
-        $result.='name="atksearch'.$fieldprefix.'['.$this->formName().'][]">';
+      $result .= 'name="'.$this->getSearchFieldName($fieldprefix).'[]">';
 
-      $result.= '<option value="">'.atktext('search_all');
+      $result .= '<option value="">'.atktext('search_all');
 
-      for ($i=0,$_i=count($values);$i<$_i;$i++)
+      foreach ($values AS $value)
       {
-        if (atk_in_array(((string)$values[$i]),$record[$this->fieldName()], true) && $record[$this->fieldName()]!=="")
+        if (atk_in_array(((string)$value),$record[$this->fieldName()], true) && $record[$this->fieldName()]!=="")
         {
           $sel = "selected";
         }
@@ -323,23 +371,28 @@
         {
           $sel = "";
         }
-        $result.= '<option value="'.$values[$i].'" '.$sel.'>'.$this->_translateValue($values[$i],$record);
+
+        $result.= '<option value="'.$value.'" '.$sel.'>'.$this->_translateValue($value,$record);
       }
+
       $result.='</select>';
       return $result;
     }
 
     /**
-     * Creates an search condition for a given search value
-     * @param $table the table name
-     * @param $value the search value
-     * @return a piece of the SQL where clause
+     * Creates a searchcondition for the field,
+     * was once part of searchCondition, however,
+     * searchcondition() also immediately adds the search condition.
+     *
+     * @param atkQuery $query     The query object where the search condition should be placed on
+     * @param String $table       The name of the table in which this attribute
+     *                              is stored
+     * @param mixed $value        The value the user has entered in the searchbox
+     * @param String $searchmode  The searchmode to use. This can be any one
+     *                              of the supported modes, as returned by this
+     *                              attribute's getSearchModes() method.
+     * @return String The searchcondition to use.
      */
-    function searchCondition(&$query, $table, $value, $searchmode)
-    {
-      $query->addSearchCondition($this->getSearchCondition($query, $table, $value, $searchmode));
-    }
-
     function getSearchCondition(&$query, $table, $value, $searchmode)
     {
       // We only support 'exact' matches.
@@ -360,6 +413,11 @@
       return $searchcondition;
     }
 
+    /**
+     * Retrieve the list of searchmodes supported by the attribute.
+     *
+     * @return array List of supported searchmodes
+     */
     function getSearchModes()
     {
       // exact match and substring search should be supported by any database.
@@ -370,12 +428,24 @@
       return array("exact");
     }
 
+    /**
+     * Return the database field type of the attribute.
+     *
+     * @return String The 'generic' type of the database field for this
+     *                attribute.
+     */
     function dbFieldType()
     {
       // Fieldtype was determined in the constructor.
       return $this->m_dbfieldtype;
     }
 
+    /**
+     * Set autohide for the given attribute
+     *
+     * @param string $attrib
+     * @param array $valuearr
+     */
     function setAutoHide($attrib, $valuearr)
     {
       $conditions = array();
@@ -388,10 +458,10 @@
 
     /**
      * Sets the selected listitem
-     * 
+     *
      * @param string $selected the listitem you want to have selected
-     * 
-     * @deprecated 
+     *
+     * @deprecated
      * @see atkNode::initial_values
      */
     function setSelected($selected)
@@ -401,10 +471,10 @@
 
     /**
      * Gets the selected listattribute
-     * 
+     *
      * @return string the selected listitem
-     * 
-     * @deprecated 
+     *
+     * @deprecated
      * @see atkNode::initial_values
      */
     function getSelected()
@@ -480,7 +550,7 @@
     {
       return $this->m_width;
     }
-    
+
     /**
      * Add option/value to dropdown
      *
@@ -493,15 +563,15 @@
       $currentOptions = $this->_get("options");
       $currentOptions[] = $option;
       $this->_set("options", $currentOptions);
-            
+
       $currentValues = $this->_get("values");
       $currentValues[] = $value;
       $this->_set("values", $currentValues);
-      
+
       $this->createLookupArray($currentOptions,$currentValues);
       return $this;
     }
-    
+
     /**
      * Remove option from dropdown
      *
@@ -510,19 +580,26 @@
     function removeOption($option)
     {
       $currentOptions = $this->_get("options");
-      $currentValues = $this->_get("values");      
-      
+      $currentValues = $this->_get("values");
+
       $index = array_search($option, $currentOptions);
       $value = $currentValues[$index];
-      
+
       array_splice($currentOptions, $index, 1); // remove option
       array_splice($currentValues, $index, 1);  // remove value
-      
+
       $this->_set("options",$currentOptions);
       $this->_set("values",$currentValues);
       return $this;
     }
 
+    /**
+     * Set the option and value array
+     *
+     * @param array $optionArray array with options
+     * @param array $valueArray array with values
+     * @return object reference to this attribute
+     */
     function setOptions($optionArray, $valueArray)
     {
       // m_options and m_values array are still here for backwardscompatibility
@@ -534,6 +611,27 @@
       $this->createLookupArray($optionArray,$valueArray);
       return $this;
     }
+    
+    /**
+     * Remove value from dropdown
+     *
+     * @param string $value
+     */
+    function removeValue($value)
+    {
+      $currentOptions = $this->_get("options");
+      $currentValues = $this->_get("values");
+
+      $v = array_search($value, $currentValues);
+
+      array_splice($currentOptions, $v, 1); // remove option
+      array_splice($currentValues, $v, 1);  // remove value
+
+      $this->_set("options",$currentOptions);
+      $this->_set("values",$currentValues);
+      return $this;
+    }
+
   }
 
 ?>

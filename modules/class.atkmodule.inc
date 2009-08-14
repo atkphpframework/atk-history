@@ -12,7 +12,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6323 $
    * $Id$
    */
 
@@ -29,6 +29,14 @@
    */
   class atkModule
   {
+    /**
+     * We keep track if the node currently being instantiated is an
+     * overloader or not.
+     *
+     * @var boolean
+     */
+    static $s_isOverloader = false;
+    
     var $m_name;
 
     /**
@@ -69,13 +77,8 @@
     }
 
     /**
-     * Create a new menu item
-     *
-     * Both main menu items, separators, submenus or submenu items can be
-     * created, depending on the parameters passed.
-     * 
-     * Function that adds a menuitem to the menu. This function can be called
-     * from inside the getMenuItems() function, to register a menuitem.
+     * Create a new menu item, optionally configuring access control.  This 
+     * function can also be used to create separators, submenus and submenu items.
      *
      * @param String $name The menuitem name. The name that is displayed in the
      *                     userinterface can be influenced by putting
@@ -109,7 +112,7 @@
      *                   the items appear in the order in which they are added
      *                   to the menu, with steps of 100. So, if you have a menu
      *                   with default ordering and you want to place a new
-     *                   menuitem at the third position, pass 250 for $order. 
+     *                   menuitem at the third position, pass 250 for $order.
      */
     function menuitem($name="", $url="", $parent="main", $enable=1, $order=0)
     {
@@ -131,7 +134,7 @@
      * This method is similar to the getPreferenceLinks() method but instead
      * will return links to (an) admin page(s) for this module. The array which
      * will be returned have to be created with the adminlink() method.
-     * @return array with admin links for thid module
+     * @return array with admin links for this module
      */
     function getAdminLinks()
     {
@@ -140,10 +143,10 @@
     /**
      * Returns the node overloader if it exists. Else it
      * will just return the module/node name of the given node.
-     * @param $node module/node string
-     * @return (overloader) module/node string
+     * @param string $node module/node string
+     * @return string (overloader) module/node string
      */
-    function &nodeOverloader($node)
+    function nodeOverloader($node)
     {
       global $g_overloaders;
 
@@ -151,20 +154,23 @@
       if (!empty($g_overloaders[$node]))
       {
         atkdebug("Using overloader '".$g_overloaders[$node]."' for class '".$node."'");
-        return newNode($g_overloaders[$node], FALSE);
+        self::$s_isOverloader = true;
+        $node = newNode($g_overloaders[$node], FALSE);
+        self::$s_isOverloader = false;        
+        return $node;
       }
 
       /* no overloader */
       else
       {
-        $tmp = NULL;
-        return $tmp;
+        return null;
       }
     }
-    
+
     /**
      * Returns the node file for the given node.
      *
+     * @see nodeFile()
      * @param string $node the node type
      * @return string node filename
      */
@@ -172,10 +178,10 @@
     {
       return nodeFile($node);
     }
-    
+
     /**
      * Returns the fixture path for the given fixture.
-     * 
+     *
      * @param string $fixture <module.fixture> string
      * @return string path to fixture without extension
      */
@@ -189,7 +195,7 @@
 
     /**
      * Construct a new node. A module can override this method for it's own nodes.
-     * @param $node the node type
+     * @param atkNode $node the node type
      * @return new node object
      */
     function &newNode($node)
@@ -230,8 +236,11 @@
 
       // set the current module scope, this will be retrieved in atkNode
       // to set it's $this->m_module instance variable in an early stage
-      atkModule::setModuleScope($module);  
-      
+      if (!self::$s_isOverloader)
+      {
+        atkModule::setModuleScope($module);
+      }
+
       /* now that we have included the node source file, we check
        * for overloaders (because overloaders might need the included file!)
        */
@@ -239,7 +248,12 @@
       if ($overloader != NULL)
       {
         $overloader->m_module = $module;
-        atkModule::resetModuleScope(); 
+        
+        if (!self::$s_isOverloader)
+        {
+          atkModule::resetModuleScope();
+        }
+        
         return $overloader;
       }
 
@@ -247,10 +261,15 @@
       $type = getNodeType($node);
       $node =& new $type();
       $node->m_module = $module;
-      atkModule::resetModuleScope(); 
+      
+      if (!self::$s_isOverloader)
+      {
+        atkModule::resetModuleScope();
+      }
+      
       return $node;
     }
-    
+
     /**
      * Set current module scope.
      *
@@ -262,7 +281,7 @@
       global $g_atkModuleScope;
       $g_atkModuleScope = $module;
     }
-    
+
     /**
      * Returns the current module scope.
      *
@@ -274,10 +293,10 @@
       global $g_atkModuleScope;
       return $g_atkModuleScope;
     }
-    
+
     /**
      * Resets the current module scope.
-     * 
+     *
      * @static
      */
     function resetModuleScope()
@@ -287,7 +306,7 @@
 
     /**
      * Checks if a certain node exists for this module.
-     * @param $node the node type
+     * @param string $node the node type
      * @return node exists?
      */
     function nodeExists($node)
@@ -297,6 +316,12 @@
       return file_exists($file);
     }
 
+    /**
+     * Get the modifier functions for this node
+     *
+     * @param atkNode $node
+     * @return array Array with modifier function names
+     */
     function getModifierFunctions(&$node)
     {
       return array($node->m_type . "_modifier", str_replace(".", "_", $node->atknodetype()) . "_modifier");

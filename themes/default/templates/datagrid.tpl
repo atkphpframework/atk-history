@@ -1,14 +1,21 @@
 <table border="0" cellspacing="0" cellpadding="2">
-{if $index || $editcontrol}
+{if $top}
+<tr>
+  <td align="left" valign="top" colspan="2">
+    {$top}
+  </td>
+</tr>
+{/if}
+{if $index}
   <tr>
     <td align="left" valign="top">
-      {if $editcontrol}{$editcontrol}{/if} {if $index}{$index}{/if}
+      {$index}
     </td>
   </tr>
 {elseif $paginator || $limit}
   <tr>
     <td align="left" valign="middle">
-      {if $editcontrol}{$editcontrol}{/if} {if $paginator}{$paginator}{/if}
+      {if $paginator}{$paginator}{/if}
     </td>
     <td align="right" valign="middle">
       {if $limit}{$limit}{/if}
@@ -36,5 +43,12 @@
       {if $summary}{$summary}{/if}
     </td>
   </tr>
+{/if}
+{if $bottom}
+<tr>
+  <td align="left" valign="top" colspan="2">
+    {$bottom}
+  </td>
+</tr>
 {/if}
 </table>

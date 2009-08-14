@@ -12,7 +12,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6309 $
    * $Id$
    */
 
@@ -56,6 +56,11 @@
     var $m_defaultDestination;
     var $m_flags;
 
+    /**
+     * Constructor
+     *
+     * @return atkIndexPage
+     */
     function atkIndexPage()
     {
       global $ATK_VARS;
@@ -67,11 +72,21 @@
       $this->m_flags = array_key_exists("atkpartial", $ATK_VARS) ? HTML_PARTIAL : HTML_STRICT;
     }
 
+    /**
+     * Does the atkIndexPage has this flag?
+     *
+     * @param integer $flag The flag
+     * @return Boolean
+     */
     function hasFlag($flag)
     {
       return hasFlag($this->m_flags, $flag);
     }
 
+    /**
+     * Generate the indexpage
+     *
+     */
     function generate()
     {
       if (!$this->hasFlag(HTML_PARTIAL))
@@ -82,10 +97,14 @@
 
       $this->atkGenerateDispatcher();
 
-      $this->m_output->output($this->m_page->render(($this->m_title!=""?$this->m_title:atkText("app_title")), $this->m_flags));
+      $this->m_output->output($this->m_page->render($this->m_title != "" ? $this->m_title : null, $this->m_flags));
       $this->m_output->outputFlush();
     }
 
+    /**
+     * Generate the menu
+     *
+     */
     function atkGenerateMenu()
     {
       /* general menu stuff */
@@ -93,15 +112,17 @@
       atkimport("atk.menu.atkmenu");
       $menu = &atkMenu::getMenu();
 
-
       if (is_object($menu)) $this->m_page->addContent($menu->getMenu());
       else atkerror("no menu object created!");
     }
 
+    /**
+     * Generate the top with login text, logout link, etc.
+     *
+     */
     function atkGenerateTop()
     {
       $this->m_page->register_style($this->m_theme->stylePath("style.css"));
-      $this->m_page->register_stylecode("form{display: inline;}");
       $this->m_page->register_style($this->m_theme->stylePath("top.css"));
 
       //Backwards compatible $content, that is what will render when the box.tpl is used instead of a top.tpl
@@ -109,38 +130,64 @@
       $content = '<br />'.$loggedin.' &nbsp; <a href="index.php?atklogout=1">'.ucfirst(atkText("logout")).' </a>&nbsp;<br /><br />';
 
       $top = $this->m_ui->renderBox(array("content"=> $content,
-      "logintext" => atktext("logged_in_as"),
-      "logouttext" => ucfirst(atkText("logout", "atk")),
-      "logoutlink" => "index.php?atklogout=1",
-      "logouttarget"=>"_top",
-      "centerpiece_links"=>$this->m_topcenterpiecelinks,
-      "searchpiece"=>$this->m_topsearchpiece,
-      "title" => ($this->m_title!=""?$this->m_title:atkText("app_title")),
-      "user"   => ($this->m_username?$this->m_username:$this->m_user["name"])),
+        "logintext" => atktext("logged_in_as"),
+        "logouttext" => ucfirst(atkText("logout", "atk")),
+        "logoutlink" => "index.php?atklogout=1",
+        "logouttarget"=>"_top",
+        "centerpiece_links"=>$this->m_topcenterpiecelinks,
+        "searchpiece"=>$this->m_topsearchpiece,
+        "title" => ($this->m_title!=""?$this->m_title:atkText("app_title")),
+        "user"   => ($this->m_username?$this->m_username:$this->m_user["name"]),
+        "fulluser" => $this->m_user
+       ),
       "top");
       $this->m_page->addContent($top);
     }
 
+    /**
+     * Set the top center piece links
+     *
+     * @param string $centerpiecelinks
+     */
     function setTopCenterPieceLinks($centerpiecelinks)
     {
       $this->m_topcenterpiecelinks=$centerpiecelinks;
     }
 
+    /**
+     * Set the top search piece
+     *
+     * @param string $searchpiece
+     */
     function setTopSearchPiece($searchpiece)
     {
       $this->m_topsearchpiece = $searchpiece;
     }
 
+    /**
+     * Set the title of the page
+     *
+     * @param string $title
+     */
     function setTitle($title)
     {
       $this->m_title = $title;
     }
 
+    /**
+     * Set the username
+     *
+     * @param string $username
+     */
     function setUsername($username)
     {
       $this->m_username = $username;
     }
 
+    /**
+     * Generate the dispatcher
+     *
+     */
     function atkGenerateDispatcher()
     {
       global $ATK_VARS;
@@ -206,6 +253,11 @@
       }
     }
 
+    /**
+     * Set the default destination
+     *
+     * @param string $destination The default destination
+     */
     function setDefaultDestination($destination)
     {
       if(is_array($destination))

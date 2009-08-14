@@ -12,7 +12,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6323 $
    * $Id$
    */
 
@@ -78,6 +78,9 @@
     /**
      * TODO FIXME: I don't know what errormessges postgresql gives,
      * so this function only returns DB_UNKNOWNERROR for now.
+     * 
+     * @param mixed $error
+     * @return int The ATK error code
      */
     function _translateError($error="")
     {
@@ -94,9 +97,9 @@
 
     /**
      * Performs a query
-     * @param $query the query
-     * @param $offset offset in record list
-     * @param $limit maximum number of records
+     * @param string $query the query
+     * @param int $offset offset in record list
+     * @param int $limit maximum number of records
      */
     function query($query, $offset=-1, $limit=-1)
     {
@@ -159,7 +162,7 @@
      * Goto a certain position in result set.
      * Not specifying a position will set the pointer
      * at the beginning of the result set.
-     * @param $position the position
+     * @param int $position the position
      */
     function seek($position=0)
     {
@@ -168,8 +171,8 @@
 
     /**
      * Lock a certain table in the database
-     * @param $table the table name
-     * @param $mode the type of locking
+     * @param string $table the table name
+     * @param string $mode the type of locking
      * @return result of locking
      */
     function lock($table, $mode="write")
@@ -239,7 +242,7 @@
     /**
      * Get the next sequence number
      * of a certain sequence.
-     * @param $sequence the sequence name
+     * @param string $sequence the sequence name
      * @return the next sequence id
      */
     function nextid($sequence)
@@ -293,8 +296,8 @@
 
     /**
      * Return the meta data of a certain table
-     * @param $table the table name
-     * @param $full all meta data or not
+     * @param string $table the table name
+     * @param bool $full all meta data or not
      * @return array with meta data
      */
     function metadata($table, $full=false)
@@ -379,7 +382,7 @@
         if ($row['is_auto_inc'] == 1)
           $meta[$i]['sequence'] = $row['sequence'];
 
-        else if (strlen($row['default']) > 0)
+        else if (atk_strlen($row['default']) > 0)
         {
           // date/time/datetime
           if (strtolower($row['default']) == "now" && in_array($meta[$i]['gentype'], array("date", "time", "datetime")))
@@ -432,6 +435,9 @@
 
     /**
      * Check if table exists.
+     * 
+     * @param string $table the table to find
+     * @return bool true if found, false if not found
      */
     function tableExists($table)
     {

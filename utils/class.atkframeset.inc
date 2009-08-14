@@ -11,7 +11,7 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6348 $
    * $Id$
    */     
 
@@ -38,7 +38,13 @@
     var $m_border;
     var $m_orientation;    
     var $m_noframes;
-    
+
+    /**
+     * Frameset ID
+     * @var string
+     */
+    var $m_id;
+
     /**
      * Default constructor.
      *
@@ -65,6 +71,18 @@
       $this->m_border = $border;      
       $this->m_noframes = $noframes;      
     }
+		
+    /**
+     * Set the id of the frameset
+     *
+     * @param string $id
+     * @return atkFrameSet
+     */
+		function setId($id)
+		{
+			$this->m_id = $id;
+			return $this;
+		}
     
     /**
      * Render the frameset to html
@@ -76,7 +94,7 @@
      */
     function render($embedded=false)
     {
-      $res = '<frameset '.($this->m_orientation==FRAMESET_VERTICAL?'rows':'cols').'="'.$this->getDimensions().'" frameborder="'.$this->m_border.'" border="'.$this->m_border.'">';
+      $res = '<frameset '.($this->m_id!=''?'id="'.$this->m_id.'"':'').' '.($this->m_orientation==FRAMESET_VERTICAL?'rows':'cols').'="'.$this->getDimensions().'" frameborder="'.$this->m_border.'" border="'.$this->m_border.'">';
       foreach($this->m_childs as $abstractFrame)
       {
         $res.= $abstractFrame->render(true);
@@ -201,6 +219,8 @@
     
     /**
      * Default constructor
+     * 
+     * @param string $dimension
      */
     function atkAbstractFrame($dimension="*")
     {

@@ -13,7 +13,7 @@
    * @copyright (c) 2007 Ibuildings.nl BV
    * @license see doc/LICENSE
    *
-   * @version $Revision$
+   * @version $Revision: 6338 $
    * $Id$
    */
 
@@ -39,6 +39,11 @@
     var $m_zipmode = "auto"; // can be auto, internal or infozip
     var $m_testok = false;
 
+    /**
+     * Constructor
+     *
+     * @return atkZip
+     */
     function atkZip()
     {
     	$this->m_zipmode = atkconfig("zipmode", "auto");
@@ -48,6 +53,13 @@
     		atkError("atkZip: Error while testing");
     }
 
+    /**
+     * Get the (un)zip command
+     *
+     * @param int $type The type of zip (ATK_ZIP or ATK_UNZIP)
+     * @param string $params The parameters for zippping or unzipping
+     * @return string The command to execute
+     */
     function getInfozipCommand($type, $params)
     {
     	if ($type==ATKZIP_ZIP) $command = $this->m_zip_bin;
@@ -56,6 +68,13 @@
     	return $command;
     }
 
+    /**
+     * Run the (un)zip command
+     *
+     * @param int $type The type of zip (ATK_ZIP or ATK_UNZIP)
+     * @param string $params The parameters for zipping or unzipping
+     * @return string The return code
+     */
     function runInfozipCommand($type, $params)
     {
     	$command = $this->getInfozipCommand($type, $params);
@@ -68,6 +87,13 @@
     	return $returncode;
     }
 
+    /**
+     * Get the error message based on the errorcode
+     *
+     * @param int $type The type of zip (ATK_ZIP or ATK_UNZIP)
+     * @param int $errorcode The errorcode
+     * @return string The errormessage
+     */
     function getInfozipError($type, $errorcode)
     {
       if ($type == ATKZIP_UNZIP)
@@ -116,6 +142,11 @@
       return atkArrayNvl($codes, $errorcode, "Unknown error code returned by Infozip");
     }
 
+    /**
+     * Test if we can zip/unzip
+     *
+     * @return bool True if test was successfull or false if not
+     */
     function test()
     {
     	if ($this->m_testok)
@@ -165,6 +196,14 @@
   		return false;
     }
 
+    /**
+     * Extract a zipfile
+     *
+     * @param string $archive The zip file
+     * @param string $destination The destination folder
+     * @param array $entries The entries
+     * @return bool True if extract went successfull or false if not
+     */
     function extract($archive, $destination, $entries=null)
     {
       if (!$this->test())
@@ -175,7 +214,14 @@
         $zip = new ZipArchive;
         if ($zip->open($archive) === TRUE) 
         {
-          $zip->extractTo($destination, $entries);
+          if ($entries === NULL)
+          {
+            $zip->extractTo($destination);
+          }
+          else 
+          {
+            $zip->extractTo($destination, $entries);
+          }
           $zip->close();
           return true;
 			  } 
@@ -189,7 +235,7 @@
 			if ($this->m_zipmode == "infozip")
 			{
 			  $entriesstring = is_array($entries) ? implode(" ", $entries) : $entries;
-			  $params = "$archive $entriesstring -d $destination";
+			  $params = "'$archive' $entriesstring -d '$destination'";
 			  $returncode = $this->runInfozipCommand(ATKZIP_UNZIP, $params);
 			  if ($returncode <= 0)
 			  {
@@ -205,19 +251,31 @@
 			return false;
     }
 
-    function add($archive, $filename)
+    /**
+     * Add file to archive with optional filepath
+     *
+     * @param string $archive archive-path
+     * @param string $filename file to add
+     * @param string $filepath path where file will be placed in (optional, and only for zipmode "internal")
+     * @return boolean $result
+     */
+    function add($archive, $filename, $filepath="")
     {
       if (!$this->test())
       	atkError("atkZip->add: Could not add, system is not capable of add to a ZIP archive");
-
+     	
       if ($this->m_zipmode == "internal")
       {
         $zip = new ZipArchive;
-			  if ($zip->open($archive) === TRUE) {
-			     $zip->addFile($filename, basename($filename));
+			  if ($zip->open($archive) === TRUE) 
+			  {
+     	     atkdebug("AtkZip::add|adding ".$filepath.basename($filename)." to $archive");			    
+			     $zip->addFile($filename, $filepath.basename($filename));
 			     $zip->close();
 			     return true;
-			  } else {
+			  } 
+			  else 
+			  {
 			     atkError("atkZip->add: Error while opening the zip archive ($archive)");
 			     return false;
 			  }

@@ -10,7 +10,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6282 $
    * $Id$
    */
 
@@ -128,6 +128,11 @@ function atkSubmitMRA(name, form, target, embedded, ignoreHandler)
   /* count selected selectors */
   var selectorLength = 0;
   
+  // Container for the hidden elements we are about to submit
+  var hiddenInputContainer = document.createElement('span');
+  hiddenInputContainer.style.display = 'none';
+  form.appendChild(hiddenInputContainer);
+  
   for (var i = 0; i < list.length; i++)
   {
     if (list[i].type == 'hidden' || (!list[i].disabled && list[i].checked))
@@ -140,6 +145,10 @@ function atkSubmitMRA(name, form, target, embedded, ignoreHandler)
       // will act like a multi-select
       if (list[i].type == 'radio') key+='['+i+']';
       
+      // For multi-selects, we index the selectors with the record number to
+      // be able to link the selector to the record after submit
+      if (list[i].type == 'checkbox') key = key.replace('[]', '['+i+']');
+
       if (embedded)
       {
         target += '&' + key + '=' + value;
@@ -150,7 +159,7 @@ function atkSubmitMRA(name, form, target, embedded, ignoreHandler)
         input.setAttribute('type', 'hidden');
         input.setAttribute('name', key);
         input.setAttribute('value', value);
-        form.appendChild(input);    
+        hiddenInputContainer.appendChild(input);    
       }
       
       selectorLength++;
@@ -170,7 +179,7 @@ function atkSubmitMRA(name, form, target, embedded, ignoreHandler)
       input.setAttribute('type', 'hidden');
       input.setAttribute('name', 'atkaction');      
       input.setAttribute('value', atkaction);
-      form.appendChild(input);    
+      hiddenInputContainer.appendChild(input);    
     }
     else 
     {
@@ -185,13 +194,13 @@ function atkSubmitMRA(name, form, target, embedded, ignoreHandler)
     {
       var input = document.createElement('input');
       input.setAttribute('type', 'hidden');
-      input.setAttribute('name', 'atkdatagrid');      
+      input.setAttribute('name', 'atkrecordlist');      
       input.setAttribute('value', name);
-      form.appendChild(input);    
+      hiddenInputContainer.appendChild(input);    
     }
     else 
     {
-      form.atkdatagrid.value = name;
+      form.atkrecordlist.value = name;
     }
     
     // default the form is build using SESSION_DEFAULT,
@@ -205,7 +214,7 @@ function atkSubmitMRA(name, form, target, embedded, ignoreHandler)
       input.setAttribute('type', 'hidden');
       input.setAttribute('name', 'atklevel');      
       input.setAttribute('value', 1);
-      form.appendChild(input);    
+      hiddenInputContainer.appendChild(input);    
     }
     else 
     {
@@ -219,6 +228,11 @@ function atkSubmitMRA(name, form, target, embedded, ignoreHandler)
     
     globalSubmit(form);
     form.submit();
+    
+    // In some rare occasions we have to remove the hidden elements from the 
+    // form because otherwise they are resubmitted eventhough the selection could 
+    // be changed.
+    form.removeChild(hiddenInputContainer);
   }
 }
 

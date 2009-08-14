@@ -13,7 +13,7 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6323 $
    * $Id$
    */
 
@@ -25,9 +25,41 @@
    * @package atk
    * @subpackage handlers
    */
-  class atkSmartSearchHandler extends atkActionHandler
-  {
-    var $m_table = 'atk_smartsearchcriteria';
+   atkimport("atk.handlers.atkabstractsearchhandler");
+  class atkSmartSearchHandler extends atkAbstractSearchHandler
+  {    
+    /**
+     * Fetch posted criteria.
+     *
+     * @return Array fetched criteria
+     */
+    function fetchCriteria()
+    {
+      $criteriaFields = $this->m_postvars['criteria'];
+      $criteriaValues = $this->m_postvars['atksearch']['criteria'];
+      $criteriaModes  = $this->m_postvars['atksearchmode']['criteria'];
+
+      $criteria = array();
+      if (is_array($criteriaFields))
+      {
+        foreach ($criteriaFields as $id => $field)
+        {
+          if (isset($criteriaValues[$id]))
+          {
+            $field = array_merge($field, array('value' => reset($criteriaValues[$id])));
+          }
+
+          if (isset($criteriaModes[$id]))
+          {
+            $field = array_merge($field, array('mode' => reset($criteriaModes[$id])));
+          }
+
+          $criteria[$id] = $field;
+        }
+      }
+
+      return $criteria;
+    }
 
     /**
      * The action handler method.
@@ -55,22 +87,8 @@
         }
       }
 
-      // fetch and process criteria
       $criteria = $this->fetchCriteria();
-
-      $name = $this->m_postvars['load_criteria'];
-      if (!empty($this->m_postvars['forget_criteria']))
-      {
-        $forget = $this->m_postvars['forget_criteria'];
-        $this->forgetCriteria($forget);
-        $name = NULL;
-      }
-      else if (!empty($this->m_postvars['save_criteria']))
-      {
-        $save = $this->m_postvars['save_criteria'];
-        $this->saveCriteria($save, $criteria);
-        $name = $save;
-      }
+      $name = $this->handleSavedCriteria($criteria);
 
       // redirect to search results and return
       $doSearch = isset($this->m_postvars['atkdosearch']);
@@ -134,7 +152,7 @@
     /**
      * Partial criterium value / mode.
      *
-     * @param $type 'value' or 'mode' partial?
+     * @param string $type 'value' or 'mode' partial?
      */
     function _partialCriteriumValueOrMode($type)
     {
@@ -182,6 +200,8 @@
 
     /**
      * Redirect to search results based on the given criteria.
+     * 
+     * @param Array $criteria
      */
     function redirectToResults($criteria)
     {
@@ -258,8 +278,7 @@
      * Returns a select element with searchable attributes for
      * a certain node.
      *
-     * @param String  $name name of the select element
-     * @param atkNode $node reference to the node
+     * @param Array  $entry
      */
     function getAttributeList($entry)
     {
@@ -449,10 +468,29 @@
       }
       else
       {
+        /*
+        * Yury's comment:
+          See $this->fetchCriteria() method:
+          $criteriaValues = $this->m_postvars['atksearch']['criteria'];
+          $criteriaModes  = $this->m_postvars['atksearchmode']['criteria'];
+          ....
+          $field = array_merge($field, array('value' => reset($criteriaValues[$id])));
 
-        $prefix = "_AE_criteria_AE_{$id}";
-        if (is_a($attr, 'atkdateattribute') || is_a($attr, 'atkdatetimeattribute')) // workaround for bug in atkDateAttribute
-          $prefix = "criteria_AE_{$id}_AE_";
+          See atkAttribute->getSearchFieldName()
+          return 'atksearch_AE_'.$prefix.$this->formName();
+
+          In fetchCriteria we expect the following:
+          $criteriaValues - array with values for search for attribute(array index - attribute index
+          $criteriaModes -  array with search mode for each attribute
+          example: $atksearch['criteria'][0]['blabla'];
+
+          For obtain this result, field index must be:
+          atksearch_AE_criteria_AE_0_AE_
+          and field prefix must be:
+          criteria_AE_0_AE_
+        */
+
+        $prefix = "criteria_AE_{$id}_AE_";
 
         $valueArray = $value == NULL ? NULL : array($attr->fieldName() => $value);
         $modeArray = $mode == NULL ? NULL : array($attr->fieldName() => $mode);
@@ -538,101 +576,6 @@
     }
 
     /**
-     * List criteria.
-     *
-     * @return Array criteria list
-     */
-    function listCriteria()
-    {
-      $db = &$this->m_node->getDb();
-      $query = "SELECT c.name FROM {$this->m_table} c WHERE c.nodetype = '%s' ORDER BY UPPER(c.name)";
-      $rows = $db->getRows(sprintf($query, $this->m_node->atkNodeType()));
-
-      $result = array();
-      foreach ($rows as $row)
-        $result[] = $row['name'];
-
-      return $result;
-    }
-
-    /**
-     * Remove search criteria.
-     *
-     * @param String $name name of the search criteria
-     */
-    function forgetCriteria($name)
-    {
-      atkdebug("Forget criteria $name");
-      $db = &$this->m_node->getDb();
-      $query = "DELETE FROM {$this->m_table} WHERE nodetype = '%s' AND UPPER(name) = UPPER('%s')";
-      $db->query(sprintf($query, $this->m_node->atkNodeType(), escapeSQL($name)));
-    }
-
-    /**
-     * Save search criteria.
-     *
-     * NOTE:
-     * This method will overwrite existing criteria with the same name.
-     *
-     * @param String $name     name for the search criteria
-     * @param Array  $criteria search criteria data
-     */
-    function saveCriteria($name, $criteria)
-    {
-      $this->forgetCriteria($name);
-      $db = &$this->m_node->getDb();
-      $query = "INSERT INTO {$this->m_table} (nodetype, name, criteria) VALUES('%s', '%s', '%s')";
-      $db->query(sprintf($query, $this->m_node->atkNodeType(), escapeSQL($name), escapeSQL(serialize($criteria))));
-    }
-
-    /**
-     * Load search criteria.
-     *
-     * @param String $name name of the search criteria
-     * @return Array search criteria
-     */
-    function loadCriteria($name)
-    {
-      $db = &$this->m_node->getDb();
-      $query = "SELECT c.criteria FROM {$this->m_table} c WHERE c.nodetype = '%s' AND UPPER(c.name) = UPPER('%s')";
-      list($row) = $db->getRows(sprintf($query, $this->m_node->atkNodeType(), escapeSQL($name)));
-      $criteria = $row == NULL ? NULL : unserialize($row['criteria']);
-      return $criteria;
-    }
-
-    /**
-     * Load base criteria.
-     *
-     * @return Array search criteria
-     */
-    function loadBaseCriteria()
-    {
-      return array(array('attrs' => array()));
-    }
-
-    /**
-     * Returns a select list of loadable criteria which will on-selection
-     * refresh the smart search page with the loaded criteria.
-     *
-     * @return String criteria load HTML
-     */
-    function getLoadCriteria($current)
-    {
-      $criteria = $this->listCriteria();
-      if (count($criteria) == 0) return NULL;
-
-      $result = '
-        <select name="load_criteria" onchange="this.form.submit();">
-          <option value=""></option>';
-
-      foreach ($criteria as $name)
-        $result .= '<option value="'.atk_htmlentities($name).'"'.($name == $current ? ' selected' : '').'>'.atk_htmlentities($name).'</option>';
-
-      $result .= '</select>';
-      return $result;
-    }
-
-    /**
      * Returns a link for resetting the currently selected criteria.
      *
      * @return String reset url
@@ -643,75 +586,10 @@
     }
 
     /**
-     * Returns a link for removing the currently selected criteria. If
-     * nothing (valid) is selected nothing is returned.
-     *
-     * @param String $current currently loaded criteria
-     * @return String forget url
-     */
-    function getForgetCriteria($current)
-    {
-      if (empty($current) || $this->loadCriteria($current) == NULL) return NULL;
-      else return session_url(dispatch_url($this->m_node->atkNodeType(), $this->m_action, array('forget_criteria' => $current)), SESSION_REPLACE);
-    }
-
-    /**
-     * Returns a checkbox for enabling/disabling the saving of criteria.
-     *
-     * @return checkbox HTML
-     */
-    function getToggleSaveCriteria()
-    {
-      return '<input type="checkbox" class="atkcheckbox" onclick="$(save_criteria).disabled = !$(save_criteria).disabled">';
-    }
-
-    /**
-     * Returns a textfield for entering a name to save the search criteria as.
-     *
-     * @param String $current currently loaded criteria
-     * @param String textfield HTML
-     */
-    function getSaveCriteria($current)
-    {
-      return '<input type="text" size="30" name="save_criteria" value="'.atk_htmlentities($current).'" disabled="disabled">';
-    }
-
-    /**
-     * Fetch posted criteria.
-     *
-     * @return Array fetched criteria
-     */
-    function fetchCriteria()
-    {
-      $criteriaFields = $this->m_postvars['criteria'];
-      $criteriaValues = $this->m_postvars['atksearch']['criteria'];
-      $criteriaModes  = $this->m_postvars['atksearchmode']['criteria'];
-
-      $criteria = array();
-      if (is_array($criteriaFields))
-      {
-        foreach ($criteriaFields as $id => $field)
-        {
-          if (isset($criteriaValues[$id]))
-          {
-            $field = array_merge($field, array('value' => reset($criteriaValues[$id])));
-          }
-
-          if (isset($criteriaModes[$id]))
-          {
-            $field = array_merge($field, array('mode' => reset($criteriaModes[$id])));
-          }
-
-          $criteria[$id] = $field;
-        }
-      }
-
-      return $criteria;
-    }
-
-    /**
      * This method returns a form that the user can use to search records.
      *
+     * @param String $name
+     * @param Array $criteria
      * @return String The searchform in html form.
      */
     function smartSearchForm($name="", $criteria=array())
@@ -722,12 +600,14 @@
 
       $params['label']                = $this->getLabels();
       $params['reset_criteria']       = $this->getResetCriteria();
-      $params['load_criteria']        = $this->getLoadCriteria($name);
-      $params['forget_criteria']      = $this->getForgetCriteria($name);
-      $params['toggle_save_criteria'] = $this->getToggleSaveCriteria();
-      $params['save_criteria']        = $this->getSaveCriteria($name);
+      // $params['load_criteria']        = $this->getLoadCriteria($name);
+      // $params['forget_criteria']      = $this->getForgetCriteria($name);
+      // $params['toggle_save_criteria'] = $this->getToggleSaveCriteria();
+      // $params['save_criteria']        = $this->getSaveCriteria($name);
+      $params['saved_criteria']       = $this->getSavedCriteria($name);
 
       $params["criteria"] = array();
+      atkdebug('criteria smartSearchForm: '. print_r($criteria, true));
       foreach ($criteria as $i => $criterium)
       {
         $params["criteria"][] = $this->getCriterium($i, $criterium);
@@ -742,6 +622,8 @@
     /**
      * This method returns an html page that can be used as a search form.
      *
+     * @param String $name
+     * @param Array $criteria
      * @return String The html search page.
      */
     function smartSearchPage($name="", $criteria=array())
@@ -785,4 +667,7 @@
       return $box;
     }
   }
+  
+  
+  
 ?>

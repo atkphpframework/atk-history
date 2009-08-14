@@ -10,7 +10,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6170 $
    * $Id$
    */
 
@@ -46,11 +46,13 @@ function remoteUpdate(a, imgPrefix)
   {
     img.src = imgPrefix+"select_color_on.gif"; 
     img.alt = color;
+    img.style.backgroundColor = color;
   }
   else
   {
     img.src = imgPrefix+"select_color_off.gif";
     img.alt = "Geen kleur geselecteerd";
+    img.style.backgroundColor = '#FFFFFF';
   }
 
   eval(formname);

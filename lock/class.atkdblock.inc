@@ -11,7 +11,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6323 $
    * $Id$
    */
 
@@ -29,7 +29,7 @@
      * registered locks, and if so registers the script and retrieves
      * the unique lock ID.
      */
-    function atkDbLock()
+    public function __construct()
     {
       global $ATK_VARS;
 
@@ -73,7 +73,7 @@
       $this->m_id = (int)$atklock["id"];
       $this->storeLockList($atklockList);
 
-      if ($this->m_id > 0)
+      if (!isset($ATK_VARS['atkpartial']) && $this->m_id > 0)
       {
         $page = &atkinstance("atk.ui.atkpage");
         $page->register_script(atkconfig("atkroot")."atk/javascript/xml.js");
@@ -93,6 +93,8 @@
 
     /**
      * Store lock data in session.
+     * 
+     * @param array $list The lock list
      */
     function storeLockList($list)
     {
@@ -104,12 +106,13 @@
      * Locks the record with the given primary key / selector. If the
      * record is already locked the method will fail!
      *
-     * @param $selector the ATK primary key / selector
-     * @param $table    the (unique) table name
+     * @param string $selector the ATK primary key / selector
+     * @param string $table    the (unique) table name
+     * @param string $mode 		 mode of the lock (self::EXCLUSIVE or self::SHARED)
      *
      * @return success / failure of operation
      */
-    function lock($selector, $table)
+    function lock($selector, $table, $mode=self::EXCLUSIVE)
     {
       global $g_sessionManager;
       $success = FALSE;
@@ -128,17 +131,20 @@
       $db->lock("db_lock");
 
       /* check if the item can be locked */
-      $query = &$db->createQuery();
-      $query->addField("*");
-      $query->addTable("db_lock");
-      $query->addCondition("lock_table = '".escapeSQL($table)."'");
-      $query->addCondition("lock_record = '".escapeSQL($selector)."'");
-      $query->addCondition("lock_lease >= ".$db->func_now());
-      $query->addCondition("session_id <> '".escapeSQL(session_id())."'");
-      $result = $db->getRows($query->buildCount());
+      if ($mode == self::EXCLUSIVE)
+      {
+        $query = &$db->createQuery();
+        $query->addField("*");
+        $query->addTable("db_lock");
+        $query->addCondition("lock_table = '".escapeSQL($table)."'");
+        $query->addCondition("lock_record = '".escapeSQL($selector)."'");
+        $query->addCondition("lock_lease >= ".$db->func_now());
+        $query->addCondition("session_id <> '".escapeSQL(session_id())."'");
+        $result = $db->getRows($query->buildCount());
+      }
 
       /* lock item */
-      if ((int)$result[0]["count"] == 0)
+      if ($mode == self::SHARED || $result[0]["count"] == 0)
       {
         if ($this->m_id <= 0)
         {
@@ -156,7 +162,7 @@
         $query->addField("lock_table", escapeSQL($table));
         $query->addField("lock_record", escapeSQL($selector));
         $query->addField("user_id", escapeSQL($user));
-        $query->addField("user_ip", escapeSQL($_SERVER["REMOTE_ADDR"]));
+        $query->addField("user_ip", escapeSQL(atkGetClientIp()));
         $query->addField("lock_stamp", $db->func_now(), "", "", FALSE);
         $dbconfig = atkconfig("db");
         if (substr($dbconfig["default"]["driver"],0,3) != 'oci')
@@ -192,8 +198,8 @@
      * method will fail if the lock isn't entirely ours. We also try
      * to remove any old expired locks.
      *
-     * @param $selector the ATK primary key / selector
-     * @param $table    the (unique) table name
+     * @param string $selector the ATK primary key / selector
+     * @param string $table    the (unique) table name
      */
     function unlock($selector, $table)
     {
@@ -216,7 +222,7 @@
           "lock_table = '".escapeSQL($table)."' AND ".
           "lock_record = '".escapeSQL($selector)."' AND ".
           "user_id = '".escapeSQL($user)."' AND ".
-          "user_ip = '".escapeSQL($_SERVER["REMOTE_ADDR"])."' AND ".
+          "user_ip = '".escapeSQL(atkGetClientIp())."' AND ".
           "session_id = '".escapeSQL(session_id())."'".
         ") OR (".
           "lock_lease <= ".$db->func_now().
@@ -232,7 +238,7 @@
      * Extends the lock lease with the given ID. (This can mean multiple lock
      * leases will be extended, if there are multiple locks with the given ID!)
      *
-     * @param $identifier the unique lock ID
+     * @param int $identifier the unique lock ID
      *
      * @return success / failure of operation
      */
@@ -260,7 +266,7 @@
       $query->addTable("db_lock");
       $query->addCondition("lock_id = ".(int)$identifier);
       $query->addCondition("user_id = '".escapeSQL($user)."'");
-      $query->addCondition("user_ip = '".escapeSQL($_SERVER["REMOTE_ADDR"])."'");
+      $query->addCondition("user_ip = '".escapeSQL(atkGetClientIp())."'");
       $query->addCondition("session_id = '".escapeSQL(session_id())."'");
       $query->addCondition("lock_lease >= ".$db->func_now());
       $query->executeUpdate();
@@ -285,12 +291,13 @@
      * Checks if a certain item / record is locked or not. If so
      * we return an array with lock information. If not we return NULL.
      *
-     * @param $selector the ATK primary key / selector
-     * @param $table    the (unique) table name
+     * @param string $selector the ATK primary key / selector
+     * @param string $table    the (unique) table name
+     * @param string $mode 		 mode of the lock (self::EXCLUSIVE or self::SHARED)
      *
      * @return lock information
      */
-    function isLocked($selector, $table)
+    function isLocked($selector, $table, $mode=self::EXCLUSIVE)
     {
       static $_cache = array();
 
@@ -317,16 +324,20 @@
         $query->addTable("db_lock");
         $query->addCondition("lock_table = '".escapeSQL($table)."'");
         $query->addCondition("lock_lease >= ".$db->func_now());
-        $query->addCondition("session_id <> '".escapeSQL(session_id())."'");
+        if ($mode == self::EXCLUSIVE)
+          $query->addCondition("session_id <> '".escapeSQL(session_id())."'");
         $_cache[$table] = $query->executeSelect();
       }
 
       /* search for lock */
+      $locks = array();
       for ($i = 0, $_i = count($_cache[$table]); $i < $_i; $i++)
-        if ($_cache[$table][$i]["lock_record"] == $selector) return $_cache[$table][$i];
+      {
+        if ($_cache[$table][$i]["lock_record"] == $selector) 
+          $locks[] = $_cache[$table][$i];
+      }
 
-      /* not found */
-      return NULL;
+      return count($locks) > 0 ? $locks : false;
     }
   }
 ?>

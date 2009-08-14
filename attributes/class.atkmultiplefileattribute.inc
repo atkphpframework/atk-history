@@ -11,7 +11,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6289 $
    * $Id$
    */
   useattrib("atkFileAttribute");
@@ -34,9 +34,10 @@
 
     /**
      * Constructor
-     * @param $name Name of the attribute
-     * @param $dir Can be a string with the Directory with images/files or an array with a Directory and a Display Url
-     * @param $flags Flags for this attribute
+     * @param string $name Name of the attribute
+     * @param string|array $dir Can be a string with the Directory with images/files or an array with a Directory and a Display Url
+     * @param int $flags Flags for this attribute
+     * @param int $size Filename size
      */
     function atkMultipleFileAttribute($name, $dir, $flags=0, $size=0)
     {            
@@ -55,8 +56,8 @@
 
     /**
      * Returns an array with files extracted from the content of a databasefield
-     * @param $str content of dbfield
-     * @param $del delimiter
+     * @param string $str content of dbfield
+     * @param string $del delimiter
      * @return array of files
      */
     function getFiles($str, $del="")
@@ -68,7 +69,7 @@
     /**
      * Returns a piece of html code that can be used in a form to edit this
      * attribute's value.
-     * @param $record Array with fields
+     * @param array $record Array with fields
      * @return piece of html code with a browsebox
      */
     function edit($record="")
@@ -108,7 +109,7 @@
     
     /**
      * Convert value to record for database
-     * @param $rec Array with Fields
+     * @param array $rec Array with Fields
      * @return Nothing or Fieldname or Original filename
      */
     function value2db($rec)
@@ -131,7 +132,7 @@
     
     /** 
      * Convert value to string
-     * @param $rec Array with fields
+     * @param array $rec Array with fields
      * @return Array with tmpfile, orgfilename,filesize
      */
     function db2value($rec)
@@ -141,7 +142,7 @@
 
     /**
      * Display values
-     * @param $record Array with fields
+     * @param array $record Array with fields
      * @return Filename or Nothing
      */
     function display($record)
@@ -183,6 +184,11 @@
       return $r;
     }
     
+    /**
+     * Return the database field type of the attribute.
+     * @return "string" which is the 'generic' type of the database field for 
+     *         this attribute.
+     */
     function dbFieldType()
     {
       return "string";

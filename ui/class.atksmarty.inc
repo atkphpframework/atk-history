@@ -11,7 +11,7 @@
  * @copyright (c)2000-2004 Ibuildings.nl BV
  * @license http://www.achievo.org/atk/licensing ATK Open Source License
  *
- * @version $Revision$
+ * @version $Revision: 6309 $
  * $Id$
  */
 
@@ -56,6 +56,14 @@ class atkSmarty
       // Initialize..
 
       $s_smarty->template_dir    = atkconfig("tplroot"); // name of directory for templates
+      //Try to create the template compile directory if it not already exists.
+      if (!file_exists(atkconfig("tplcompiledir")))
+      {
+        if (!mkdir(atkconfig("tplcompiledir"),0755,true))
+        {
+          atkerror("Unable to create template compile directory: ".atkconfig("tplcompiledir"));
+        }
+      }
       $s_smarty->compile_dir     = atkconfig("tplcompiledir"); // name of directory for compiled templates
 
       $s_smarty->autoload_filters = array();    // indicates which filters will be auto-loaded
@@ -146,6 +154,12 @@ class atkSmarty
    *
    * NOTE: you should only use this function for
    *       tags with special names!
+   * 
+   * @param string $moduleOrPath
+   * @param string $tag
+   * @param string $name
+   * @param bool $cacheable
+   * @param string $cache_attrs
    */
   function addFunction($moduleOrPath, $tag, $name="", $cacheable=true, $cache_attrs=null)
   {
@@ -169,6 +183,10 @@ class atkSmarty
 
   /**
    * Register dynamic function / tag.
+   * 
+   * @param string $moduleOrPath
+   * @param string $tag
+   * @param string $cache_attrs
    */
   function addDynamicFunction($moduleOrPath, $tag, $cache_attrs=null)
   {
@@ -180,6 +198,11 @@ class atkSmarty
    *
    * NOTE: you should only use this function for
    *       tags with special names!
+   * 
+   * @param string $moduleOrPath
+   * @param string $tag
+   * @param string $name
+   * @param string $cacheable
    */
   function addCompilerFunction($moduleOrPath, $tag, $name="", $cacheable=true)
   {
@@ -206,6 +229,11 @@ class atkSmarty
    *
    * NOTE: you should only use this function for
    *       tags with special names!
+   * 
+   * @param string $moduleOrPath
+   * @param string $tag
+   * @param string $name
+   * @param bool $cacheable
    */
   function addBlock($moduleOrPath, $tag, $name="", $cacheable=true)
   {
@@ -229,6 +257,9 @@ class atkSmarty
 
   /**
    * Register dynamic function / tag.
+   * 
+   * @param string $moduleOrPath
+   * @param string $tag
    */
   function addDynamicBlock($moduleOrPath, $tag)
   {
@@ -237,6 +268,10 @@ class atkSmarty
 
   /**
    * Register modifier
+   * 
+   * @param string $moduleOrPath
+   * @param string $tag
+   * @param string $name
    */
   function addModifier($moduleOrPath, $tag, $name="")
   {
@@ -258,6 +293,11 @@ class atkSmarty
     $smarty->register_modifier($tag, $function);
   }
 
+  /**
+   * Add output filter
+   *
+   * @param string $function The function to use as outputfilter
+   */
   function addOutputFilter($function)
   {
     $smarty = &atkSmarty::getInstance();

@@ -11,7 +11,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6309 $
    * $Id$
    */
 
@@ -93,7 +93,7 @@
      * @var boolean
      */
     var $m_autonumbering = false;
-    
+
     /**
      * List of mime types which a uses is allowed to upload
      * Example: array('image/jpeg');
@@ -116,15 +116,26 @@
 
       // Call base class constructor.
       $this->atkAttribute($name,$flags|AF_CASCADE_DELETE, $size);
+      $this->setDir($dir);
+    }
+
+    /**
+     * Sets the directory into which uploaded files are saved.  (See setAutonumbering() and setFilenameTemplate()
+     * for some other ways of manipulating the names of uploaded files.)
+     *
+     * @param mixed $dir string with directory path or array with directory path and display url (see constructor)
+     */
+    public function setDir($dir)
+    {
       if(is_array($dir))
       {
         $this->m_dir = $this->AddSlash($dir[0]);
-	      $this->m_url = $this->AddSlash($dir[1]);
+        $this->m_url = $this->AddSlash($dir[1]);
       }
       else
       {
         $this->m_dir = $this->AddSlash($dir);
-	      $this->m_url = $this->AddSlash($dir);
+        $this->m_url = $this->AddSlash($dir);
       }
     }
 
@@ -135,7 +146,7 @@
      * the file of another record, will result in the file getting a unique
      * sequence number.
      *
-     * @param unknown_type $autonumbering
+     * @param bool $autonumbering
      */
     function setAutonumbering($autonumbering=true)
     {
@@ -156,13 +167,47 @@
 
 
     /**
+     * Returns an array containing files in specified directory
+     * optionally filtered by settings from setAllowedFileTypes method.
+     *
+     * @param string $dir Directory to read files from
+     * @return array Array with files in specified dir
+     */
+    function getFiles($dir)
+    {
+      $dirHandle = dir($this->m_dir);
+      $file_arr  = array();
+
+      while($item = $dirHandle->read())
+      {
+        if (count($this->m_allowedFileTypes) == 0)
+        {
+          if(is_file($this->m_dir.$item)) $file_arr[] = $item;
+        }
+        else
+        {
+          $extension = $this->getFileExtension($item);
+
+          if (in_array($extension, $this->m_allowedFileTypes))
+          {
+            if(is_file($this->m_dir.$item)) $file_arr[] = $item;
+          }
+        }
+      }
+      $dirHandle->close();
+      return $file_arr;
+    }
+
+
+    /**
      * Returns a piece of html code that can be used in a form to edit this
      * attribute's value.
      * @param array $record Record
      * @param string $fieldprefix Field prefix
+     * @param String $mode The mode we're in ('add' or 'edit')
      * @return string piece of html code with a browsebox
      */
-    function edit($record="", $fieldprefix="")
+    function edit($record="", $fieldprefix="", $mode="")
     {
       if (method_exists($this->getOwnerInstance(), $this->fieldName().'_display'))
       {
@@ -174,19 +219,9 @@
         $result=$this->display($record, 'view');
       }
 
-      if(is_dir($this->m_dir) && is_writable($this->m_dir))
+      if(!is_dir($this->m_dir) || !is_writable($this->m_dir))
       {
-        $file_arr=array();
-        $d = dir($this->m_dir);
-        while($item = $d->read())
-        {
-          if(is_file($this->m_dir.$item)) $file_arr[] = $item;
-        }
-        $d->close();
-        if(count($file_arr)>0) natcasesort($file_arr);
-      }
-      else
-      {
+        atkwarning('atkFileAttribute: ' . $this->m_dir . ' does not exist or is not writeable');
         return atktext("no_valid_directory", "atk");
       }
 
@@ -200,28 +235,43 @@
 
       $result.='<input type="hidden" name="'.$id.'_postfileskey" value="'.$id.'">';
 
+      $onchange = '';
+      if (count($this->m_onchangecode))
+      {
+        $onchange = ' onchange="'.$id.'_onChange(this);"';
+        $this->_renderChangeHandler($fieldprefix);
+      }
+
       if(!$this->hasFlag(AF_FILE_NO_UPLOAD))
       {
         $this->registerKeyListener($id, KB_CTRLCURSOR|KB_UPDOWN);
-        $result .= '<input type="file" id="'.$id.'" name="'.$id.'">';
+        $result .= '<input type="file" id="'.$id.'" name="'.$id.'" '.$onchange.'">';
       }
 
-      if(!$this->hasFlag(AF_FILE_NO_SELECT) AND count($file_arr) > 0)
+      if(!$this->hasFlag(AF_FILE_NO_SELECT))
       {
-        $this->registerKeyListener($id.'_select', KB_CTRLCURSOR|KB_LEFTRIGHT);
-        $result .= '<select id="'.$id.'_select" name="'.$id.'[select]">';
-        $result .= "<option value=\"\" selected>".atktext('selection', 'atk');                    // Zorg voor een default met waarde NULL
-        while (list ($key, $val) = each ($file_arr))
+        $file_arr = $this->getFiles($this->m_dir);
+        if(count($file_arr)>0)
         {
-          (isset($record[$this->fieldName()]['filename']) && $record[$this->fieldName()]['filename']==$val) ? $selected = "selected" : $selected = '';
-          if(is_file($this->m_dir.$val)) $result .= "<option value=\"".$val."\" $selected>".$val;
+          natcasesort($file_arr);
+
+          $this->registerKeyListener($id.'_select', KB_CTRLCURSOR|KB_LEFTRIGHT);
+          $result .= '<select id="'.$id.'_select" name="'.$id.'[select]" '.$onchange.'>';
+          // Add default option with value NULL
+          $result .= "<option value=\"\" selected>".atktext('selection', 'atk');
+          while (list ($key, $val) = each ($file_arr))
+          {
+            (isset($record[$this->fieldName()]['filename']) && $record[$this->fieldName()]['filename']==$val) ? $selected = "selected" : $selected = '';
+            if(is_file($this->m_dir.$val)) $result .= "<option value=\"".$val."\" $selected>".$val;
+          }
+          $result .= "</select>";
         }
-        if(count($file_arr) > 0) $result .= "</select>";
       }
       else if (isset($record[$this->fieldName()]['filename']) && !empty($record[$this->fieldName()]['filename']))
       {
         $result .= '<input type="hidden" name="'.$id.'[select]" value="'.$record[$this->fieldName()]['filename'].'">';
       }
+
       if(!$this->hasFlag(AF_FILE_NO_DELETE)
          && isset($record[$this->fieldname()]['orgfilename'])
          && $record[$this->fieldname()]['orgfilename']!='')
@@ -240,14 +290,14 @@
     function value2db($rec)
     {
       $del = (isset($rec[$this->fieldName()]['postdel']))?$rec[$this->fieldName()]['postdel']:null;
-      
+
       if($rec[$this->fieldName()]["tmpfile"]=="" && $rec[$this->fieldName()]["filename"]!=""
          && (!isset($del) || $del!=$rec[$this->fieldName()]['filename']))
       {
         return $this->escapeSQL($rec[$this->fieldName()]["filename"]);
       }
       if($this->hasFlag(AF_FILE_NO_DELETE)) unset($del);  // Make sure if flag is set $del unset!
-      
+
       if(isset($del))
       {
         if($this->hasFlag(AF_FILE_PHYSICAL_DELETE))
@@ -381,7 +431,7 @@
     function processFile($filepath, $filename)
     {
     }
-    
+
     /**
      * Set the allowed file types. This can either be mime types (detected by the / in the middle
      * or file extensions (without the leading dot!).
@@ -399,12 +449,12 @@
       $this->m_allowedFileTypes = $types;
       return true;
     }
-    
+
     /**
      * Check whether the filetype is is one of the allowed
      * file formats. If the FileType array is empty this assumes that
      * all formats are allowed!
-     * 
+     *
      * @todo It turns out that handling mimetypes is not that easy
      * the mime_content_type has been deprecated and there is no
      * Os independend alternative! For now we only support a few
@@ -416,16 +466,16 @@
     function isAllowedFileType(&$rec)
     {
       if (count($this->m_allowedFileTypes) == 0) return true;
-      
+
       // detect whether the file is uploaded or is an existing file.
-      $filename =  (!empty($rec[$this->fieldName()]['tmpfile'])) ? 
+      $filename =  (!empty($rec[$this->fieldName()]['tmpfile'])) ?
         $rec[$this->fieldName()]['tmpfile'] :
         $this->m_dir . $rec[$this->fieldName()]['filename'];
-        
+
       if (@empty($rec[$this->fieldName()]['postdel']) && $filename != $this->m_dir)
       {
         $valid = false;
-        
+
         if (function_exists('getimagesize'))
         {
           $size = @getimagesize($filename);
@@ -444,14 +494,14 @@
             $valid = true;
           }
         }
-        
+
         if (!$valid)
         {
           $rec[$this->fieldName()]['error'] = UPLOAD_ERR_EXTENSION;
           return false;
         }
       }
-      
+
       return true;
     }
 
@@ -467,12 +517,24 @@
                    "filename"=>$rec[$this->fieldName()],"filesize"=>"?");
     }
 
+    /**
+     * Checks if the file has a valid filetype.
+     *
+     * Note that obligatory and unique fields are checked by the
+     * atkNodeValidator, and not by the validate() method itself.
+     *
+     * @param array $record The record that holds the value for this
+     *                      attribute. If an error occurs, the error will
+     *                      be stored in the 'atkerror' field of the record.
+     * @param String $mode The mode for which should be validated ("add" or
+     *                     "update")
+     */
     function validate(&$record, $mode)
     {
       parent::validate($record, $mode);
-      
+
       $this->isAllowedFileType($record);
-      
+
       $error = $record[$this->fieldName()]['error'];
       if ($error > 0)
       {
@@ -480,7 +542,7 @@
         atkTriggerError($record, $this, $error_text, atktext($error_text, "atk"));
       }
     }
-    
+
     /**
      * Tests the $_FILE error code and returns the corresponding atk error text token.
      *
@@ -502,7 +564,7 @@
           default:
             $error = 'error_file_unknown';
         }
-        
+
         return $error;
     }
 
@@ -514,7 +576,7 @@
     function fetchValue($rec)
     {
       $del = (isset($rec[$this->fieldName()]['del']))?$rec[$this->fieldName()]['del']:null;
-      
+
       $postfiles_basename = $rec[$this->fieldName()."_postfileskey"];
 
       $basename = $this->fieldName();
@@ -588,12 +650,12 @@
         return $result;
       }
     }
-    
+
     /**
      * Check if the attribute is empty..
-     * 
+     *
      * @param array $record the record
-     * 
+     *
      * @return boolean true if empty
      */
     function isEmpty($record)
@@ -680,6 +742,11 @@
       return '';
     }
 
+    /**
+     * Retrieve the list of searchmodes which are supported.
+     *
+     * @return array List of supported searchmodes
+     */
     function getSearchModes()
     {
       // exact match and substring search should be supported by any database.
@@ -687,11 +754,13 @@
       // searches can be implemented using LIKE)
       // Possible values
       //"regexp","exact","substring", "wildcard","greaterthan","greaterthanequal","lessthan","lessthanequal"
-      return array("exact","substring","wildcard","regexp");
+      return array("substring","exact","wildcard","regexp");
     }
 
     /**
      * Set filename template.
+     *
+     * @param string $template
      */
     function setFilenameTemplate($template)
     {
@@ -707,6 +776,9 @@
      * filename is returned.
      *
      * @access private
+     * @param array $rec The record
+     * @param string $default The default filename
+     * @return The real filename
      */
     function _filenameMangle($rec, $default)
     {
@@ -719,6 +791,9 @@
     /**
      * Determine the real filename of a file (based on m_filenameTpl).
      * @access public
+     * @param array $rec The record
+     * @param string $default The default filename
+     * @return The real filename based on the filename template
      */
     function filenameMangle($rec, $default)
     {
@@ -803,6 +878,8 @@
      * Returns a piece of html code that can be used in a form to display
      * hidden values for this attribute.
      * @param array $record Array with values
+     * @param String $fieldprefix The fieldprefix to put in front of the name
+     *                            of any html form element for this attribute.
      * @return string Piece of htmlcode
      */
     function hide($record="", $fieldprefix)
@@ -819,6 +896,11 @@
       return $result;
     }
 
+    /**
+     * Return the database field type of the attribute.
+     * @return "string" which is the 'generic' type of the database field for
+     *         this attribute.
+     */
     function dbFieldType()
     {
       return "string";

@@ -11,7 +11,7 @@
   * @copyright (c)2000-2004 Ivo Jansch
   * @license http://www.achievo.org/atk/licensing ATK Open Source License
   *
-  * @version $Revision$
+  * @version $Revision: 6181 $
   * $Id$
   */
 
@@ -60,6 +60,8 @@ class atkSelectHandler extends atkActionHandler
     atkimport('atk.datagrid.atkdatagrid');
     $grid = atkDataGrid::create($this->getNode(), 'select');
     $actions = array('select' => atkurldecode($grid->getPostvar('atktarget')));
+    $grid->removeFlag(atkDataGrid::MULTI_RECORD_ACTIONS);
+    $grid->removeFlag(atkDataGrid::MULTI_RECORD_PRIORITY_ACTIONS);
     $grid->setDefaultActions($actions);
     
     if ($this->autoSelectRecord($grid))
@@ -107,7 +109,8 @@ class atkSelectHandler extends atkActionHandler
    */
   protected function autoSelectRecord($grid)
   {
-    if (!$this->getNode()->hasFlag(NF_AUTOSELECT))
+    $node = $this->getNode();
+    if (!$node->hasFlag(NF_AUTOSELECT))
     {
       return false;
     }

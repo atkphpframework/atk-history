@@ -12,7 +12,7 @@
    * @copyright (c)2005 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6320 $
    * $Id$
    */
 
@@ -32,7 +32,10 @@
    */
   class atkDirectoryTraverser
   {
-    var $m_callbackObjects = array();
+    public $m_callbackObjects = array();
+    public $m_excludes = array();
+
+
 
     /**
      * Constructor
@@ -64,6 +67,7 @@
 
     /**
      * Remove all callback objects.
+     * @see addCallbackObject()
      */
     function clearCallbackObjects()
     {
@@ -114,7 +118,13 @@
     {
       $result = array();
       $dir = opendir($path);
-      while (($file = readdir($dir)) !== false) $result[] = $file;
+      while (($file = readdir($dir)) !== false)
+      {
+        if (!$this->isExcluded($file))
+        {
+          $result[] = $file;
+        }
+      }
       closedir($dir);
       sort($result);
       return $result;
@@ -137,6 +147,41 @@
         }
       }
     }
-  }
 
-?>
+    /**
+     * Add a regex expression to prevent detection of certain files/directories
+     *
+     * @param string $regex
+     */
+    function addExclude($regex)
+    {
+      $this->m_excludes[] = $regex;
+    }
+
+    /**
+     * Clear the excluding regex expressions
+     *
+     */
+    function clearExcludes()
+    {
+      $this->m_excludes = array();
+    }
+
+    /**
+     * Check whether a file is excluded or not
+     *
+     * @param string $file
+     */
+    function isExcluded($file)
+    {
+      $excluded = false;
+      $i = 0;
+      $count = count($this->m_excludes);
+      while (!$excluded && $i < $count)
+      {
+        $excluded = (preg_match($this->m_excludes[$i], $file) > 0);
+        $i++;
+      }
+      return $excluded;
+    }
+  }

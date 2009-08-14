@@ -12,7 +12,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6310 $
    * $Id$
    */
    
@@ -29,6 +29,8 @@
   {
     /**
      * The action handler.
+     * 
+     * @param Bool $redirect
      */
     function action_copy($redirect=true)
     {

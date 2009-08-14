@@ -12,7 +12,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6323 $
    * $Id$
    */
 
@@ -35,16 +35,18 @@
                                // Like CLOB fields
 
     /**
-    * Add's a field to the query
-    * @param $name Field name
-    * @param $value Field value
-    * @param $table Table name
-    * @param $fieldaliasprefix Field alias prefix
-    * @param $quote If this parameter is true, stuff is inserted into the db
-    *               using quotes, e.g. SET name = 'piet'. If it is false, it's
-    *               done without quotes, e.d. SET number = 4.
-    * @return atkQuery The query object, for fluent usage.
-    */
+     * Add's a field to the query
+     * @param string $name Field name
+     * @param string $value Field value
+     * @param string $table Table name
+     * @param string $fieldaliasprefix Field alias prefix
+     * @param string $quote If this parameter is true, stuff is inserted into the db
+     *               using quotes, e.g. SET name = 'piet'. If it is false, it's
+     *               done without quotes, e.d. SET number = 4.
+     * @param string $mode
+     * @param string $fieldType
+     * @return atkQuery The query object, for fluent usage.
+     */
     function &addField($name, $value="", $table="", $fieldaliasprefix="", $quote=true, $mode="", $fieldType="")
     {
       //$this->m_fields[] = strtr($name,"_",".");
@@ -88,16 +90,15 @@
       return $this;
     }
 
-
- /**
-    * Makes a Join SQL query for Oracle
-    *
-    * @param $table Table name
-    * @param $alias Alias for the table
-    * @param $condition Condition for the join
-    * @return atkQuery The query object (for fluent usage)
-    */
-
+    /**
+     * Makes a Join SQL query for Oracle
+     *
+     * @param string $table Table name
+     * @param string $alias Alias for the table
+     * @param string $condition Condition for the join
+     * @param bool $outer Wether to use an outer (left) join or an inner join
+     * @return atkQuery The query object (for fluent usage)
+     */
     function &addJoin($table, $alias, $condition, $outer)
     {
       // $this->m_joins[]= ", ".$table." ".$alias." WHERE ".$condition." ";
@@ -134,7 +135,7 @@
 
     /**
      * Builds the SQL Select query
-     * @param $distinct distinct records?
+     * @param bool $distinct distinct records?
      * @return String SQL Query
      */
     function buildSelect($distinct = FALSE)
@@ -154,7 +155,7 @@
       * because we do joins, like in a select, but we don't really select the
       * fields.
       *
-      * @param $distinct distinct rows?
+      * @param bool $distinct distinct rows?
       *
       * @return String a SQL Select COUNT(*) Query
       */
@@ -169,7 +170,7 @@
     * have been added with addJoin are replaced with
     * generated aliases
     * bug #137
-    * @param $query query string
+    * @param string $query query string
     * @return String SQL query
     */
     function convertQuery($query)
@@ -185,10 +186,10 @@
       return $result;
     }
 
- /**
+   /**
     * Search patterns which are aliases and replace patterns
-    * @param $str to search
-    * @return $new str
+    * @param string $str to search
+    * @return string 
     */
     function replaceAliases($str)
     {
@@ -215,9 +216,9 @@
       return $str;
     }
 
-  /**
-    * Wrapper function to execute a query
-    */
+    /**
+     * Wrapper function to execute a query
+     */
     function executeUpdate()
     {
       if (!isset($this->m_db)) $this->m_db = &atkGetDb();
@@ -225,9 +226,9 @@
       return $this->m_db->query($query, 0, 0, $this->m_bind_vars);
     }
 
- /**
-    * Wrapper function to execute a query
-    */
+    /**
+     * Wrapper function to execute a query
+     */
     function executeInsert()
     {
       if (!isset($this->m_db)) $this->m_db = &atkGetDb();

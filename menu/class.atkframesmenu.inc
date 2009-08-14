@@ -11,7 +11,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6320 $
    * $Id$
    */
 
@@ -25,6 +25,11 @@
   atkimport("atk.menu.atkplainmenu");
   class atkFramesMenu extends atkPlainMenu
   {
+    /**
+     * Render the menu
+     *
+     * @return string The rendered menu
+     */
     function render()
     {
        global $ATK_VARS,$g_menu, $g_menu_parent;

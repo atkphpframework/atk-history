@@ -11,7 +11,7 @@
    * @copyright (c)2006 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6309 $
    * $Id$
    */
 
@@ -54,6 +54,15 @@
       $this->atkUpdateStampAttribute($name, $flags);
     }
 
+    /**
+     * This function is called by the framework to determine if the attribute
+     * needs to be saved to the database in an updateDb call.
+     * This attribute should never be updated
+     *
+     * @param array $rec The record that is going to be saved.
+     * @return boolean True if this attribute should participate in the update
+     *                 query; false if not.
+     */
     function needsUpdate($rec)
     {
       // no matter what, we NEVER save a new value.

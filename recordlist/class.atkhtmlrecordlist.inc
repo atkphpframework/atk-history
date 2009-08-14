@@ -12,7 +12,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6323 $
    * $Id$
    */
 
@@ -36,7 +36,7 @@
      * Creates a special Recordlist that can be used for exporting to files or to make it printable
      * @param atkNode $node       The node to use as definition for the columns.
      * @param array $recordset    The records to render
-     * @param $compression        Compression technique (bzip / gzip)
+     * @param string $compression        Compression technique (bzip / gzip)
      * @param array $suppressList List of attributes from $node that should be ignored
      * @param array $outputparams Key-Value parameters for output. Currently existing:
      *                               filename - the name of the file (without extension .csv)

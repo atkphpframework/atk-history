@@ -10,7 +10,7 @@
    * @copyright (c) 2005 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing/ ATK open source license
    *
-   * @version $Revision$
+   * @version $Revision: 6320 $
    * $Id$
    */
 
@@ -48,6 +48,7 @@
       $processdir = atkconfig("atktempdir") . "documents";
       if (!is_dir($processdir)) mkdir($processdir);
       $this->m_tbsooo->SetProcessDir($processdir);
+			$this->m_tbsooo->SetDataCharset("UTF8");
     }
 
     /**
@@ -56,8 +57,10 @@
      * @access private
      * @param string $tpl_file Template file to parse
      * @param mixed $tpl_vars Array of template variables to merge into the template or null if you want to use the template vars set by calling Assign (which is default behaviour).
+     * @param string $content_file default content.xml (open office), or word/document.xml for .docx
+     * @return bool Indication if parsing was succesfull
      */
-    function _parse($tpl_file, $tpl_vars = null)
+    function _parse($tpl_file, $tpl_vars = null, $content_file="content.xml")
     {
       // Determine which template vars to use (use supplied vars if
       // available, else use m_tpl_vars (can be set using assign())
@@ -66,18 +69,21 @@
       // Create a new copy of the opendocument template
       $this->m_tbsooo->NewDocFromTpl($tpl_file);
 
-      // Extract content.xml from the template document
-      if (!$this->m_tbsooo->LoadXmlFromDoc('content.xml'))
+      // Extract content-file from the template document
+      if (!$this->m_tbsooo->LoadXmlFromDoc($content_file))
         return false;
 
       // Merge template vars with the content.xml file
       foreach($use_vars as $key => $value)
       {
         if (is_array($value)) {
+        	foreach ($value as $key => &$txtval) 
+					  $txtval = atk_iconv(atkGetCharset(),"UTF-8",$txtval);
           $this->m_tbsooo->MergeBlock($key, $value);
         }
         else
         {
+        	$value = atk_iconv(atkGetCharset(),"UTF-8",$value);
           $this->m_tbsooo->MergeField($key, $value);
         }
       }
@@ -89,7 +95,7 @@
         $this->m_tbsooo->Source = $this->addAndApplyStyles($this->m_tbsooo->Source);
 
 
-      // Save the content.xml back to the copied document
+      // Save the content-file back to the copied document
       if (!$this->m_tbsooo->SaveXmlToDoc())
         return false;
 
@@ -127,8 +133,9 @@
      * @param string $tpl_file Template file to parse
      * @param string $outputfilename Filename used to save the file
      * @param mixed $tpl_vars Array of template variables to merge into the template or null if you want to use the template vars set by calling Assign (which is default behaviour)
+     * @param boolean $create_non_existing_dir try to create directory if it does not exist
      */
-    function store($tpl_file, $outputfilename, $tpl_vars = null)
+    function store($tpl_file, $outputfilename, $tpl_vars = null, $create_non_existing_dir=false)
     {
       // Parse template
       if (!$this->_parse($tpl_file, $tpl_vars))
@@ -147,8 +154,21 @@
       // Throw an error and abort if the location of the destination file does not exist
       if (!file_exists(dirname($outputfilename)))
       {
-        atkerror("atkOpenDocumentWriter->store: Output location '".dirname($outputfilename)."' could not be found. The outputfile '$outputfilename' can not be stored.");
-        return false;
+        if ($create_non_existing_dir)
+        {
+          atkdebug("atkOpenDocumentWriter->store: Trying to create output location '".dirname($outputfilename)."'");
+          
+          if (!mkdir(dirname($outputfilename), 0755, true))
+          {
+            atkerror("atkOpenDocumentWriter->store: Output location '".dirname($outputfilename)."' could not be created. The outputfile '$outputfilename' can not be stored.");
+            return false;
+          }          
+        }
+        else
+        {
+          atkerror("atkOpenDocumentWriter->store: Output location '".dirname($outputfilename)."' could not be found. The outputfile '$outputfilename' can not be stored.");
+          return false;
+        }      
       }
 
       // Move the document to it's destination
@@ -163,6 +183,8 @@
     /**
      * Add predefined text-styles to xml file
      * And replace html style tags by xml style-tags
+     * 
+     * @param string $inputString
      */
     function addAndApplyStyles($inputString)
     {
@@ -177,6 +199,12 @@
       return $inputString;
     }
 
+    /**
+     * Add predefined styles
+     *
+     * @param string $inputString
+     * @return string The inputstring including the predefined styles
+     */
     function addPredefinedStyles($inputString)
     {
       // Add predefined styles to xml-file
@@ -191,6 +219,12 @@
       return $inputString;
     }
 
+    /**
+     * Convert firefox-html tags to xml tags
+     *
+     * @param string $inputString
+     * @return string The converted inputstring
+     */
     function convertFirefoxHtmlToXML($inputString)
     {
       /*****************************************
@@ -243,6 +277,12 @@
       return $inputString;
     }
 
+    /**
+     * Convert internet explorer-html tags to xml tags
+     *
+     * @param string $inputString
+     * @return string The converted inputstring
+     */
     function convertIEHtmlToXML($inputString)
     {
       /***************************************************
@@ -276,6 +316,12 @@
       return $inputString;
     }
     
+    /**
+     * Convert general-html tags to xml tags (same for IE and Firefox)
+     *
+     * @param string $inputString
+     * @return string The converted inputstring
+     */
     function convertGeneralHtmlToXML($inputString)
     {
       /**************************************************************

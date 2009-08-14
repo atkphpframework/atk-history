@@ -2,19 +2,19 @@
 {foreach from=$menuitems item=menuitem}
 {if !isset($firstmenuitem)}{assign var='firstmenuitem' value=$menuitem.name}{/if}
   {if $menuitem.name!=='-' && $menuitem.enable}
-    <a href="#" onclick="showSubMenu('{$menuitem.name}'); window.open('{$menuitem.url}','main','');" onmouseover="this.style.cursor = 'pointer'" class="menuitem_link">
+    <a href="#" onclick="showSubMenu('{$menuitem.name|addslashes}'); window.open('{$menuitem.url}','main','');" onmouseover="this.style.cursor = 'pointer'" class="menuitem_link">
       <div id="mi_{$menuitem.name}" class="menuItemLevel1">
         <span class="menu-menuitem">{$menuitem.name}</span>
       </div>
     </a>
   {/if}
 
-  {if (count($menuitem.submenu)>0)}
+  {if (array_key_exists('submenu',$menuitem) && count($menuitem.submenu)>0)}
     <div id="smi_{$menuitem.name}" class="submenuHover">
       {$menuitem.header}
       {foreach from=$menuitem.submenu item=submenuitem}
          {if $submenuitem.enable && $submenuitem.name!=='-'}
-           <a class="menuItemLevel2" onclick="window.open('{$submenuitem.url}','main','')" onmouseover="this.style.cursor = 'pointer'; this.style.color = '#9a1010';" onmouseout="this.style.color = '#414141';">
+           <a class="menuItemLevel2" onclick="window.open('{$submenuitem.url}','main','');" onmouseover="this.style.cursor = 'pointer'; this.style.color = '#9a1010';" onmouseout="this.style.color = '#414141';">
              {$submenuitem.name}
            </a>
          {/if}
@@ -88,5 +88,5 @@ function hideAllSubMenus()
 	}
 }
 {/literal}
-showSubMenu('{if $atkmenutop!=="main"}{$atkmenutopname}{else}{$firstmenuitem}{/if}');
+showSubMenu('{if $atkmenutop!=="main"}{$atkmenutopname|addslashes}{else}{$firstmenuitem|addslashes}{/if}');
 </script>

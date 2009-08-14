@@ -1,6 +1,24 @@
 <?php
+  /**
+   * This file is part of the Achievo ATK distribution.
+   * Detailed copyright and licensing information can be found
+   * in the doc/COPYRIGHT and doc/LICENSE files which should be
+   * included in the distribution.
+   *
+   * @package atk
+   * @subpackage testcases
+   *
+   * @copyright (c)2008 Ibuildings.nl BV
+   * @license http://www.achievo.org/atk/licensing ATK Open Source License
+   *
+   * @version $Revision: 6287 $
+   */
+
 /**
  * atkManyToOneRelation test-case.
+ * @internal
+ * @package atk
+ * @subpackage testcases
  */
 class test_atkManyToOneRelation extends atkTestCase 
 {
@@ -36,5 +54,38 @@ class test_atkManyToOneRelation extends atkTestCase
     $attr->fixDestinationRecord($record);
     $this->assertFalse(is_array($record['test']));
     $this->assertNull($record['test']);
+  }
+  
+  /**
+   * Tests the getOrderByStatement method of the atkManyToOneRelation 
+   */
+  public function test_get_order_by_statement()
+  {
+    $attr = new atkManyToOneRelation('test', '');
+    $attr->m_destInstance = new atkNode();
+    $attr->m_destInstance->add(new atkNumberAttribute('id', AF_PRIMARY));
+    $attr->m_destInstance->add(new atkNumberAttribute('sortorder', AF_OBLIGATORY));
+    $attr->m_destInstance->add(new atkAttribute('name', AF_PRIMARY));
+    
+    $this->assertEqual($attr->getOrderByStatement(), "test.id");
+    $this->assertEqual($attr->getOrderByStatement(null), "test.id");
+    $this->assertEqual($attr->getOrderByStatement("id"), "test.id");
+    $this->assertEqual($attr->getOrderByStatement("doesntexists"), "test.id");
+    $this->assertEqual($attr->getOrderByStatement("name"), "test.id");
+    
+    $attr->m_destInstance->setOrder("name");
+    $this->assertEqual($attr->getOrderByStatement(), "test.name ASC");
+    
+    $attr->m_destInstance->setOrder("sortorder desc");
+    $this->assertEqual($attr->getOrderByStatement(), "test.sortorder DESC");
+    
+    $attr->m_destInstance->setOrder("sortorder  desc");
+    $this->assertEqual($attr->getOrderByStatement(), "test.sortorder DESC");
+    
+    $attr->m_destInstance->setOrder("sortorder, name");
+    $this->assertEqual($attr->getOrderByStatement(), "test.sortorder ASC, test.name ASC");
+    
+    $attr->m_destInstance->setOrder("sortorder asc , name desc");
+    $this->assertEqual($attr->getOrderByStatement(), "test.sortorder ASC, test.name DESC");
   }
 }

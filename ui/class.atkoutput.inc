@@ -12,7 +12,7 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6309 $
    * $Id$
    */
 
@@ -54,7 +54,7 @@
      * Retrieve the one-and-only atkOutput instance.
      * @return atkOutput The instance.
      */
-    function &getInstance()
+    public static function &getInstance()
     {
       static $s_instance = NULL;
       if ($s_instance == NULL)
@@ -65,7 +65,13 @@
       return $s_instance;
     }
     
-    function sendCachingHeaders($lastmodificationstamp='',$nocache=true)
+    /**
+     * Send the caching headers
+     *
+     * @param timestamp $lastmodificationstamp Timestamp of the last modification
+     * @param bool $nocache Send cache headers?
+     */
+    public function sendCachingHeaders($lastmodificationstamp='',$nocache=true)
     {
       // Since atk pages are always dynamic, we have to prevent that some browsers cache
       // the pages, unless $nocache was set to true.
@@ -93,7 +99,7 @@
      * Send no cache headers to the browser.
      * @static
      */
-    function sendNoCacheHeaders()
+    public static function sendNoCacheHeaders()
     {
       atkdebug("Sending no-cache headers (lmd: ".gmdate("D, d M Y H:i:s")." GMT)");
       header ("Expires: Mon, 26 Jul 1997 05:00:00 GMT");    // Date in the past
@@ -113,8 +119,9 @@
      *                                   containing this stamp will be sent to
      *                                   the browser. If $nocache is true,
      *                                   this parameter is ignored.
+     * @param string $charset The character set
      */
-    function outputFlush($nocache=true, $lastmodificationstamp="", $charset="")
+    public function outputFlush($nocache=true, $lastmodificationstamp="", $charset="")
     {
       global $g_error_msg;
       $res = "";
@@ -128,7 +135,7 @@
         $this->sendCachingHeaders($lastmodificationstamp,$nocache);
         
         // Set the content type and the character set (as defined in the language files)
-        header ("Content-Type: text/html; charset=".($charset==""?atktext("charset","atk"):$charset)); 
+        header ("Content-Type: text/html; charset=".($charset==""?atkGetCharset():$charset)); 
 
         $res = $this->m_content;
 
@@ -158,7 +165,12 @@
       }
     }
     
-    function getDebugging()
+    /**
+     * Display the debug statements
+     *
+     * @return String htmlcode with debugging
+     */
+    public function getDebugging()
     {
       global $g_debug_msg;
       if (atkconfig("debug")>0)
@@ -176,7 +188,7 @@
      *
      * @param String $txt The text to output.
      */
-    function rawoutput($txt)
+    public function rawoutput($txt)
     {
       $this->m_raw.= $txt."\n";
     }
@@ -185,7 +197,7 @@
      * Output regular text to the browser.
      * @param String $txt The text to output.
      */
-    function output($txt)
+    public function output($txt)
     {
       $this->m_content.= $txt."\n";
     }
@@ -198,7 +210,7 @@
      * @param String $contents The string to gzip.
      * @return String The gzipped string.
      */
-    function gzip($contents)
+    public function gzip($contents)
     {
       $gzip_size = strlen($contents);
       $gzip_crc  = crc32($contents);

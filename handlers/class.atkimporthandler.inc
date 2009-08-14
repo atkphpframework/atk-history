@@ -12,7 +12,7 @@
    * @copyright (c)2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6323 $
    * $Id$
    */
 
@@ -133,7 +133,7 @@
     /**
      * Import header.
      *
-     * @param $phase import phase ('init', 'upload', 'process', 'analyze')
+     * @param string $phase import phase ('init', 'upload', 'process', 'analyze')
      */
     function importHeader($phase)
     {
@@ -143,7 +143,7 @@
     /**
      * Get import buttons.
      *
-     * @param $phase
+     * @param string $phase import phase ('init', 'upload', 'process', 'analyze')
      */
     function getImportButtons($phase)
     {
@@ -228,8 +228,8 @@
      * This function shows a form where the user can choose the mapping of the column,
      * an allfield and if the first record must be past over
      *
-     * @param $fileid      string  the id of the uploaded file
-     * @param $importerrors Array   An array with the import errors
+     * @param string $fileid       the id of the uploaded file
+     * @param array $importerrors  An array with the import errors
      */
     function doAnalyze($fileid,$importerrors=array())
     {
@@ -362,8 +362,8 @@
       $content.= '<input type="hidden" name="fileid" value="'.$fileid.'">';
       $content.= '<input type="hidden" name="columncount" value="'.$columncount.'">';
       $content.= '<table border="0">';
-      $content.= '<tr><td>'.text("delimiter").': </td><td><input type="text" size="2" name="delimiter" value="'.htmlentities($delimiter).'"></td></tr>';
-      $content.= '<tr><td>'.text("enclosure").': </td><td><input type="text" size="2" name="enclosure" value="'.htmlentities($enclosure).'"></td></tr>';
+      $content.= '<tr><td>'.text("delimiter").': </td><td><input type="text" size="2" name="delimiter" value="'.atk_htmlentities($delimiter).'"></td></tr>';
+      $content.= '<tr><td>'.text("enclosure").': </td><td><input type="text" size="2" name="enclosure" value="'.atk_htmlentities($enclosure).'"></td></tr>';
       $content.= '<tr><td>'.atktext("import_detectedcolumns").': </td><td>'.$columncount.'</td></tr>';
       $content.= '<tr><td>'.atktext("import_detectedrows").': </td><td>'.$rowcount.'</td></tr>';
       $content.= '</table>';
@@ -485,6 +485,8 @@
      * @param String $doupdate          Wether or not to do an update
      * @param String $updatekey1        The key to update on
      * @param String $onfalseidentifier What to do on a false identifier
+     * @param String $allFields					The fields to import
+     * @param Bool	 $novalidatefirst 	Validate before the import 
      * @return String The HTML with the extra options
      */
     function _getAnalyseExtraOptions($skipfirstrow, $doupdate, $updatekey1, $onfalseidentifier, $allFields, $novalidatefirst)
@@ -534,7 +536,7 @@
 
     /**
      * Get the destination of the uploaded csv-file
-     * @param $fileid string  The id of the file
+     * @param string $fileid  The id of the file
      * @return string         The path of the file
      */
     function getTmpFileDestination($fileid)
@@ -589,6 +591,7 @@
     /**
      * Counts the number of columns in the first row
      * @param Array $rows     The rows from the csv-file
+     * @param String $delimiter The char which seperate the fields
      * @return int  The number of columns
      */
     function estimateColumnCount($rows, $delimiter)
@@ -624,6 +627,7 @@
      * Returns the CSV line count.
      *
      * @param string $file the path to the csv-file
+     * @param bool $skipFirstRow Skip the first row?
      * @return int row count
      */
     function getRowCount($file, $skipFirstRow)
@@ -640,52 +644,10 @@
       return $count - ($count > 0 && $skipFirstRow ? 1 : 0);
     }
 
-    /**
-     * Gets the csvdata from one line
-     *
-     * source: http://bu.orbitel.bg/fgetcsvfromline.php (bu@orbitel.bg)
-     *
-     * @param String $line           One line from the csv-file
-     * @param int    $columncount    Number of columns in the cvs-file
-     * @param String $delimiterChar  The char which seperate the fields
-     * @param String $enclosureChar  The char which is in front and after each field
-     * @return Array The fields
-     */
     function fgetcsvfromline ($line, $columncount, $delimiterChar = ',', $enclosureChar = '"')
     {
       $line = trim($line);
-
-      if (substr($line, -1) == $delimiterChar)
-        $line .= $enclosureChar.$enclosureChar;
-
-      if ($enclosureChar!='')
-      {
-        $start = (($line[0]==$enclosureChar)?1:0);
-        $end = (($line[strlen($line)-1]==$enclosureChar)?-1:NULL);
-        $line = substr($line, $start, $end);
-      }
-
-      $regExpSpecialChars = array
-      (
-          "|" => "\\|",
-          "&" => "\\&",
-          "$" => "\\$",
-          "(" => "\\(",
-          ")" => "\\)",
-          "^" => "\\^",
-          "[" => "\\[",
-          "]" => "\\]",
-          "{" => "\\{",
-          "}" => "\\}",
-          "." => "\\.",
-          "*" => "\\*",
-          "\\" => "\\\\",
-          "/" => "\\/"
-      );
-
-      $delimiterChar = strtr($delimiterChar, $regExpSpecialChars);
-      $enclosureChar = strtr($enclosureChar, $regExpSpecialChars);
-
+      
       // if we haven't got an enclosure char, the only thing we can do is
       // splitting it using the delimiterChar - no further action needed
       if (!$enclosureChar)
@@ -693,20 +655,44 @@
         return explode($delimiterChar,$line);
       }
 
+      if ($line{0} == $delimiterChar) 
+      {
+        $line = $enclosureChar.$enclosureChar.$line;
+      }
+      
+      if (substr($line, -1) == $delimiterChar)
+        $line .= $enclosureChar.$enclosureChar;
+        
+      $reDelimiterChar = preg_quote($delimiterChar, '/');
+      $reEnclosureChar = preg_quote($enclosureChar, '/');
+        
       // Some exports don't enclose empty or numeric fields with the enclosureChar. Let's fix
       // that first so we can use one preg_split statement that works in those cases too.
       // loop until all occurrences are replaced. Contains an infinite loop prevention.
-      for ($fix="", $i=0, $_i=substr_count($line, $enclosureChar); $fix!=$line && $i<$_i;$i++)
+      for ($fix="", $i=0, $_i=substr_count($line, $delimiterChar); $fix!=$line && $i<$_i;$i++)
       {
         if ($fix!="") $line = $fix;
-        $fix = preg_replace('/'.$delimiterChar.'(\d*)'.$delimiterChar.'/',
-                           $delimiterChar.$enclosureChar.'\\1'.$enclosureChar.$delimiterChar, $line);
+        $pattern = '/'.$reDelimiterChar.'([^\\\\'.$reDelimiterChar.$reEnclosureChar.']*)'.$reDelimiterChar.'/';
+        $fix = preg_replace($pattern , $delimiterChar.$enclosureChar.'\\1'.$enclosureChar.$delimiterChar, $line);
+      }        
+      $line = $fix;
+      // fix an unquoted string at line end, if any
+      $pattern = '/'.$reDelimiterChar.'([^\\\\'.$reDelimiterChar.$reEnclosureChar.']*)$/';
+      $line = preg_replace($pattern ,
+                           $delimiterChar.$enclosureChar.'\\1'.$enclosureChar,$line);
+      
+      // chop the first and last enclosures so they aren't split at
+      $start = (($line[0]==$enclosureChar)?1:0);
+      if($line[strlen($line)-1]==$enclosureChar) {
+        $line = substr($line, $start, -1);
+      } else {
+        $line = substr($line, $start);
       }
       // now split by delimiter
-      $expression = '#'.$enclosureChar.' *'.$delimiterChar.' *'.$enclosureChar.'#';
+      $expression = '/'.$reEnclosureChar.' *'.$reDelimiterChar.'*'.$reEnclosureChar.'/';
       return preg_split($expression, $line);
     }
-
+    
     /**
      * Gives all the attributes that can be used for the import
      * @param bool $obligatoryOnly    if false then give all attributes, if true then give only the obligatory ones
@@ -972,6 +958,7 @@
     /**
      * Tries to make a default col_map with the first record of the csv-file
      * @param Array $firstRecord The first record of the CSV file
+     * @param Bool &$matchFound Found a match?
      * @return Array The default col_map
      */
     function initColmap($firstRecord, &$matchFound)
@@ -1035,7 +1022,7 @@
           if(strstr($allFieldValue,"="))
           {
             $allFieldValue = substr(strstr($allFieldValue,"="),2);
-            $allFieldValue = substr($allFieldValue,0,strlen($allFieldValue)-1);
+            $allFieldValue = substr($allFieldValue,0,atk_strlen($allFieldValue)-1);
           }
           $allFieldsValues[$allField] = $allFieldValue;
         }
@@ -1045,6 +1032,8 @@
 
     /**
      * The real import function actually imports the importfile
+     * 
+     * @param Bool $nopost 
      */
     function doImport($nopost=false)
     {
@@ -1098,6 +1087,12 @@
       $this->m_node->redirect();
     }
 
+    /**
+     * Get the validated records
+     *
+     * @param String $file The import csv file
+     * @return Array with importerrors and validatedrecs
+     */
     function getValidatedRecords($file)
     {
       $enclosure =    $this->m_postvars["enclosure"];
@@ -1129,6 +1124,22 @@
         return array('importerrors'=>&$importerrors, 'validatedrecs'=>array());
       }
 
+      static $mb_converting_exists = null;
+      if(!isset($mb_converting_exists))
+      {
+        $mb_converting_exists = function_exists("mb_convert_encoding");
+        atkdebug('Checking function_exists("mb_convert_encoding")');
+      }
+
+      static $atkCharset = null;
+      if(!isset($atkCharset))
+      {
+        $atkCharset = atkGetCharset();
+        atkdebug('setting atkcharset static!');
+      }
+
+      atkimport("atk.utils.atkstringparser");
+
       //copy the csv in a record and add it to the db
       $fp = fopen($file, "r");
       if($skipfirstrow == "1") $line = fgets($fp);
@@ -1144,12 +1155,11 @@
         set_time_limit(60);
         atkdebug('set_time_limit(60)');
 
-        if (atktext('charset') != '' && function_exists("mb_convert_encoding")) $line = mb_convert_encoding($line, atktext('charset'));
+        if ($atkCharset != '' && $mb_converting_exists) $line = mb_convert_encoding($line, $atkCharset);
 
         $data = $this->fgetcsvfromline($line, $columncount, $delimiter, $enclosure);
 
         $rec = $initial_values;
-        atkimport("atk.utils.atkstringparser");
 
         for ($i=0, $_i=count($col_map); $i<$_i; $i++)
         {
@@ -1177,11 +1187,14 @@
 
     /**
      * Gets the ATK value of the attribute
+     * 
      * @param String $attributename The name of the attribute
-     * @param String $allField      The allfield attribute name
+     * @param Array $allFields      Array with all the fields
      * @param mixed $value          The value from the CSV file
-     * @param Array $rec            The record
      * @param Array  &$importerrors  Any import errors which may occur or may have occured
+     * @param Integer $counter			The counter of the validatedrecords
+     * @param Array $rec            The record
+     * 
      * @return mixed The ATK value of the field
      */
     function _getAttributeValue($attributename, $allFields, $value, &$importerrors, $counter, $rec)
@@ -1204,10 +1217,16 @@
 
         if (count($relationselect)==0 || count($relationselect)>1)
         {
-          $searchresults = $attr->m_destInstance->searchDb($value);
-          if (count($searchresults)==1)
+          static $searchresults = array();
+          if (!array_key_exists($attributename, $searchresults) || (array_key_exists($attributename, $searchresults) && !array_key_exists($value, $searchresults[$attributename])))
           {
-            $value = array($attr->m_destInstance->primaryKeyField()=>$searchresults[0][$attr->m_destInstance->primaryKeyField()]);
+            atkdebug("Caching attributeValue result for $attributename ($value)");
+            $searchresults[$attributename][$value] = $attr->m_destInstance->searchDb($value);
+          }
+
+          if (count($searchresults[$attributename][$value])==1)
+          {
+            $value = array($attr->m_destInstance->primaryKeyField()=>$searchresults[$attributename][$value][0][$attr->m_destInstance->primaryKeyField()]);
           }
           else
           {
@@ -1337,7 +1356,7 @@
 
     /**
      * Check whether the record if valide to import
-     * @param $record array   the record
+     * @param array $record   the record
      * @return bool Wether or not there were errors
      */
     function validate(&$record)
@@ -1366,8 +1385,9 @@
      * Checks the import by the col_map and the initial_values
      * Check if all obligatory fields are used in the col_map or the initial_values
      * Check if there are no fields used twice
-     * @param $col_map        The use of the fields for the columns in the csv
-     * @param $initial_values The initial_values of the importnode
+     * 
+     * @param array $col_map        The use of the fields for the columns in the csv
+     * @param array $initial_values The initial_values of the importnode
      * @return array          An array with errors, if there are any
      */
     function checkImport($col_map,$initial_values)
@@ -1406,7 +1426,7 @@
     /**
      * Array with columns
      * @param Array $array  The array the columns to check
-     * @param Array $result the duplicate columns
+     * @return Array The duplicate columns
      */
     function _getDuplicateColumns($array)
     {
@@ -1421,8 +1441,8 @@
 
     /**
      * Checks the allfield for correct data
-     * @param String  $field  The fieldname
-     * @param mixed   &$value The value of the field
+     * @param Array  $fields  The fields
+     * @param Array  &$values The values of the fields
      * @return Array An array with an error message, if an error occurred
      */
     function checkAllFields($fields, &$values)

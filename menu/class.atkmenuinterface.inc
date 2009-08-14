@@ -12,7 +12,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6347 $
    * $Id$
    */
 
@@ -52,6 +52,9 @@
 
 		/**
 		 * Return the menu header
+		 * 
+		 * @param string $atkmenutop
+		 * @return string The menu header
 		 */
 	  function getHeader($atkmenutop)
 	  {
@@ -59,6 +62,9 @@
 
 	  /**
 	   * Return the menu footer
+	   * 
+	   * @param string $atkmenutop
+	   * @return string The menu footer
 	   */
 		function getFooter($atkmenutop)
 		{
@@ -130,7 +136,7 @@
         }
         $enable = $enabled;
       }
-      else if (is_array($g_menu[$menuitem['name']]))
+      else if (array_key_exists($menuitem['name'],$g_menu) && is_array($g_menu[$menuitem['name']]))
       {
         $enabled = false;
         foreach ($g_menu[$menuitem['name']] as $item)

@@ -8,56 +8,58 @@ ATK.Dialog.prototype = {
   /**
    * Constructor.
    */
-  initialize: function(title, url, theme, options) {
+  initialize: function(title, url, params, theme, options, windowOptions) {
     this.title = title;
     this.url = url;
+    this.params = params || {};
     this.theme = theme || 'alphacube';
-    this.options  = options || {};
- },
+    this.options = options || {};
+    this.windowOptions = windowOptions || {};
+  },
+  
+  /**
+   * Calculate exact scroll dimensions, better than window.js own
+   * getScrollDimensions because it takes padding etc. into account.
+   */
+  getScrollDimensions: function(element) {
+    var els = element.style;
+    var originalVisibility = els.visibility;
+    var originalPosition = els.position;
+    var originalDisplay = els.display;
+    els.visibility = 'hidden';
+    els.position = 'absolute';
+    els.display = 'block';
+    var originalWidth = element.scrollWidth;
+    var originalHeight = element.scrollHeight;
+    els.display = originalDisplay;
+    els.position = originalPosition;
+    els.visibility = originalVisibility;
+
+    return { width: originalWidth, height: originalHeight };  
+  },
 
   /**
-   * Eval JavaScript in response.
+   * Resize the dialog to the given dimensions.
+   *
+   * If no width and or height is given the dialog tries to determine the optimal
+   * dimensions by itself.
    */
-  evalResponse: function(transport) {
-    var dialog = this;
-    
-    setTimeout(function() { 
-      transport.responseText.evalScripts();
+  resize: function(width, height) {
+    if (!this.window) return;
+
+    if (width && height)
+      this.window.content.setStyle({ width: width + 'px', height: height + 'px' });    
+    else if (width)
+      this.window.content.setStyle({ width: width + 'px', height: 'auto' });
+    else if (height)
+      this.window.content.setStyle({ width: 'auto', height: height + 'px' });
+    else
+      this.window.content.setStyle({ width: 'auto', height: 'auto' });      
       
-      if (!dialog.options.width && !dialog.options.height) {
-        dialog.delayedResize();
-      }
-    }, 10);
-  },
-
-  /**
-   * Used internally.
-   */
-  onShow: function(transport) {
-    this.evalResponse(transport);
-  },
-
-  /**
-   * Delayed auto-resize. Sometimes needed because the content is not always
-   * fully updated yet (you don't always know how long it takes to update the DOM).
-   */
-  delayedResize: function() {
-    setTimeout(this.resize.bind(this), 100);
-  },
-
-  /**
-   * Auto-resize the dialog.
-   */
-  resize: function() {
-    var element = $('modal_dialog_message');
-
-    var d = Element.getDimensions(element);
-    var p = Position.cumulativeOffset(element);
-
-    var window = Windows.getWindow(Dialog.dialogId);
-    window.setSize(d.width, d.height);
-    window.setLocation(p[1] - window.heightN, p[0] - window.widthW);
-  },
+    var dimensions = this.getScrollDimensions(this.window.content);
+    this.window.setSize(width || dimensions.width, height || dimensions.height, true);
+    this.window.center({ auto: false });
+  },  
 
   /**
    * Serialize form.
@@ -78,27 +80,52 @@ ATK.Dialog.prototype = {
   },
 
   /**
+   * Now the content is loaded into the dialog content element we
+   * can finally show it to the user.
+   */
+  handleComplete: function() {
+    this.window.content.setStyle({ visibility: 'hidden' });
+    this.window.show(true);
+    
+    this.resize(this.options.width, this.options.height);
+
+    this.window.content.setStyle({ visibility: '' });
+    this.window.activate();      
+  },
+
+  /**
    * Show dialog.
    */
   show: function() {
     ATK.Dialog.stack.push(this);
-
-    var windowParameters = { className: this.theme, title: this.title };
-    if (this.options.width)
-      windowParameters['width'] = this.options.width;
-    if (this.options.height)
-      windowParameters['height'] = this.options.height;
-
-    var options = {};
-    options['onSuccess'] = this.onShow.bind(this);
-    if (this.options.serializeForm) {
-      options['parameters'] = this.serializeForm();
+    
+    var windowOptions = { 
+      theme: this.theme, 
+      shadow: true, 
+      shadowTheme: 'mac_shadow',
+      superflousEffects: false,
+      minimize: false,
+      maximize: false,
+      close: false,
+      resizable: false
     }
 
-    Dialog.info(
-      { url: this.url, options: options },
-      { windowParameters: windowParameters }
-    );
+    this.window = new UI.Window(windowOptions);
+    this.window.setZIndex(1000);
+    this.window.header.setStyle({ paddingRight: '0px' });
+    this.window.header.update(this.title.escapeHTML());
+    
+    var params = 
+      $H(this.params).toQueryString() + '&' +
+      (this.options.serializeForm ? this.serializeForm() : '');
+
+    var updaterOptions = {
+      evalScripts: true,
+      parameters: params,
+      onComplete: this.handleComplete.bind(this)
+    }
+    
+    new Ajax.Updater(this.window.content, this.url, updaterOptions);
   },
 
   /**
@@ -117,12 +144,17 @@ ATK.Dialog.prototype = {
 
     var options = options || {};
 
-    var evalFunc = this.evalResponse.bind(this);
-    var successFunc = options['onSuccess'] || function() { };
+    var dummyFunc = function() {};
+    var resizeFunc = this.resize.bind(this, this.options.width, this.options.height);
+    var completeFunc = options['onComplete'] || dummyFunc;
 
     var options = options || {};
     options['parameters'] = params;
-    options['onSuccess'] = function(transport) { evalFunc(transport); successFunc(transport); };
+    options['onComplete'] = function(transport) {
+      transport.responseText.evalScripts(); 
+      resizeFunc();
+      completeFunc(transport); 
+    };
 
     new Ajax.Request(url, options);
   },
@@ -131,7 +163,7 @@ ATK.Dialog.prototype = {
    * Save dialog contents and closes the dialog immediately.
    */
   saveAndClose: function(url, form, extraParams) {
-    this.save(url, form, extraParams, { onSuccess: this.close.bind(this) });
+    this.save(url, form, extraParams, { onComplete: this.close.bind(this) });
     this.close();
   },
 
@@ -140,36 +172,43 @@ ATK.Dialog.prototype = {
    */
   close: function() {
     ATK.Dialog.stack.pop();
-    Dialog.closeInfo();
+    if (!this.window) return;
+    this.window.destroy(); 
+    if (Prototype.Browser.IE) {
+      $(document.body).setStyle({ overflow: 'hidden' });
+    }
+    this.window = null;
   },
 
   /**
    * Update dialog contents.
    */
   update: function(content) {
-    var element = $('modal_dialog_message');
-    element.update(content);
-    this.resize();
+    this.window.content.update(content);
+    this.resize(this.options.width, this.options.height);
   },
 
   /**
    * Update dialog contents with the results of the given URL.
    */
-  ajaxUpdate: function(url) {
-    var options = {};
-    options['onSuccess'] = this.onShow.bind(this);
-    if (this.options.serializeForm) {
-      options['parameters'] = this.serializeForm();
-    }
+  ajaxUpdate: function(url, params) {
+    var params = 
+      $H(params || {}).toQueryString() + '&' +
+      (this.options.serializeForm ? this.serializeForm() : '');  
+  
+    var options = {};   
+    options['evalScripts'] = true;
+    options['onComplete'] = this.resize.bind(this, this.options.width, this.options.height);
+    options['parameters'] = params;
 	
-    new Ajax.Updater('modal_dialog_message', url, options);
+    new Ajax.Updater(this.window.content, url, options);
   },
 
   /**
    * Reload dialog contents.
    */
   reload: function() {
-	  this.ajaxUpdate(this.url);
+	  this.ajaxUpdate(this.url, this.params);
   }
 };
 

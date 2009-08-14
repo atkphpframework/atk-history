@@ -11,7 +11,7 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6320 $
    * $Id$
    */
 
@@ -22,6 +22,11 @@
    * Attribute flag. When used the atkManyBoolRelation shows add links to add records for the related table
    */
   define("AF_MANYBOOL_AUTOLINK", AF_SPECIFIC_1);
+  
+  /**
+   * Hides the select all, select none and inverse links.
+   */
+  define("AF_MANYBOOL_NO_TOOLBAR", AF_SPECIFIC_2);
 
   /**
    * Many-to-many relation.
@@ -40,7 +45,10 @@
 
     /**
      * Return a piece of html code to edit the attribute
-     * @param $record Current record
+     * @param array $record Current record
+     * @param String $fieldprefix The fieldprefix to put in front of the name
+     *                            of any html form element for this attribute.
+     * @param String $mode The mode we're in ('add' or 'edit')
      * @return String piece of html code
      */
     function edit($record="", $fieldprefix="", $mode="")
@@ -49,6 +57,7 @@
       $modcols = $cols-1;
       $this->createDestination();
       $this->createLink();
+      $result = "";
 
       $selectedPk = $this->getSelectedRecords($record);
 
@@ -59,13 +68,16 @@
         $page = &atkPage::getInstance();
         $page->register_script(atkconfig("atkroot")."atk/javascript/class.atkprofileattribute.js.php");
   
-        $result ='<div align="left"><font size="-2">
-                  [<a href="javascript:void(0)" onclick="profile_checkAll(\''.$this->getHtmlId($fieldprefix).'\'); return false;">'.
-                       atktext("check_all", "atk").
-                  '</a> <a href="javascript:void(0)" onclick="profile_checkNone(\''.$this->getHtmlId($fieldprefix).'\'); return false;">'.
-                       atktext("check_none", "atk").
-                  '</a> <a href="javascript:void(0)" onclick="profile_checkInvert(\''.$this->getHtmlId($fieldprefix).'\'); return false;">'.
-                       atktext("invert_selection", "atk").'</a>]</font></div>';
+        if (!$this->hasFlag(AF_MANYBOOL_NO_TOOLBAR))
+        {
+	        $result .='<div align="left"><font size="-2">
+	                  [<a href="javascript:void(0)" onclick="profile_checkAll(\''.$this->getHtmlId($fieldprefix).'\'); return false;">'.
+	                       atktext("check_all", "atk").
+	                  '</a> <a href="javascript:void(0)" onclick="profile_checkNone(\''.$this->getHtmlId($fieldprefix).'\'); return false;">'.
+	                       atktext("check_none", "atk").
+	                  '</a> <a href="javascript:void(0)" onclick="profile_checkInvert(\''.$this->getHtmlId($fieldprefix).'\'); return false;">'.
+	                       atktext("invert_selection", "atk").'</a>]</font></div>';
+        }
       
         $result.= '<table border="0"><tr>';
         for ($i=0;$i<$total_records;$i++)
@@ -108,7 +120,7 @@
       {
         $nodename = $this->m_destInstance->m_type;
         $modulename = $this->m_destInstance->m_module;;
-        return atktext('select_none', $modulename, $nodename);
+        $result .= atktext('select_none', $modulename, $nodename)." ";
       }
       // Add the add link if AF_MANYBOOL_AUTOLINK used
       if (($this->hasFlag(AF_MANYBOOL_AUTOLINK)) && ($this->m_destInstance->allowed("add")))
@@ -117,6 +129,11 @@
       return $result;
     }
 
+    /**
+     * Set the number of columns
+     *
+     * @param int $cols
+     */
     function setCols($cols)
     {
       $this->m_cols = $cols;

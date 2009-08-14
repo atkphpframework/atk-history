@@ -12,7 +12,7 @@
    * @copyright (c)2005 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6320 $
    * $Id$
    */
 
@@ -29,18 +29,29 @@
   {
     var $m_isconsole = true;
     var $m_redirectUrl = null;
+    static $s_querycount = 0;
 
+    /**
+     * Get an instance of this class
+     *
+     * @return atkDebugger Instance of atkDebugger
+     */
     function &getInstance()
     {
       static $s_instance = NULL;
       if ($s_instance==NULL)
       {
+        if (!atkGetSessionManager()) atkwarning("Instantiating debugger without sessionmanager, debugger will not do anything until session is started. Also, the debugging info already in the session will not be cleaned, this could lead to monster sessions over time!");
         $s_instance = new atkDebugger();
       }
       return $s_instance;
     }
 
-    function atkDebugger()
+    /**
+     * Constructor
+     *
+     */
+    public function __construct()
     {
       $this->m_isconsole = (strpos($_SERVER['SCRIPT_NAME'], "debugger.php")!==false);
       if (!$this->m_isconsole)
@@ -53,49 +64,82 @@
       }
     }
 
-    function addStatement($txt)
+    /**
+     * Add a debug statement
+     *
+     * @param string $txt The debug statement
+     * @return bool Indication if statement is added
+     */
+    public function addStatement($txt)
     {
-      $instance = &atkDebugger::getInstance();
-      if (is_object($instance))
-      {
-        return $instance->_addStatement($txt);
-      }
-      return false;
-    }
-
-    function addQuery($query)
-    {
-      if (atkconfig('debug') > 2)
+      if (function_exists('atkGetSessionManager') && atkGetSessionManager())
       {
         $instance = &atkDebugger::getInstance();
         if (is_object($instance))
         {
-          return $instance->_addQuery($query);
+          return $instance->_addStatement($txt);
         }
-        return false;
       }
-      else 
-      {
-        atkdebug($query);
-        return true;
-      }
+      return false;
     }
 
-    function _addStatement($txt)
+    /**
+     * Add a query string to the debugger
+     *
+     * @param string $query
+     * @return bool Indication if query is added
+     */
+    public function addQuery($query)
+    {
+      self::$s_querycount++;
+
+      if (atkconfig('debug') > 2)
+      {
+        if (atkGetSessionManager())
+        {
+          $instance = &atkDebugger::getInstance();
+          if (is_object($instance))
+          {
+            return $instance->_addQuery($query);
+          }
+        }
+      }
+      else
+      {
+        atkdebug(atk_htmlentities($query));
+        return true;
+      }
+      return false;
+    }
+
+    /**
+     * Add a debug statement
+     *
+     * @param string $txt The debug statement
+     * @return bool Indication if statement is added
+     */
+    protected function _addStatement($txt)
     {
       if (!$this->m_isconsole)
       {
         $data = &$this->getDebuggerData();
         global $g_debug_msg;
         $data["statements"][] = array("statement"=>$txt, "trace"=>atk_get_trace());
-        $txt = str_replace("MB]", "MB] [".$this->consoleLink("trace", "statement", array("stmt_id"=>count($data["statements"])-1), true)."]", $txt);
+        $link = $this->consoleLink("trace", "statement", array("stmt_id"=>count($data["statements"])-1), true);
+        $txt = preg_replace("|MB\]|", "MB] [$link]", $txt, 1);
         $g_debug_msg[] = $txt;
         return true;
       }
       return false;
     }
 
-    function _addQuery($query)
+    /**
+     * Add a query string to the debugger
+     *
+     * @param string $query
+     * @return bool Indication if query is added
+     */
+    protected function _addQuery($query)
     {
       if (!$this->m_isconsole) // don't add queries executed by the console itself
       {
@@ -103,14 +147,24 @@
 
         $data["queries"][] = array("query"=>$query, "trace"=>atk_get_trace());
 
-        atkdebug("[".$this->consoleLink("query&nbsp;details", "query", array("query_id"=>count($data["queries"])-1), true)."] ".$query);
+        atkdebug("[".$this->consoleLink("query&nbsp;details", "query", array("query_id"=>count($data["queries"])-1), true)."] ".atk_htmlentities($query));
 
         return true;
       }
       return false;
     }
 
-    function consoleLink($text, $action="", $params=array(), $popup=false, $stackId=NULL)
+    /**
+     * Create the console link
+     *
+     * @param string $text The name of the link
+     * @param string $action The action
+     * @param array $params Array with parameters to add to the url
+     * @param bool $popup IS this a popup link?
+     * @param int $stackId The stack id
+     * @return string HTML code with the console link
+     */
+    public function consoleLink($text, $action="", $params=array(), $popup=false, $stackId=NULL)
     {
       if ($stackId == NULL)
       {
@@ -119,7 +173,7 @@
 
       static $s_first = true;
       $res = "";
-      $url = atkconfig("atkroot").'debugger.php?atkstackid='.$stackId.'&action='.$action.'&atkprevlevel='.atkLevel().$this->urlParams($params);
+      $url = atkconfig("application_dir").'debugger.php?atkstackid='.$stackId.'&action='.$action.'&atkprevlevel='.atkLevel().$this->urlParams($params);
 
       if ($popup)
       {
@@ -137,7 +191,13 @@
       return $res;
     }
 
-    function urlParams($params)
+    /**
+     * Convert a params array to a querystring to add to the url
+     *
+     * @param array $params
+     * @return string
+     */
+    public function urlParams($params)
     {
       if (count($params))
       {
@@ -151,7 +211,12 @@
       return "";
     }
 
-    function renderConsole()
+    /**
+     * Render the console
+     *
+     * @return string The HTML code
+     */
+    public function renderConsole()
     {
       $page = &atkinstance("atk.ui.atkpage");
       $theme = &atkinstance("atk.ui.atktheme");
@@ -172,12 +237,24 @@
       return $page->render('Console');
     }
 
-    function consoleControls()
+    /**
+     * Get the HTML code for the console controls
+     *
+     * @return string The HTML code
+     */
+    public function consoleControls()
     {
       return '<div id="console"><table width="100%" border="0"><tr><td align="left">ATK Debug Console</td><td align="right">'.$this->consoleLink('Console index', '', array(), false, $_REQUEST['atkstackid']).' | <a href="javascript:window.close()">Close console</a></td></tr></table></div>';
     }
 
-    function queryDetails($queries, $id)
+    /**
+     * Get details for the query
+     *
+     * @param array $queries Array with queries
+     * @param int $id The index in the queries array we want the details from
+     * @return string The query details
+     */
+    public function queryDetails($queries, $id)
     {
       $output = "<h1>Query</h1>";
       $query = $queries[$id]["query"];
@@ -207,7 +284,14 @@
       return $output;
     }
 
-    function statementDetails($stmts, $id)
+    /**
+     * Get the statement details
+     *
+     * @param array $stmts Array with statements
+     * @param int $id The index in the statements array we want the details from
+     * @return string The statement details
+     */
+    public function statementDetails($stmts, $id)
     {
       $output = "<h1>Debug Statement</h1>";
       $stmt = $stmts[$id]["statement"];
@@ -221,7 +305,15 @@
       return $output;
     }
 
-    function arrToTable($result, $full=true, $id="")
+    /**
+     * Convert an array to a table
+     *
+     * @param array $result The array to convert
+     * @param bool $full All results?
+     * @param int $id
+     * @return string HTML table
+     */
+    public function arrToTable($result, $full=true, $id="")
     {
       if (count($result))
       {
@@ -246,7 +338,13 @@
       return "";
     }
 
-    function highlightQuery($query)
+    /**
+     * Highlight a query
+     *
+     * @param string $query The query to highlight
+     * @return string The highlighted query
+     */
+    public function highlightQuery($query)
     {
       $query = strtolower($query);
       $query = str_replace('select', '<b>SELECT</b>', $query);
@@ -263,18 +361,24 @@
       return '<span class="query">'.nl2br($query).'</span>';
     }
 
-
-    function &getDebuggerData($clean=false, $stackId=NULL)
+    /**
+     * Get debugger data
+     *
+     * @param bool $clean
+     * @param int $stackId
+     * @return array Array with data
+     */
+    public function &getDebuggerData($clean=false, $stackId=NULL)
     {
       if ($stackId == NULL)
       {
         $stackId = atkStackId();
       }
 
-      global $g_sessionManager;
-      if (is_object($g_sessionManager))
+      $sessionmanager = atkGetSessionManager();
+      if (is_object($sessionmanager))
       {
-        $session = &$g_sessionManager->getSession();
+        $session = &$sessionmanager->getSession();
         if ($clean) $session['debugger'] = array();
         $var= &$session["debugger"][$stackId];
         return $var;
@@ -283,7 +387,13 @@
       return $data;
     }
 
-    function renderQueryList($queries)
+    /**
+     * Render query list
+     *
+     * @param array $queries
+     * @return string HTML code with the query list
+     */
+    public function renderQueryList($queries)
     {
       $output = 'Number of queries performed: '.count($queries);
       if (count($queries))
@@ -309,7 +419,13 @@
       }
     }
 
-    function renderStatementList($statements)
+    /**
+     * Render statement list
+     *
+     * @param array $statements
+     * @return string HTML code with the statement list
+     */
+    public function renderStatementList($statements)
     {
       $output = 'Number of debug statements: '.count($statements);
       if (count($statements))
@@ -334,7 +450,7 @@
      * @return string error messages string
      * @private
      */
-    function renderPlainErrorMessages()
+    public function renderPlainErrorMessages()
     {
       global $g_error_msg;
       $output = '<br><div style="font-family: monospace; font-size: 11px; color: #FF0000" align="left">error: '.implode("<br>\nerror: ",$g_error_msg).'</div>';
@@ -344,10 +460,11 @@
     /**
      * Render debug block for the current debug information.
      *
+     * @param bool $expanded Display debugblock expanded?
      * @return string debug block string
      * @private
      */
-    function renderDebugBlock($expanded)
+    public function renderDebugBlock($expanded)
     {
       global $g_debug_msg, $g_error_msg, $g_startTime;
 
@@ -358,7 +475,7 @@
       $protocol = empty($_SERVER['HTTPS']) || strtolower($_SERVER['HTTPS']) == 'off' ? 'http' : 'https';
       $url = $protocol.'://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 80 ? ':'.$_SERVER['SERVER_PORT'] : '').$_SERVER['REQUEST_URI'];
 
-      $label = "[{$time}h / {$duration}s / {$usage}MB] $method $url";
+      $label = "[{$time}h / {$duration}s / {$usage}MB / ".self::$s_querycount." Queries] $method $url";
 
       $output = '
         <div class="atkDebugBlock'.(count($g_error_msg) > 0 ? " atkDebugBlockContainsErrors" : "").' atkDebug'.($expanded ? 'Expanded' : 'Collapsed').'">
@@ -375,8 +492,11 @@
 
     /**
      * Set redirect URL.
+     * 
+     * @param string $url The redirect url
+     * @param bool $force Force to set this redirect url
      */
-    function setRedirectUrl($url, $force=false)
+    public function setRedirectUrl($url, $force=false)
     {
       // normally we only save the first redirect url, but using the force
       // parameter you can force setting another redirect url
@@ -389,7 +509,7 @@
     /**
      * Renders the redirect link if applicable.
      */
-    function renderRedirectLink()
+    public function renderRedirectLink()
     {
       if ($this->m_redirectUrl == null) return '';
 
@@ -406,7 +526,7 @@
      *
      * @return string html string
      */
-    function renderDebugAndErrorMessages()
+    public function renderDebugAndErrorMessages()
     {
       global $ATK_VARS, $g_debug_msg, $g_error_msg, $g_startTime;
 
@@ -426,7 +546,7 @@
       }
 
       $expanded = !$isPartial;
-      if ($expanded && @$_COOKIE['atkdebugstate'] == 'collapsed')
+      if ($expanded && array_key_exists('atkdebugstate',$_COOKIE) && @$_COOKIE['atkdebugstate'] == 'collapsed')
       {
         $expanded = false;
       }
@@ -461,7 +581,7 @@
             '.$block.'
           </div>';
       }
-      
+
       return $output;
     }
 
@@ -470,13 +590,18 @@
      * @static
      * @return int the microtime
      */
-    function getMicroTime()
+    public static function getMicroTime()
     {
       list($usec, $sec) = explode(" ",microtime());
       return ((float)$usec + (float)$sec);
     }
 
-    function elapsed()
+    /**
+     * Gets the elapsed time 
+     *
+     * @return string The elapsed time
+     */
+    public static function elapsed()
     {
       global $g_startTime;
 

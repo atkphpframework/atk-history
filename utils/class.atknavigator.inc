@@ -13,7 +13,7 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6320 $
    * $Id$
    */
 
@@ -32,6 +32,15 @@
   {
     var $m_displayShowAll = true;
 
+    /**
+     * Build the navigation
+     *
+     * @param atkNode $node
+     * @param string $mode
+     * @param string $navurls
+     * @param bool $embedded
+     * @return string The navigation links
+     */
     function buildNavigation(&$node, $mode="", $navurls="", $embedded=false)
     {
       if ($navurls=="")
@@ -50,6 +59,13 @@
   	  return implode("&nbsp;|&nbsp;", $links)."&nbsp;".$this->getSummary($node, $mode);
     }
 
+    /**
+     * Get the summary
+     *
+     * @param atkNode $node
+     * @param string $mode
+     * @return string The summary
+     */
     function getSummary(&$node, $mode="")
     {
       $count = $this->getCount($node, $mode);
@@ -62,6 +78,14 @@
       return "(".$str->parse(array("start"=>$start, "end"=>$end, "count"=>$count)).") ";
     }
 
+    /**
+     * Get the total number of records
+     *
+     * @param atkNode $node
+     * @param string $mode
+     * @param string $filter
+     * @return int The total number of records
+     */
     function getCount(&$node, $mode="", $filter="")
     {
       static $s_count = array();
@@ -76,11 +100,23 @@
       return $s_count[$type];
     }
 
+    /**
+     * Get the current page
+     *
+     * @param atkNode $node
+     * @return int The number of the current page
+     */
     function getCurrentPage(&$node)
     {
       return ($node->m_postvars['atkstartat'] / $this->getLimit($node)) + 1;
     }
 
+    /**
+     * Get the limit
+     *
+     * @param atkNode $node
+     * @return int The limit
+     */
     function getLimit(&$node)
     {
       return (int)$node->m_postvars['atklimit'];
@@ -171,7 +207,9 @@
 
     /**
      * Creates an alphabetical index, for quick lookup of records.
-     * @param selected The letter that is currently selected. (Can be
+     * 
+     * @param atkNode $node The node
+     * @param string $selected The letter that is currently selected. (Can be
      *                 a string; this function only takes the first char
      *                 of the parameter.
      */
@@ -228,6 +266,12 @@
       return $nav;
     }
 
+    /**
+     * Get available indices (characters)
+     *
+     * @param atkNode $node
+     * @return array Array with available indices (characters) to build the index
+     */
     function getAvailableIndices(&$node)
     {
       $selector = atkArrayNvl($node->m_postvars, 'atkfilter', "");
@@ -288,8 +332,9 @@
       if(!in_array($node->m_index,$querylist)) $querylist[] = $node->m_index;
       for ($i = 0, $_i = count($querylist); $i < $_i; $i++)
       {
+        $dummy = array();        
         $p_attrib = &$node->m_attribList[$querylist[$i]];
-        $p_attrib->addToQuery($query,$node->m_table,"","",1,$mode); // start at level 1
+        $p_attrib->addToQuery($query,$node->m_table,"",$dummy,1,$mode); // start at level 1
       }
       
       //We call addToQuery() as usual, but must clear the field list and rest only index field,

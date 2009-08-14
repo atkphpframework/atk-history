@@ -10,7 +10,7 @@
  * @copyright (c)2000-2004 Ibuildings.nl BV
  * @license http://www.achievo.org/atk/licensing ATK Open Source License
  *
- * @version $Revision$
+ * @version $Revision: 6264 $
  * $Id$
  */
 
@@ -100,7 +100,7 @@ Object.extend(Object.extend(ATK.ManyToOneRelation.Autocompleter.prototype, Ajax.
   },
 
   onComplete: function(request) {
-    this.updateChoices(request.responseText);
+    this.updateChoices(request.responseText.stripScripts());
     request.responseText.evalScripts();
   }
 });
@@ -170,7 +170,7 @@ Object.extend(Object.extend(ATK.ManyToOneRelation.AdvancedAutocompleter.prototyp
     var label = labelEl != null ? labelEl.innerHTML : '';
 
     this.valueElement.value = value;
-    this.element.value = label;
+    this.element.value = label.unescapeHTML();
     this.element.focus();
     this.element.select();
 

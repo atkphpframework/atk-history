@@ -11,7 +11,7 @@
    * @copyright (c)2006-2007 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6309 $
    * $Id$
    */
 
@@ -36,8 +36,8 @@
     /**
      * Constructor.
      *
-     * @param $name attribute name
-     * @param $flags attribute flags.
+     * @param string $name attribute name
+     * @param int $flags attribute flags.
      */
     function atkIpAttribute($name, $flags)
     {
@@ -91,7 +91,15 @@
       return implode('.', $inputs);
     }
 
-
+    /**
+     * Checks if the value is a valid IP address
+     *
+     * @param array $record The record that holds the value for this
+     *                      attribute. If an error occurs, the error will
+     *                      be stored in the 'atkerror' field of the record.
+     * @param String $mode The mode for which should be validated ("add" or
+     *                     "update")
+     */
     function validate(&$record, $mode)
     {
       // Check for valid ip string

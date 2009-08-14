@@ -11,7 +11,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6323 $
    * $Id$
    */
    
@@ -29,6 +29,9 @@
    */
   class atkLock
   {
+    const EXCLUSIVE = 'exclusive';
+    const SHARED    = 'shared';
+    
     var $m_id = NULL;
   
     /**
@@ -37,7 +40,7 @@
      *
      * @return reference to the *only* lock instance
      */
-    function &getInstance()
+    public static function getInstance()
     {
       static $_instance = NULL;
   
@@ -73,12 +76,13 @@
      * Locks the record with the given primary key / selector. If the
      * record is already locked the method will fail!
      *
-     * @param $selector the ATK primary key / selector
-     * @param $table    the (unique) table name
+     * @param string $selector the ATK primary key / selector
+     * @param string $table    the (unique) table name
+     * @param string $mode 		 mode of the lock (self::EXCLUSIVE or self::SHARED)
      *
      * @return success / failure of operation
      */
-    function lock($selector, $table)
+    function lock($selector, $table, $mode=self::EXCLUSIVE)
     {}
   
     /**
@@ -86,8 +90,8 @@
      * method will fail if the lock isn't entirely ours. We also try
      * to remove any old expired locks.
      *
-     * @param $selector the ATK primary key / selector
-     * @param $table    the (unique) table name
+     * @param string $selector the ATK primary key / selector
+     * @param string $table    the (unique) table name
      */
     function unlock($selector, $table)
     {}
@@ -96,7 +100,7 @@
      * Extends the lock lease with the given ID. (This can mean multiple lock
      * leases will be extended, if there are multiple locks with the given ID!)
      *
-     * @param $identifier the unique lock ID
+     * @param int $identifier the unique lock ID
      *
      * @return success / failure of operation
      */
@@ -107,8 +111,8 @@
      * Checks if a certain item / record is locked or not. If so
      * we return an array with lock information. If not we return NULL.
      *
-     * @param $selector the ATK primary key / selector
-     * @param $table    the (unique) table name
+     * @param string $selector the ATK primary key / selector
+     * @param string $table    the (unique) table name
      *
      * @return lock information
      */
@@ -118,9 +122,11 @@
   
   /**
    * Start / initialize the lock.
+   * 
+   * @return atkLock
    */
   function atklock()
   {
-    atkLock::getInstance();
+    return atkLock::getInstance();
   }
 ?>

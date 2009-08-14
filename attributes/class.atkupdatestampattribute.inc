@@ -11,7 +11,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6309 $
    * $Id$
    */
 
@@ -56,6 +56,9 @@
 
     /**
      * Value to DB.
+     * 
+     * @param array $record The record
+     * @return The value to store in the database
      */
     function value2db($record)
     {

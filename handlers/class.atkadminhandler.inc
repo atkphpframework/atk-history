@@ -12,7 +12,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6310 $
    * $Id$
    */
 
@@ -52,6 +52,8 @@
     /**
      * Sets the action session status for actions in the recordlist.
      * (Defaults to SESSION_NESTED).
+     * 
+     * @param Integer $sessionStatus The sessionstatus (for example SESSION_REPLACE)
      */
     function setActionSessionStatus($sessionStatus)
     {
@@ -61,7 +63,6 @@
     /**
      * Render the adminpage, including addpage if necessary
      *
-     * @param array $record
      * @return array with result of adminPage and addPage
      */
     function renderAdminPage()
@@ -86,6 +87,7 @@
      *
      * The implementation delegates drawing of the form to the atkAddHandler.
      *
+     * @param array $record The record 
      * @return String A box containing the add page.
      */
     function addPage($record=NULL)
@@ -112,7 +114,7 @@
     {
       $ui = &$this->getUi();
 
-      $vars = array("title"=>$this->m_node->actionTitle('admin'),
+      $vars = array("title"=>$this->m_node->actionTitle($this->getNode()->m_action),
                     "content"=>$this->renderAdminList());
 
       if ($this->getRenderMode() == 'dialog')
@@ -139,11 +141,13 @@
 
       atkimport('atk.datagrid.atkdatagrid');
       $grid = atkDataGrid::create($this->getNode(), 'admin');
-
+      
       if (is_array($actions))
       {
         $grid->setDefaultActions($actions);
       }
+      
+      $this->modifyDataGrid($grid, atkDataGrid::CREATE);
 
       if ($this->redirectToSearchAction($grid))
       {
@@ -167,6 +171,8 @@
     {
       atkimport('atk.datagrid.atkdatagrid');
       $grid = atkDataGrid::resume($this->getNode());
+      
+      $this->modifyDataGrid($grid, atkDataGrid::RESUME);      
 
       if ($this->redirectToSearchAction($grid))
       {
@@ -174,6 +180,21 @@
       }
 
       return $grid->render();
+    }
+     
+    /**
+     * Modify grid.
+     * 
+     * @param atkDataGrid $grid grid
+     * @param int         $mode CREATE or RESUME
+     */
+    protected function modifyDataGrid(atkDataGrid $grid, $mode)
+    {    
+      $method = 'modifyDataGrid';
+      if (method_exists($this->getNode(), $method))
+      {
+        $this->getNode()->$method($grid, $mode);
+      }
     }
 
     /**
@@ -260,6 +281,11 @@
       return "";
     }
 
+    /**
+     * Get the importlink to add to the admin header
+     *
+     * @return String HTML code with link to the import action of the node (if allowed)
+     */
     function getImportLink()
     {
       $link = "";
@@ -270,25 +296,41 @@
       return $link;
     }
 
+    /**
+     * Get the exportlink to add to the admin header
+     *
+     * @return String HTML code with link to the export action of the node (if allowed)
+     */
     function getExportLink()
     {
       $link = "";
       if ($this->m_node->allowed("view") && $this->m_node->allowed("export") && $this->m_node->hasFlag(NF_EXPORT))
       {
-        $link.= href(dispatch_url($this->m_node->atkNodeType(), "export"), atktext("export", "atk", $this->m_node->m_type), SESSION_NESTED);
+        $filter = '';    
+        if(count($this->m_node->m_fuzzyFilters) > 0)
+        {
+          $filter = implode(' AND ', $this->m_node->m_fuzzyFilters); 
+        }
+
+        $link.= href(dispatch_url($this->m_node->atkNodeType(), "export", array('atkfilter'=>$filter)), atktext("export", "atk", $this->m_node->m_type), SESSION_NESTED);
       }
       return $link;
     }
 
+    /**
+     * Get the add link to add to the admin header
+     *
+     * @return String HTML code with link to the add action of the node (if allowed)
+     */
     function getAddLink()
     {
 			if (!$this->m_node->hasFlag(NF_NO_ADD) && $this->m_node->allowed("add"))
 			{
-				$label = atktext("link_".$this->m_node->m_type."_add", $this->m_node->m_module, "", "", "", true);
+				$label = $this->m_node->text("link_".$this->m_node->m_type."_add", null, "", "", true);
         if (empty($label))
         {
           // generic text
-          $label = atktext(getNodeType($this->m_node->m_type),$this->m_node->m_module,$this->m_node->m_type)." ".atktext("add","atk","");
+          $label = $this->m_node->text($this->m_node->m_type)." ".atktext("add","atk","");
         }
 
         atkimport('atk.handlers.atkaddorcopyhandler');
@@ -303,6 +345,8 @@
 
 					atkimport('atk.ui.atkdialog');
 					$dialog = new atkDialog($this->m_node->atkNodeType(), $action, 'dialog');
+					$dialog->setModifierObject($this->m_node);
+					$dialog->setSessionStatus(SESSION_PARTIAL);
 					$onClick = $dialog->getCall();
 
 					return '
@@ -320,6 +364,11 @@
 			return "";
     }
 
+    /**
+     * Get all links to add to the admin header
+     *
+     * @return String String with the HTML code of the links (each link separated with |)
+     */
     function getHeaderLinks()
     {
       $links = array();

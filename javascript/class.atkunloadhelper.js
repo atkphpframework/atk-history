@@ -38,6 +38,11 @@ ATK.UnloadHelper.prototype = {
       case 'text':
       case 'textarea':
       case 'hidden':
+        if( el.hasClassName('atkfckattribute') ) // check if the field is a fckeditorfield, call IsDirty if it is
+        {
+          return FCKeditorAPI.GetInstance( el.id ).IsDirty();
+        }
+        
         return el.value != el.defaultValue;
         
       case 'checkbox':
@@ -70,13 +75,21 @@ ATK.UnloadHelper.prototype = {
   },
   
   /**
+   * Is element excluded?
+   */
+  isElementExcluded: function(el) {
+    var container = $(el).up('.atkdatagrid-container');
+    return container != null;
+  },
+  
+  /**
    * Is the form changed?
    */
   isFormChanged: function() {
     // detect if the form is changed
     var elements = this.form.getElements();
     for (i = 0; i < elements.length; i++) {
-      if (this.isElementChanged(elements[i])) {
+      if (this.isElementChanged(elements[i]) && !this.isElementExcluded(elements[i])) {
         return true;
       }
     }

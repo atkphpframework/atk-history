@@ -11,27 +11,35 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6310 $
    * $Id$
    */
 
   /**
    * Handler class for the select action of a node. The handler draws a
    * generic select form for searching through the records and selecting
-   * one of the records.
+   * multiple records.
    *
    * @author Lineke Kerckhoffs-Willems <lineke@ibuildings.nl>
    * @package atk
    * @subpackage handlers
    *
    */
-  class atkMultiSelectHandler extends atkActionHandler
+  atkimport("atk.handlers.atkadminhandler");
+  
+  class atkMultiSelectHandler extends atkAdminHandler
   {
     /**
      * The action handler method.
      */
     function action_multiselect()
     {
+      if (!empty($this->m_partial))
+      {
+        $this->partial($this->m_partial);
+        return;
+      }
+      
       if (isset($this->m_postvars['atkselector']))
       {
         $output = $this->invoke("handleMultiselect");
@@ -48,11 +56,10 @@
     /**
      * Parse atkselectors in postvars into atktarget using atktargetvartpl and atktargetvar
      * Then redirect to atktarget
-     *
      */
     function handleMultiselect()
     {
-      $node = &$this->m_node;
+      $node = &$this->getNode();
       $columnConfig = &$node->getColumnConfig();
       $recordset = $node->selectDb(implode(' OR ',$this->m_postvars['atkselector']),
                                    $columnConfig->getOrderByStatement(),
@@ -75,13 +82,20 @@
       $node->redirect($atktarget);
     }
 
+    /**
+     * Parse the target string
+     *
+     * @param String $string The string to parse
+     * @param Array $recordset The recordset to use for parsing the string
+     * @return String The parsed string
+     */
     function parseString($string, $recordset)
     {
       atkimport("atk.utils.atkstringparser");
       $parser = new atkStringParser($string);
 
       // for backwardscompatibility reasons, we also support the '[pk]' var.
-      $recordset['pk'] = $this->m_node->primaryKey($recordset);
+      $recordset['pk'] = $this->getNode()->primaryKey($recordset);
       $output = $parser->parse($recordset,true);
       return $output;
     }
@@ -95,41 +109,28 @@
      */
     function multiSelectPage()
     {
-      $node = &$this->m_node;
-      $node->addStyle("style.css");
-      // When there's a lot of data, records will be spread across multiple pages.
-      if ($node->m_postvars['atklimit']=="") $node->m_postvars['atklimit']=atkconfig("recordsperpage");
-      if ($node->m_postvars['atkstartat']=="") $node->m_postvars['atkstartat']=0;
+      // add the postvars to the form
+      global $g_stickyurl;
+      $g_stickyurl[] = 'atktarget';
+      $g_stickyurl[] = 'atktargetvar';
+      $g_stickyurl[] = 'atktargetvartpl';
+      $GLOBALS['atktarget']       = $this->getNode()->m_postvars['atktarget'];
+      $GLOBALS['atktargetvar']    = $this->getNode()->m_postvars['atktargetvar'];
+      $GLOBALS['atktargetvartpl'] = $this->getNode()->m_postvars['atktargetvartpl'];
+      
+      $this->getNode()->addStyle("style.css");
 
-      $filter = $node->validateFilter($node->m_postvars["atkfilter"]);
-
-      $columnConfig = &$node->getColumnConfig();
-
-      $recordset = $node->selectDb($filter,
-                                   $columnConfig->getOrderByStatement(),
-                                   array("offset" => $node->m_postvars['atkstartat'], "limit" => $node->m_postvars['atklimit']),
-                                   $node->m_listExcludes,
-                                   "",
-                                   "multiselect");
-
-      $ui = &$this->getUi();
-
-      $params["header"] = atktext("title_multiselect", $node->m_module, $node->m_type);
-
-      $navigator = &atknew("atk.utils.atknavigator");
-      if ($node->m_index != "")
-      {
-        $params["index"] = $navigator->buildIndex($node, $recordset[0][$node->m_index]);
-      }
-
-      // create navigation bar
-      $params["navbar"] = $navigator->buildNavigation($node, "multiselect");
+      $params["header"] = atktext("title_multiselect", $this->getNode()->m_module, $this->getNode()->m_type);
 
       $actions['actions'] = array();
       $actions['mra'][] = 'multiselect';
 
-      $recordlist = &atknew("atk.recordlist.atkrecordlist");
-      $params["list"] = $recordlist->render($node, $recordset, $actions, RL_MRA);
+      atkimport('atk.datagrid.atkdatagrid');
+      $grid = atkDataGrid::create($this->getNode(), 'multiselect');
+      $grid->setDefaultActions($actions);
+      $grid->removeFlag(atkDataGrid::EXTENDED_SEARCH);
+      $grid->addFlag(atkDataGrid::MULTI_RECORD_ACTIONS);
+      $params["list"] = $grid->render();
 
       if(atkLevel() > 0)
       {
@@ -137,10 +138,10 @@
         $params["footer"] = '<br><div style="text-align: center"><input type="button" onclick="window.location=\''.$backlinkurl.'\';" value="&lt;&lt; '.atktext('back').'"></div>';
       }
 
-      $output = $ui->renderList("multiselect", $params);
+      $output = $this->getUi()->renderList("multiselect", $params);
 
-      return $ui->renderBox(array("title"=>$node->actionTitle('multiselect'),
-                                  "content"=>$output));
+      return $this->getUi()->renderBox(array("title"=>$this->getNode()->actionTitle('multiselect'),
+                                             "content"=>$output));
     }
   }
 ?>

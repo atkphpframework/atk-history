@@ -12,7 +12,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6344 $
    * $Id$
    */
 
@@ -34,6 +34,8 @@
     var $m_seq_namefield = "seq_name";
 
     var $m_type = "mysql";
+    
+    protected $m_identifierQuoting = array('start' => '`', 'end' => '`', 'escape' => '`');
 
 
     /**
@@ -59,6 +61,9 @@
      * @param string $host Hostname
      * @param string $user Username
      * @param string $password Password
+     * @param string $database The database to connect to
+     * @param int $port The portnumber to use for connecting
+     * @param string $charset The charset to use
      * @return mixed Connection status
      */
     function doConnect($host,$user,$password,$database,$port,$charset)
@@ -162,9 +167,9 @@
 
     /**
      * Performs a query
-     * @param $query the query
-     * @param $offset offset in record list
-     * @param $limit maximum number of records
+     * @param string $query the query
+     * @param int $offset offset in record list
+     * @param int $limit maximum number of records
      */
     function query($query, $offset=-1, $limit=-1)
     {
@@ -200,7 +205,7 @@
         if (mysql_errno($this->m_link_id) == 1100)
         {
           $this->locktables_fallback_on_error($query, $mode);
-          $unlock = true;
+          $unlock_table = true;
         }
         else
         {
@@ -288,7 +293,7 @@
      * Goto a certain position in result set.
      * Not specifying a position will set the pointer
      * at the beginning of the result set.
-     * @param $position the position
+     * @param int $position the position
      */
     function seek($position=0)
     {
@@ -299,8 +304,8 @@
 
     /**
      * Lock a certain table in the database
-     * @param $table the table name
-     * @param $mode the type of locking
+     * @param string $table the table name
+     * @param string $mode the type of locking
      * @return result of locking
      */
     function lock($table, $mode="write")
@@ -378,7 +383,7 @@
     /**
      * Get the next sequence number
      * of a certain sequence.
-     * @param $sequence the sequence name
+     * @param string $sequence the sequence name
      * @return the next sequence id
      */
     function nextid($sequence)
@@ -425,6 +430,20 @@
       }
     }
 
+    
+      /**
+     * Drop all database tables.
+     */
+    function dropAll()
+    {
+      $tables = $this->table_names();
+      foreach($tables as $table)
+      {
+        
+        $this->query("DROP TABLE `".$table['table_name']."`");
+      }
+    }
+    
     /**
      * Returns the table type.
      *
@@ -481,7 +500,9 @@
         $result = array();
 
         if ($full)
+        {
           $result["num_fields"] = $count;
+        }
 
         for ($i=0; $i<$count; $i++)
         {
@@ -490,17 +511,26 @@
           $result[$i]["name"]       = @mysql_field_name($id, $i);
           $result[$i]["type"]       = @mysql_field_type($id, $i);
           $result[$i]["gentype"]    = $ddl->getGenericType($result[$i]['type']);
-          $result[$i]["len"]        = @mysql_field_len($id, $i);
-          $result[$i]["flags"]      = explode(' ', @mysql_field_flags($id, $i));
+          
+          $len = $this->getColumnLength($table, $result[$i]["name"], $result[$i]["gentype"]);
+          if ($len === false)
+          {
+            $len = @mysql_field_len($id, $i);
+          }
 
-          $result[$i]["flags"] =
+          $result[$i]["len"]        = $len; 
+          
+          $result[$i]["flags"]      = explode(' ', @mysql_field_flags($id, $i));
+          $result[$i]["flags"]      =
             (in_array('primary_key',    $result[$i]["flags"]) ? MF_PRIMARY        : 0) |
             (in_array('unique_key',     $result[$i]["flags"]) ? MF_UNIQUE         : 0) |
             (in_array('not_null',       $result[$i]["flags"]) ? MF_NOT_NULL       : 0) |
             (in_array('auto_increment', $result[$i]["flags"]) ? MF_AUTO_INCREMENT : 0);
 
           if ($full)
+          {
             $result["meta"][$result[$i]["name"]] = $i;
+          }
         }
 
         /* free result */
@@ -509,6 +539,59 @@
         return $result;
       }
       return array();
+    }
+    
+    /**
+     * Mysql_field_len returns unusable results for decimal,float and double column types.
+     * This method returns a number format, e.g.: '6,2' or false in case of failure OR 
+     * if the field type does not support a floating point (e.g. for integer fields) so it can
+     * fall back on mysql_field_len()
+     *
+     * @param string $tableName
+     * @param string $columnName
+     * @param string $columnType
+     * @return false|string e.g. '6,2'
+     */
+    public function getColumnLength($tableName, $columnName, $columnType)
+    {
+      // Lookup cache
+      static $metaData  = array();
+      
+      // We check for a ATK normalized column type !
+      if ($columnType === 'decimal')
+      {
+        $columnName = strtolower($columnName);
+
+        // Check for 'cached' results, to avoid query lookups
+        if (!isset($metaData[ $tableName ][ $columnName ]))
+        {
+          $metaQuery  = mysql_query('SHOW COLUMNS FROM '. $tableName, $this->m_link_id);
+          while (($metaResult = mysql_fetch_assoc($metaQuery)) !== false)
+          {
+            $metaData[ $tableName ][ strtolower($metaResult['Field']) ] = $metaResult;
+          }
+        }
+        
+        // If this would return false, we query for a non-existant column name
+        if (isset($metaData[ $tableName ][ $columnName ]['Type']))
+        {
+          $type = $metaData[ $tableName ][ $columnName ]['Type'];
+
+          // Figuring out the length output.
+          if (($open = strpos($type, '(')) !== false)
+          {
+            $close  = strpos($type, ')', $open) - 1;
+            return substr($type, $open + 1, $close - $open);
+          }
+          else 
+          {
+            atkwarning('Unexpected column type format, falling back on mysql_field_len()');
+          }
+        }
+      }
+
+      // Returning false, expecting a fall back on mysql_field_len()
+      return false;
     }
 
     /**
@@ -537,7 +620,7 @@
      * This function checks the database for a table with
      * the provide name
      *
-     * @param String $tableName the table to find
+     * @param String $table the table to find
      * @return boolean true if found, false if not found
      */
     function tableExists($table)
@@ -596,7 +679,11 @@
     /**
      * Get TO_CHAR() equivalent for the current database.
      *
-     * TODO/FIXME: add format paramater. Current format is always yyyy-mm-dd hh:mi.
+     * TODO/FIXME: add format parameter. Current format is always yyyy-mm-dd hh:mi.
+     * 
+     * @param String $fieldname The field to generate the to_char for.
+     * @return String Piece of sql query that converts a datetime field to char
+     *                for the current database
      */
     function func_datetimetochar($fieldname)
     {

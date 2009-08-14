@@ -12,7 +12,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6310 $
    * $Id$
    */
 
@@ -31,6 +31,8 @@
   {
     /**
      * The action handler method.
+     *
+     * @param Bool $renderbox Render this action in a renderbox or just output the HTML
      */
     function action_view($renderbox=true)
     {
@@ -39,9 +41,9 @@
         $this->partial($this->m_partial);
         return;
       }
-        
+
       $record = $this->getRecord();
-      
+
       // allowed to view record?
       if (!$this->allowed($record))
       {
@@ -53,20 +55,26 @@
       $this->notify("view", $record);
       $page->addContent($this->m_node->renderActionPage("admin", $this->invoke("viewPage", $record, $this->m_node, $renderbox)));
     }
-    
+
     /**
      * Returns the view record.
      */
-    function getRecord()
+    function getRecordFromDb()
     {
-      list($record) = $this->m_node->selectDb($this->m_postvars['atkselector'],"","",$this->m_node->m_viewExcludes,"","view");
-      return $record;      
+      list($record) = $this->m_node->selectDb($this->m_postvars['atkselector'],
+                                              $this->getNode()->getColumnConfig()->getOrderByStatement(),
+                                              "",
+                                              $this->m_node->m_viewExcludes,
+                                              "",
+                                              "view");
+      return $record;
     }
 
     /**
      * Returns an htmlpage displaying all displayable attributes.
      * @param array $record The record to display.
      * @param atkNode $node The node for which a viewPage is displayed.
+     * @param Bool $renderbox Render this action in a renderbox or just output the HTML
      * @return String The html page with a reaonly view of relevant fields.
      */
     function viewPage($record, $node, $renderbox=true)
@@ -81,10 +89,10 @@
         $innerform = $this->viewForm($record, "view");
 
         $params["activeTab"] = $tab;
-
+        $params["header"] = $this->invoke("viewHeader", $record);
         $params["content"] = $node->tabulate("view", $innerform);
 
-        $params["formstart"] = '<form name="entryform" action="'.getDispatchFile().'" method="get">'.session_form(SESSION_NESTED).
+        $params["formstart"] = '<form name="entryform" id="entryform" action="'.getDispatchFile().'" method="get">'.session_form(SESSION_NESTED).
                                '<input type="hidden" name="atkselector" value="'.$node->primaryKey($record).'">';
         $params["buttons"]   = $node->getFormButtons("view", $record);
         $params["formend"] = '</form>';
@@ -96,8 +104,10 @@
           return $output;
         }
 
-        $vars = array("title"=>$node->actionTitle('view', $record), "content"=>$output);        
-        
+        $this->getPage()->setTitle(atktext('app_shorttitle')." - ".$node->actionTitle($this->m_action, $record));
+
+        $vars = array("title"=>$node->actionTitle($this->m_action, $record), "content"=>$output);
+
         if ($this->getRenderMode() == "dialog")
         {
           $total = $ui->renderDialog($vars);
@@ -115,6 +125,22 @@
       }
     }
 
+    /**
+     * Overrideable function to create a header for view mode.
+     * Similar to the admin header functionality.
+     */
+    function viewHeader()
+    {
+      return "";
+    }
+
+    /**
+     * Get the view page
+     *
+     * @param Array $record The record
+     * @param String $mode The mode we're in (defaults to "view")
+     * @return String HTML code of the page
+     */
     function viewForm($record, $mode="view")
     {
       $node = &$this->m_node;
@@ -237,33 +263,42 @@
           $tplfield['id']=str_replace('.','_',$node->atknodetype().'_'.$field["id"]);
 
           $tplfield["full"] = $editsrc;
+
+          $column = $field['attribute']->getColumn();
+          $tplfield["column"] = $column;
         }
         $fields[] = $tplfield; // make field available in numeric array
         $params[$field["name"]] = $tplfield; // make field available in associative array
+
       }
       $ui = &$this->getUi();
 
       $tabTpl = $this->_getTabTpl($node, $tabs,$mode,$record);
-      
+
       if(count(array_unique($tabTpl))>1)
       {
         $tabForm = $this->_renderTabs($fields, $tabTpl);
         $innerform = implode(null,$tabForm);
       }
-      else 
+      else
       {
         $innerform = $ui->render($node->getTemplate("view", $record, $tab), array("fields"=>$fields));
       }
       return $innerform;
     }
-    
+
+    /**
+     * The dialog partial
+     *
+     * @return String HTML code for the view dialog
+     */
     function partial_dialog()
     {
       return $this->renderViewDialog();
     }
 
     /**
-     * Render add dialog.
+     * Render view dialog.
      *
      * @param array $record
      * @return string html
@@ -278,6 +313,6 @@
       $this->setRenderMode('dialog');
       $result = $this->m_node->renderActionPage("view", $this->invoke("viewPage", $record, $this->m_node));
       return $result;
-    }    
+    }
   }
 ?>

@@ -13,7 +13,7 @@
  * @copyright (c) 2006 Ibuildings.nl BV
  * @license see doc/LICENSE
  *
- * @version $Revision$
+ * @version $Revision: 6320 $
  * $Id$
  */
 
@@ -22,8 +22,8 @@
  * This class provide functions to create, copy or check files or directories.
  *
  * @author dennisjan <dennisjan@ibuildings.nl>
- * @package ATK
- * @subpackage Utils
+ * @package atk
+ * @subpackage utils
  *
  */
 class atkFileUtils
@@ -153,6 +153,7 @@ class atkFileUtils
    * @static
    * @param string $dir the fullpath
    * @param octal  $privileges  octal number for the rights of the written
+   * @param bool $recursive 
    * @return bool returns true if the destination is written.
    */
   function mkdirRecursive($dir, $privileges=0777, $recursive=true)

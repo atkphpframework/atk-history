@@ -13,7 +13,7 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6351 $
    * $Id$
    */
 
@@ -44,8 +44,8 @@
       {
         $this->partial($this->m_partial);
         return;
-      }      
-      
+      }
+
       $node = &$this->m_node;
 
       $record = $this->getRecord();
@@ -62,7 +62,7 @@
       $this->notify("edit", $record);
       if ($node->hasFlag(NF_LOCK))
       {
-        if ($node->m_lock->lock($node->primaryKey($record), $node->m_table))
+        if ($node->m_lock->lock($node->primaryKey($record), $node->m_table, $node->getLockMode()))
         {
           $res = $this->invoke("editPage", $record, true);
         }
@@ -78,20 +78,6 @@
 
       $page = &$this->getPage();
       $page->addContent($node->renderActionPage("edit", $res));
-    }
-
-    function getRecord()
-    {
-      $node = &$this->m_node;
-
-      $record = $this->getRejectInfo(); // Check reject info first
-      
-      if($record == null) //If reject info not set -  do select
-      {
-        list($record) = $node->selectDb(atkArrayNvl($this->m_postvars, 'atkselector', ""),"","","","","edit");
-      }
-
-      return $record;
     }
 
     /**
@@ -110,6 +96,10 @@
       return $record;
     }
 
+    /**
+     * Register external files
+     *
+     */
     function registerExternalFiles()
     {
       $page = &$this->getPage();
@@ -121,6 +111,14 @@
       $page->register_style($ui->stylePath("style.css"));
     }
 
+    /**
+     * Render the edit page
+     *
+     * @param Array $record The record to edit
+     * @param Bool $locked Indicates whether the record is locked by the
+     *                        current user.
+     * @return String HTML code for the edit page
+     */
     function editPage($record, $locked=FALSE)
     {
       $result = $this->getEditPage($record, $locked);
@@ -129,6 +127,14 @@
         return $result;
     }
 
+    /**
+     * Get the params for the edit page
+     *
+     * @param Array $record The record to edit
+     * @param Bool $locked Indicates whether the record is locked by the
+     *                        current user.
+     * @return Array Array with parameters
+     */
     function getEditParams($record, $locked=FALSE)
     {
       $node = &$this->m_node;
@@ -169,6 +175,12 @@
       return $this->renderEditPage($record, $params);
     }
 
+    /**
+     * Get the content
+     *
+     * @param Array $record
+     * @return String The content
+     */
     function getContent($record)
     {
       $node = &$this->m_node;
@@ -190,6 +202,13 @@
       return $node->tabulate("edit", $form);
     }
 
+    /**
+     * Render the edit page
+     *
+     * @param Array $record
+     * @param Array $params
+     * @return String The rendered edit page
+     */
     function renderEditPage($record, $params)
     {
       $node = &$this->m_node;
@@ -197,6 +216,8 @@
 
       if (is_object($ui))
       {
+        $this->getPage()->setTitle(atktext('app_shorttitle')." - ".$node->actionTitle('edit', $record));
+
         $output = $ui->renderAction("edit", $params, $node->m_module);
         $this->addRenderBoxVar("title", $node->actionTitle('edit', $record));
         $this->addRenderBoxVar("content", $output);
@@ -285,9 +306,9 @@
     {
       $field = &$fields[$index];
 
-	    // visible sections, both the active sections and the tab names (attribute that are
-	    // part of the anonymous section of the tab)
-	    $visibleSections = array_merge($this->m_node->getActiveSections($tab, $mode), $this->m_node->getTabs($mode));
+      // visible sections, both the active sections and the tab names (attribute that are
+      // part of the anonymous section of the tab)
+      $visibleSections = array_merge($this->m_node->getActiveSections($tab, $mode), $this->m_node->getTabs($mode));
 
       $tplfield = array();
 
@@ -316,19 +337,19 @@
       }
 
       $tplfield["class"] = implode(" ", $classes);
-	    $tplfield["tab"] = $tplfield["class"]; // for backwards compatibility
+      $tplfield["tab"] = $tplfield["class"]; // for backwards compatibility
 
-	    // Todo fixme: initial_on_tab kan er uit, als er gewoon bij het opstarten al 1 keer showTab aangeroepen wordt (is netter dan aparte initial_on_tab check)
-	    // maar, let op, die showTab kan pas worden aangeroepen aan het begin.
-  		$tplfield["initial_on_tab"] =
-  		   ($field["tabs"] == "*" || in_array($tab, $field["tabs"])) &&
+      // Todo fixme: initial_on_tab kan er uit, als er gewoon bij het opstarten al 1 keer showTab aangeroepen wordt (is netter dan aparte initial_on_tab check)
+      // maar, let op, die showTab kan pas worden aangeroepen aan het begin.
+      $tplfield["initial_on_tab"] =
+         ($field["tabs"] == "*" || in_array($tab, $field["tabs"])) &&
          (!is_array($field["sections"]) || count(array_intersect($field['sections'], $visibleSections)) > 0);
 
       // ar_ stands voor 'attribrow'.
-	    $tplfield["rowid"] = "ar_".($field['id']!=''?$field['id']:getUniqueID("anonymousattribrows")); // The id of the containing row
+      $tplfield["rowid"] = "ar_".($field['id']!=''?$field['id']:getUniqueID("anonymousattribrows")); // The id of the containing row
 
-	    /* check for separator */
-      if ($field["html"] == "-" && $index > 0 && $data["fields"][$index-1]["html"] != "-")
+      // check for separator
+      if ($field["html"] == "-" && $index > 0 && $fields[$index-1]["html"] != "-")
       {
         $tplfield["type"] = "line";
         $tplfield["line"] = "<hr>";
@@ -379,7 +400,7 @@
         }
         else
         {
-        	$tplfield["label"]="AF_NO_LABEL";
+          $tplfield["label"]="AF_NO_LABEL";
         }
 
         /* obligatory indicator */
@@ -413,6 +434,16 @@
         $tplfield['id']=str_replace('.','_',$this->m_node->atknodetype().'_'.$field["id"]);
 
         $tplfield["full"] = $editsrc;
+
+        $column = $field['attribute']->getColumn();
+        $tplfield["column"] = $column;
+      }
+
+      // allow passing of extra arbitrary data, for example if a user overloads the editArray method
+      // to pass custom extra data per attribute to the template
+      if (isset($field['extra']))
+      {
+        $tplfield['extra'] = $field['extra'];
       }
 
       return $tplfield;
@@ -423,12 +454,13 @@
      *
      * @param String $mode         The edit mode ("add" or "edit").
      * @param array $record        The record to edit.
-     * @param array $forcelist     A key-value array used to preset certain
+     * @param array $forceList     A key-value array used to preset certain
      *                             fields to a certain value.
-     * @param array $suppresslist  An array of fields that will be hidden.
+     * @param array $suppressList  An array of fields that will be hidden.
      * @param String $fieldprefix  If set, each form element is prefixed with
      *                             the specified prefix (used in embedded
      *                             forms)
+     * @param String $template		 The template to use for the edit form
      * @param boolean $ignoreTab   Ignore the tabs an attribute should be shown on.
      *
      * @return String the edit form as a string
@@ -463,7 +495,10 @@
             $type = (empty($error["node"]) ? $node->m_type : $error["node"]);
 
             if (count($tabs) > 1 && $error["tab"])
-              $error_tab = ' ('.atktext("error_tab").' '.$this->getTabLink($node, $error).' )';
+            {
+              $tabLink = $this->getTabLink($node, $error);
+              $error_tab = ' ('.atktext("error_tab").' '.$tabLink.' )';
+            }
             else $error_tab = "";
 
             if (is_array($error['label']))
@@ -490,15 +525,15 @@
             }
 
             /* Error messages should be rendered in templates using message, label and the link to the tab. */
-            $err = array("message"=>$error['msg'], "tablink"=>$this->getTabLink($node, $error), "label"=>$label);
-            
-            /** 
-             * @deprecated: For backwards compatibility, we still support the msg variable as well. 
+            $err = array("message"=>$error['msg'], "tablink"=>$tabLink, "label"=>$label);
+
+            /**
+             * @deprecated: For backwards compatibility, we still support the msg variable as well.
              * Although the message, tablink variables should be used instead of msg and tab.
              */
             $err = array_merge($err, array("msg"=>$error['msg'].$error_tab));
-            
-            $errors[] = $err;            
+
+            $errors[] = $err;
           }
         }
         if (count($pk_err_attrib)>0) // Make primary key error message
@@ -578,17 +613,25 @@
           $params['fieldspart'] = $this->_renderTabs($fields, $tabTpl);
           $result .= $ui->render("editform_common.tpl",$params);
         }
-        else 
+        else
         {
           $result .= $ui->render($node->getTemplate($mode, $record, $tab), $params);
         }
       }
-      
-	    return $result;
+
+            return $result;
     }
-    
+
+    /**
+     * Get the link fo a tab
+     *
+     * @param atkNode $node The node
+     * @param Array $error
+     * @return String HTML code with link
+     */
     function getTabLink(&$node, $error)
     {
+      if (count($node->getTabs($node->m_action)) < 2) return '';
       return '<a href="javascript:void(0)" onclick="showTab(\''.$error["tab"].'\'); return false;">'.$this->getTabLabel($node, $error["tab"]).'</a>';
     }
 
@@ -601,6 +644,11 @@
       return "";
     }
 
+    /**
+     * The edit dialog
+     *
+     * @return String The edit dialog
+     */
     function partial_dialog()
     {
       return $this->renderEditDialog();

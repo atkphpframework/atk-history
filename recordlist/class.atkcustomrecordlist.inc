@@ -12,7 +12,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6323 $
    * $Id$
    */
 
@@ -31,6 +31,7 @@
   {
 
   	var $m_exportcsv = true;
+  	protected $m_mode;
 
     /**
      * Creates a special Recordlist that can be used for exporting to files or to make it printable
@@ -41,7 +42,7 @@
      * @param String $eof         String to use at end of each field
      * @param String $eol         String to use at end of each row
      * @param int $type           0=Render rows in simple html tabl; 1= raw export
-     * @param $compression        Compression technique (bzip / gzip)
+     * @param string $compression        Compression technique (bzip / gzip)
      * @param array $suppressList List of attributes from $node that should be ignored
      * @param array $outputparams Key-Value parameters for output. Currently existing:
      *                               filename - the name of the file (without extension .csv)
@@ -50,12 +51,13 @@
      * @param Boolean $titlerow   Should titlerow be rendered or not
      * @param Boolean $decode     Should data be decoded or not (for exports)
      * @param String $fsep        String to use between fields
-     * @param String $lfreplace   String for replacing line feeds in recordset field values (null = do not replace)
+     * @param String $rfeplace   String for replacing line feeds in recordset field values (null = do not replace)
     */
     function render(&$node, $recordset, $sol, $sof, $eof, $eol, $type="0", $compression="", $suppressList="",
                     $outputparams=array(), $mode="list", $titlerow=true, $decode=false, $fsep="", $rfeplace=null)
     {
       $this->setNode($node);
+      $this->m_mode = $mode;
       // example      html         csv
 
       // $sol     = '<tr>'         or  ''
@@ -89,15 +91,7 @@
         {
           $p_attrib = &$this->m_node->m_attribList[$attribname];
           $musthide=(is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList));
-          if (
-            ($p_attrib->hasFlag(AF_HIDE)==false)
-            &&
-            (
-            ($p_attrib->hasFlag(AF_HIDE_SELECT)==false)
-            ||($this->m_node->m_action!="select")
-            )
-            &&$musthide==false
-          )
+          if (!$this->isHidden($p_attrib) && !$musthide)
           {
             $output.=$sof.$this->eolreplace(atktext($p_attrib->fieldName(), $this->m_node->m_module, $this->m_node->m_type), $rfeplace).$eof.$fsep;
 
@@ -120,15 +114,8 @@
         {
           $p_attrib = &$this->m_node->m_attribList[$attribname];
           $musthide=(is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList));
-          if (
-              ($p_attrib->hasFlag(AF_HIDE)==false)
-              &&
-              (
-                ($p_attrib->hasFlag(AF_HIDE_SELECT)==false)
-                ||($this->m_node->m_action!="select")
-              )
-              &&$musthide==false
-             )
+          
+          if (!$this->isHidden($p_attrib) && !$musthide)
           {
             // An <attributename>_display function may be provided in a derived
             // class to display an attribute.
@@ -136,15 +123,15 @@
 
             if (method_exists($this->m_node,$funcname))
             {
-              $value=$this->eolreplace($this->m_node->$funcname($recordset[$i], $mode), $rfeplace);
+              $value=$this->eolreplace($this->m_node->$funcname($recordset[$i], $this->m_mode), $rfeplace);
             }
             else
             {
               // otherwise, the display function of the particular attribute
               // is called.
-              $value = $this->eolreplace($p_attrib->display($recordset[$i], $mode), $rfeplace);
+              $value = $this->eolreplace($p_attrib->display($recordset[$i], $this->m_mode), $rfeplace);
             }
-            if (atktext("charset") != "" && $decode) $value = html_entity_decode(htmlentities($value, ENT_NOQUOTES, atktext("charset")), ENT_NOQUOTES, atktext("charset"));
+            if (atkGetCharset() != "" && $decode) $value = atk_html_entity_decode(atk_htmlentities($value, ENT_NOQUOTES), ENT_NOQUOTES);
             $output.=$sof.($value==""?$empty:$value).$eof.$fsep;
 
             // Calculate totals..
@@ -168,19 +155,11 @@
         {
           $p_attrib = &$this->m_node->m_attribList[$attribname];
         $musthide=(is_array($suppressList)&&count($suppressList)>0&&in_array($attribname,$suppressList));
-          if (
-              ($p_attrib->hasFlag(AF_HIDE)==false)
-              &&
-              (
-                ($p_attrib->hasFlag(AF_HIDE_SELECT)==false)
-                ||($this->m_node->m_action!="select")
-              )
-              &&$musthide==false
-             )
+          if (!$this->isHidden($p_attrib) && !$musthide)
           {
             if ($p_attrib->hasFlag(AF_TOTAL))
             {
-              $value = $this->eolreplace($p_attrib->display($totals[$attribname], $mode), $rfeplace);
+              $value = $this->eolreplace($p_attrib->display($totals[$attribname], $this->m_mode), $rfeplace);
               $totalRow.=$sof.($value=="" ? $empty : $value).$eof.$fsep;
 
             }
@@ -203,7 +182,7 @@
         $output = '<table border="1" cellspacing="0" cellpadding="2">'.$output."</table>";
       }
 
-      atkdebug(html_entity_decode($output));
+      atkdebug(atk_html_entity_decode($output));
 
       // To a File
       if (!array_key_exists("filename", $outputparams))
@@ -212,15 +191,34 @@
       if ($this->m_exportcsv)
       {
         $ext = ($type == "0" ? "html" : "csv");
-        $exporter = &atknew("atk.utils.atkfileexport");
-        $exporter->export($output, $outputparams["filename"], $ext, $ext, $compression);
+        $exporter = &atknew("atk.utils.atkfileexport");       
+        $exporter->export($output, $outputparams["filename"], $ext, $ext, $compression);       
       }
       else
       {
       	return $output;
       }
     }
+    
+    /**
+     * Is this attribute hidden?
+     *
+     * @param atkAttribute $attribute
+     * @return bool Boolean to indicate if attribute is hidden or not
+     */
+    protected function isHidden(atkAttribute $attribute)
+    {
+      if ($attribute->hasFlag(AF_HIDE)) return true;
+      if ($attribute->hasFlag(AF_HIDE_SELECT) && $this->m_node->m_action==='select') return true;
+      if ($attribute->hasFlag(AF_HIDE_LIST) && ($this->m_node->m_action==='export' || $this->m_mode==='export')) return true;
+      return false;
+    }
 
+    /**
+     * Set exporting csv to file
+     *
+     * @param bool $export
+     */
     function setExportingCSVToFile($export=true)
     {
     	if (is_bool($export)) $this->m_exportcsv = $export;

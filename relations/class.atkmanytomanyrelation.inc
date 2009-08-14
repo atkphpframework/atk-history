@@ -12,7 +12,7 @@
    * @copyright (c)2000-2005 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6323 $
    * $Id$
    */
 
@@ -26,6 +26,10 @@
    * relations, like the manyboolrelation. Note that most many-to-many
    * relationships can be normalized to a combination of one-to-many and
    * many-to-one relations.
+   * 
+   * @todo Improve multi-field support. For example setOwnerFields with multiple fields
+   *       doesn't work properly at the moment. But it seems more code does not take
+   *       multi-field support into account.
    *
    * @abstract
    * @author Ivo Jansch <ivo@achievo.org>
@@ -41,6 +45,8 @@
     var $m_linkInstance = NULL;
     var $m_store_deletion_filter = "";
     var $m_localFilter = NULL;
+    
+    protected $m_ownerFields = null;
 
     /**
      * Constructor
@@ -65,33 +71,96 @@
       $this->atkRelation($name, $destination, $flags|AF_CASCADE_DELETE|AF_NO_SORT);
     }
 
-
-    function _getSelectableRecords($record=array(), $mode="")
+    /**
+     * Returns the selectable records. Checks for an override in the owner instance
+     * with name <attribname>_selection.
+     *
+     * @param array  $record
+     * @param string $mode
+     * @param bool $force
+     * 
+     * @return array
+     */
+    function _getSelectableRecords($record=array(), $mode="", $force=false)
     {
       $method = $this->fieldName()."_selection";
       if (method_exists($this->m_ownerInstance, $method))
         return $this->m_ownerInstance->$method($record, $mode);
-      else return $this->getSelectableRecords($record, $mode);
+      else return $this->getSelectableRecords($record, $mode, $force);
     }
+    
+    /**
+     * Parse destination filter and return the result.
+     *
+     * @param array $record record
+     * 
+     * @return string parsed filter
+     */
+    private function parseDestinationFilter($record)
+    {
+      $filter = "";
 
-    function getSelectableRecords($record=array(), $mode="",$force=false)
+      if ($this->m_destinationFilter!="")
+      {
+        $filter = $this->parseFilter($this->m_destinationFilter, $record);      
+      }
+     
+      return $filter; 
+    }
+    
+    /**
+     * Returns the selectable record count.
+     *
+     * @param array  $record
+     * @param string $mode
+     * 
+     * @return int
+     */
+    protected function _getSelectableRecordCount($record=array(), $mode="")
+    {
+      $method = $this->fieldName()."_selection";
+      if (method_exists($this->m_ownerInstance, $method))
+        return count($this->_getSelectableRecords($record, $mode));
+      
+      static $resultList = array();
+
+      if ($this->createDestination())
+      {
+        $filter = $this->parseDestinationFilter($record);
+
+        $filterkey = md5($this->m_destInstance->atkNodeType().".".$filter);
+        if (!array_key_exists($filterkey, $resultList))
+        {
+          $resultList[$filterkey] = $this->m_destInstance->countDb($filter,"","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
+        }
+
+        return $resultList[$filterkey];
+      }
+      
+      return 0;
+    }    
+
+    /**
+     * Returns the selectable records for this relation.
+     *
+     * @param array $record
+     * @param string $mode
+     * @param boolean $force
+     * 
+     * @return array selectable records
+     */
+    public function getSelectableRecords($record=array(), $mode="",$force=false)
     {
       static $resultList = array();
 
       if ($this->createDestination())
       {
-        $filter = "";
+        $filter = $this->parseDestinationFilter($record);
 
-        if ($this->m_destinationFilter!="")
+        $filterkey = md5($this->m_destInstance->atkNodeType().".".$filter);
+        if (!array_key_exists($filterkey, $resultList) || $force)
         {
-          $filter = $this->parseFilter($this->m_destinationFilter, $record);
-          $this->m_destInstance->addFilter($filter);
-        }
-
-        $filterkey = md5($this->m_destInstance->m_type.".".$filter);
-        if (!array_key_exists($filterkey, $resultList))
-        {
-          $resultList[$filterkey] = $this->m_destInstance->selectDb("","","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
+          $resultList[$filterkey] = $this->m_destInstance->selectDb($filter,"",(is_numeric($this->m_limit) ? $this->m_limit : "" ),"",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
         }
 
         return $resultList[$filterkey];
@@ -147,8 +216,8 @@
 
         // Validate if destination was created succesfully
         if (!is_object($this->m_linkInstance))
-      	{
-	        atkerror("Relation with unknown nodetype '".$this->m_link."' (in node '".$this->m_owner."')");
+        {
+          atkerror("Relation with unknown nodetype '".$this->m_link."' (in node '".$this->m_owner."')");
           $this->m_linkInstance = NULL;
           return false;
         }
@@ -197,6 +266,33 @@
       }
       return $this->m_remoteKey;
     }
+    
+    /**
+     * Sets the owner fields in the owner instance. The owner fields are
+     * the attribute(s) of the owner instance which map to the local key
+     * of the link node.
+     *
+     * @param array $ownerfields
+     */
+    public function setOwnerFields($ownerfields)
+    {
+      $this->m_ownerFields = $ownerfields;
+    }
+
+    /**
+     * Returns the owner fields. The owners fields are the attribute(s)
+     * of the owner instance which map to the local key of the link node.
+     *
+     * @return array owner fields
+     */
+    public function getOwnerFields()
+    {
+      if (is_array($this->m_ownerFields) && count($this->m_ownerFields)>0)
+      {
+        return $this->m_ownerFields;
+      }
+      return $this->m_ownerInstance->m_primaryKey;
+    }
 
     /**
      * Determine the name of the foreign key based on the name of the
@@ -238,7 +334,13 @@
 
     /**
      * Returns a displayable string for this value.
-     * @param $record
+     * 
+     * @param array $record The record that holds the value for this attribute
+     * @param String $mode The display mode ("view" for viewpages, or "list"
+     *                     for displaying in recordlists, "edit" for
+     *                     displaying in editscreens, "add" for displaying in
+     *                     add screens. "csv" for csv files. Applications can
+     *                     use additional modes.
      * @return a displayable string for this value
      */
     function display($record, $mode="")
@@ -275,13 +377,34 @@
 
     /**
      * Dummy function
+     * 
+     * @param array $record The record that holds the value for this attribute.
+     * @param String $fieldprefix The fieldprefix to put in front of the name
+     *                            of any html form element for this attribute.
+     * @param String $mode The mode we're in ('add' or 'edit')
+     * @return String A piece of htmlcode for editing this attribute
      */
-    function edit($record="", $fieldprefix="")
+    function edit($record="", $fieldprefix="", $mode="")
     {
     }
 
     /**
-     *Dummy function (we don't add ourselves to the query)
+     * Dummy function (we don't add ourselves to the query)
+     * @param atkQuery $query The SQL query object
+     * @param String $tablename The name of the table of this attribute
+     * @param String $fieldaliasprefix Prefix to use in front of the alias
+     *                                 in the query.
+     * @param Array $rec The record that contains the value of this attribute.
+     * @param int $level Recursion level if relations point to eachother, an
+     *                   endless loop could occur if they keep loading
+     *                   eachothers data. The $level is used to detect this
+     *                   loop. If overriden in a derived class, any subcall to
+     *                   an addToQuery method should pass the $level+1.
+     * @param String $mode Indicates what kind of query is being processing:
+     *                     This can be any action performed on a node (edit,
+     *                     add, etc) Mind you that "add" and "update" are the
+     *                     actions that store something in the database,
+     *                     whereas the rest are probably select queries.
      */
     function addToQuery(&$query, $tablename="", $fieldaliasprefix="", $rec, $level, $mode)
     {
@@ -290,8 +413,8 @@
 
     /**
      * load function
-     * @param $notused
-     * @param $record
+     * @param atkDb $notused
+     * @param array $record
      */
     function load($notused, $record)
     {
@@ -304,13 +427,19 @@
       return array();
     }
 
+    /**
+     * Get where clause for loading the record
+     *
+     * @param array $record The record
+     * @return string The where clause
+     */
     function _getLoadWhereClause($record)
     {
       $whereelems = array();
       $localkey = $this->getLocalKey();
       if(!is_array($localkey)) $localkey = array($localkey);
 
-      $ownerfields = $this->m_ownerInstance->m_primaryKey;
+      $ownerfields = $this->getOwnerFields();
 
       for ($i=0, $_i = count($localkey); $i<$_i; $i++)
       {
@@ -330,6 +459,8 @@
 
     /**
      * delete relational records..
+     * 
+     * @param array $record The record
      */
     function delete($record)
     {
@@ -345,8 +476,9 @@
 
     /**
      * Stores the values in the database
-     * @param $notused Not used
-     * @param $record Current record
+     * @param atkDb $notused Not used
+     * @param array $record Current record
+     * @param string $mode
      */
     function store($notused, $record, $mode)
     {
@@ -369,7 +501,9 @@
         $filter = "NOT IN ('".implode("','",$checked)."')";
 
       $selector = "(".$this->_getLoadWhereClause($record).")".($filter!=""?" AND ".$this->m_linkInstance->m_table.'.'.$this->getRemoteKey()." $filter":"");
-
+      $selector .= " AND ".$this->m_linkInstance->m_table.'.'.$this->getRemoteKey()." IS NOT NULL";
+      
+      
       //append the store deletion filter (if set)
       if($this->m_store_deletion_filter!="")
       {
@@ -380,6 +514,9 @@
 
       if (is_object($rel) && $rel->deleteDb($selector))
       {
+        if (!is_array($record[$this->fieldName()]))
+          return true;
+          
         for ($i=0;$i<count($record[$this->fieldName()]);$i++)
         {
           // magical stuff..
@@ -395,19 +532,22 @@
           {
             $newrecord[$this->getRemoteKey()] = $remKey;
           }
+          
+          $ownerFields = $this->getOwnerFields();
           $localKey = $this->getLocalKey();
+          
           if(is_array($localKey))
           {
             for($j=0;$j<count($localKey);$j++)
             {
-              $locKey    = $this->checkKeyDimension($record[$this->m_ownerInstance->m_primaryKey[$j]]);
-              $newrecord[$localKey[0]][$this->m_ownerInstance->m_primaryKey[$j]] = $locKey;
+              $locKey    = $this->checkKeyDimension($record[$ownerFields[$j]]);
+              $newrecord[$localKey[0]][$ownerFields[$j]] = $locKey;
             }
           }
           else
           {
-            $locKey    = $this->checkKeyDimension($record[$this->m_ownerInstance->primaryKeyField()]);
-            $newrecord[$localKey][$this->m_ownerInstance->primaryKeyField()] = $locKey;
+            $locKey    = $this->checkKeyDimension($record[$ownerFields[0]]);
+            $newrecord[$localKey] = $locKey;
           }
 
           // First check if the record does not exist yet.
@@ -432,13 +572,14 @@
 
     /**
      * Check if the attribute is empty
+     * 
+     * @param array $postvars
      * @return true if it's empty
      */
     function isEmpty($postvars)
     {
       return (!is_array($postvars[$this->fieldName()]) || count($postvars[$this->fieldName()])==0);
     }
-
 
     /**
      * Returns a piece of html code for hiding this attribute in an HTML form,
@@ -455,13 +596,14 @@
       $result = "";
       if(is_array(atkArrayNvl($record,$this->fieldName())) && $this->createDestination())
       {
+        $ownerFields = $this->getOwnerFields();
         for($i=0,$_i=count($record[$this->fieldName()]);$i<$_i;$i++)
         {
           if(atkArrayNvl($record[$this->fieldName()][$i],$this->getLocalKey()))
             $result .= '<input type="hidden" name="'.$fieldprefix.$this->formName().
                        '['.$i.']['.$this->getLocalKey().']" value="'.
                        $this->checkKeyDimension($record[$this->fieldName()][$i][$this->getLocalKey()],
-                         $this->m_ownerInstance->primaryKeyField()).'">';
+                         $ownerFields[0]).'">';
 
           if(atkArrayNvl($record[$this->fieldName()][$i],$this->getRemoteKey()))
             $result .= '<input type="hidden" name="'.$fieldprefix.$this->formName().
@@ -475,10 +617,18 @@
 
     /**
      * Returns a piece of html code that can be used in a form to search
-     * @param $record Record
-     * @param $size Size of the editbox
-     * @param $maxsize Maxsize of the editbox
-     * @return Piece of html code that can  be used in a form to edit this
+     * 
+     * @param array $record Array with values
+     * @param boolean $extended if set to false, a simple search input is
+     *                          returned for use in the searchbar of the
+     *                          recordlist. If set to true, a more extended
+     *                          search may be returned for the 'extended'
+     *                          search page. The atkAttribute does not
+     *                          make a difference for $extended is true, but
+     *                          derived attributes may reimplement this.
+     * @param string $fieldprefix The fieldprefix of this attribute's HTML element.
+     *
+     * @return string Piece of html code
      */
     function search($record="", $extended=false, $fieldprefix="")
     {
@@ -486,47 +636,52 @@
 
       // now select all records
       $recordset = $this->m_destInstance->selectDb("","","","*",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
-        $result = '<select ';
-        if ($extended)
-        {
-          $result.='multiple size="'.min(5,count($recordset)+1).'"';
-        }
+      $result = '<select ';
+      if ($extended)
+      {
+        $result.='multiple="multiple" size="'.min(5,count($recordset)+1).'"';
+      }
 
-        if (strstr($fieldprefix,"]["))
-          $result.='name="atksearch['. $fieldprefix.$this->fieldName().'][]">';
-        else
-          $result.='name="atksearch'.$fieldprefix.'['. $this->fieldName().'][]">';
+      $result.='name="'.$this->getSearchFieldName($fieldprefix).'[]">';
 
-        $pkfield = $this->m_destInstance->primaryKeyField();
+      $pkfield = $this->m_destInstance->primaryKeyField();
 
-        $result.= '<option value="">'.atktext("search_all", "atk");
+      $result.= '<option value="">'.atktext("search_all", "atk").'</option>';
 
-        for ($i=0;$i<count($recordset);$i++)
-        {
-          $pk = $recordset[$i][$pkfield];
-          if (atk_in_array($pk, $record[$this->fieldName()])) $sel = "selected"; else $sel = "";
-          $result.= '<option value="'.$pk.'" '.$sel.'>'.$this->m_destInstance->descriptor($recordset[$i]);
-        }
-        $result.='</select>';
-        return $result;
+      for ($i=0;$i<count($recordset);$i++)
+      {
+        $pk = $recordset[$i][$pkfield];
+        if (atk_in_array($pk, $record[$this->fieldName()])) $sel = ' selected="selected"'; else $sel = "";
+        $result.= '<option value="'.$pk.'"'.$sel.'>'.$this->m_destInstance->descriptor($recordset[$i]).'</option>';
+      }
+      $result.='</select>';
+      return $result;
     }
 
     /**
      * Creates an search condition for a given search value
-     * @param $table the table name
-     * @param $value the search value
-     * @return a piece of the SQL where clause
+     * 
+     * @param atkQuery $query The query to which the condition will be added.
+     * @param String $table The name of the table in which this attribute
+     *                      is stored
+     * @param mixed $value The value the user has entered in the searchbox
+     * @param String $searchmode The searchmode to use. This can be any one
+     *                           of the supported modes, as returned by this
+     *                           attribute's getSearchModes() method.
+     * @param string $fieldaliasprefix optional prefix for the fieldalias in the table
      */
-    function searchCondition(&$query, $table, $value, $searchmode)
+    function searchCondition(&$query, $table, $value, $searchmode, $fieldaliasprefix='')
     {
+      $ownerFields = $this->getOwnerFields();
+      
       // We only support 'exact' matches.
       // But you can select more than one value, which we search using the IN() statement,
       // which should work in any ansi compatible database.
       if (is_array($value) && count($value)>0 && $value[0]!="") // This last condition is for when the user selected the 'search all' option, in which case, we don't add conditions at all.
       {
-    		$this->createLink();
-    		$query->addJoin($this->m_linkInstance->m_table, $this->fieldName(), $table.".".$this->m_ownerInstance->primaryKeyField()."=".$this->fieldName().".".$this->getLocalKey(),FALSE );
-    		$query->setDistinct(TRUE);
+        $this->createLink();
+        $query->addJoin($this->m_linkInstance->m_table, $this->fieldName(), $table.".".$ownerFields[0]."=".$this->fieldName().".".$this->getLocalKey(),FALSE );
+        $query->setDistinct(TRUE);
 
         if (count($value)==1) // exactly one value
         {
@@ -541,8 +696,8 @@
 
     /**
      * Checks if a key is not an array
-     * @param $key   field containing the key values
-     * @param $field field to return if an array
+     * @param string $key   field containing the key values
+     * @param string $field field to return if an array
      * @return value of $field
      */
     function checkKeyDimension($key, $field="id")

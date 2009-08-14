@@ -10,7 +10,7 @@
    * @copyright (c) 2005 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing/ ATK open source license
    *
-   * @version $Revision$
+   * @version $Revision: 6320 $
    * $Id$
    */
 
@@ -152,7 +152,7 @@
      *
      * @param atkNode $node Node to be used when displaying the records
      * @param Array $records Array of records that should be assigned to the documentwriter
-     * @param String$prefix Prefix to be used when assigning the variables (used to avoid conflicting names)
+     * @param String $prefix Prefix to be used when assigning the variables (used to avoid conflicting names)
      */
     function assignDocumentMultiRecord(&$node, $records, $prefix = "")
     {
@@ -237,7 +237,7 @@
     /**
      * Assigns commonly used variables to a documentWriter
      *
-     * @param unknown_type $prefix Prefix to be used when assigning the variables (used to avoid conflicting names)
+     * @param string $prefix Prefix to be used when assigning the variables (used to avoid conflicting names)
      */
     function assignDocumentGenericVars($prefix = "")
     {
@@ -261,22 +261,36 @@
      */
     function &getInstance($format = "opendocument")
     {
-      static $s_instance = NULL;
+      static $s_oo_instance = NULL;
+      static $s_docx_instance = NULL;
 
-      if ($s_instance == NULL)
+      if ($format == "opendocument") 
       {
-        if ($format == "opendocument") {
+        if ($s_oo_instance == NULL)
+        {
           atkdebug("Creating a new atkOpenDocumentWriter instance");
           atkimport("atk.document.atkopendocumentwriter");
-          $s_instance = new atkOpenDocumentWriter();
+          $s_oo_instance = new atkOpenDocumentWriter();
         }
-        else {
-          atkdebug(sprintf("Failed to create atkDocumentWriter instance (unknown format: %s)", $format));
-        }
+        
+        return $s_oo_instance;
       }
-      return $s_instance;
+      else if ($format == "docx") 
+      {
+        if ($s_docx_instance == NULL)
+        {
+          atkdebug("Creating a new atkDocxWriter instance");
+          atkimport("atk.document.atkdocxwriter");
+          $s_docx_instance = new atkDocxWriter();
+        }
+        
+        return $s_docx_instance;
+      }
+      else 
+      {
+        atkdebug(sprintf("Failed to create atkDocumentWriter instance (unknown format: %s)", $format));
+      }
     }
-
   }
 
 ?>

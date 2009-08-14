@@ -13,7 +13,7 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6310 $
    * $Id$
    */
 
@@ -32,14 +32,60 @@
   class atkViewEditBase extends atkActionHandler
   {
     /**
+     * Get the record to view/edit
+     *
+     * @return Array The record for viewing/editting
+     */
+    public function getRecord()
+    {
+      $record = $this->getRejectInfo(); // Check reject info first
+
+      if ($record == null) //If reject info not set -  do select
+      {
+        $atkstoretype = "";
+        $sessionmanager = atkGetSessionManager();
+        if ($sessionmanager) $atkstoretype = $sessionmanager->stackVar('atkstore');
+        switch ($atkstoretype)
+        {
+          case 'session': $record = $this->getRecordFromSession(); break;
+          default:        $record = $this->getRecordFromDb(); break;
+        }
+      }
+      return $record;
+    }
+
+    /**
+     * Get the record for the database with the current selector
+     *
+     * @return array
+     */
+    protected function getRecordFromDb()
+    {
+      $selector = atkArrayNvl($this->m_node->m_postvars, 'atkselector', "");
+      list($record) = $this->m_node->selectDb($selector,"","","","","edit");
+      return $record;
+    }
+
+    /**
+     * Get the current record from the database with the current selector
+     *
+     * @return array
+     */
+    protected function getRecordFromSession()
+    {
+      $selector = atkArrayNvl($this->m_node->m_postvars, 'atkselector','');
+      return atkinstance('atk.session.atksessionstore')->getDataRowForSelector($selector);
+    }
+
+    /**
      * Get section label.
-     * 
+     *
      * @param atkNode $node
      * @param string $rawName
-     * 
+     *
      * @return string label
-     * 
-     * @static 
+     *
+     * @static
      */
     function getSectionLabel($node, $rawName)
     {
@@ -47,34 +93,35 @@
       $strings = array("section_{$tab}_{$section}", "{$tab}_{$section}", "section_{$section}", $section);
       return $node->text($strings);
     }
-    
+
     /**
      * Get tab label.
      *
      * @param atkNode $node
      * @param string $tab
-     * 
+     *
      * @return string label
-     * 
-     * @static 
+     *
+     * @static
      */
     function getTabLabel($node, $tab)
     {
       $strings = array("tab_{$tab}", $tab);
       return $node->text($strings);
-    }    
-    
+    }
+
     /**
      * Create the clickable label for the section.
      *
      * @param array $field
+     * @param string $mode
      * @return string Html
      */
     function getSectionControl($field, $mode)
     {
       // label
       $label = atkViewEditBase::getSectionLabel($this->m_node, $field['name']);
-      
+
       // our name
       list($tab, $section) = explode('.', $field["name"]);
       $name = "section_{$tab}_{$section}";
@@ -86,10 +133,11 @@
       $initClass = "openedSection";
 
       //if the section is not active, we close it on load.
-      $state = atknew("atk.session.atkstate");
-	    $sectionstate = $state->get(array("nodetype"=>$this->m_node->atknodetype(),"section"=>$name));
-			
-      if( $sectionstate == 'closed' || ($sectionstate == null && !in_array($field["name"],$this->m_node->getActiveSections($tab, $mode))))  
+      atkimport("atk.session.atkstate");
+      $default = in_array($field["name"], $this->m_node->getActiveSections($tab, $mode)) ? 'opened' : 'closed';
+      $sectionstate = atkState::get(array("nodetype"=>$this->m_node->atknodetype(),"section"=>$name), $default);
+
+      if ($sectionstate == 'closed')
       {
         $initClass =  "closedSection";
         $page = &$this->getPage();
@@ -183,9 +231,11 @@
       }
       return $tabTpl;
     }
-    
+
     /**
      * Render tabs using templates
+     *
+     * @todo this method seems broken by design, read comments for more info!
      *
      * @param array $fields
      * @param array $tabTpl
@@ -194,27 +244,45 @@
     function _renderTabs($fields, $tabTpl)
     {
       $ui = &$this->getUi();
-      
       $tabs = array();
       $perTpl = array();//per template array
-      
+
       for($i=0,$_i=count($fields);$i<$_i;$i++)
       {
         $allTabs = explode(' ', $fields[$i]["tab"]); // should not use "tab" here, because it actually contains the CSS class names and not only the tab names
-        $tab = $allTabs[0]; // attributes can be part of one, more than one or all tabs, at the moment it seems only one or all are supported
+        $allMatchingTabs = array_values(array_intersect($allTabs, array_keys($tabTpl))); // because of the CSS thingee above we search for the first matching tab
+        if (count($allMatchingTabs) == 0) $allMatchingTabs = array_keys($tabTpl); // again a workaround for this horribly broken method
+        $tab = $allMatchingTabs[0]; // attributes can be part of one, more than one or all tabs, at the moment it seems only one or all are supported
         $perTpl[$tabTpl[$tab]]['fields'][] = $fields[$i];//make field available in numeric array
         $perTpl[$tabTpl[$tab]][$fields[$i]["attribute"]] = $fields[$i];//make field available in associative array
       }
-      
+
+      // Add 'alltab' fields to all templates
+      foreach ($fields as $field)
+      {
+        if (in_array('alltabs', explode(' ', $field["tab"])))
+        {
+          $templates = array_keys($perTpl);
+          foreach ($templates as $tpl)
+          {
+            if (!$perTpl[$tpl][$field['attribute']])
+            {
+              $perTpl[$tpl]['fields'][] = $field;
+              $perTpl[$tpl][$field['attribute']] = $field;
+            }
+          }
+        }
+      }
+
       $tpls = array_unique(array_values($tabTpl));
       foreach ($tpls as $tpl)
       {
-        $tabs[] = $ui->render($tpl,$perTpl[$tpl]);  
+        $tabs[] = $ui->render($tpl,$perTpl[$tpl]);
       }
-      
+
       return $tabs;
     }
-    
+
     /**
      * Attribute handler.
      *
@@ -232,6 +300,6 @@
       }
 
       return $attr->partial($partial, $this->m_action);
-    }    
+    }
   }
 ?>

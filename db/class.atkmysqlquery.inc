@@ -12,7 +12,7 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6305 $
    * $Id$
    */
   
@@ -48,7 +48,7 @@
     {
       if($value[0]=='!') 
       {
-        return $field." NOT REGEXP '".substr($value,1,strlen($value))."'";
+        return $field." NOT REGEXP '".substr($value,1,atk_strlen($value))."'";
       }
       else
       {
@@ -71,7 +71,7 @@
     {
       if($value[0]=='!') 
       {
-        return "soundex($field) NOT like concat('%',substring(soundex('".substr($value,1,strlen($value))."') from 2),'%')";
+        return "soundex($field) NOT like concat('%',substring(soundex('".substr($value,1,atk_strlen($value))."') from 2),'%')";
       }
       else
       {
@@ -128,7 +128,7 @@
 
       if (count($this->m_conditions)>0)
       {
-        $result.= " WHERE ".implode(" AND ",$this->m_conditions);
+         $result.= " WHERE (".implode(") AND (",$this->m_conditions).")";
       }
 
       if (count($this->m_searchconditions)>0)

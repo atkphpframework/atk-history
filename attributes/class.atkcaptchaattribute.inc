@@ -12,7 +12,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6309 $
    * $Id$
    * 
    */
@@ -36,8 +36,8 @@
 
     /**
      * Constructor
-     * @param $name   The name of the attribute
-     * @param $flags  The attribute flags
+     * @param string $name   The name of the attribute
+     * @param int    $flags  The attribute flags
      * @return -
      */
     function atkCaptchaAttribute($name, $flags=0) 
@@ -51,11 +51,13 @@
     /**
      * Edit  record
      * Here it will only return the text, no edit box.
-     * @param $record Array with fields
-     * @param $fieldprefix 
+     * @param array $record Array with fields
+     * @param string $fieldprefix The fieldprefix to put in front of the name
+     *                            of any html form element for this attribute.
+     * @param String $mode The mode we're in ('add' or 'edit')
      * @return Parsed string
      */
-    function edit($record="", $fieldprefix="")
+    function edit($record="", $fieldprefix="", $mode="")
     {
       $target = "atk/ext/captcha/img/captcha.jpg.php";
       $img    = session_url("include.php?file=".$target);
@@ -81,9 +83,16 @@
      */
     function loadType() { return NOLOAD; }
 
+    /**
+     * Validate the value fo this attribute
+     *
+     * @param array $record The record that contains the value for this attribute
+     * @param string $mode The mode for which should be validated ("add" or
+     *                     "update") 
+     */
     function validate(&$record, $mode)
     {
-      $sCaptchaCode = $record["captcha"];
+      $sCaptchaCode = $record[$this->fieldName()];
       if (md5(strtoupper($sCaptchaCode)) != $_SESSION['php_captcha'])
       {
         triggerError($record, $this->fieldName(), 'error_captchafield');

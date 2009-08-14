@@ -19,7 +19,7 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6083 $
    * $Id$
    */
 
@@ -68,13 +68,15 @@
     $lockType = atkconfig("lock_type");
     if (!empty($lockType)) atklock();
 
-    // Create node
-    $obj = &atkGetNode($ATK_VARS["atknodetype"]);
-
     $flags = array_key_exists("atkpartial", $ATK_VARS) ? HTML_PARTIAL : HTML_STRICT;
 
-    //Handle http request   
-    $controller = &atkinstance("atk.atkcontroller");
+    //Load controller   
+    if ($ATK_VARS["atkcontroller"]=="")
+      $controller = &atkinstance("atk.atkcontroller");
+    else
+      $controller = &atkinstance($ATK_VARS["atkcontroller"]);
+      
+    //Handle http request  
     $controller->dispatch($ATK_VARS, $flags);
   }
   $output->outputFlush();

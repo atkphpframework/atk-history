@@ -11,7 +11,7 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6320 $
    * $Id$
    */
 
@@ -81,15 +81,58 @@
      */
     function setDestinationFilter($filter)
     {
-      $this->m_destinationFilter = $filter;
+      $this->m_destinationFilter = $this->_cleanupDestinationFilter($filter);
     }
 
+    /**
+     * Remove redundant (more than 1 subsequently) spaces from the filter string.
+     *
+     * This prevents the filter from rapidly becoming too long to be passed in the URL if
+     * enters are used in code to make the filter readable.
+     *
+     * @param string $filter
+     * @return string
+     */
+    function _cleanupDestinationFilter($filter)
+    {
+      $result = '';
+      $filter_length = strlen($filter);
+      $quotes = array("'",'"','`');
+      $quoteStack = array();
+      $lastChar = '';
+
+      for ($i = 0; $i < $filter_length; $i++)
+      {
+        $currentChar = $filter[$i];
+
+        if(in_array($currentChar,$quotes))
+        {
+          if(sizeof($quoteStack) > 0 && $currentChar == $quoteStack[sizeof($quoteStack) - 1])
+          {
+            array_pop($quoteStack);
+          }
+          else
+          {
+            array_push($quoteStack,$currentChar);
+          }
+        }
+
+        // not between quotes
+        if(!($currentChar === ' ' && $lastChar === ' ' && sizeof($quoteStack) == 0))
+        {
+          if($currentChar != "\n") $result .= $currentChar;
+        }
+        $lastChar = $currentChar;
+      }
+      return $result;
+    }
     /**
      * Adds a filter value to the destination filter.
      * @param String $filter Filter to be added to the destination filter.
      */
     function addDestinationFilter($filter)
     {
+      $filter = $this->_cleanupDestinationFilter($filter);
       if($this->m_destinationFilter != "")
         $this->m_destinationFilter = "({$this->m_destinationFilter}) AND ({$filter})";
       else
@@ -136,6 +179,10 @@
     /**
      * Descriptor handler. Forwards description handler calls
      * to the real description handler.
+     *
+     * @param array $record The record
+     * @param atkNode $node The atknode object
+     * @return String with the descriptor
      */
     function descriptor($record, &$node)
     {
@@ -161,11 +208,11 @@
 
         // Validate if destination was created succesfully
         if (!is_object($this->m_destInstance))
-	      {
-	        atkerror("Relation with unknown nodetype '".$this->m_destination."' (in node '".$this->m_owner."')");
-	        $this->m_destInstance = NULL;
-	        return false;
-	      }
+        {
+          atkerror("Relation with unknown nodetype '".$this->m_destination."' (in node '".$this->m_owner."')");
+          $this->m_destInstance = NULL;
+          return false;
+        }
 
         if ($this->hasFlag(AF_NO_FILTER))
           $this->m_destInstance->m_flags |= NF_NO_FILTER;
@@ -208,6 +255,12 @@
      * Validation method. Empty implementation. Derived classes may override
      * this function.
      * @abstract
+     *
+     * @param array $record The record that holds the value for this
+     *                      attribute. If an error occurs, the error will
+     *                      be stored in the 'atkerror' field of the record.
+     * @param String $mode The mode for which should be validated ("add" or
+     *                     "update")
      */
     function validate(&$record, $mode)
     {
@@ -246,6 +299,20 @@
     }
 
     /**
+     * Get the searchmode for nested/child attributes.
+     *
+     * @param string|array $searchmode searchmode
+     * @param string       $childname  the child attribute's name
+     * @return string|array the child searchmode
+     */
+    protected function getChildSearchMode($searchmode, $childname)
+    {
+      if (is_array($searchmode) && isset($searchmode[$childname]))
+        return $searchmode[$childname];
+      return $searchmode;
+    }
+
+    /**
      * Since most relations do not store anything in a field, the default
      * fieldtype for relations is "". Exceptions (like the many2oone relation,
      * which stores a foreign key) can implement their own dbFieldType().
@@ -260,6 +327,10 @@
     /**
      * Returns the condition (SQL) that should be used when we want to join a relation's
      * owner node with the parent node.
+     *
+     * @param atkQuery $query The query object
+     * @param string $tablename The tablename
+     * @param string $fieldalias
      * @return String SQL string for joining the owner with the destination.
      *                Defaults to false.
      */
@@ -304,8 +375,8 @@
     /**
      * Parses the destination filter
      *
-     * @param $destfilter sting filter to parse
-     * @param $record the current record
+     * @param string $destFilter filter to parse
+     * @param array $record the current record
      * @return $filter string filter.
      */
     function parseFilter($destFilter,$record)

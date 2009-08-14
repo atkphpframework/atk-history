@@ -11,7 +11,7 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6347 $
    * $Id$
    */
   atkimport('atk.menu.atkplainmenu');
@@ -26,6 +26,10 @@
    */
   class atkDropdownMenu extends atkPlainMenu
   {
+    /**
+	   * Render the menu
+	   * @return String HTML fragment containing the menu.
+	   */
     function render()
     {
       $page = &atkinstance("atk.ui.atkpage");
@@ -35,6 +39,18 @@
       return $page->render("Menu", true);
     }
 
+    /**
+     * Get the menu
+     *
+     * @return string The menu
+     */
+    function getMenu() { return $this->load(); }
+    
+    /**
+     * Load the menu
+     *
+     * @return string The menu
+     */
     function load()
     {
       global $ATK_VARS,$g_menu;
@@ -45,13 +61,12 @@
       $page->register_style($theme->stylePath("atkdropdownmenu.css"));
       $page->m_loadscripts[] = "new DHTMLListMenu('nav');";
 
-      $atkmenutop = $ATK_VARS["atkmenutop"];
-      if($atkmenutop=="") $atkmenutop="main";
+      $atkmenutop = array_key_exists('atkmenutop',$ATK_VARS)?$ATK_VARS["atkmenutop"]:'main';
       if (!is_array($g_menu[$atkmenutop]))
         $g_menu[$atkmenutop] = array();
       usort($g_menu[$atkmenutop],array("atkplainmenu","menu_cmp"));
 
-      $menu.= "<div id=\"nav\">\n";
+      $menu= "<div id=\"nav\">\n";
       $menu.=$this->getHeader($atkmenutop);
 
       $menu.="  <ul>\n";
@@ -72,14 +87,21 @@
       return $menu;
     }
 
+    /**
+     * Get a menu item
+     *
+     * @param string $menuitem
+     * @param string $indentation
+     * @return string The menu item
+     */
     function getMenuItem($menuitem, $indentation="")
     {
       global $g_menu;
-
       $enable = $this->isEnabled($menuitem);
+      $menu = '';
       if ($enable)
       {
-        if (!$menuitem['url'] && $g_menu[$menuitem['name']])
+        if (array_key_exists($menuitem['name'],$g_menu) && $g_menu[$menuitem['name']])
         {
           $submenu=$indentation."<ul>\n";
           foreach ($g_menu[$menuitem['name']] as $submenuitem)
@@ -97,12 +119,20 @@
       return $menu;
     }
 
+    /**
+     * Get the HTML for a menu item
+     *
+     * @param string $menuitem
+     * @param string $submenu
+     * @param string $submenuname
+     * @return string The HTML for a menu item
+     */
     function getItemHtml($menuitem, $submenu="",$submenuname='')
     {
       $delimiter = atkconfig("menu_delimiter");
 
       $name = $this->getMenuTranslation($menuitem['name'],$menuitem['module']);
-      if ($menuitem['name']=='-') return "<li><a href=\"#\">-</a></li>\n";
+      if ($menuitem['name']=='-') return "<li class=\"separator\"><div></div></li>\n";
       if ($menuitem['url']) $href = href($menuitem['url'],$this->getMenuTranslation($menuitem['name'],$menuitem['module']), SESSION_NEW);
       else $href = '<a href="#">'.$name.'</a>';
 

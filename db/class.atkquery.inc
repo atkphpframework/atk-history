@@ -13,7 +13,7 @@
    * @copyright (c)2000-2006 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
+   * @version $Revision: 6323 $
    * $Id$
    */
 
@@ -158,19 +158,44 @@
 
       $this->m_aliasLookup = array();
     }
+    
+    /**
+     * Sets the database instance.
+     * 
+     * @var atkDb $db database instance
+     */
+    public function setDb($db)
+    {
+      $this->m_db = $db;
+    }
+    
+    /**
+     * Returns the database instance.
+
+     * @return atkDb database instance
+     */
+    public function getDb()
+    {
+      if (!isset($this->m_db)) 
+      {
+        $this->m_db = atkGetDb();
+      }
+      
+      return $this->m_db;
+    }
 
     /**
-    * Add's a field to the query
-    * @param $name String Field name
-    * @param $value String Field value
-    * @param $table String Table name
-    * @param $fieldaliasprefix String Field alias prefix
-    * @param $quote bool If this parameter is true, stuff is inserted into the db
-    *               using quotes, e.g. SET name = 'piet'. If it is false, it's
-    *               done without quotes, e.d. SET number = 4.
-    * @param $quotefield bool Wether or not to quote the fieldname
-    * @return atkQuery The query object itself (for fluent usage)
-    */
+     * Add's a field to the query
+     * @param string $name Field name
+     * @param string $value Field value
+     * @param string $table Table name
+     * @param string $fieldaliasprefix Field alias prefix
+     * @param bool $quote If this parameter is true, stuff is inserted into the db
+     *               using quotes, e.g. SET name = 'piet'. If it is false, it's
+     *               done without quotes, e.d. SET number = 4.
+     * @param bool $quotefield Wether or not to quote the fieldname
+     * @return atkQuery The query object itself (for fluent usage)
+     */
     function &addField($name, $value="", $table="", $fieldaliasprefix="", $quote=true, $quotefield=false)
     {
       if ($table!="") $fieldname = $table.".".$name;
@@ -193,15 +218,53 @@
 
       return $this;
     }
+    
+    /**
+     * Add's a sequence field to the query.
+     * 
+     * @param string $fieldName field name
+     * @param int    $value     field to store the new sequence value in, note certain drivers
+     *                          might populate this field only after the insert query has been 
+     *                          executed
+     * @param string $seqName   sequence name (optional for certain drivers)
+     * 
+     * @return atkQuery
+     */  
+    public function addSequenceField($fieldName, &$value, $seqName=null)
+    {
+      $value = $this->getDb()->nextid($seqName);
+      $this->addField($fieldName, $value, null, null, false, true);
+      return $this;
+    }    
+
+    /**
+     * Add multiple fields at once
+     *
+     * @param array $fields array with field value pairs
+     * @param string $table Table name
+     * @param string $fieldaliasprefix Field alias prefix
+     * @param bool $quote If this parameter is true, stuff is inserted into the db
+     *               using quotes, e.g. SET name = 'piet'. If it is false, it's
+     *               done without quotes, e.d. SET number = 4.
+     * @param bool $quotefield Wether or not to quote the fieldname
+     * @return atkQuery The query object itself (for fluent usage)
+     */
+    function addFields(array $fields, $table="", $fieldaliasprefix="", $quote=true, $quotefield=false)
+    {
+      foreach ($fields as $name => $value)
+      {
+        $this->addField($name,$value,$table,$fieldaliasprefix,$quote,$quotefield);
+      }
+      return $this;
+    }
 
     /**
      * Add's an expression to the select query
      *
-     * @param $fieldName        string expression field name
-     * @param $expression       string expression value
-     * @param $table            string table name
-     * @param $fieldAliasPrefix string field alias prefix
-     * @param $quoteFieldName   bool   wether or not to quote the expression field name
+     * @param string $fieldName         expression field name
+     * @param string $expression        expression value
+     * @param string $fieldAliasPrefix  field alias prefix
+     * @param bool $quoteFieldName      wether or not to quote the expression field name
      * @return atkQuery The query object itself (for fluent usage)
      */
     function &addExpression($fieldName, $expression, $fieldAliasPrefix="", $quoteFieldName=false)
@@ -223,8 +286,8 @@
 
     /**
     * Add table to Tables array
-    * @param $name Table name
-    * @param $alias Alias of table
+    * @param string $name Table name
+    * @param string $alias Alias of table
     * @return atkQuery The query object itself (for fluent usage)
     */
     function &addTable($name, $alias = "")
@@ -236,32 +299,16 @@
 
     /**
     * Add join to Join Array
-    * @param $table Table name
-    * @param $alias Alias of table
-    * @param $condition Condition for the Join
-    * @param $outer Wether to use an outer (left) join or an inner join
+    * @param string $table Table name
+    * @param string $alias Alias of table
+    * @param string $condition Condition for the Join
+    * @param bool $outer Wether to use an outer (left) join or an inner join
     * @return atkQuery The query object itself (for fluent usage)
     */
     function &addJoin($table, $alias, $condition, $outer=false)
     {
-      if ($outer)
-      {
-        $jointype="LEFT JOIN ";
-        $join = " ".$jointype.$this->quoteField($table)." ".$this->quoteField($alias)." ON ".$condition." ";
-
-        if (!in_array($join, $this->m_joins)) $this->m_joins[]= $join;
-      }
-      else
-      {
-        $jointype="JOIN ";
-        $join = " ".$jointype.$this->quoteField($table)." ".$this->quoteField($alias);
-        if (!in_array($join, $this->m_joins))
-        {
-          $this->m_joins[]= $join;
-          $this->addCondition($condition);
-        }
-      }
-
+      $join = " ".($outer ? "LEFT JOIN " : "JOIN ").$this->quoteField($table)." ".$this->quoteField($alias)." ON (".$condition.") ";
+      if (!in_array($join, $this->m_joins)) $this->m_joins[] = $join;
       return $this;
     }
 
@@ -291,12 +338,13 @@
 
     /**
      * Add a query condition (conditions are where-expressions that are AND-ed)
-     * @param $condition Condition
+     * 
+     * @param string $condition Condition
      * @return atkQuery The query object itself (for fluent usage)
      */
     function &addCondition($condition)
     {
-      if ($condition!="") $this->m_conditions[] = $condition;
+      if ($condition!="" && !in_array($condition,$this->m_conditions)) $this->m_conditions[] = $condition;
       return $this;
     }
 
@@ -305,7 +353,8 @@
     * Add search condition to the query. Basically similar to addCondition, but
     * searchconditions make use of the searchmode setting to determine whether the
     * different searchconditions should be and'ed or or'ed.
-    * @param $condition Condition
+    * 
+    * @param string $condition Condition
     * @return atkQuery The query object itself (for fluent usage)
     */
     function &addSearchCondition($condition)
@@ -318,6 +367,9 @@
      * Set the 'distinct' mode for the query.
      * If set to true, a 'SELECT DISTINCT' will be performed. If set to false,
      * a regular 'SELECT' will be performed.
+     * 
+     * @param Bool $distinct Set to true to perform a distinct select,
+     *                          false for a regular select.
      * @return atkQuery The query object itself (for fluent usage)
      */
     function &setDistinct($distinct)
@@ -342,7 +394,7 @@
 
     /**
      * Builds the SQL Select query
-     * @param $distinct distinct records?
+     * @param bool $distinct distinct records?
      * @return String a SQL Select Query
      */
     function buildSelect($distinct = FALSE)
@@ -413,6 +465,8 @@
 
     /**
      * Add FROM clause to query.
+     * 
+     * @param String $query The query
      */
     function _addFrom(&$query)
     {
@@ -434,20 +488,26 @@
      */
     function executeSelect($distinct = FALSE)
     {
-      if (!isset($this->m_db)) $this->m_db = &atkGetDb();
       $query = $this->buildSelect($distinct);
-      return $this->m_db->getrows($query);
+      return $this->getDb()->getrows($query);
     }
 
     /**
-      * Add limiting clauses to the query.
-      * Default implementation: no limit supported. Derived classes should implement this.
-      */
+     * Add limiting clauses to the query.
+     * Default implementation: no limit supported. Derived classes should implement this.
+     * 
+     * @param string $query The query to add the limiter to
+     */
     function _addLimiter(&$query)
     {
       // not supported..
     }
 
+    /**
+     * Add the ORDER BY clause
+     *
+     * @param String $query The query
+     */
     function _addOrderBy(&$query)
     {
       if (count($this->m_orderbys)>0)
@@ -461,7 +521,7 @@
      * because we do joins, like in a select, but we don't really select the
      * fields.
      *
-     * @param boolean $distinct distinct rows?
+     * @param bool $distinct distinct rows?
      *
      * @return String a SQL Select COUNT(*) Query
      */
@@ -489,7 +549,7 @@
 
       if (count($this->m_conditions)>0)
       {
-        $result.= " WHERE ".implode(" AND ",$this->m_conditions);
+        $result.= " WHERE (".implode(") AND (",$this->m_conditions).")";
       }
 
       if (count($this->m_searchconditions)>0)
@@ -539,9 +599,8 @@
      */
     function executeUpdate()
     {
-      if (!isset($this->m_db)) $this->m_db = &atkGetDb();
       $query = $this->buildUpdate();
-      return $this->m_db->query($query);
+      return $this->getDb()->query($query);
     }
 
     /**
@@ -549,9 +608,8 @@
      */
     function executeInsert()
     {
-      if (!isset($this->m_db)) $this->m_db = &atkGetDb();
       $query = $this->buildInsert(true);
-      return $this->m_db->query($query);
+      return $this->getDb()->query($query);
     }
 
     /**
@@ -603,9 +661,8 @@
      */
     function executeDelete()
     {
-      if (!isset($this->m_db)) $this->m_db = &atkGetDb();
       $query = $this->buildDelete();
-      return $this->m_db->query($query);
+      return $this->getDb()->query($query);
     }
 
     /**
@@ -626,6 +683,9 @@
 
     /**
      * Generate a searchcondition that checks if the field is null.
+     * 
+     * @param String $field
+     * @param Bool $emptyStringIsNull
      */
     function nullCondition($field, $emptyStringIsNull=false)
     {
@@ -635,9 +695,11 @@
       return $result;
     }
 
-
     /**
      * Generate a searchcondition that checks if the field is not null.
+     * 
+     * @param String $field
+     * @param Bool $emptyStringIsNull
      */
     function notNullCondition($field, $emptyStringIsNull=false)
     {
@@ -649,12 +711,19 @@
 
     /**
      * Generate a searchcondition that checks whether $value matches $field exactly.
+     * @param string $field full qualified table column
+     * @param mixed $value string/number/decimal expected column value
+     * @param string $dbFieldType help determine exact search method
+     * @return string piece of where clause to use in your SQL statement
      */
-    function exactCondition($field, $value)
+    function exactCondition($field, $value, $dbFieldType=null)
     {
+      if(in_array($dbFieldType,array("decimal","number")))
+        return self::exactNumberCondition($field,$value);
+
       if($value[0]=='!')
       {
-        return "UPPER(".$field.")!=UPPER('".substr($value,1,strlen($value))."')";
+        return "UPPER(".$field.")!=UPPER('".substr($value,1,atk_strlen($value))."')";
       }
       else
       {
@@ -663,13 +732,28 @@
     }
 
     /**
+     * Generate a searchcondition that check number/decimal literal values
+     * @param string $field full qualified table column
+     * @param mixed $value integer/float/double etc.
+     * @return string piece of where clause to use in your SQL statement
+     */
+    public static function exactNumberCondition($field, $value)
+    {
+      return "$field = $value";
+    }
+
+    /**
      * Generate a searchcondition that checks whether $field contains $value .
+     * 
+     * @param String $field The field
+     * @param String $value The value
+     * @return String The substring condition
      */
     function substringCondition($field, $value)
     {
       if($value[0]=='!')
       {
-        return "UPPER(".$field.") NOT LIKE UPPER('%".substr($value,1,strlen($value))."%')";
+        return "UPPER(".$field.") NOT LIKE UPPER('%".substr($value,1,atk_strlen($value))."%')";
       }
       else
       {
@@ -679,12 +763,15 @@
 
     /**
      * Generate a searchcondition that accepts '*' as wildcard character.
+     * 
+     * @param String $field
+     * @param String $value
      */
     function wildcardCondition($field, $value)
     {
       if($value[0]=='!')
       {
-        return "UPPER(".$field.") NOT LIKE UPPER('".str_replace("*","%",substr($value,1,strlen($value)))."')";
+        return "UPPER(".$field.") NOT LIKE UPPER('".str_replace("*","%",substr($value,1,atk_strlen($value)))."')";
       }
       else
       {
@@ -693,13 +780,16 @@
     }
 
     /**
-        *  generate searchcondition with greater than
-        */
+     * Generate searchcondition with greater than
+     * 
+     * @param String $field The database field
+     * @param String $value The value
+     */
     function greaterthanCondition($field, $value)
     {
       if($value[0]=='!')
       {
-        return $field." < '".substr($value,1,strlen($value))."'";
+        return $field." < '".substr($value,1,atk_strlen($value))."'";
       }
       else
       {
@@ -707,14 +797,17 @@
       }
     }
 
-   /**
-        *  generate searchcondition with greater than
-        */
+    /**
+     * Generate searchcondition with greater than
+     * 
+     * @param String $field The database field
+     * @param String $value The value
+     */
     function greaterthanequalCondition($field, $value)
     {
       if($value[0]=='!')
       {
-        return $field." < '".substr($value,1,strlen($value))."'";
+        return $field." < '".substr($value,1,atk_strlen($value))."'";
       }
       else
       {
@@ -723,13 +816,16 @@
     }
 
     /**
-        *  generate searchcondition with less than
-        */
+     * Generate searchcondition with less than
+     * 
+     * @param String $field The database field
+     * @param String $value The value
+     */
     function lessthanCondition($field, $value)
     {
       if($value[0]=='!')
       {
-        return $field." > '".substr($value,1,strlen($value))."'";
+        return $field." > '".substr($value,1,atk_strlen($value))."'";
       }
       else
       {
@@ -738,13 +834,16 @@
     }
 
     /**
-     *  generate searchcondition with less than
+     * Generate searchcondition with less than
+     * 
+     * @param String $field The database field
+     * @param String $value The value
      */
     function lessthanequalCondition($field, $value)
     {
       if($value[0]=='!')
       {
-        return $field." > '".substr($value,1,strlen($value))."'";
+        return $field." > '".substr($value,1,atk_strlen($value))."'";
       }
       else
       {
@@ -752,6 +851,15 @@
       }
     }
 
+    /**
+     * Get the between condition
+     *
+     * @param String $field The database field
+     * @param Mixed $value1 The first value
+     * @param Mixed $value2 The second value
+     * @param Bool $quote Add quotes?
+     * @return unknown
+     */
     function betweenCondition($field, $value1, $value2, $quote=true)
     {
       if($quote)
@@ -763,7 +871,7 @@
     /**
      * Static factory method. This method returns a new instance of a query
      * object for the current database.
-     * @param $basepath The basepath for the database object (defaults to 'atk.db')
+     * @param string $basepath The basepath for the database object (defaults to 'atk.db')
      * @return atkQuery A Query object for the appropriate database
      */
     function &create($basepath="atk.db.")
