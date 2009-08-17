@@ -26,12 +26,14 @@ class atkMultiUpdatehandler extends atkActionHandler
   function action_multiupdate()
   {
     $data = $this->getNode()->m_postvars['atkdatagriddata'];
-    foreach ($data as $record)
+    foreach ($data as $entry)
     {
+      $record = $this->getNode()->select($entry['atkprimkey'])->mode('edit')->firstRow();
+      $record = array_merge($record, $entry);
       $this->getNode()->updateDb($record, true, '', $this->getNode()->m_editableListAttributes);
     }
     
     $this->getNode()->getDb()->commit();
-    $this->getNode()->redirect();
+    die('true');
   }
 }

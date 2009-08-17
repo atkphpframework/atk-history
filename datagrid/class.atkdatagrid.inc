@@ -856,6 +856,16 @@ class atkDataGrid
   }
 
   /**
+   * Are we currently in edit mode?
+   * 
+   * @return boolean are we in edit mode?
+   */
+  public function isEditing()
+  {
+    return $this->getPostvar('atkgridedit', false);
+  }  
+  
+  /**
    * Returns the grid components.
    *
    * The associative array returned contains for each named component
@@ -1481,6 +1491,18 @@ class atkDataGrid
     atkimport('atk.utils.atkjson');
     return 'ATK.DataGrid.update('.atkJSON::encode($this->getName()).', '.atkJSON::encode($overrides).', {'.$overridesJsStr.'}, '.$overridesJsCallback.');';
   }
+  
+  /**
+   * Returns a JavaScript call to save the current grid's contents when in edit mode.
+   *
+   * @return string JavaScript call (might need escaping when used in HTML code)
+   */
+  public function getSaveCall()
+  {
+    $url = session_url(dispatch_url($this->getNode()->atkNodeType(), 'multiupdate', array('output' => 'json')), SESSION_PARTIAL);
+    atkimport('atk.utils.atkjson');
+    return 'ATK.DataGrid.save('.atkJSON::encode($this->getName()).', '.atkJSON::encode($url).');';
+  }  
 
   /**
    * Translate the given string using the grid node.
