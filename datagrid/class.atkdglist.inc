@@ -40,6 +40,11 @@ class atkDGList extends atkDGComponent
    */
   function render()
   {
+  	if ($this->getGrid()->isEmbedded() && count($this->getGrid()->getRecords()) == 0)
+  	{
+  		return '';
+  	}
+  	
     $grid = $this->getGrid();
     $data = $this->getRecordlistData($grid->getRecords(), $grid->getDefaultActions(), $grid->getExcludes());
     $ui = $grid->getNode()->getUi();

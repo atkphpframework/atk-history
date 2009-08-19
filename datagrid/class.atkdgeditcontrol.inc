@@ -34,7 +34,8 @@ class atkDGEditControl extends atkDGComponent
    */
   public function render()
   {
-    if (count($this->getNode()->m_editableListAttributes) == 0)
+    if (count($this->getGrid()->getRecords()) == 0 || 
+        count($this->getNode()->m_editableListAttributes) == 0)
     {
       return null;
     }

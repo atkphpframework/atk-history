@@ -22,11 +22,13 @@
     </td>
   </tr>
 {/if}
+{if $list}
 <tr>
   <td align="left" valign="top" colspan="2">
     {$list}
   </td>
 </tr>
+{/if}
 {if $norecordsfound}
   <tr>
     <td align="left" valign="top">

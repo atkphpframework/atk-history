@@ -225,6 +225,13 @@ class atkDataGrid
    * @var string
    */
   private $m_mode;
+  
+  /**
+   * Master record.
+   * 
+   * @var array
+   */
+  private $m_masterRecord;
 
   /**
    * Method/function for retrieving the records for the current page.
@@ -864,6 +871,31 @@ class atkDataGrid
   {
     return $this->getPostvar('atkgridedit', false);
   }  
+  
+  /**
+   * Returns the master record.
+   * 
+   * @see atkDataGrid::setMasterRecord
+   * 
+   * @return array master record
+   */
+  public function getMasterRecord()
+  {
+  	return $this->m_masterRecord;
+  }
+  
+  /**
+   * Sets the master record if the grid is used in a 1:n relationship. 
+   * 
+   * This record is not directly used by the datagrid itself, but 
+   * components might.
+   * 
+   * @param array $record master record
+   */
+  public function setMasterRecord($record)
+  {
+  	$this->m_masterRecord = $record;
+  }
   
   /**
    * Returns the grid components.
