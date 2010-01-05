@@ -187,6 +187,14 @@
         $number = str_replace($thousands_separator,'',$number);
       }
 
+      /** cast the number if there are still any illegal charsm but only if field is not empty **/
+      if(!is_numeric($number))
+      {
+        $number = ($this->m_decimals>0)
+          ? (float) $number
+          : (int) $number;
+      }
+
       return $number;
     }
 
