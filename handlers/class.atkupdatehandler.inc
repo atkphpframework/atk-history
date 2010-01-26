@@ -110,7 +110,7 @@
      */
     public function handleCancel($record)
     {
-      $location = $this->m_node->feedbackUrl("update", ACTION_CANCELLED, $record, '', 2);
+      $location = $this->m_node->feedbackUrl("update", ACTION_CANCELLED, $record, '', 1);
       $this->m_node->redirect($location);
     }
 

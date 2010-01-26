@@ -58,6 +58,7 @@
       $params["content"] = atktext('feedback_'.$action.'_'.atkActionStatus($actionstatus), $node->m_module, $node->m_type).
                            ' <br>'.$message;
 
+      atk_var_dump($_SESSION['iep']['admin']['stack']['4b5e090aa55e9']['defined_stackvars']);
       if (atkLevel()>0)
       {
         $params["formstart"] = '<form method="get">'.session_form(SESSION_BACK);
