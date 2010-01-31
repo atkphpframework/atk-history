@@ -8,6 +8,9 @@ Latest changes go on top, different types of changes may be mixed.
 
 Changes in ATK 6.3
 ------------------
++ Add setNodeOverloader method to atkmoduletools for node overloading. 
+  This method check, did the node was overload, so it works correctly, 
+  when node overloads several times. [Yury]
 * ATK now tries to create the compiled templates directory when it did not
   already exist. [Marc]
 * Fixed issue where in some rare occasions the selection was remembered for a
