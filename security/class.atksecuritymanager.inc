@@ -165,23 +165,24 @@
        * Check, can we use password retrieving/recreating.
        * 
        */
-      
       foreach ($this->m_authentication as $auth)
       {
-        if($auth->getPasswordPolicy() == PASSWORD_RETRIEVABLE || $auth->getPasswordPolicy() == PASSWORD_RECREATE)
+        if(in_array($auth->getPasswordPolicy(),array(PASSWORD_RETRIEVABLE,PASSWORD_RECREATE)))
         {
           $newpassword = $auth->gettingPassword($username);
-          break;
+          if($newpassword) break;
         }
       }
        
-      // Send an email containing the new password to user
-      $subject = atktext("auth_passwordmail_subjectnew_password", "atk");
-      $body = atktext("auth_passwordmail_explanation", "atk") . "\n\n";
-      $body.= atktext(atkconfig("auth_userfield")) . ": " . $username . "\n";
-      $body.= atktext(atkconfig("auth_passwordfield")) . ": " . $newpassword . "\n";
-      mail($email, $subject, $body);
-
+      if($newpassword)
+      {
+        // Send an email containing the new password to user
+        $subject = atktext("auth_passwordmail_subjectnew_password", "atk");
+        $body = atktext("auth_passwordmail_explanation", "atk") . "\n\n";
+        $body.= atktext(atkconfig("auth_userfield")) . ": " . $username . "\n";
+        $body.= atktext(atkconfig("auth_passwordfield")) . ": " . $newpassword . "\n";
+        mail($email, $subject, $body);
+      }
       // Return true
       return true;
     }
