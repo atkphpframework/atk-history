@@ -523,6 +523,7 @@ class atkDGList extends atkDGComponent
       /* multiple actions -> dropdown */
       if (count($list["mra"]) > 1)
       {
+        $default = $this->getGrid()->getMRADefaultAction();
         $mra .= '<select name="'.$listName.'_atkaction" onchange="javascript:updateSelectable(\''.$listName.'\', this.form)">'.
                    '<option value="">'.atktext("with_selected").':</option>';
 
@@ -537,7 +538,12 @@ class atkDGList extends atkDGComponent
               $name
             );
 
-            $mra .= '<option value="'.$name.'">'.atktext($actionKeys, $grid->getNode()->m_module, $grid->getNode()->m_type).'</option>';
+            $mra .= '<option value="'.$name.'"';
+            if ($default == $name)
+            {
+              $mra .= 'selected="selected"';
+            }
+            $mra .= '>'.atktext($actionKeys, $grid->getNode()->m_module, $grid->getNode()->m_type).'</option>';
           }
         }
 
