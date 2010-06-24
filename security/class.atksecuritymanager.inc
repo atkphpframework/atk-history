@@ -54,6 +54,11 @@
     // error message that caused the fatal error is put in this variable.
     var $m_fatalError = "";
 
+    /**
+     * Can we use password retrieving/recreating in current configuration
+     */
+    protected $m_enablepasswordmailer = false;
+
 
     /**
      * Register a new listener.
@@ -152,8 +157,25 @@
 
       /* security scheme */
       $this->m_scheme = $securityscheme;
-    }
 
+    /**
+       * Check, can we use password retrieving/recreating.
+       * We take into account configuration var auth_enablepasswordmailer
+       * and authentication methid, that we use
+     *
+     */
+      if(atkconfig("auth_enablepasswordmailer",false))
+    {
+      foreach ($this->m_authentication as $auth)
+      {
+        if(in_array($auth->getPasswordPolicy(),array(PASSWORD_RETRIEVABLE,PASSWORD_RECREATE)))
+        {
+            $this->m_enablepasswordmailer = true;
+          }
+        }
+        }
+      }
+       
     /**
      * Regenerates a user password and sends it to his e-mail address
      *
@@ -161,20 +183,7 @@
      */
     function mailPassword($username)
     {
-      /**
-       * Check, can we use password retrieving/recreating.
-       * 
-       */
-      foreach ($this->m_authentication as $auth)
-      {
-        if(in_array($auth->getPasswordPolicy(),array(PASSWORD_RETRIEVABLE,PASSWORD_RECREATE)))
-        {
-          $newpassword = $auth->gettingPassword($username);
-          if($newpassword) break;
-        }
-      }
-       
-      if($newpassword)
+      if($this->get_enablepasswordmailer())
       {
         // Send an email containing the new password to user
         $subject = atktext("auth_passwordmail_subjectnew_password", "atk");
@@ -207,8 +216,8 @@
       }
       else // HTTP login
       {
-        $auth_user = $_SERVER["PHP_AUTH_USER"];
-        $auth_pw = $_SERVER["PHP_AUTH_PW"];
+        $auth_user = isset($_SERVER["PHP_AUTH_USER"]) ? $_SERVER["PHP_AUTH_USER"] : null;
+        $auth_pw = isset($_SERVER["PHP_AUTH_PW"]) ? $_SERVER["PHP_AUTH_PW"] : null;
       }
 
       // throw post login event?
@@ -290,7 +299,7 @@
           $response = AUTH_MISSINGUSERNAME;
         }
         // Email password if password forgotten and passwordmailer enabled
-        else if ((!empty($auth_user)) && (atkconfig("auth_loginform")==true) && (atkconfig("auth_enablepasswordmailer", false)) && (atkArrayNvl($ATK_VARS, "login", "")==atktext('password_forgotten')))
+        else if ((!empty($auth_user)) && (atkconfig("auth_loginform")==true) && $this->get_enablepasswordmailer() && (atkArrayNvl($ATK_VARS, "login", "")==atktext('password_forgotten')))
         {
           $this->mailPassword($auth_user);
           $response = AUTH_PASSWORDSENT;
@@ -521,7 +530,7 @@
      */
     function loginForm($defaultname, $lastresponse)
     {
-      $loginattempts = sessionLoad('loginattempts');
+      $loginattempts = sessionLoad('loginattempts'); // Note: not actually how many authentication attempts, but how many times the login form has been displayed.
       if($loginattempts=="") $loginattempts = 0;
 
       if($loginattempts=="")
@@ -604,8 +613,8 @@
         $output.="<tr><td valign=top>".atktext('password')."</td><td>:</td><td><input type=password size=15 name=auth_pw value='' /></td></tr>";
         $output.='<tr><td colspan="3" align="center" height="50" valign="middle">';
         $output.='<input name="login" class="button" type="submit" value="'.atktext('login').'">';
-        $tplvars["auth_enablepasswordmailer"] = atkconfig("auth_enablepasswordmailer", false);
-        if (atkconfig("auth_enablepasswordmailer", false))
+        $tplvars["auth_enablepasswordmailer"] = $this->get_enablepasswordmailer();
+        if ($this->get_enablepasswordmailer())
         {
           $output.='&nbsp;&nbsp;<input name="login" class="button" type="submit" value="'.atktext('password_forgotten').'">';
           $tplvars["forgotpasswordbutton"] = '<input name="login" class="button" type="submit" value="'.atktext('password_forgotten').'">';
@@ -668,7 +677,7 @@
       }
       else
       {
-        return '<input class="loginform" type="text" size="15" name="auth_user" value="'.htmlentities($defaultname).'" />';
+        return '<input class="loginform" type="text" size="15" name="auth_user" value="'.atk_htmlentities($defaultname).'" />';
       }
     }
 
@@ -787,6 +796,16 @@
     {
       return "atkauth_3".str_replace(" ","_",atktext("app_title"));
     }
+
+    /**
+     * Getter for m_enablepasswordmailer
+     *
+     * @return bool
+     */
+    public function get_enablepasswordmailer()
+    {
+      return $this->m_enablepasswordmailer;
+    }
   }
 
   /**
@@ -803,4 +822,5 @@
     if (!is_object($secMgr)) return 1;
     else return $secMgr->allowed($node, $privilege);
   }
+
 ?>
