@@ -180,7 +180,7 @@
      */
     function getPassword($username)
     {
-      if(isset($config_user[$user]["password"])) return $config_user[$user]["password"];
+      if(isset($config_user[$username]["password"])) return $config_user[$username]["password"];
       return false;    
     }
    }
