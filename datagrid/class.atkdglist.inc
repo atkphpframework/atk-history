@@ -293,6 +293,12 @@ class atkDGList extends atkDGComponent
         if (is_array($bgn)) list($bgn, $bgh) = $bgn;
       }
 
+      $record['class'] = $grid->getNode()->rowClass($recordset[$i], $i);
+
+      foreach ($grid->getNode()->getRowClassCallback() as $callback)
+      {
+        $record['class'] .= " ".call_user_func_array($callback, array($recordset[$i], $i));
+      }
 
       /* alternate colors of rows */
       $record["background"] = $bgn;

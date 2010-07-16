@@ -690,7 +690,8 @@
      * @var Array
      */
     var $m_triggerListeners = array();
-
+    var $m_rowClassCallback = array();
+    var $m_customCss = array();
     /**
      * Tracker variable to see if we are currently in 'modifier mode' (running inside
      * the scope of a modname_nodename_modifier() method). The variable contains the
@@ -5305,6 +5306,46 @@
       {
         $this->m_columnAttributes[$attribute] = 1;
       }
+    }
+
+    public function setRowClassCallback($callback)
+    {
+      if (is_callable($callback, false, $callableName))
+      {
+        if (is_array($callback))
+        {
+          if (!method_exists($callback[0], $callback[1]))
+          {
+            atkerror("The registered record actions callback method '$callableName' doesn't exist");
+            return;
+          }
+        }
+        $this->m_rowClassCallback[] = $callback;
+      }
+      else
+      {
+        atkerror("The registered record actions callback '$callableName' is not callable");
+        return;
+      }
+
+
+
+      //$this->m_rowClassCallback[] = $callback;
+    }
+
+    public function getRowClassCallback()
+    {
+      return $this->m_rowClassCallback;
+    }
+
+    public function addCustomCss($cssfilename)
+    {
+      $this->m_customCss[] = $cssfilename;
+    }
+
+    public function getCustomScc()
+    {
+      return $this->m_customCss;
     }
 
   }
