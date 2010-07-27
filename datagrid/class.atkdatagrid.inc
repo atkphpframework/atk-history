@@ -84,6 +84,13 @@ class atkDataGrid
   const RESUME = 2;
 
   /**
+   * Grid modifiers.
+   *
+   * @var array
+   */
+  private static $s_modifiers;
+
+  /**
    * Name.
    *
    * @var string
@@ -336,10 +343,14 @@ class atkDataGrid
     $sessions = &$GLOBALS['ATK_VARS']['atkdgsession'];
     $sessions[$name] = array('class' => $class, 'custom' => array(), 'system' => array());
     if ($useSession)
+    {
       atkGetSessionManager()->pageVar('atkdgsession', $sessions);
+    }
     atkimport($class);
     $class = substr($class, strrpos($class, '.') + 1);
-    return new $class($node, $name, self::CREATE, $isEmbedded, $useSession);
+    $grid = new $class($node, $name, self::CREATE, $isEmbedded, $useSession);
+    self::callModifiers($grid, self::CREATE);
+    return $grid;
   }
 
   /**
@@ -350,23 +361,39 @@ class atkDataGrid
    * even more by adjusting options on the object returned. If the session
    * manager does not exist, this method will fail!
    *
+   * @param atkNode $node datagrid node
    * @return atkDataGrid datagrid instance
    */
-  public static function resume($node)
+  public static function resume(atkNode $node)
   {
+    // Cannot resume from session.
+    if (!isset($GLOBALS['ATK_VARS']['atkdatagrid']))
+  {
+      throw new Exception('No last known datagrid!');
+    }
+
     $name = $GLOBALS['ATK_VARS']['atkdatagrid'];
+
+    if (!isset($GLOBALS['ATK_VARS']['atkdgsession'][$name]))
+    {
+      throw new Exception('No session data for grid: '.$name);
+    }
     $session = $GLOBALS['ATK_VARS']['atkdgsession'][$name];
+
     $class = $session['class'];
+
     atkimport($class);
     $class = substr($class, strrpos($class, '.') + 1);
-    return new $class($node, $name, self::RESUME);
+    $grid = new $class($node, $name, self::RESUME);
+    self::callModifiers($grid, self::RESUME);
+    return $grid;
   }
 
   /**
    * Constructor.
    *
-   * @param string  $name       datagrid name
    * @param atkNode $node       datagrid node
+   * @param string  $name       datagrid name
    * @param int     $mode       creation mode
    * @param boolean $isEmbedded is embedded?
    * @param boolean $useSession use session?
@@ -393,7 +420,7 @@ class atkDataGrid
       $allVars = (array)$node->m_postvars;
     }
 
-    $vars = @$GLOBALS['ATK_VARS']['atkdg'][$name];
+    $vars = isset($GLOBALS['ATK_VARS']['atkdg'][$name]) ? $GLOBALS['ATK_VARS']['atkdg'][$name] : null;
 
     $vars = !is_array($vars) ? array() : $vars;
     $this->setPostvars(array_merge($allVars, $vars));
@@ -431,7 +458,6 @@ class atkDataGrid
     $this->addComponent('limit', 'atk.datagrid.atkdglimit');
     $this->addComponent('norecordsfound', 'atk.datagrid.atkdgnorecordsfound');
     $this->addComponent('paginator', 'atk.datagrid.atkdgpaginator');
-    $this->addComponent('addstyle', 'atk.datagrid.atkdgaddstyle');
 
     if (!empty($this->getNode()->m_index))
     {
@@ -630,7 +656,7 @@ class atkDataGrid
   /**
    * Converts node flags to datagrid flags.
    *
-   * @param int $flags
+   * @param int $nodeFlags The nodeflags to convert
    */
   protected function convertNodeFlags($nodeFlags)
   {
@@ -668,7 +694,7 @@ class atkDataGrid
   /**
    * Adds the given grid flag(s).
    *
-   * @param int $flags grid flag(s)
+   * @param int $flag grid flag(s)
    */
   public function addFlag($flag)
   {
@@ -678,7 +704,7 @@ class atkDataGrid
   /**
    * Removes the given grid flag(s).
    *
-   * @param int $flags grid flag(s)
+   * @param int $flag grid flag(s)
    */
   public function removeFlag($flag)
   {
@@ -852,6 +878,7 @@ class atkDataGrid
    * 'class' which contains the component's full ATK class name
    * and 'options' containg the component options.
    *
+   * @param string $name The name of the component
    * @return array component information
    */
   public function getComponent($name)
@@ -1065,7 +1092,7 @@ class atkDataGrid
   /**
    * Sets the multi-record-action selection mode.
    * 
-   * @param int multi-record-action selection mode
+   * @param int $mode multi-record-action selection mode
    */
   public function setMRASelectionMode($mode)
   {
@@ -1090,7 +1117,7 @@ class atkDataGrid
    *
    * Normally record actions are nested.
    *
-   * @param int status session status (e.g. SESSION_NESTED etc.)
+   * @param int $status session status (e.g. SESSION_NESTED etc.)
    */
   public function setActionSessionStatus($status)
   {
@@ -1224,7 +1251,7 @@ class atkDataGrid
    *
    * @param array $records records
    */
-  protected function setRecords($records)
+  public function setRecords($records)
   {
     $this->m_records = $records;
   }
@@ -1510,7 +1537,7 @@ class atkDataGrid
    * 
    * @see atkDGListener
    * 
-   * @param string event identifier
+   * @param string $event identifier
    */
   protected function notify($event)
   {
@@ -1593,5 +1620,57 @@ class atkDataGrid
     $this->notify(atkDGEvent::POST_RENDER);     
     
     return $result;
+  }
+
+  /**
+   * Call grid modifiers for the given grid.
+   *
+   * @param atkDataGrid $grid grid
+   * @param int         $mode creation mode
+   */
+  private static function callModifiers(atkDataGrid $grid, $mode)
+  {
+    $keys = array('*', $grid->getNode()->atkNodeType());
+
+    foreach ($keys as $key)
+    {
+      if (!isset(self::$s_modifiers[$key]))
+      {
+        continue;
+      }
+
+      foreach (self::$s_modifiers[$key] as $callback)
+      {
+        call_user_func($callback, $grid, $mode);
+      }
+    }
+  }
+
+  /**
+   * Unregister datagrid modifier.
+   *
+   * @param string|null $nodeType node type (e.g. module.node), leave null to match all nodes
+   * @param mixed       $callback callback method
+   */
+  public static function unregisterModifier($nodeType, $callback)
+  {
+    self::$s_modifiers[$nodeType == null ? '*' : $nodeType] =
+      array_diff(self::$s_modifiers[$nodeType == null ? '*' : $nodeType], array($callback));
+  }
+
+  /**
+   * Register datagrid modifier.
+   *
+   * The modifier will be called at the end of construction time if the node
+   * type matches. The first argument for the callback will be the datagrid
+   * instance, the second argument the creation mode (e.g. atkDataGrid::CREATE
+   * or atkDataGrid::RESUME).
+   *
+   * @param string|null $nodeType node type (e.g. module.node), leave null to match all nodes
+   * @param mixed       $callback callback method
+   */
+  public static function registerModifier($nodeType, $callback)
+  {
+    self::$s_modifiers[$nodeType == null ? '*' : $nodeType][] = $callback;
   }
 }
