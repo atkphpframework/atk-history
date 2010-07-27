@@ -30,6 +30,8 @@
 
     /**
      * Create a new stringparser
+     *
+     * @param string $string The string to parse
      */
     function atkStringParser($string)
     {
@@ -38,58 +40,76 @@
 
     /**
      * Parse data into the string.
-     * @param array The data to parse in the string
-     * @param bool Wether or not to do a rawurlencode
+     *
+     * @param array $data                The data to parse in the string
+     * @param bool  $encode              Wether or not to do a rawurlencode
+     * @param bool  $ignoreUnknownFields Replace unknown fields with an empty string,
+     *                                   if set to false unknown fields will be left
+     *                                   untouched.
+     *
      * @return String The parsed string
      */
-    function parse($data, $encode=false)
+    function parse($data, $encode=false, $replaceUnknownFields=true)
     {
-      $fields = $this->getFields();
-
       $string = $this->m_string;
-
-      for ($i=0;$i<count($fields);$i++)
+      
+      $fields = $this->getFields();
+      foreach ($fields as $field)
       {
-        $elements = split("\.",$fields[$i]);
-        $databin = $data;
-        for($j=0;$j<count($elements);$j++)
+      	$value = $data;
+      	
+        $elements = explode(".", $field);
+        foreach ($elements as $i => $el)
         {
-          if (is_array($databin) || $databin instanceof ArrayAccess)
+          if (is_array($value) || $value instanceof ArrayAccess)
           {
-            if (@!isset($databin[$elements[$j]]))
-            {
-              atknotice("atkStringparser({$this->m_string})->parse(): Attempting to get element '{$elements[$j]}', but ".$elements[$j-1]." is not an array!");
-              $databin[$elements[$j]] = '';
+          	if (isset($value[$el]))
+          	{
+          		$value = $value[$el];
+          	}
+          	else if ($replaceUnknownFields)
+          	{
+              atknotice("atkStringparser({$this->m_string})->parse(): Attempting to get element '{$el}', but {$elements[$i - 1]} is not an array!");
               $value = '';
-            }
-            else
-            {
-              $value = $databin[$elements[$j]];
-              $databin = $databin[$elements[$j]];
-            }
+              break;
+          	}
+           	else
+           	{
+           		// field not found, continue with next field without
+           		// replacing the field in the template
+           		continue 2;
+           	}
+          }
+          else if (!$replaceUnknownFields)
+          {
+            // field not found, continue with next field without
+            // replacing the field in the template
+          	continue 2;
           }
         }
+        
         if ($encode)
         {
-          $string = str_replace("[".$fields[$i]."]",rawurlencode($value),$string);
+        	$value = rawurlencode($value);
         }
-        else
-        {
-          $string = str_replace("[".$fields[$i]."]",$value,$string);
-        }
+        
+        $string = str_replace("[".$field."]", $value, $string);
       }
+      
       return $string;
     }
 
     /**
      * Does the data contains everything needed to be parsed into the string?
+     *
+     * @param array $data
      */
     function isComplete($data)
     {
       $fields = $this->getFields();
       for ($i=0;$i<count($fields);$i++)
       {
-        $elements = split("\.",$fields[$i]);
+        $elements = explode(".",$fields[$i]);
         $databin = $data;
         for($j=0;$j<count($elements);$j++)
         {
@@ -111,7 +131,9 @@
       {
         $tmp = "";
         $adding = false;
-        for ($i=0;$i<strlen($this->m_string);$i++)
+        
+        $strlen = strlen($this->m_string);
+        for ($i=0;$i<$strlen;$i++)
         {
           if ($this->m_string[$i]=="]")
           {
@@ -136,8 +158,9 @@
     /**
      * Get all fields from a string
      *
-     * @example: [voorvoegsel], [naam] [wwoonplaats]
-     * would return array('[voorvoegsel]',', ','[naam]',' ','[wwoonplaats]')
+     * <b>Example:</b>
+     *        string: [firstname], [lastname] [city]
+     *        would return array('[firstname]',', ','[lastname]',' ','[city]')
      *
      * @return array
      */
@@ -152,12 +175,14 @@
      * Parse data into the string and return all fields as an array
      *
      * @param array $data
+     * @param boolean $split_tags_and_fields return fields and separators separated in resultarray (separators are not used in query, so quotes aren't used)
      * @return array
      */
-    function getAllParsedFieldsAsArray($data)
+    function getAllParsedFieldsAsArray($data, $split_tags_and_fields = false)
     {
       $matches = $this->getAllFieldsAsArray();
-      atk_var_dump($matches,"MATCHES");
+      atk_var_dump($matches,"MATCHES".($split_tags_and_fields?" (split tags and separators)":""));
+            
       $fields=array();
       if(is_array($matches))
       {
@@ -167,11 +192,26 @@
           if(strpos($match,'[')!==false && strpos($match,']')!==false)
           {
             $parser = new atkStringParser($match);
-            $fields[] = $parser->parse($data);
+            
+            if ($split_tags_and_fields)
+            {
+              $fields['tags'][] = $parser->parse($data);
+            }
+            else
+            {
+              $fields[] = $parser->parse($data);
+            }
           }
           else
           {
-            $fields[] = "'".$match."'";
+            if ($split_tags_and_fields)
+            {
+              $fields['separators'][] = $match;
+            }
+            else
+            {
+              $fields[] = "'".$match."'";
+            }
           }
         }
       }
