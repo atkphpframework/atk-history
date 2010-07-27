@@ -690,8 +690,15 @@
      * @var Array
      */
     var $m_triggerListeners = array();
-    var $m_rowClassCallback = array();
-    var $m_customCss = array();
+
+    /**
+     * List of callback functions to add css class to row.
+     * See details in atkDGList::getRecordlistData() method
+     *
+     * @var array
+     */
+    protected $m_rowClassCallback = array();
+
     /**
      * Tracker variable to see if we are currently in 'modifier mode' (running inside
      * the scope of a modname_nodename_modifier() method). The variable contains the
@@ -1307,7 +1314,7 @@
     		atkwarning($this->atkNodeType()."::primaryKeyField() called, but there are no primary key fields defined!");
     		return null;
     	}
-    	
+
       return $this->m_primaryKey[0];
     }
 
@@ -1697,7 +1704,7 @@
         {
           if (substr($section, 0, strlen($tab)) == $tab)
           {
-            atkimport("atk.session.atkstate");                
+            atkimport("atk.session.atkstate");
             $sectionName = 'section_'.str_replace('.', '_', $section);
             $key = array("nodetype" => $this->atknodetype(), "section" => $sectionName);
             $defaultOpen = in_array($section, $this->m_default_expanded_sections);
@@ -2315,20 +2322,20 @@
     function initial_values()
     {
       $record = array();
-      
+
       foreach (array_keys($this->m_attribList) as $attrName)
       {
         $attr = &$this->getAttribute($attrName);
-        
-        if (is_array($this->m_postvars) && isset($this->m_postvars[$attrName])) 
+
+        if (is_array($this->m_postvars) && isset($this->m_postvars[$attrName]))
         {
           $value = $attr->fetchValue($this->m_postvars);
         }
-        else 
+        else
         {
           $value = $attr->initialValue();
         }
-        
+
         if ($value !== NULL)
           $record[$attr->fieldName()] = $value;
       }
@@ -3342,7 +3349,7 @@
       if ($record['atkprimkey']!="")
       {
         $this->trackChangesIfNeeded($record, $excludes, $includes);
-        
+
         if($exectrigger) $this->executeTrigger("preUpdate",$record);
 
         $pk = $record['atkprimkey'];
@@ -4606,7 +4613,7 @@
     }
 
     /**
-     * Returns the type of this node.  (This is *not* the full ATK node type; 
+     * Returns the type of this node.  (This is *not* the full ATK node type;
      * see atkNodeType() for the full node type.)
      *
      * @return string type
@@ -4629,7 +4636,7 @@
     /**
      * Get the full atknodetype of this node (module.nodetype notation).  This is sometimes
      * referred to as the node name (or nodename) or node string.
-     * 
+     *
      * @return String The atknodetype of the node.
      */
     function atkNodeType()
@@ -5232,7 +5239,7 @@
      * Get the column configuration object
      *
      * @param string $id optional column config id
-     * 
+     *
      * @return atkColumnConfig
      */
     function &getColumnConfig($id=NULL)
@@ -5308,46 +5315,67 @@
       }
     }
 
+    /**
+     * Row CSS class.
+     *
+     * Used to determine the CSS class(s) for rows in the datagrid list.
+     *
+     * @param array $record record
+     * @param int   $nr     row number
+     *
+     * @return string CSS class(es)
+     */
+    public function rowClass($record, $nr)
+    {
+      return $nr % 2 == 0 ? 'row1' : 'row2';
+    }
+
+    /**
+     * Add callback function for add css class to row.
+     *
+     * @param mixed $callback name of a function or array with an object
+     * and the name of a method or closure
+     *
+     * @return boolean
+     */
     public function setRowClassCallback($callback)
     {
+      $res = false;
       if (is_callable($callback, false, $callableName))
+      {
+        if (is_array($callback) && !method_exists($callback[0], $callback[1]))
+        {
+          atkerror("The registered row class callback method '$callableName' doesn't exist");
+        }
+        else
+          {
+          $this->m_rowClassCallback[] = $callback;
+          $res = true;
+          }
+        }
+      else
       {
         if (is_array($callback))
         {
           if (!method_exists($callback[0], $callback[1]))
           {
-            atkerror("The registered record actions callback method '$callableName' doesn't exist");
-            return;
-          }
-        }
-        $this->m_rowClassCallback[] = $callback;
+            atkerror("The registered row class callback method '$callableName' doesn't exist");
       }
-      else
-      {
-        atkerror("The registered record actions callback '$callableName' is not callable");
-        return;
-      }
-
-
-
-      //$this->m_rowClassCallback[] = $callback;
+    }
+        atkerror("The registered row class callback '$callableName' is not callable");
+    }
+      return $res;
     }
 
+    /**
+     * Return array with callback function list, which use for add css class to row
+     *
+     * @return array
+     */
     public function getRowClassCallback()
     {
       return $this->m_rowClassCallback;
     }
 
-    public function addCustomCss($cssfilename)
-    {
-      $this->m_customCss[] = $cssfilename;
-    }
-
-    public function getCustomScc()
-    {
-      return $this->m_customCss;
-    }
-
   }
-
 ?>
