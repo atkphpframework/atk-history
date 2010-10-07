@@ -83,7 +83,7 @@
       {
         return moduleDir($matches[1]).$matches[2];
       }
-      
+
       if      (substr($relpath,0,4)==='atk/')    $location='atk';
       else if (substr($relpath,0,7)==='themes/') $location='app';
 
@@ -190,7 +190,7 @@
     {
       // Check module themes for icon
       $iconfile = $this->getIconFileFromModuleTheme($icon,$type,$ext);
-      if ($module!="" && $iconfile) return moduleDir($module)."themes/".$iconfile;
+      if ($iconfile) return $iconfile;
 
       // Check the default theme for icon
       $iconfile = $this->getIconFileFromTheme($icon,$type, $this->m_theme['files'],$ext);
@@ -217,7 +217,7 @@
         if (isset($this->m_theme['modulefiles'][$modulename]))
         {
           $iconfile = $this->getIconFileFromTheme($icon,$type, $this->m_theme['modulefiles'][$modulename],$ext);
-          if ($iconfile) return $iconfile;
+          if ($iconfile) return moduleDir($modulename)."themes/".$iconfile;
         }
       }
       return false;
