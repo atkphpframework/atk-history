@@ -8,6 +8,8 @@ Latest changes go on top, different types of changes may be mixed.
 
 Changes in ATK 6.3
 ------------------
++ Added new datagrid component to enable selecting records over multiple pages
+  [Erik]
 * Improved translations of actions and node/action titles (you can
   now prefix the title/action with the node name just like other
   translations). [Peter]

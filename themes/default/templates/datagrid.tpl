@@ -51,4 +51,11 @@
   </td>
 </tr>
 {/if}
+{if $multipageselect}
+  <tr>
+    <td align="left" valign="top">
+    {$multipageselect}
+    </td>
+  </tr>
+{/if}
 </table>

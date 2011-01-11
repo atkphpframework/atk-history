@@ -82,7 +82,16 @@ ATK.DataGrid = {
       var queryComponent = encodeURIComponent(key) + '=' + encodeURIComponent(item.value);
       queryComponents.push(queryComponent);
     });    
-    
+
+    // add selected records to the query
+    this.getForm(grid.name).select('.atkcheckbox').each(function(item) {
+      if (item.name && item.name.substr(0,17) == 'admin_atkselector') {
+          if (item.checked) {
+            queryComponents.push(Form.Element.serialize(item));
+          }
+      }
+    });
+
     // if embedded we also serialize the edit data form fields
     if (grid.embedded) {
       var elements = Form.getElements(this.getForm(grid.name));

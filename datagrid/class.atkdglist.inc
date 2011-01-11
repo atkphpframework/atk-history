@@ -57,7 +57,7 @@ class atkDGList extends atkDGComponent
    * @param String  $embedprefix  The prefix for embeded fields
    * @return String The rendered recordlist
    */
-  private function getRecordlistData(&$node, $recordset, $actions, $flags=0, $suppressList="", $navigation=array(),$embedprefix="")
+  protected function getRecordlistData(&$node, $recordset, $actions, $flags=0, $suppressList="", $navigation=array(),$embedprefix="")
   {
     $grid = $this->getGrid();
     $theme = $this->getTheme();
@@ -708,7 +708,7 @@ class atkDGList extends atkDGComponent
    *
    * @return see above
    */
-  private function listArray(&$recordset, $prefix="", $actions=array(), $suppress=array(), $embedprefix="")
+  protected function listArray(&$recordset, $prefix="", $actions=array(), $suppress=array(), $embedprefix="")
   {
     $grid = $this->getGrid();
 

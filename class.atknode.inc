@@ -3704,8 +3704,7 @@
      * Note that if 'atksearch' is set in the request vars, the search
      * expressions are automatically added as extra where-clauses.
      *
-     * @todo Handling atksearch in this method is dirty, this should be
-     *       controlable with parameters.
+     * @todo Handling atksearch in this method is dirty.
      *
      * @param String $selector Sql expression used as a where-condition, to
      *                         retrieve only records that match the
@@ -3728,7 +3727,7 @@
      *                          records). Defaults to true.
      * @return array Array containing the retrieved records
      */
-    function selectDb($selector="", $order="", $limit="", $excludeList="",$includeList="", $mode="", $distinct=false)
+    function selectDb($selector="", $order="", $limit="", $excludeList="",$includeList="", $mode="", $distinct=false, $ignoreSearch=false)
     {
       $searching=false;
       $loadlist = array();
@@ -3744,15 +3743,15 @@
       $query->addTable($this->m_table);
       $query->addCondition($selector);
 
-      $query->m_searchmethod = isset($this->m_postvars['atksearchmethod']) ? $this->m_postvars['atksearchmethod'] : null;
+      $query->m_searchmethod = (isset($this->m_postvars['atksearchmethod']) && !$ignoreSearch) ? $this->m_postvars['atksearchmethod'] : null;
 
       // First we check if we are about to search and set a few things
       // if we are
       if (!atkReadOptimizer())
       {
         /* there may be search criteria, which we also filter */
-        $searchArray = atkArrayNvl($this->m_postvars,'atksearch');
-        $smartSearchCriteria = atkArrayNvl($this->m_postvars,'atksmartsearch');
+        $searchArray = (!$ignoreSearch) ? atkArrayNvl($this->m_postvars,'atksearch') : null;
+        $smartSearchCriteria = (!$ignoreSearch) ? atkArrayNvl($this->m_postvars,'atksmartsearch') : null;
         $indexValue = $this->m_index != "" ? atkArrayNvl($this->m_postvars,'atkindex',"") : "";
 
         if ( (is_array($searchArray) && count($searchArray)>0)
