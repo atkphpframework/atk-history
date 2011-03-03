@@ -53,7 +53,7 @@
           $value = $record[$fieldname];
           $p_subtotalling_attrib = &$this->m_node->m_attribList[$fieldname];
 
-          if (isset($lastvalues[$fieldname]) && !$p_subtotalling_attrib->equal($record, $lastvalues))
+          if (array_key_exists($fieldname, $lastvalues) && !$p_subtotalling_attrib->equal($record, $lastvalues))
           {
             $result[] = $this->_subTotalRow($rowset[$i], $totals, $fieldname, $totalizers);
           }
