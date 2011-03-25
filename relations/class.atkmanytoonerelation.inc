@@ -656,14 +656,14 @@
     {
       $links = array();
 
-      $newsel = $id;
+      $newsel = $id.'_newsel';
       $filter = $this->parseFilter($this->m_destinationFilter, $record);
       $links[] = $this->_getSelectLink($newsel, $filter);
       if ($this->hasFlag(AF_RELATION_AUTOLINK)) // auto edit/view link
       {
         if ($this->m_destInstance->allowed("add"))
         {
-          $links[] = href(dispatch_url($this->getAutoLinkDestination(),"add",array("atkpkret"=>$id."_newsel","atkfilter"=>($filter!=""?$filter:""))),
+          $links[] = href(dispatch_url($this->getAutoLinkDestination(),"add",array("atkpkret"=>$newsel,"atkfilter"=>($filter!=""?$filter:""))),
                           atktext("new"),SESSION_NESTED,true);
         }
 
