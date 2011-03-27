@@ -416,6 +416,12 @@
     */
     function display($record, $mode="")
     {
+      // This attribute doesn't support CSV and PLAIN display
+      if (in_array($mode, array('csv', 'plain')))
+      {
+        return '';
+      }
+
     	// get active tab
       $active_tab = $this->getDefaultTab();
       $fields = array();
