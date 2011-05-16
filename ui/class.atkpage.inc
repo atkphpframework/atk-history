@@ -314,6 +314,7 @@
       $res.= '  <meta name="atkversion" content="'.$version.'" />'."\n";
 
       $res.= '  <meta http-equiv="Content-Type" content="text/html; charset='.atktext("charset","atk").'" />'."\n";
+      $res.= '  <META HTTP-EQUIV="X-UA-Compatible" CONTENT="IE=EmulateIE7"/>'."\n";
       if ($extra_header != "") $res.= $extra_header."\n";
 
       $this->addScripts($res);
