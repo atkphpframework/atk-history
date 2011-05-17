@@ -613,7 +613,10 @@
       $currentValues = $this->_get("values");
 
       $index = array_search($option, $currentOptions);
-      $value = $currentValues[$index];
+
+      if ($index === false) {
+        return $this;
+      }
 
       array_splice($currentOptions, $index, 1); // remove option
       array_splice($currentValues, $index, 1);  // remove value
@@ -653,6 +656,10 @@
       $currentValues = $this->_get("values");
 
       $v = array_search($value, $currentValues);
+
+      if ($v === false) {
+        return $this;
+      }
 
       array_splice($currentOptions, $v, 1); // remove option
       array_splice($currentValues, $v, 1);  // remove value

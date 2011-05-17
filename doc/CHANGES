@@ -9,6 +9,8 @@ Latest changes go on top, different types of changes may be mixed.
 
 Changes in ATK 6.6.0
 --------------------
+* When trying to remove a non-existing value from the values of a list
+  attribute, the first value was deleted. This has been fixed. [Tjeerd]
 * Fixed SQL injection vulnerability when using atkNode::fetchByPk() [Harrie]
 * Fixed bug: multilanguage nodes referencing themselves (f.e. using a parent_id)
   caused an error when updating one of the child records [Harrie]
@@ -16,7 +18,7 @@ Changes in ATK 6.6.0
 * Fixed problem with the various ml-attributes not being able to edit other
   languages except for the default one. [Harrie]
 * Fixed details link manybool relation with proper local and remote keys [Dengels]
-* Fixed bug causing scrollbar to disappear when opening and closing an atkDialog 
+* Fixed bug causing scrollbar to disappear when opening and closing an atkDialog
   in IE [Harrie]
 + Added Arabic language file. [Hamdi]
 + Added Turkish language file. [Bilal]
@@ -28,7 +30,7 @@ Changes in ATK 6.6.0
 + Added setAffectedRows() on atkMockDb. [mvdvelden]
 + Added DB2 and i5 database drivers. [Harrie]
 * Gave atkSaveHandler a _handleRedirect() method that does the redirect call,
-  so that it's easier to override and unit-test. 
+  so that it's easier to override and unit-test.
 * Make sure we install other dependencies when handeling one. [Peter]
 * Fixed atkNumberAttribute's search field, size is not limitted anymore to
   the size of the maximum allowed value which makes it possible again to
@@ -37,17 +39,17 @@ Changes in ATK 6.6.0
   a single row even though the selector might return multiple. [Peter]
 + Added atkPHPView for PHP based templates which makes variables inside the
   template available as $this->varName, which will make the transition to
-  Zend_View easier in the near future. [Peter] 
+  Zend_View easier in the near future. [Peter]
 * Fixed escaping of stack trace in Steelblue and Stillblue themes. [Peter]
 + Added atkDGList::_renderRecordActionLink(). This can be overridden to influence the
   way record actions are rendered in a datagrid. [Matthijs]
 * Fixed view mode auto-link for read-only fields. [Peter]
-+ Added atkViewHandler::getFormButtons() and made the view handler use it, so 
++ Added atkViewHandler::getFormButtons() and made the view handler use it, so
   that it conforms to the way other handlers get their formbuttons. [Matthijs]
 * Fixed value2db of atkBoolAttribute. [Sandy]
 + Added box template support to atkPageBuilder. [Peter]
 * Fixed column support for meta node. [Peter]
-* Changed the handleCancel call in atkUpdateHandler, so that it can be 
+* Changed the handleCancel call in atkUpdateHandler, so that it can be
   overridden in your node. [mvdvelden]
 * Fixed bug in atkNode which causes attributes to be given the wrong index
   when an attribute had been removed in between. [Peter]
@@ -64,7 +66,7 @@ Changes in ATK 6.6.0
 * atkError now supports printing errors based on a given exception. [Peter]
 * Fixing file size check and made some validation changes so that the actual
   error is shown. [mvdvelden]
-* Fixed quoting of identifiers in order by clause. It now conforms to the way 
+* Fixed quoting of identifiers in order by clause. It now conforms to the way
   atkquery quotes fields with multiple identifiers such as schema name and/or
   database name [Matthijs]
 * Fixed quoting of identifiers in order by clause. [Peter]
@@ -83,13 +85,13 @@ Changes in ATK 6.6.0
   setting the autocomplete attribute of the field to off [Matthijs]
 + Added atkDataGrid::registerModifier to register a grid modifier outside
   the node or relation that uses it. [Peter]
-* atkController::loadDispatchPage now also supports array selectors for 
-  multi record actions (MRA). [Matthijs] 
+* atkController::loadDispatchPage now also supports array selectors for
+  multi record actions (MRA). [Matthijs]
 * Close atkDateAttribute's calendar on single date click. [Peter]
 * atkOneToOneRelation now also respects the attribute's tab for errors if the
   AF_ONETOONE_RESPECT_TABS flag is set. [Peter]
 * atkAttribute::preAddToEditArray now also gets the fieldrefix passed. [Peter]
-* Fixed bug in MySQLi database driver which caused the length of fields to be a 
+* Fixed bug in MySQLi database driver which caused the length of fields to be a
   factor 3 of their real size if the characterset was set to UTF-8. [Peter]
 * atkFieldSet now marks itself as errornous if one of it's fields contains
   errornous data. [Peter]
@@ -97,7 +99,7 @@ Changes in ATK 6.6.0
   of an emailaddress in the atkEmailAttribute::validate(). [Martin]
 * Fixed bug in atkDateAttribute that if no date was selected yet the day
   drop-down is empty (instead of containing options 1 to 31). [Peter]
-* Added atkform.js for submitting an ATK form using an Ajax 
+* Added atkform.js for submitting an ATK form using an Ajax
   request. [Peter, Sandy]
 * Added unique cache prefix to atkCacheTestCase in order to prevent collisions
   between simultanious runs of PHPUnit. [Guido]
@@ -109,12 +111,12 @@ Changes in ATK 6.6.0
 * When atkJSON::encode fails, try again after UTF-8 encoding of contents. [Boy]
 * Fixed invoking 'delete' on attributes [mvdvelden]
 * Check if the actions are set correctly in atkmultiselecthandle [dengels]
-* Changed atkmanytomanyrelation for checking if a fieldname is set before 
+* Changed atkmanytomanyrelation for checking if a fieldname is set before
   looping through this [Patrick van der Rijst, mvdvelden]
 * Changed visibility of method getCSRFToken to public [dengels]
-* Rewrote a previous fix to native Javascript, rather then using PrototypeJS. 
+* Rewrote a previous fix to native Javascript, rather then using PrototypeJS.
   Since this doesn't work in all situations with some IE versions [mvdvelden]
-* Now returning button instead of input tags in atkController::getButton. 
+* Now returning button instead of input tags in atkController::getButton.
   Improves styling compatbility with WebKit. [Peter]
 + Added the ability to expose callbacks in PHP views. [Peter]
 * Fixed alignment of recordlist th's (steelblue/stillblue) in Webkit. [Peter]
@@ -125,12 +127,12 @@ Changes in ATK 6.6.0
   This feature now supports multiple forms on one page. [mvdvelden]
 * Implemented CSRF protection for save, update and delete handlers. [peter]
 * atkHiddenAttribute now always renders itself in add mode too [mvdvelden]
-+ Added atkAdminHandler::getAddUrl(). This method is used by 
-  atkAdminHandler::getAddLink() for determining the node to use for creating 
++ Added atkAdminHandler::getAddUrl(). This method is used by
+  atkAdminHandler::getAddLink() for determining the node to use for creating
   the add link. getAddUrl can be
   overridden in the handler or in the node to provide a custom url for the
   add link. [Matthijs]
-+ Added atkAdminHandler::getAddNodeType(). This method is used by 
++ Added atkAdminHandler::getAddNodeType(). This method is used by
   atkAdminHandler::getAddLink() and atkAdminHandler::addPage() for determining
   the node to use for creating the add link or form. getAddNodeType can be
   overridden in the handler or in the node to provide a custom node for the
@@ -138,7 +140,7 @@ Changes in ATK 6.6.0
 + Added dependency functionaliteit to manybool attribute [dengels]
 * Fixed invocation of missing_class_handler. [Guido]
 * Fixed NULL values for MySQL Strict mode. [Sandy]
-* Fixed bug in atkNumberAttribute. Value not posted correctly when field has 
+* Fixed bug in atkNumberAttribute. Value not posted correctly when field has
   AF_READONLY flag. [Sandy, Jeroenvs]
 + In atkManyToOneRelations that use autocompletion, the size of the rendered
   input element can be set using the function setAutoCompleteSize($size).
