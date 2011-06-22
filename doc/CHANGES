@@ -9,6 +9,8 @@ Latest changes go on top, different types of changes may be mixed.
 
 Changes in ATK 6.6.0
 --------------------
+* Fixed bug that caused the atkManyToManyRelations to truncate the intermediate table when
+  it had no attributes with an AF_PRIMARY flag on it. [harrie]
 * When trying to remove a non-existing value from the values of a list
   attribute, the first value was deleted. This has been fixed. [Tjeerd]
 * Fixed SQL injection vulnerability when using atkNode::fetchByPk() [Harrie]
@@ -144,9 +146,3 @@ Changes in ATK 6.6.0
   AF_READONLY flag. [Sandy, Jeroenvs]
 + In atkManyToOneRelations that use autocompletion, the size of the rendered
   input element can be set using the function setAutoCompleteSize($size).
-  [Patrick]
-
-Changes in prior versions
--------------------------
-Changes in older ATK versions can be found at:
-http://websvn.ibuildings.nl/wsvn/atk/atk/tags/release_6_5_0/doc/CHANGES
