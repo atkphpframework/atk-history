@@ -449,6 +449,11 @@ class atkDataGrid
     {
       $this->initOnCreate();
     }
+
+    // force destructor to be called before php_request_shutdown()
+    // https://www.ibuildings.nl/support/show_bug.cgi?id=28024
+    $instance = $this;
+    register_shutdown_function(function() use ($instance) {});
   }
 
   /**
