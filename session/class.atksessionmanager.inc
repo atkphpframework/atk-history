@@ -540,6 +540,8 @@
           $atklevel = count($stack) - 1;
         }
 
+        atkdebug('Real ATKLevel: '.$atklevel);
+
         if (isset($stack[$atklevel])) $currentitem = $stack[$atklevel];
 
         if (!isset($currentitem)||$currentitem=="")
@@ -794,7 +796,7 @@
 
       $oldStackId = atkStackID();
 
-      if ($atkprevlevel!=$prevlevelfromstack)
+      if ($atklevel !=-2 && $atkprevlevel != $prevlevelfromstack)
       {
         // What we think we came from (as indicated in the url by atkprevlevel)
         // and what the REAL situation on the stack was when we got here (prevlevelfromstack)
@@ -824,6 +826,16 @@
         }
 
         return false;
+      } elseif ($atkprevlevel != $prevlevelfromstack) {
+
+        $deletecount = count($stack)-1-$atkprevlevel;
+        for ($i=0;$i<$deletecount;$i++)
+        {
+          atkdebug("Popped an item out of the stack");
+          array_pop($stack);
+        }
+
+        $g_sessionData[$this->m_namespace]["stack"][atkStackID()] = $stack;
       }
 
       return true;
@@ -1066,7 +1078,7 @@
       if ($saveform)
       {
         $str = 'atkSubmit("'.atkurlencode(atkSessionManager::sessionUrl($url,$sessionstatus)).'");';
-        return "<a href=\"javascript:void(0)\" onclick=\"".atk_htmlentities($str)."\" ".$extraprops.">".$name."</a>";        
+        return "<a href=\"javascript:void(0)\" onclick=\"".atk_htmlentities($str)."\" ".$extraprops.">".$name."</a>";
       }
       else
       {
