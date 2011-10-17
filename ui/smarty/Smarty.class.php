@@ -506,7 +506,7 @@ class Smarty
      *
      * @var integer
      */
-    var $_file_perms           = 0644;
+    var $_file_perms           = 0664;
 
     /**
      * default dir permissions
