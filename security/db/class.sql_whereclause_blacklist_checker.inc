@@ -47,7 +47,9 @@ class sql_whereclause_blacklist_checker
    */
   private $_disallowed=array('/*', ' --', '#', // Comment syntax
                              'ALTER ', 'DELETE FROM', 'SHOW ', 'DROP ', // DDL statements
-                             'UNION ', 'UNION(', ';'); // other
+                             'UNION ', 'UNION(', ';', // other
+                             '0x3a', 'information_schema', 'row(1,1)', 'floor(rand(', // common patterns for Blind SQL injection
+                            );
 
   /**
    * Create a new checker object for a given WHERE clause
