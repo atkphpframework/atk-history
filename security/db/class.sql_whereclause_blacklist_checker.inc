@@ -14,8 +14,9 @@ function filter_request_where_clause($variable)
     $checker = new sql_whereclause_blacklist_checker($_REQUEST[$variable]);
     if (!$checker->isSafe())
     {
-      atkerror("Unsafe WHERE clause in REQUEST variable: ".$variable);
-      $_REQUEST[$variable] = $_GET[$variable] = $_POST[$variable] = '';
+      atkhalt("Unsafe WHERE clause in REQUEST variable: ".$variable, 'critical');
+      
+      //$_REQUEST[$variable] = $_GET[$variable] = $_POST[$variable] = '';
     }
   }
 }
@@ -112,6 +113,7 @@ class sql_whereclause_blacklist_checker
         }
       }
     }
+
     return true;
   }
 }
