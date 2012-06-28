@@ -14,6 +14,7 @@
    * @version $Revision: 6315 $
    * $Id$
    */
+   header('Content-type: application/javascript');
 ?>
 
 var closedSections = [];
